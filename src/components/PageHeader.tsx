@@ -208,7 +208,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   const displayPhone = user?.phone ?? "";
   const displayRole = user?.role ?? "";
   const displayInitials = user?.name ? getInitials(user.name) : "?";
-  const userRole = user?.role ?? null;
+  const userRole = user?.active_role ?? user?.role ?? null;
   const firstName = displayName;
 
   const roleCfg = ROLE_CONFIG[displayRole] ?? {

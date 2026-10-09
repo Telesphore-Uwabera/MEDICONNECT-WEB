@@ -98,8 +98,10 @@ export function useGoToRole() {
       if (opts?.stay) {
         // Update the cached session in place so the app sees the new role
         // without a reload, then resume the original action.
-        qc.clear();
         qc.setQueryData(AUTH_KEY, { user: res.user });
+        qc.removeQueries({
+          predicate: (query) => query.queryKey[0] !== "auth",
+        });
         toast.success(res.message || `Switched to ${role}.`);
         opts.onSwitched?.();
       } else {

@@ -392,7 +392,6 @@ const PatientAppointments = () => {
       }
       joinMutation.mutate(appt.id, {
         onSuccess: (res) => {
-          console.log("[Appointment] patient join response:", res);
           // If it's our custom WebRTC token, open the in-app ConsultationRoom.
           const started = startInAppCallFromJoin(startCall, res, {
             consultationId: appt.id,

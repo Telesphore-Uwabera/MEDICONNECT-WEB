@@ -446,7 +446,6 @@ function CertificateDrawer({
  // CertificateCard   improved
  
 export function CertificateCard({ cert }: { cert: Certificate }) {
-  console.log("CertificateCard cert: ", cert);
   const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [downloadPhase, setDownloadPhase] = useState<
@@ -470,7 +469,6 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
   const handleJoinVerification = () => {
     joinSession.mutate(undefined, {
       onSuccess: (res) => {
-        console.log("[Certificate] patient verification session:", res);
         const token = res.patient_token ?? res.token ?? res.doctor_token;
         const started = startInAppCallFromJoin(
           startCall,

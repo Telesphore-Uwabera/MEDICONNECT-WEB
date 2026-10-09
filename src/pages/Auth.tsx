@@ -34,12 +34,15 @@ const Auth = () => {
   useEffect(() => {
     if (user && !hasRedirected.current) {
       hasRedirected.current = true;
-      navigate(dashboardPath(user.role), { replace: true });
+      navigate(dashboardPath(user.active_role ?? user.role), { replace: true });
     }
   }, [user, navigate]);
 
+  // Called by SignInForm/SignUpForm after successful auth.
+  // SignInForm navigates to the dashboard itself; this is intentionally empty
+  // to avoid calling setState on an already-navigated-away component.
   const goAfterAuth = () => {
-    setTab("signin");
+    // no-op: navigation is handled inside SignInForm/SignUpForm
   };
 
   const tabs = [

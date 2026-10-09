@@ -124,13 +124,13 @@ export const updateProfile = (userId: string, profile: Record<string, unknown>, 
 };
 
 
-export const dashboardPath = (role: Role): string =>
+export const dashboardPath = (role?: string | null): string =>
   role === "patient"  ? "/patient"
   : role === "doctor"   ? "/doctor"
   : role === "hospital" ? "/hospital"
-  : role === "pharmacy" ? "/pharmacy"
+  : role === "pharmacy" ? "/pharmacy/overview"
   : role === "admin"    ? "/admin"
-  : "/";
+  : "/patient";
 
 
 

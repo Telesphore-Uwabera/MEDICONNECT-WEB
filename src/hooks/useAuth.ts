@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type {
   RegisterPayload, RegisterResponse,
@@ -14,6 +14,16 @@ const AUTH_KEY = ["auth", "me"];
 
 const saveToken = (token: string) => localStorage.setItem("auth_token", token);
 const clearToken = () => localStorage.removeItem("auth_token");
+
+function persistSession(
+  qc: QueryClient,
+  user: MeResponse["user"],
+) {
+  qc.setQueryData(AUTH_KEY, { user });
+  qc.removeQueries({
+    predicate: (query) => query.queryKey[0] !== "auth",
+  });
+}
 
 
 export const useMe = () =>
@@ -57,8 +67,7 @@ export const useVerifyOtp = () => {
       }),
     onSuccess: (data) => {
       saveToken(data.token);
-      qc.clear();
-      qc.setQueryData(AUTH_KEY, { user: data.user });
+      persistSession(qc, data.user);
     },
   });
 };
@@ -73,8 +82,7 @@ export const useLogin = () => {
       }),
     onSuccess: (data) => {
       saveToken(data.token);
-      qc.clear();
-      qc.setQueryData(AUTH_KEY, { user: data.user });
+      persistSession(qc, data.user);
     },
   });
 };
@@ -96,7 +104,9 @@ export const useLogout = () => {
     mutationFn: () =>
       apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
     onSettled: () => {
-      localStorage.clear();
+      // Only remove auth-specific keys — do not wipe unrelated localStorage data
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("guest_token");
       qc.clear();
     },
   });

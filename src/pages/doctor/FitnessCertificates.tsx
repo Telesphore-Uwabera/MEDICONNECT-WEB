@@ -1086,7 +1086,6 @@ function RequestDetail({
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {DECISION_OPTIONS.map(( value ) => (
-                    console.log("Decision option:", value.key),
                     <button
                       key={value.value}
                       type="button"

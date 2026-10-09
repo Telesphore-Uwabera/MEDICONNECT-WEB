@@ -46,6 +46,7 @@ import {
   toUser,
   verifyPassword,
 } from "./auth.js";
+import { sendMail } from "./mail.js";
 
 const PROFILE_TABLE = {
   patient: "patients",
@@ -470,8 +471,35 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/auth/forgot-password", async (req, res) => {
-    res.json({ message: "If that account exists, a reset code has been stored." });
+  router.post("/auth/forgot-password", async (req, res, next) => {
+    try {
+      const row = await findUserByLogin(req.body ?? {});
+      // Always return the same message so we don't leak whether the account exists.
+      if (!row) return res.json({ message: "If that account exists, a reset code has been sent." });
+
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      await insert("otps", {
+        email: row.email ?? req.body?.email ?? null,
+        phone: row.phone ?? req.body?.phone ?? null,
+        country_code: row.country_code ?? req.body?.country_code ?? null,
+        code,
+        type: "password_reset",
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "),
+      });
+
+      // Send by email when available
+      if (row.email) {
+        await sendMail({
+          to: row.email,
+          subject: "MediConnect — Password reset code",
+          text: `Your MediConnect password reset code is: ${code}\n\nThis code expires in 10 minutes. If you did not request a reset, you can ignore this email.`,
+        });
+      }
+
+      res.json({ message: "If that account exists, a reset code has been sent." });
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.post("/auth/reset-password", async (req, res, next) => {
@@ -505,7 +533,18 @@ export function appRoutes(router) {
         type: req.body?.type || "login",
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "),
       });
-      res.json({ message: "Verification code created." });
+
+      // Deliver the code by email when an address was provided
+      if (req.body?.email) {
+        const typeLabel = req.body?.type === "password_reset" ? "password reset" : "verification";
+        await sendMail({
+          to: req.body.email,
+          subject: `MediConnect — Your ${typeLabel} code`,
+          text: `Your MediConnect ${typeLabel} code is: ${code}\n\nThis code expires in 10 minutes.`,
+        });
+      }
+
+      res.json({ message: "Verification code sent." });
     } catch (error) {
       next(error);
     }

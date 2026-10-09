@@ -317,8 +317,6 @@ const PharmacyOrders = () => {
 
   // React Query re-fetches automatically when apiParams changes (key changes).
   const { data, isLoading, isError, refetch } = useGetOrders(apiParams);
-
-  console.log("PharmacyOrders.tsx: data", data, "isLoading", isLoading, "isError", isError);
   const orders: Order[] = data?.data ?? [];
 
   // ── Client-side search + sort (status/source are server-side) ───────────

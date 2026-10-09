@@ -73,10 +73,10 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
       </FormField>
 
       <FormField label={t("doctorProfile.years_of_experience")}>
-        <Input
-          type="number"
+          <Input
+            type="number"
           min={0}
-          value={data.years_of_experience ?? ""}
+            value={data.years_of_experience ?? ""}
           onChange={(event) => onChange({
             ...data,
             years_of_experience: Number(event.target.value) || 0,

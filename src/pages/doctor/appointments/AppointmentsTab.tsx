@@ -23,7 +23,6 @@ import {
 import { AppointmentContext, useCallStore } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin } from "@/lib/scheduled-call";
-import { doctors } from "@/lib/mock-data";
 
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -44,7 +43,7 @@ import { SkeletonRow } from "./shared/Skeletonrow";
 import { DateField } from "@/components/ui/date-field";
 
  
-const MOCK_DOCTOR = doctors?.[0] ?? {
+const MOCK_DOCTOR = {
   id: "mock", name: "Dr. (Scheduled)", specialty: "General", hospital: "",
   avatar: "DR", status: "online" as const, rating: 5, reviews: 0,
   experience: 10, instantAvailable: true, fee: 0,

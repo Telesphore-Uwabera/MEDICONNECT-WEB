@@ -15,12 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import {
-  currentUser,
-  updateProfile,
-  dashboardPath,
-  Role,
-} from "@/lib/auth-store";
+import { dashboardPath } from "@/lib/auth-store";
+import { useMe } from "@/hooks/useAuth";
+import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 import logo from "@/assets/mediconnect-logo.png";
 
@@ -32,25 +29,33 @@ const Field = ({ label, children }: { label: string; children: ReactNode }) => (
 );
 
 const Onboarding = () => {
-  const { role } = useParams<{ role: Role }>();
+  const { role } = useParams<{ role: string }>();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const user = currentUser();
-
-  if (!user) return <Navigate to="/auth" replace />;
-  if (role && role !== user.role)
-    return <Navigate to={`/onboarding/${user.role}`} replace />;
+  const { data: user, isLoading } = useMe();
 
   const [form, setForm] = useState<Record<string, any>>({});
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  const submit = (e: React.FormEvent) => {
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (role && role !== user.active_role && role !== user.role)
+    return <Navigate to={`/onboarding/${user.active_role ?? user.role}`} replace />;
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile(user.id, form, true);
+    try {
+      await apiFetch(`/${user.active_role ?? user.role}/profile/update`, {
+        method: "POST",
+        body: form,
+      });
+    } catch {
+      // Best-effort — profile save is optional at onboarding time
+    }
     toast.success(t("auth.onboarding.title") + " ✓");
-    navigate(dashboardPath(user.role));
+    navigate(dashboardPath(user.active_role ?? user.role));
   };
-  const skip = () => navigate(dashboardPath(user.role));
+  const skip = () => navigate(dashboardPath(user.active_role ?? user.role));
 
   return (
     <div className="min-h-dvh bg-gradient-soft">
@@ -69,7 +74,7 @@ const Onboarding = () => {
           className="rounded-[6px] border border-border bg-card shadow-large p-8"
         >
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-            {t(`auth.role_${user.role}`)}
+            {t(`auth.role_${user.active_role ?? user.role}`)}
           </p>
           <h1 className="mt-2 font-display text-3xl font-bold">
             {t("auth.onboarding.title")}
@@ -79,16 +84,16 @@ const Onboarding = () => {
           </p>
 
           <form onSubmit={submit} className="mt-8 space-y-5">
-            {user.role === "patient" && (
+            {(user.active_role ?? user.role) === "patient" && (
               <PatientFields t={t} form={form} set={set} />
             )}
-            {user.role === "doctor" && (
+            {(user.active_role ?? user.role) === "doctor" && (
               <DoctorFields t={t} form={form} set={set} />
             )}
-            {user.role === "hospital" && (
+            {(user.active_role ?? user.role) === "hospital" && (
               <HospitalFields t={t} form={form} set={set} />
             )}
-            {user.role === "pharmacy" && (
+            {(user.active_role ?? user.role) === "pharmacy" && (
               <PharmacyFields t={t} form={form} set={set} />
             )}
 

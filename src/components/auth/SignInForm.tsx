@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
 import {
   useLogin,
 } from "@/hooks/useAuth";
+import { dashboardPath } from "@/lib/auth-store";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
@@ -27,6 +29,7 @@ const sanitizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 
 // SignInForm
 const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [showForgot, setShowForgot] = useState(false);
 
@@ -53,8 +56,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
       login.mutate(
         { email, auth_method: "password" as const, password },
         {
-          onSuccess: (_data) => {
-            // token is saved in the hook's onSuccess; navigate is handled by useMe
+          onSuccess: (data) => {
+            onSuccess();
+            navigate(dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
           },
           onError: (err: any) => {
             const msg = err?.message ?? t("auth.errors.unknown");
@@ -80,8 +84,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
         password,
       },
       {
-        onSuccess: (_data) => {
-          // token is saved in the hook's onSuccess; navigate is handled by useMe
+        onSuccess: (data) => {
+          onSuccess();
+          navigate(dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
         },
         onError: (err: any) => {
           const msg = err?.message ?? t("auth.errors.unknown");

@@ -581,7 +581,7 @@ export function HeroHeader({
 
           {user ? (
             <div className="flex items-center gap-2">
-              <Link to={dashboardPath(user.role)}>
+              <Link to={dashboardPath(user.active_role ?? user.role)}>
                 <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   {t("common.dashboard", "Dashboard")}
@@ -589,7 +589,7 @@ export function HeroHeader({
               </Link>
 
               <Link
-                to={dashboardPath(user.role)}
+                to={dashboardPath(user.active_role ?? user.role)}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-accent transition-colors"
               >
                 {user.avatar ? (
@@ -644,7 +644,7 @@ export function HeroHeader({
           </div>
 
           {user ? (
-            <Link to={dashboardPath(user.role)} className="hidden min-[380px]:block">
+            <Link to={dashboardPath(user.active_role ?? user.role)} className="hidden min-[380px]:block">
               <Button variant="ghost" size="sm" className="h-9 px-2 text-xs">
                 {t("common.dashboard", "Dashboard")}
               </Button>
@@ -876,7 +876,7 @@ export function HeroHeader({
                     </div>
 
                     <Link
-                      to={dashboardPath(user.role)}
+                      to={dashboardPath(user.active_role ?? user.role)}
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Button

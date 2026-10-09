@@ -308,7 +308,6 @@ const Index = () => {
     const channel = echo.channel("doctors.availability");
 
     channel.listen(".availability.changed", (data: DoctorAvailabilityEvent) => {
-      console.log("Doctor availability changed:", data);
       queryClient.invalidateQueries({ queryKey: ["patient-search-doctors"] });
     });
 
