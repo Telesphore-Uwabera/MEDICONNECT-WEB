@@ -140,12 +140,6 @@ export function DoctorProfileForm({
   });
 
   useEffect(() => {
-    const requiredRichText = (value?: string) =>
-      hasRichTextContent(value) || t("profile.required");
-
-    register("bio_en", { validate: requiredRichText });
-    register("bio_fr", { validate: requiredRichText });
-    register("bio_kiny", { validate: requiredRichText });
     register("consultation_type", { required: t("profile.required") });
     register("gender");
     register("instant_consultation");
@@ -161,8 +155,36 @@ export function DoctorProfileForm({
   // ── Save handler ────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (step.id === "personal") {
-      const valid = await trigger();
+      // Run RHF validation for non-rich-text fields (degree, license, etc.)
+      const valid = await trigger([
+        "doctor_degree",
+        "medical_license",
+        "consultation_type",
+      ]);
       if (!valid) return;
+
+      // Validate bio fields manually — they are controlled via setValue and
+      // RHF's register-in-effect pattern doesn't reliably wire up trigger().
+      const bio_en = getValues("bio_en");
+      const bio_fr = getValues("bio_fr");
+      const bio_kiny = getValues("bio_kiny");
+      const missingBio =
+        !hasRichTextContent(bio_en) ||
+        !hasRichTextContent(bio_fr) ||
+        !hasRichTextContent(bio_kiny);
+
+      if (missingBio) {
+        toast({
+          variant: "destructive",
+          title: t("profile.required"),
+          description: t(
+            "doctorProfile.bio_all_required",
+            "Please fill in your biography in English, French, and Kinyarwanda.",
+          ),
+        });
+        return;
+      }
+
       handleSubmit(async (personal) => {
         await onSaveStep("personal", { personal });
       })();
@@ -206,6 +228,7 @@ export function DoctorProfileForm({
   }, [
     step.id,
     trigger,
+    getValues,
     handleSubmit,
     onSaveStep,
     specializations,

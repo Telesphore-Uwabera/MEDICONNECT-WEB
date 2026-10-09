@@ -303,9 +303,16 @@ export function useAcceptQuick() {
 ───────────────────────────────────────────── */
 
 export function useJoinSession() {
+    const qc = useQueryClient();
     return useMutation({
         mutationFn: (id: number) =>
             apiFetch<JoinSessionResponse>(`${BASE}/${id}/join`, { method: "POST" }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: appointmentKeys.all() });
+        },
+        onError: () => {
+            qc.invalidateQueries({ queryKey: appointmentKeys.all() });
+        },
     });
 }
 

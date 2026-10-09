@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toLocalDateInputValue } from "@/lib/date";
 import{ Video, MapPin, Calendar, Clock, SlidersHorizontal, X,
@@ -20,6 +20,7 @@ import {
   type Appointment,
   type GetAppointmentsParams,
 } from "@/hooks/doctor/use-doctor-appointment";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppointmentContext, useCallStore } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin } from "@/lib/scheduled-call";
@@ -97,7 +98,8 @@ function appointmentDurationMinutes(appt: Appointment): number | null {
 export function AppointmentsTab() {
   const { t, i18n } = useTranslation();
   const call = useCallStore();
-  const { startCall } = useCallContext();
+  const { startCall, activeCall } = useCallContext();
+  const qc = useQueryClient();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
@@ -122,6 +124,18 @@ export function AppointmentsTab() {
   useEffect(() => {
     if (call.phase === "idle" && scheduledCallActive) setScheduledCallActive(false);
   }, [call.phase, scheduledCallActive]);
+
+  // When the in-app call overlay closes (activeCall goes null → call just ended)
+  // immediately refetch the appointments list so statuses update and the loading
+  // spinner tied to joinSession.isPending is no longer shown on stale entries.
+  const prevActiveCallRef = useRef<boolean>(false);
+  useEffect(() => {
+    const isActive = activeCall !== null;
+    if (prevActiveCallRef.current && !isActive) {
+      qc.invalidateQueries({ queryKey: ["appointments"] });
+    }
+    prevActiveCallRef.current = isActive;
+  }, [activeCall, qc]);
 
 const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const { data, isLoading, isError, error } = useGetAppointments(queryParams);

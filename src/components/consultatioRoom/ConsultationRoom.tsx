@@ -372,6 +372,11 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       candidateQueue.current = [];
       setRemoteStream(null);
       setConnState("disconnected");
+      // Close the overlay on the receiving peer's side too.
+      // Stop local tracks so the camera/mic indicator goes off.
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      echo.leaveChannel(`consultation.${roomName}`);
+      endCallContext();
       return;
     }
 

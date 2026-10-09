@@ -48,6 +48,7 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { sendMail } from "./mail.js";
+import { buildOtpEmail } from "./mail.js";
 
 const PROFILE_TABLE = {
   patient: "patients",
@@ -490,10 +491,12 @@ export function appRoutes(router) {
 
       // Send by email when available
       if (row.email) {
+        const html = buildOtpEmail({ code, type: "password_reset", recipientName: row.name });
         await sendMail({
           to: row.email,
           subject: "MediConnect — Password reset code",
           text: `Your MediConnect password reset code is: ${code}\n\nThis code expires in 10 minutes. If you did not request a reset, you can ignore this email.`,
+          html,
         });
       }
 
@@ -538,10 +541,12 @@ export function appRoutes(router) {
       // Deliver the code by email when an address was provided
       if (req.body?.email) {
         const typeLabel = req.body?.type === "password_reset" ? "password reset" : "verification";
+        const html = buildOtpEmail({ code, type: req.body?.type || "verification", recipientName: req.body?.name });
         await sendMail({
           to: req.body.email,
           subject: `MediConnect — Your ${typeLabel} code`,
           text: `Your MediConnect ${typeLabel} code is: ${code}\n\nThis code expires in 10 minutes.`,
+          html,
         });
       }
 
