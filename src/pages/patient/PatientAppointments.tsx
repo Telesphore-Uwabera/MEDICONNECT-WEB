@@ -77,6 +77,7 @@ const STATUS_STYLES: Record<ApiAppointmentStatus, string> = {
   in_progress: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
   completed: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
   cancelled: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  expired: "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-900/40 dark:text-zinc-400 dark:border-zinc-800",
 };
 
 const STATUS_DOT: Record<ApiAppointmentStatus, string> = {
@@ -85,6 +86,7 @@ const STATUS_DOT: Record<ApiAppointmentStatus, string> = {
   in_progress: "bg-violet-500 animate-pulse",
   completed: "bg-emerald-500",
   cancelled: "bg-red-500",
+  expired: "bg-zinc-400",
 };
 
 function getStatusLabel(t: TFunction, status: ApiAppointmentStatus): string {
@@ -94,8 +96,9 @@ function getStatusLabel(t: TFunction, status: ApiAppointmentStatus): string {
     in_progress: t("pages.patient.appt_status_in_progress"),
     completed: t("pages.patient.status_completed"),
     cancelled: t("pages.patient.status_cancelled"),
+    expired: t("pages.patient.status_expired", { defaultValue: "Expired" }),
   };
-  return map[status];
+  return map[status] || status;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

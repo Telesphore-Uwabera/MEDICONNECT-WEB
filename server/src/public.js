@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail } from "./mail.js";
@@ -267,9 +267,158 @@ async function confirmPaidInvoice(payment, remote) {
       });
     }
   }
+  if (payableId && payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
+    const appointment = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
+    if (appointment && String(appointment.payment_status || "").toLowerCase() !== "paid") {
+      const open = ["pending", "payment_pending", "unpaid", ""].includes(String(appointment.status || "").toLowerCase());
+      await update("appointments", appointment.id, {
+        payment_status: "paid",
+        ...(open ? { status: "confirmed" } : {}),
+      });
+    }
+  }
   const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
   if (String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
   return saved;
+}
+
+const UNPAID_PAYMENT = ["pending", "initiated", "new", "unpaid", "processing"];
+const CLOSED_VISIT = new Set(["accepted", "in_progress", "completed", "done", "declined", "cancelled", "canceled", "expired", "rejected"]);
+
+async function paymentIsDue(payment) {
+  if (!payment?.id || !payment?.expires_at) return false;
+  const due = await one(
+    "SELECT expires_at < UTC_TIMESTAMP() AS due FROM payments WHERE id = ?",
+    [payment.id],
+  ).catch(() => null);
+  return Boolean(Number(due?.due));
+}
+
+async function ensureEnumValue(table, column, value) {
+  if (!(await tableExists(table)) || !(await hasColumn(table, column))) return false;
+  const meta = await one(
+    `SELECT COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column],
+  ).catch(() => null);
+  if (!meta) return false;
+  const type = String(meta.column_type || "");
+  if (!/^enum\(/i.test(type)) return true;
+  if (type.toLowerCase().includes(`'${String(value).toLowerCase()}'`)) return true;
+  const widened = type.replace(/\)\s*$/, `,'${value}')`);
+  let sql = `ALTER TABLE \`${table}\` MODIFY \`${column}\` ${widened}`;
+  sql += String(meta.is_nullable).toUpperCase() === "NO" ? " NOT NULL" : " NULL";
+  if (meta.column_default != null && String(meta.column_default).toUpperCase() !== "NULL") {
+    sql += ` DEFAULT '${String(meta.column_default).replace(/'/g, "''")}'`;
+  }
+  await pool.query(sql);
+  return true;
+}
+
+async function payableAlreadyPaid(payableId) {
+  if (!payableId) return false;
+  const paid = await one(
+    `SELECT id FROM payments WHERE payable_id = ? AND LOWER(status) IN ('paid','completed','success','successful') LIMIT 1`,
+    [payableId],
+  ).catch(() => null);
+  return Boolean(paid);
+}
+
+async function expireLinkedVisit(payment) {
+  const payableId = payment?.payable_id || payment?.appointment_id;
+  const payableType = String(payment?.payable_type || (payment?.appointment_id ? "appointment" : "")).toLowerCase();
+  if (!payableId || await payableAlreadyPaid(payableId)) return;
+  if (payableType.includes("instant")) {
+    const table = (await tableExists("instant_consultation_requests"))
+      ? "instant_consultation_requests"
+      : "instant_consultations";
+    if (!(await tableExists(table))) return;
+    await ensureEnumValue(table, "status", "expired").catch(() => null);
+    await ensureEnumValue(table, "payment_status", "expired").catch(() => null);
+    const row = await one(`SELECT id, status, payment_status FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
+    if (!row || CLOSED_VISIT.has(String(row.status || "").toLowerCase())) return;
+    if (String(row.payment_status || "").toLowerCase() === "paid") return;
+    await update(table, row.id, { status: "expired", payment_status: "expired" });
+    return;
+  }
+  if (payableType.includes("appointment") && await tableExists("appointments")) {
+    await ensureEnumValue("appointments", "status", "expired").catch(() => null);
+    await ensureEnumValue("appointments", "payment_status", "expired").catch(() => null);
+    const row = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
+    if (!row || String(row.payment_status || "").toLowerCase() === "paid") return;
+    const status = String(row.status || "").toLowerCase();
+    if (CLOSED_VISIT.has(status) || ["confirmed"].includes(status)) {
+      await update("appointments", row.id, { payment_status: "expired" });
+      return;
+    }
+    await update("appointments", row.id, { status: "expired", payment_status: "expired" });
+  }
+}
+
+async function expirePaymentRecord(payment) {
+  if (!payment?.id) return payment;
+  const current = String(payment.status || "").toLowerCase();
+  if (["paid", "completed", "success", "successful", "expired", "refunded"].includes(current)) return payment;
+  if (!(await paymentIsDue(payment))) return payment;
+  const remote = payment.invoice_number && !isLocalInvoiceNumber(payment.invoice_number)
+    ? await iremboInvoiceStatus(payment.invoice_number).catch(() => null)
+    : null;
+  if (remote?.paymentStatus === "PAID") return confirmPaidInvoice(payment, remote);
+  await ensureEnumValue("payments", "status", "expired").catch(() => null);
+  await update("payments", payment.id, { status: "expired" });
+  await expireLinkedVisit(payment).catch(() => null);
+  return { ...payment, status: "expired" };
+}
+
+async function expireStaleUnpaidVisits() {
+  const table = (await tableExists("instant_consultation_requests"))
+    ? "instant_consultation_requests"
+    : ((await tableExists("instant_consultations")) ? "instant_consultations" : null);
+  if (!table || !(await hasColumn(table, "created_at"))) return;
+  await ensureEnumValue(table, "status", "expired").catch(() => null);
+  const rows = await q(
+    `SELECT id, status, payment_status FROM \`${table}\`
+     WHERE status IN ('pending','queued','waiting','payment_pending')
+       AND (payment_status IS NULL OR LOWER(payment_status) IN ('pending','unpaid','initiated','new'))
+       AND created_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+     ORDER BY id ASC LIMIT 100`,
+  ).catch(() => []);
+  for (const row of rows) {
+    if (await payableAlreadyPaid(row.id)) continue;
+    const openPay = await one(
+      `SELECT id FROM payments
+       WHERE payable_id = ? AND payable_type LIKE '%instant%'
+         AND expires_at IS NOT NULL AND expires_at >= UTC_TIMESTAMP()
+         AND LOWER(status) IN ('pending','initiated','new','unpaid','processing')
+       LIMIT 1`,
+      [row.id],
+    ).catch(() => null);
+    if (openPay) continue;
+    await update(table, row.id, { status: "expired", payment_status: "expired" }).catch(() => null);
+  }
+}
+
+export async function expireUnpaidPayments() {
+  if (!(await tableExists("payments")) || !(await hasColumn("payments", "expires_at"))) {
+    await expireStaleUnpaidVisits().catch(() => null);
+    return { expired: 0 };
+  }
+  const rows = await q(
+    `SELECT * FROM payments
+     WHERE expires_at IS NOT NULL
+       AND expires_at < UTC_TIMESTAMP()
+       AND LOWER(status) IN (${UNPAID_PAYMENT.map(() => "?").join(",")})
+     ORDER BY id ASC LIMIT 100`,
+    UNPAID_PAYMENT,
+  ).catch(() => []);
+  let expired = 0;
+  for (const payment of rows) {
+    const saved = await expirePaymentRecord(payment).catch(() => payment);
+    if (String(saved?.status || "").toLowerCase() === "expired") expired += 1;
+  }
+  await expireStaleUnpaidVisits().catch(() => null);
+  return { expired };
 }
 
 function temporaryPassword() {
@@ -387,6 +536,99 @@ async function attachPayerAccount(payment) {
     await update("payments", payment.id, { patient_id: patient.id });
   }
   return { created, email };
+}
+
+function kigaliClock() {
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Kigali",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Kigali",
+    weekday: "long",
+  }).format(now).toLowerCase();
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Kigali",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(now);
+  const [hour, minute] = time.split(":");
+  return { date, weekday, minutes: Number(hour) * 60 + Number(minute) };
+}
+
+function clockMinutes(value) {
+  const [hour, minute] = String(value || "").split(":");
+  const h = Number(hour);
+  const m = Number(minute);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+}
+
+function timeCovers(start, end, minutes) {
+  const from = clockMinutes(start);
+  const to = clockMinutes(end);
+  if (from == null || to == null || to <= from) return false;
+  return minutes >= from && minutes < to;
+}
+
+function listedDays(value) {
+  if (Array.isArray(value)) return value.map((day) => String(day).toLowerCase());
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map((day) => String(day).toLowerCase());
+    } catch {
+      return value.split(",").map((day) => day.trim().toLowerCase()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function dayListed(value, weekday) {
+  const days = listedDays(value);
+  if (!days.length) return true;
+  return days.some((day) => day === weekday || day.startsWith(weekday.slice(0, 3)) || weekday.startsWith(day.slice(0, 3)));
+}
+
+function onlineVisit(type) {
+  const value = String(type || "").toLowerCase();
+  return !value || value === "online" || value === "both" || value === "instant";
+}
+
+async function doctorOnInstantSchedule(doctorId) {
+  if (!doctorId) return false;
+  const now = kigaliClock();
+  const slots = await q(
+    `SELECT start_time, end_time, type, status
+     FROM appointment_slots
+     WHERE doctor_id = ? AND slot_date = ?
+       AND (is_active = 1 OR is_active IS NULL)`,
+    [doctorId, now.date],
+  ).catch(() => []);
+  if (slots.length) {
+    return slots.some((slot) => {
+      const status = String(slot.status || "").toLowerCase();
+      const open = !status || status === "available" || status === "open";
+      return open && onlineVisit(slot.type) && timeCovers(slot.start_time, slot.end_time, now.minutes);
+    });
+  }
+  const periods = await q(
+    `SELECT start_time, end_time, type, days_of_week
+     FROM doctor_availability_periods
+     WHERE doctor_id = ?
+       AND (is_active = 1 OR is_active IS NULL)
+       AND (deleted_at IS NULL)
+       AND ? BETWEEN DATE(from_date) AND DATE(to_date)`,
+    [doctorId, now.date],
+  ).catch(() => []);
+  return periods.some((period) =>
+    dayListed(period.days_of_week, now.weekday)
+    && onlineVisit(period.type)
+    && timeCovers(period.start_time, period.end_time, now.minutes));
 }
 
 function scheduleOnDay() {
@@ -1059,6 +1301,11 @@ export function publicRoutes(router) {
       if (doctor && !doctorIsApproved(doctor.status)) {
         return res.status(422).json({ message: "This doctor is not available for consultations yet." });
       }
+      if (doctor && !(await doctorOnInstantSchedule(doctor.id))) {
+        return res.status(422).json({
+          message: "This doctor is outside their consultation hours. Book an appointment inside their schedule.",
+        });
+      }
 
       const amount = await consultationAmount({
         amount: body.amount,
@@ -1130,27 +1377,44 @@ export function publicRoutes(router) {
         [req.params.token, req.params.token],
       ).catch(() => null);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
-      const ownCall = ["accepted", "in_progress"].includes(String(row.status || ""));
-      const doctorBusy = !ownCall && Boolean(await doctorBusyInstant(row.doctor_id, row.id));
-      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
-      const guestToken = row.daily_guest_token || callToken({
+      const payment = await one(
+        "SELECT * FROM payments WHERE payable_id = ? AND payable_type LIKE '%instant%' ORDER BY id DESC LIMIT 1",
+        [row.id],
+      ).catch(() => null);
+      if (payment) await expirePaymentRecord(payment).catch(() => null);
+      else {
+        const createdAt = row.created_at ? new Date(row.created_at).getTime() : 0;
+        const waiting = ["pending", "queued", "waiting", "payment_pending"].includes(String(row.status || "").toLowerCase());
+        const unpaid = !row.payment_status || UNPAID_PAYMENT.includes(String(row.payment_status).toLowerCase());
+        if (waiting && unpaid && createdAt && Date.now() - createdAt > 30 * 60 * 1000) {
+          await ensureEnumValue(table, "status", "expired").catch(() => null);
+          await update(table, row.id, { status: "expired", payment_status: "expired" }).catch(() => null);
+        }
+      }
+      const fresh = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]).catch(() => row) || row;
+      const ownCall = ["accepted", "in_progress"].includes(String(fresh.status || ""));
+      const doctorBusy = !ownCall && Boolean(await doctorBusyInstant(fresh.doctor_id, fresh.id));
+      const roomName = fresh.daily_room_name || fresh.room_name || `instant-${fresh.id}`;
+      const guestToken = fresh.daily_guest_token || callToken({
         room: roomName,
         role: "patient",
-        consultationId: row.id,
-        name: row.guest_name || "Patient",
+        consultationId: fresh.id,
+        name: fresh.guest_name || "Patient",
       });
       res.json({
-        id: row.id,
-        status: row.status || "pending",
-        payment_status: row.payment_status || null,
-        queue_position: Number(row.queue_position || 1),
-        people_ahead: Number(row.people_ahead || 0),
+        id: fresh.id,
+        status: fresh.status || "pending",
+        payment_status: fresh.payment_status || null,
+        queue_position: Number(fresh.queue_position || 1),
+        people_ahead: Number(fresh.people_ahead || 0),
         doctor_busy: doctorBusy,
-        message: doctorBusy ? DOCTOR_BUSY_MESSAGE : null,
-        room_url: row.daily_room_url || row.room_url || `/consultation/${roomName}`,
+        message: fresh.status === "expired"
+          ? "This payment expired because it was not completed."
+          : (doctorBusy ? DOCTOR_BUSY_MESSAGE : null),
+        room_url: fresh.daily_room_url || fresh.room_url || `/consultation/${roomName}`,
         daily_room_name: roomName,
         daily_guest_token: guestToken,
-        amount: Number(row.amount || 0),
+        amount: Number(fresh.amount || 0),
       });
     } catch (error) {
       next(error);
@@ -1187,7 +1451,10 @@ export function publicRoutes(router) {
           "SELECT * FROM payments WHERE payable_type = ? AND payable_id = ? AND status IN ('initiated','pending') ORDER BY id DESC LIMIT 1",
           ["instant_consultation", row.id],
         ).catch(() => null);
-        if (payment?.id && Number(payment.amount || 0) !== amount) {
+        if (payment && await paymentIsDue(payment)) {
+          await expirePaymentRecord(payment).catch(() => null);
+          payment = null;
+        } else if (payment?.id && Number(payment.amount || 0) !== amount) {
           await update("payments", payment.id, { amount });
           payment.amount = amount;
         }
@@ -1283,13 +1550,15 @@ export function publicRoutes(router) {
         "SELECT * FROM payments WHERE invoice_number = ? OR uuid = ? OR transaction_id = ? ORDER BY id DESC LIMIT 1",
         [invoice, invoice, invoice],
       ).catch(() => null);
-      if (payment && String(payment.status) !== "paid") {
+      if (payment && String(payment.status).toLowerCase() !== "paid") {
         const remote = await iremboInvoiceStatus(payment.invoice_number || invoice).catch(() => null);
         if (remote?.paymentStatus === "PAID") {
           payment = await confirmPaidInvoice(payment, remote);
           const account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
+        } else {
+          payment = await expirePaymentRecord(payment);
         }
       }
       if (payment && String(payment.status) === "paid" && !payment.account_email) {

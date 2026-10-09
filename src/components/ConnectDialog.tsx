@@ -573,10 +573,15 @@ export const ConnectDialogContent = ({
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
       setDoctorBusy(false);
       session.clear();
+    } else if (statusData.status === "expired") {
+      setErrorMsg(statusData.message || t("consult.connect.payment_expired", {
+        defaultValue: "This payment expired because it was not completed. Start a new request.",
+      }));
+      setPhase("rejected");
+      session.clear();
     } else if (
       statusData.status === "declined" ||
       statusData.status === "withdrawn" ||
-      statusData.status === "expired" ||
       statusData.status === "completed" ||
       statusData.status === "rejected" ||
       statusData.status === "cancelled"

@@ -59,19 +59,38 @@ function coversNow(start: string | undefined, end: string | undefined, minutes: 
   return minutes >= from || minutes < to;
 }
 
-function onDate(window: ScheduleWindow, date: string, weekday: string) {
-  if (window.slot_date) return window.slot_date.slice(0, 10) === date;
-  if (window.from_date && window.to_date) {
-    const dayOk = !window.days_of_week?.length
-      || window.days_of_week.some((day) => day.toLowerCase() === weekday);
-    return dayOk && date >= window.from_date.slice(0, 10) && date <= window.to_date.slice(0, 10);
+function weekdays(window: ScheduleWindow) {
+  const raw = window.days_of_week as unknown;
+  if (Array.isArray(raw)) return raw.map((day) => String(day).toLowerCase());
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map((day) => String(day).toLowerCase());
+    } catch {
+      return raw.split(",").map((day) => day.trim().toLowerCase()).filter(Boolean);
+    }
   }
-  return (window.day_of_week ?? "").toLowerCase() === weekday;
+  return [];
+}
+
+function sameDay(stored: string, weekday: string) {
+  return stored === weekday || stored.startsWith(weekday.slice(0, 3)) || weekday.startsWith(stored.slice(0, 3));
+}
+
+function onDate(window: ScheduleWindow, date: string, weekday: string) {
+  if (window.slot_date) return String(window.slot_date).slice(0, 10) === date;
+  if (window.from_date && window.to_date) {
+    const days = weekdays(window);
+    const dayOk = days.length === 0 || days.some((day) => sameDay(day, weekday));
+    return dayOk && date >= String(window.from_date).slice(0, 10) && date <= String(window.to_date).slice(0, 10);
+  }
+  return sameDay((window.day_of_week ?? "").toLowerCase(), weekday);
 }
 
 function isOnlineVisit(window: ScheduleWindow) {
   const type = (window.type ?? "").toLowerCase();
-  return type === "online" || type === "both";
+  if (!type) return true;
+  return type === "online" || type === "both" || type === "instant";
 }
 
 function isBusy(window: ScheduleWindow) {
@@ -85,28 +104,32 @@ function isCurrentWindow(window: ScheduleWindow) {
   return true;
 }
 
-/** Both card buttons show when Instant Consultation is on, or while an online schedule window says the doctor is present. */
+/** Instant consultation is offered only while the doctor's own schedule is open. */
 export function doctorOffersInstant(
   doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
   schedule: PublicDoctorSchedule | undefined,
   now = new Date(),
 ) {
-  if (doctor.bookings_paused) return false;
-  if (doctor.instant_consultation) return true;
-  if (!schedule) return false;
+  if (doctor.bookings_paused || !doctor.instant_consultation || !schedule) return false;
 
   const { weekday, date, minutes } = kigaliNow(now);
+  const slots = (schedule.slots_for_date ?? []).filter(isCurrentWindow);
+  const todaysSlots = slots.filter((window) => onDate(window, date, weekday));
+  const openSlots = todaysSlots.filter(
+    (window) => !isBusy(window) && coversNow(window.start_time, window.end_time, minutes) && isOnlineVisit(window),
+  );
+  if (todaysSlots.length) return openSlots.length > 0;
+
   const windows = [
     ...(schedule.recurring_availability ?? []),
     ...(schedule.availability_periods ?? []),
-    ...(schedule.slots_for_date ?? []),
   ];
-  const active = windows.filter(
+  return windows.some(
     (window) =>
       isCurrentWindow(window) &&
+      !isBusy(window) &&
       onDate(window, date, weekday) &&
-      coversNow(window.start_time, window.end_time, minutes),
+      coversNow(window.start_time, window.end_time, minutes) &&
+      isOnlineVisit(window),
   );
-  if (active.length === 0 || active.some(isBusy)) return false;
-  return active.some(isOnlineVisit);
 }

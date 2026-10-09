@@ -1448,6 +1448,9 @@ export function appRoutes(router) {
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
       }
+      if (["expired", "declined", "cancelled", "completed"].includes(String(row.status || ""))) {
+        return res.status(422).json({ message: "This request is no longer waiting." });
+      }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
         return res.status(409).json({
@@ -1542,6 +1545,12 @@ export function appRoutes(router) {
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
       }
+      if (["expired", "declined", "cancelled"].includes(String(row.status || ""))) {
+        return res.status(422).json({ message: "This request is no longer active." });
+      }
+      if (String(row.status || "") === "completed") {
+        return res.json({ message: "Session completed.", data: await presentRow(table, row) });
+      }
       const patch = { status: "completed" };
       if (await hasColumn(table, "completed_at")) patch.completed_at = new Date();
       await update(table, row.id, patch);
@@ -1563,13 +1572,14 @@ export function appRoutes(router) {
         return res.status(422).json({ message: "This appointment has no payable fee." });
       }
       const paymentUuid = crypto.randomUUID();
+      const invoiceNumber = `MC-${appointment.id}-${paymentUuid.slice(0, 8)}`;
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
       await insert("payments", {
         patient_id: appointment.patient_id,
         appointment_id: appointment.id,
         payable_type: "appointment",
         payable_id: appointment.id,
-        invoice_number: `MC-${appointment.id}`,
+        invoice_number: invoiceNumber,
         transaction_id: paymentUuid,
         idempotency_key: paymentUuid,
         amount,
@@ -1582,7 +1592,7 @@ export function appRoutes(router) {
       });
       res.json({
         message: "Payment started.",
-        invoice_number: `MC-${appointment.id}`,
+        invoice_number: invoiceNumber,
         public_key: process.env.PAYMENT_PUBLIC_KEY || "",
         amount,
         currency: appointment.currency || "RWF",
@@ -1653,6 +1663,12 @@ export function appRoutes(router) {
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (appointment.doctor_id && Number(appointment.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This appointment belongs to another doctor." });
+      }
+      if (["expired", "cancelled", "declined"].includes(String(appointment.status || ""))) {
+        return res.status(422).json({ message: "This appointment is no longer active." });
+      }
+      if (String(appointment.status || "") === "completed") {
+        return res.json({ message: "Appointment completed.", appointment: await presentRow("appointments", appointment) });
       }
       const patch = { status: "completed" };
       if (await hasColumn("appointments", "completed_at")) patch.completed_at = new Date();

@@ -10,6 +10,7 @@ import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";
 import { remindExpiringLicenses } from "./doctor-review.js";
 import { remindUpcomingVisits } from "./visit-notify.js";
+import { expireUnpaidPayments } from "./public.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -120,10 +121,15 @@ pool.query("SELECT 1").then(async () => {
   const remindVisits = () => remindUpcomingVisits().catch((error) => {
     console.error("Visit reminder failed:", error?.message || error);
   });
+  const expirePayments = () => expireUnpaidPayments().catch((error) => {
+    console.error("Payment expiry failed:", error?.message || error);
+  });
   remind();
   remindVisits();
+  expirePayments();
   setInterval(remind, 12 * 60 * 60 * 1000);
   setInterval(remindVisits, 10 * 60 * 1000);
+  setInterval(expirePayments, 60 * 1000);
 }).catch((error) => {
   console.error("Database connection failed", error.message);
   process.exit(1);

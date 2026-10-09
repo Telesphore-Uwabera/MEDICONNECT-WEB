@@ -974,7 +974,8 @@ const PatientDoctors = () => {
       queryKey: ["doctor-availability", doctor.slug],
       queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
       enabled: !!doctor.slug,
-      staleTime: 60_000,
+      staleTime: 30_000,
+      refetchInterval: 60_000,
     })),
   });
   const instantCount = doctors.filter((doctor, index) =>

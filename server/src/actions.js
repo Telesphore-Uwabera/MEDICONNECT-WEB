@@ -4,6 +4,7 @@ import multer from "multer";
 import { hasColumn, insert, one, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
 import { recordVerifier } from "./verification.js";
+import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -325,7 +326,15 @@ async function fillGap(req, res, parts) {
   if (!parts.length || parts[0] === "public") return false;
 
   if (req.method === "GET" && parts.length === 2 && parts[1] === "dashboard") {
-    res.json(parts[0] === "pharmacy" ? emptyDashboard(req.query) : {
+    if (parts[0] === "pharmacy") {
+      res.json(await pharmacyDashboard(req));
+      return true;
+    }
+    if (parts[0] === "hospital") {
+      res.json(await hospitalDashboard(req));
+      return true;
+    }
+    res.json({
       stats: { total: 0, pending: 0, completed: 0, cancelled: 0 },
       appointments: [],
       data: [],
@@ -567,6 +576,13 @@ async function fillGap(req, res, parts) {
       }
     }
     await update(table, id, { status });
+    const stamp = {};
+    if (status === "completed" && await hasColumn(table, "completed_at")) stamp.completed_at = new Date();
+    if (status === "completed" && await hasColumn(table, "ended_at")) stamp.ended_at = new Date();
+    if (status === "cancelled" && await hasColumn(table, "cancelled_at")) stamp.cancelled_at = new Date();
+    if (status === "accepted" && await hasColumn(table, "accepted_at")) stamp.accepted_at = new Date();
+    if (status === "confirmed" && await hasColumn(table, "confirmed_at")) stamp.confirmed_at = new Date();
+    if (Object.keys(stamp).length) await update(table, id, stamp);
     if (["approve", "activate"].includes(action)) {
       await recordVerifier(table, id, req.user?.id).catch(() => null);
     }

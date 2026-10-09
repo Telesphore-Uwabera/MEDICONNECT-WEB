@@ -267,6 +267,11 @@ export function useInvoicePoller(): UseInvoicePollerResult {
             return;
           }
 
+          if (data.status === "expired") {
+            onFailed("This payment expired because it was not completed. Start payment again.");
+            return;
+          }
+
           if (attempts >= maxAttempts) {
             onFailed(
               "Payment verification timed out. If you completed payment, please wait a moment and try again.",

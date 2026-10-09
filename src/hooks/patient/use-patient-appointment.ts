@@ -8,7 +8,8 @@ export type ApiAppointmentStatus =
   | "confirmed"
   | "in_progress"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "expired";
 export type ApiAppointmentType = "online" | "in_person";
 
 export interface ApiAppointment {
