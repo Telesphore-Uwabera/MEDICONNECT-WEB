@@ -15,7 +15,7 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
 
   // 1. MinIO full URLs
   const minioMatch = url.match(
-    /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/minio\/([^?#]+)/i
+    /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/minio\/([^?#]+)/i
   );
   if (minioMatch) {
     return `/minio/${minioMatch[1]}`;
@@ -27,7 +27,7 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
 
   // 2. Storage full URLs
   const storageMatch = url.match(
-    /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/storage\/([^?#]+)/i
+    /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/storage\/([^?#]+)/i
   );
   if (storageMatch) {
     return `/storage/${storageMatch[1]}`;
@@ -35,6 +35,14 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
 
   if (url.startsWith("/storage/")) {
     return url;
+  }
+
+  // 3. mediconnect.rw/api/v1/media/... URLs (written by saveUpload on the server)
+  const mediaMatch = url.match(
+    /^https?:\/\/(?:api\.mediconnect\.rw|mediconnect\.rw)(?::\d+)?\/api\/v1\/media\/([^?#]+)/i
+  );
+  if (mediaMatch) {
+    return `/api/v1/media/${mediaMatch[1]}`;
   }
 
   // 3. Other third-party URLs (e.g. Google avatar, Unsplash)
@@ -74,17 +82,25 @@ export function sanitizePayloadUrls<T>(data: T): T {
     if (typeof data === "string") {
       const s = data as string;
       const minioMatch = s.match(
-        /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/minio\/([^?#]+)/i
+        /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/minio\/([^?#]+)/i
       );
       if (minioMatch) {
         return `/minio/${minioMatch[1]}` as unknown as T;
       }
 
       const storageMatch = s.match(
-        /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/storage\/([^?#]+)/i
+        /^https?:\/\/(?:api\.mediconnect\.rw|staging-api\.mediconnect\.rw|mediconnect\.rw|197\.243\.29\.114|10\.10\.141\.149|10\.10\.141\.148)(?::\d+)?\/storage\/([^?#]+)/i
       );
       if (storageMatch) {
         return `/storage/${storageMatch[1]}` as unknown as T;
+      }
+
+      // mediconnect.rw/api/v1/media/... URLs (from saveUpload on the server)
+      const mediaMatch = s.match(
+        /^https?:\/\/(?:api\.mediconnect\.rw|mediconnect\.rw)(?::\d+)?\/api\/v1\/media\/([^?#]+)/i
+      );
+      if (mediaMatch) {
+        return `/api/v1/media/${mediaMatch[1]}` as unknown as T;
       }
       return data;
     }

@@ -8,6 +8,7 @@ import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/date";
+import { resolveMediaUrl } from "@/lib/image-url";
  import { AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -302,17 +303,24 @@ function UserRow({
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          {u.avatar ? (
+          {resolveMediaUrl(u.avatar) ? (
             <img
-              src={u.avatar}
+              src={resolveMediaUrl(u.avatar)}
               alt={u.name}
               className="h-9 w-9 rounded-full object-cover flex-shrink-0 border border-border/40"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const sib = e.currentTarget.nextElementSibling as HTMLElement | null;
+                if (sib) sib.style.display = "flex";
+              }}
             />
-          ) : (
-            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
-              {getInitials(u.name)}
-            </div>
-          )}
+          ) : null}
+          <div
+            className="h-9 w-9 rounded-full bg-primary/10 text-primary items-center justify-center font-semibold text-xs shrink-0"
+            style={{ display: resolveMediaUrl(u.avatar) ? "none" : "flex" }}
+          >
+            {getInitials(u.name)}
+          </div>
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">
               {u.name}
@@ -397,17 +405,24 @@ function UserCard({
 
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      {u.avatar ? (
+      {resolveMediaUrl(u.avatar) ? (
         <img
-          src={u.avatar}
+          src={resolveMediaUrl(u.avatar)}
           alt={u.name}
           className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5 border border-border/40"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            const sib = e.currentTarget.nextElementSibling as HTMLElement | null;
+            if (sib) sib.style.display = "flex";
+          }}
         />
-      ) : (
-        <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
-          {getInitials(u.name)}
-        </div>
-      )}
+      ) : null}
+      <div
+        className="h-9 w-9 rounded-full bg-primary/10 text-primary items-center justify-center font-semibold text-xs shrink-0 mt-0.5"
+        style={{ display: resolveMediaUrl(u.avatar) ? "none" : "flex" }}
+      >
+        {getInitials(u.name)}
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
