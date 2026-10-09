@@ -57,8 +57,8 @@ export const useVerifyOtp = () => {
       }),
     onSuccess: (data) => {
       saveToken(data.token);
+      qc.clear();
       qc.setQueryData(AUTH_KEY, { user: data.user });
-      qc.invalidateQueries({ queryKey: AUTH_KEY });
     },
   });
 };
@@ -73,8 +73,8 @@ export const useLogin = () => {
       }),
     onSuccess: (data) => {
       saveToken(data.token);
+      qc.clear();
       qc.setQueryData(AUTH_KEY, { user: data.user });
-      qc.invalidateQueries({ queryKey: AUTH_KEY });
     },
   });
 };
@@ -97,7 +97,7 @@ export const useLogout = () => {
       apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
     onSettled: () => {
       localStorage.clear();
-      qc.removeQueries({ queryKey: AUTH_KEY });
+      qc.clear();
     },
   });
 };

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useMe } from "@/hooks/useAuth";
 
 const BASE = "/patient/dashboard";
 
@@ -45,9 +46,10 @@ export function useGetPatientStats(filters: PatientStatsFilters = {}) {
 
   const queryString = params.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;
+  const { data: me } = useMe();
 
   return useQuery({
-    queryKey: ["patient-stats", filters],
+    queryKey: ["patient-stats", me?.id ?? null, filters],
     queryFn: () =>
       apiFetch(url).then((stats) => {
         console.log("Patient stats fetched:", stats);

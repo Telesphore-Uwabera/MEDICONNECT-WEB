@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useMe } from "@/hooks/useAuth";
 
 const BASE = "/patient/appointments";
 
@@ -92,9 +93,10 @@ export function useGetPatientAppointments(
 
   const qs = searchParams.toString();
   const url = qs ? `${BASE}?${qs}` : BASE;
+  const { data: me } = useMe();
 
   return useQuery<ApiAppointmentListResponse>({
-    queryKey: ["patient-appointments", params],
+    queryKey: ["patient-appointments", me?.id ?? null, params],
     queryFn: () => apiFetch(url),
     staleTime: 30_000,
     enabled: options.enabled ?? true,
