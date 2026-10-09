@@ -99,22 +99,29 @@ export function useConsultationChat(
     let cancelled = false;
     setLoading(true);
 
-    apiFetch<GetMessagesResponse>(chatBase)
-      .then((res) => {
-        if (cancelled) return;
-        const mapped = (res.messages?.data ?? []).map(toUiMessage);
-        // API returns newest first → reverse for chronological order
-        setMessages(mapped);
-      })
-      .catch((err) => {
-        console.error("[Chat] Failed to fetch messages:", err);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const load = (first: boolean) => {
+      apiFetch<GetMessagesResponse>(chatBase)
+        .then((res) => {
+          if (cancelled) return;
+          const mapped = (res.messages?.data ?? []).map(toUiMessage);
+          setMessages((prev) => {
+            const pending = prev.filter((item) => item.id.startsWith("opt-") && !mapped.some((message) => message.text === item.text));
+            return [...mapped, ...pending];
+          });
+        })
+        .catch((err) => {
+          if (first) console.error("[Chat] Failed to fetch messages:", err);
+        })
+        .finally(() => {
+          if (!cancelled && first) setLoading(false);
+        });
+    };
+    load(true);
+    const timer = window.setInterval(() => load(false), 4000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, [consultationId, toUiMessage, chatBase]);
 

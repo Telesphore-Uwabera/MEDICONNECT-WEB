@@ -63,7 +63,10 @@ export function publishSignal(room, body) {
 
 export function signalsSince(room, after = 0) {
   const cutoff = Date.now() - 2 * 60 * 1000;
-  return signals.filter((item) => item.room === room && item.id > Number(after || 0) && item.at >= cutoff);
+  const roomItems = signals.filter((item) => item.room === room && item.at >= cutoff);
+  const maxId = roomItems.reduce((max, item) => Math.max(max, item.id), 0);
+  const since = Number(after || 0) > maxId ? 0 : Number(after || 0);
+  return roomItems.filter((item) => item.id > since);
 }
 
 export function broadcast(channel, event, data) {

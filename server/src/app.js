@@ -15,6 +15,7 @@ import {
 import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
+import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto } from "./public.js";
 import { checkSocialLink } from "./social-links.js";
@@ -346,6 +347,7 @@ const DOCTOR_SCHEDULE_PREFIXES = ["/doctor/availability", "/doctor/slots"];
 
 export function appRoutes(router) {
   attachAppointmentRoutes(router, { requireAuth, requireRole });
+  attachChatRoutes(router, { requireAuth });
   router.use(async (req, res, next) => {
     try {
       if (!req.user || req.user.active_role !== "doctor" || !req.path.startsWith("/doctor")) return next();
