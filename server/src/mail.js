@@ -197,9 +197,14 @@ export function emailInfoBox(rows, accentColor) {
 </table>`;
 }
 
-/** A plain paragraph */
+/** A plain paragraph — text is HTML-escaped (safe for user input) */
 export function emailP(text, style) {
   return `<p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:${BRAND.text};font-family:'Segoe UI',Arial,sans-serif;${style || ""}">${escHtml(text)}</p>`;
+}
+
+/** A paragraph that accepts raw HTML markup (use only for trusted content) */
+export function emailHtml(html, style) {
+  return `<p style="margin:0 0 14px;font-size:14px;line-height:1.7;color:${BRAND.text};font-family:'Segoe UI',Arial,sans-serif;${style || ""}">${html}</p>`;
 }
 
 /** A one-time code block */
@@ -260,7 +265,7 @@ export function buildOtpEmail({ code, type = "verification", recipientName }) {
 
   const body = `
     ${emailP(greeting(recipientName))}
-    ${emailP(isReset
+    ${emailHtml(isReset
       ? "We received a request to reset the password on your MediConnect account. Use the 6-digit code below — it expires in <strong>10 minutes</strong>."
       : "Use the one-time code below to verify your MediConnect account. This code expires in <strong>10 minutes</strong>."
     )}
@@ -291,7 +296,7 @@ export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.
 
   const body = `
     ${emailP(greeting(name))}
-    ${emailP(`Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
+    ${emailHtml(`Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
       <tr>
         <td style="background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;padding:16px 20px;border-left:4px solid #0BA59B;">

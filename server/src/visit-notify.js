@@ -1,5 +1,5 @@
 import { hasColumn, insert, one, q, tableExists } from "./db.js";
-import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailOtpBlock } from "./mail.js";
+import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 
 const reminded = new Set();
 
@@ -81,7 +81,6 @@ export async function notifyPaidVisit(payment) {
   const doctor = await doctorContact(row.doctor_id);
   const patient = await patientContact(row);
   const when = [row.appointment_date, row.appointment_time].filter(Boolean).join(" at ") || "your scheduled time";
-  const kind = instant ? "instant consultation" : "appointment";
   const amount = Number(payment?.amount || row.patient_pays || row.consultation_fee || 0);
   const amountStr = amount > 0 ? `${amount.toLocaleString()} RWF` : null;
 
@@ -107,7 +106,7 @@ export async function notifyPaidVisit(payment) {
       preheader: textDoctor,
       body: `
         ${emailP(greeting(doctor.name))}
-        ${emailP(instant
+        ${emailHtml(instant
           ? `A patient has paid for an instant consultation${amountStr ? ` of <strong>${amountStr}</strong>` : ""} and is waiting for you.`
           : `<strong>${patient.name}</strong> has paid for an ${amountStr ? `<strong>${amountStr}</strong> ` : ""}appointment on <strong>${when}</strong>. Please review their details and confirm the visit.`
         )}
@@ -143,7 +142,7 @@ export async function notifyPaidVisit(payment) {
       preheader: textPatient,
       body: `
         ${emailP(greeting(patient.name))}
-        ${emailP(instant
+        ${emailHtml(instant
           ? `Your payment has been confirmed. ${doctor?.name ? `Dr. <strong>${doctor.name}</strong> will join you shortly.` : "A doctor will join your consultation shortly."}`
           : `Your payment${amountStr ? ` of <strong>${amountStr}</strong>` : ""} has been received. Your appointment is now pending the doctor's confirmation — you'll receive another email once they confirm.`
         )}
@@ -182,8 +181,8 @@ export async function notifyBookedVisit(row) {
       accentHex: "#0BA59B",
       body: `
         ${emailP(greeting(patient.name))}
-        ${emailP(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is successfully reserved for <strong>${when}</strong>.`)}
-        ${emailP("To hold your slot, please complete payment. The appointment will remain <em>pending</em> until payment is received.")}
+        ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is successfully reserved for <strong>${when}</strong>.`)}
+        ${emailHtml("To hold your slot, please complete payment. The appointment will remain <em>pending</em> until payment is received.")}
         ${emailInfoBox([
           doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
           ["Scheduled", when],
@@ -207,8 +206,8 @@ export async function notifyBookedVisit(row) {
       preheader: text,
       body: `
         ${emailP(greeting(doctor?.name))}
-        ${emailP(`<strong>${patient.name}</strong> has requested an appointment on <strong>${when}</strong>.`)}
-        ${emailP(`The appointment is <strong>pending</strong> until the patient completes payment of ${amountStr}. You'll receive a confirmation notification once they pay.`)}
+        ${emailHtml(`<strong>${patient.name}</strong> has requested an appointment on <strong>${when}</strong>.`)}
+        ${emailHtml(`The appointment is <strong>pending</strong> until the patient completes payment of ${amountStr}. You'll receive a confirmation notification once they pay.`)}
         ${emailInfoBox([
           ["Patient", patient.name],
           ["Scheduled", when],
@@ -249,7 +248,7 @@ export async function notifyAppointmentConfirmed(row) {
             </td>
           </tr>
         </table>
-        ${emailP(`<strong>Dr. ${doctor?.name || "Your doctor"}</strong> has confirmed your appointment for <strong>${when}</strong>.`)}
+        ${emailHtml(`<strong>Dr. ${doctor?.name || "Your doctor"}</strong> has confirmed your appointment for <strong>${when}</strong>.`)}
         ${emailInfoBox([
           doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
           ["Date & Time", when],
@@ -273,7 +272,7 @@ export async function notifyAppointmentConfirmed(row) {
       accentHex: "#38a169",
       body: `
         ${emailP(greeting(doctor?.name))}
-        ${emailP(`You have successfully confirmed <strong>${patient.name}</strong>'s appointment for <strong>${when}</strong>.`)}
+        ${emailHtml(`You have successfully confirmed <strong>${patient.name}</strong>'s appointment for <strong>${when}</strong>.`)}
         ${emailInfoBox([
           ["Patient", patient.name],
           ["Scheduled", when],
@@ -307,7 +306,7 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
       accentHex: "#0BA59B",
       body: `
         ${emailP(greeting(patient.name))}
-        ${emailP(`Your ${kindLabel}${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} has been marked as complete.`)}
+        ${emailHtml(`Your ${kindLabel}${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} has been marked as complete.`)}
         ${emailP("Your doctor may have added notes, a diagnosis summary, or a prescription to your profile. You can view and download them from your MediConnect account.")}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
           <tr>
@@ -337,7 +336,7 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
       accentHex: "#0BA59B",
       body: `
         ${emailP(greeting(doctor?.name))}
-        ${emailP(`<strong>${patient.name}</strong>'s ${kindLabel} has been marked as complete.`)}
+        ${emailHtml(`<strong>${patient.name}</strong>'s ${kindLabel} has been marked as complete.`)}
         ${emailP("You can review and update any consultation notes, prescriptions, or follow-up bookings from your dashboard.")}
         ${emailBtn("Go to Dashboard", "https://mediconnect.rw/doctor", "#0BA59B")}
       `,
@@ -369,7 +368,7 @@ export async function notifyDoctorReady(row) {
           </td>
         </tr>
       </table>
-      ${emailP(`<strong>Dr. ${doctor?.name || "Your doctor"}</strong> is currently in the consultation room and waiting for you to join.`)}
+      ${emailHtml(`<strong>Dr. ${doctor?.name || "Your doctor"}</strong> is currently in the consultation room and waiting for you to join.`)}
       ${emailP("Please join immediately to avoid missing your appointment slot.")}
       ${emailBtn("Join Consultation Now →", "https://mediconnect.rw/patient/appointments", "#7c3aed")}
       ${emailP("If you have trouble joining, please contact us at admin@mediconnect.rw.", "font-size:12px;color:#9ca3af;")}
@@ -426,7 +425,7 @@ export async function remindUpcomingVisits() {
               </td>
             </tr>
           </table>
-          ${emailP(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is starting at <strong>${time}</strong> today.`)}
+          ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is starting at <strong>${time}</strong> today.`)}
           ${emailP("Please ensure you have a stable internet connection and your camera/microphone are working.")}
           ${emailBtn("Join Appointment", "https://mediconnect.rw/patient/appointments", "#d97706")}
         `,
@@ -446,7 +445,7 @@ export async function remindUpcomingVisits() {
         accentHex: "#d97706",
         body: `
           ${emailP(greeting(doctor?.name))}
-          ${emailP(`<strong>${patient.name}</strong> has an appointment with you starting at <strong>${time}</strong> today.`)}
+          ${emailHtml(`<strong>${patient.name}</strong> has an appointment with you starting at <strong>${time}</strong> today.`)}
           ${emailInfoBox([
             ["Patient", patient.name],
             ["Time", time],
