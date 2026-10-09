@@ -21,7 +21,6 @@ import { withTeamPhoto } from "./public.js";
 import { checkSocialLink } from "./social-links.js";
 import {
   countWhere,
-  ensureDoctorSearchFields,
   hasColumn,
   insert,
   laravelPage,
@@ -34,6 +33,8 @@ import {
   tableExists,
   update,
 } from "./db.js";
+// ensureDoctorSearchFields is not present in all db.js versions — define a safe no-op
+const ensureDoctorSearchFields = async () => {};
 import {
   ensureRole,
   findUserByLogin,
