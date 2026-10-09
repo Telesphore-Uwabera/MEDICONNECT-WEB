@@ -1975,7 +1975,35 @@ export function appRoutes(router) {
            END, r.id`,
           [user.id],
         );
-        return { ...user, roles };
+
+        // If the user has no avatar on the users table, pull the profile image
+        // from their role profile (doctor/hospital/pharmacy/patient).
+        let avatar = user.avatar || null;
+        if (!avatar) {
+          const profileTables = [
+            { table: "doctors",   col: "image" },
+            { table: "hospitals", col: "image" },
+            { table: "pharmacies",col: "image" },
+            { table: "patients",  col: "avatar" },
+          ];
+          for (const { table, col } of profileTables) {
+            if (!(await tableExists(table)) || !(await hasColumn(table, col)) || !(await hasColumn(table, "user_id"))) continue;
+            const profile = await one(`SELECT \`${col}\` FROM \`${table}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [user.id]).catch(() => null);
+            if (profile?.[col]) {
+              avatar = profile[col];
+              break;
+            }
+          }
+        }
+
+        // Normalise to a browser-loadable URL: relative paths like
+        // "doctors/doctor_6_...webp" live under /minio/mediconnect-avatars/
+        // Full https://mediconnect.rw/api/v1/media/... are served as-is.
+        if (avatar && !avatar.startsWith("http") && !avatar.startsWith("/")) {
+          avatar = `https://mediconnect.rw/minio/mediconnect-avatars/${avatar}`;
+        }
+
+        return { ...user, avatar, roles };
       }));
       if (req.query.role) page.data = page.data.filter((user) => user.roles.some((role) => role.name === req.query.role));
       res.json(page);
