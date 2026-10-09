@@ -1,9 +1,43 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useMe } from "@/hooks/useAuth";
 import { apiFetch } from "@/lib/api";
 
 const BASE = "/public/doctors";
+export const DOCTOR_ROTATION_MS = 10 * 60 * 1000;
+
+export function doctorRotationSlot(now = Date.now()) {
+  return Math.floor(now / DOCTOR_ROTATION_MS);
+}
+
+export function msUntilNextDoctorRotation(now = Date.now()) {
+  return DOCTOR_ROTATION_MS - (now % DOCTOR_ROTATION_MS);
+}
+
+export function useDoctorRotationSlot() {
+  const [slot, setSlot] = useState(() => doctorRotationSlot());
+
+  useEffect(() => {
+    const sync = () => setSlot(doctorRotationSlot());
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(() => {
+        sync();
+        schedule();
+      }, msUntilNextDoctorRotation() + 250);
+    };
+    schedule();
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("focus", sync);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, []);
+
+  return slot;
+}
 
 // ─── Sub-types ─────────────────────────────────────────────────────────────────
 
@@ -154,6 +188,7 @@ function withoutOwnDoctor(response: ApiDoctorListResponse, userId?: number) {
 
 export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
   const { data: me } = useMe();
+  const rotationSlot = useDoctorRotationSlot();
   const ownId = (me?.active_role ?? me?.role) === "patient" ? me?.id : undefined;
   const sp = new URLSearchParams();
 
@@ -182,18 +217,18 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     : available_doctors_url;
 
   const query = useQuery({
-    queryKey: ["patient-search-doctors", url],
+    queryKey: ["patient-search-doctors", url, rotationSlot],
 
     queryFn: (): Promise<ApiDoctorListResponse> =>
       apiFetch(url).then((res) => withResolvedFees(res as ApiDoctorListResponse)),
-    staleTime: 60_000,
-    refetchInterval: 10 * 60 * 1000,
+    staleTime: DOCTOR_ROTATION_MS,
+    refetchInterval: () => msUntilNextDoctorRotation() + 250,
   });
   const data = useMemo(
     () => (query.data ? withoutOwnDoctor(query.data, ownId) : query.data),
     [ownId, query.data],
   );
-  return { ...query, data };
+  return { ...query, data, rotationSlot };
 }
 
 export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {

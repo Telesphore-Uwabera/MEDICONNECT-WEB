@@ -733,7 +733,11 @@ const PatientDoctors = () => {
     [filters, debouncedQ, spec],
   );
 
-  const { data, isLoading, isError, refetch } = useGetSearchDoctors(apiParams);
+  const { data, isLoading, isError, refetch, rotationSlot } = useGetSearchDoctors(apiParams);
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [rotationSlot]);
   const requestedSpecialization = searchParams.get("specialization") || "";
   const [fellBackFrom, setFellBackFrom] = useState("");
   const [fellBackToGp, setFellBackToGp] = useState(false);
