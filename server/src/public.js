@@ -1,7 +1,11 @@
 import crypto from "crypto";
 import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
-import { broadcast } from "./realtime.js";
+import { sendMail } from "./mail.js";
+import { publishSignal, signalsSince } from "./realtime.js";
+import { callToken } from "./call-token.js";
+import { notifyPaidVisit } from "./visit-notify.js";
 
 function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -240,7 +244,126 @@ async function confirmPaidInvoice(payment, remote) {
       });
     }
   }
-  return (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
+  const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
+  if (String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
+  return saved;
+}
+
+function temporaryPassword() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = crypto.randomBytes(10);
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+async function payerRecord(payment) {
+  const payableType = String(payment?.payable_type || "");
+  const payableId = payment?.payable_id;
+  if (!payableId) return null;
+  if (payableType.toLowerCase().includes("instant")) {
+    const table = (await tableExists("instant_consultation_requests"))
+      ? "instant_consultation_requests"
+      : "instant_consultations";
+    const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
+    return row ? { table, row } : null;
+  }
+  if (payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
+    const row = await one("SELECT * FROM appointments WHERE id = ?", [payableId]).catch(() => null);
+    return row ? { table: "appointments", row } : null;
+  }
+  return null;
+}
+
+async function attachPayerAccount(payment) {
+  const found = await payerRecord(payment);
+  if (!found) return { created: false, email: null };
+  const { table, row } = found;
+  if (row.user_id) {
+    const existing = await one("SELECT email FROM users WHERE id = ? LIMIT 1", [row.user_id]).catch(() => null);
+    return { created: false, email: existing?.email || null };
+  }
+  const email = String(row.guest_email || row.email || row.patient_email || "").trim().toLowerCase();
+  if (!email.includes("@")) return { created: false, email: null };
+  const name = String(row.guest_name || row.patient_name || row.name || email).trim() || email;
+  const phone = String(row.guest_phone || row.phone || row.patient_phone || "").trim();
+
+  let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
+  let created = false;
+  let plain = null;
+  const mailReady = Boolean(
+    (process.env.MAIL_HOST || process.env.SMTP_HOST)
+    && (process.env.MAIL_USERNAME || process.env.SMTP_USER)
+    && (process.env.MAIL_PASSWORD || process.env.SMTP_PASS),
+  );
+  if (!user && !mailReady) return { created: false, email };
+  if (!user) {
+    plain = temporaryPassword();
+    try {
+      const id = await insert("users", {
+        name,
+        email,
+        phone: phone || null,
+        password: await hashPassword(plain),
+        status: "active",
+        active_role: "patient",
+        is_verified: 1,
+      });
+      await ensureRole(id, "patient");
+      user = await one("SELECT * FROM users WHERE id = ?", [id]);
+      created = true;
+    } catch (error) {
+      user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
+      if (!user) {
+        console.error("Could not create payer account:", error?.message || error);
+        return { created: false, email };
+      }
+      plain = null;
+    }
+  }
+
+  if (created && plain) {
+    const sent = await sendMail({
+      to: email,
+      subject: "Your MediConnect account",
+      text: [
+        `Hello ${name},`,
+        "",
+        "Your payment is confirmed. We created an account so your doctor can keep your visit details.",
+        "",
+        `Email: ${email}`,
+        `Temporary password: ${plain}`,
+        "",
+        "Sign in at https://mediconnect.rw with these details to follow your instant consultation or appointment. You can change the password after you sign in.",
+      ].join("\n"),
+    });
+    if (!sent) {
+      console.error("Payer account email was not sent.");
+      await q("DELETE FROM model_has_roles WHERE model_id = ?", [user.id]).catch(() => null);
+      await q("DELETE FROM users WHERE id = ?", [user.id]).catch(() => null);
+      return { created: false, email };
+    }
+  }
+
+  if (created && user && await tableExists("patients") && !(await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null))) {
+    await insert("patients", {
+      user_id: user.id,
+      name: user.name,
+      name_en: user.name,
+      email: user.email,
+      phone: user.phone,
+      slug: `${String(user.name || "patient").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "patient"}-${crypto.randomBytes(3).toString("hex")}`,
+      status: "active",
+    }).catch((error) => console.error("Could not create patient profile:", error?.message || error));
+  }
+
+  const patient = user ? await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null) : null;
+  const link = {};
+  if (user && await hasColumn(table, "user_id")) link.user_id = user.id;
+  if (patient?.id && await hasColumn(table, "patient_id")) link.patient_id = patient.id;
+  if (Object.keys(link).length) await update(table, row.id, link);
+  if (patient?.id && payment?.id && await hasColumn("payments", "patient_id") && !payment.patient_id) {
+    await update("payments", payment.id, { patient_id: patient.id });
+  }
+  return { created, email };
 }
 
 function scheduleOnDay() {
@@ -965,10 +1088,13 @@ export function publicRoutes(router) {
 
   router.post("/public/consultations/signal", (req, res) => {
     const room = req.body?.room;
-    if (room) {
-      broadcast(`consultation.${room}`, "webrtc.signal", req.body);
-    }
+    if (room) publishSignal(room, req.body);
     res.json({ message: "Signal sent." });
+  });
+
+  router.get("/public/consultations/signal/:room", (req, res) => {
+    const room = decodeURIComponent(req.params.room);
+    res.json({ signals: signalsSince(room, req.query.after) });
   });
 
   router.get("/public/instant-consultations/:token/status", async (req, res, next) => {
@@ -979,14 +1105,22 @@ export function publicRoutes(router) {
         [req.params.token, req.params.token],
       ).catch(() => null);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
+      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+      const guestToken = row.daily_guest_token || callToken({
+        room: roomName,
+        role: "patient",
+        consultationId: row.id,
+        name: row.guest_name || "Patient",
+      });
       res.json({
         id: row.id,
         status: row.status || "pending",
         payment_status: row.payment_status || null,
         queue_position: Number(row.queue_position || 1),
         people_ahead: Number(row.people_ahead || 0),
-        room_url: row.daily_room_url || row.room_url || null,
-        daily_guest_token: row.daily_guest_token || null,
+        room_url: row.daily_room_url || row.room_url || `/consultation/${roomName}`,
+        daily_room_name: roomName,
+        daily_guest_token: guestToken,
         amount: Number(row.amount || 0),
       });
     } catch (error) {
@@ -1071,11 +1205,18 @@ export function publicRoutes(router) {
 
       const remote = await iremboInvoiceStatus(invoiceNumber).catch(() => null);
       if (remote?.paymentStatus === "PAID") {
-        if (payment?.id) payment = await confirmPaidInvoice(payment, remote);
+        if (payment?.id) {
+          payment = await confirmPaidInvoice(payment, remote);
+          const account = await attachPayerAccount(payment).catch(() => null);
+          payment.account_created = Boolean(account?.created);
+          payment.account_email = account?.email || null;
+        }
         return res.json({
           message: "Payment already completed.",
           status: "paid",
           already_paid: true,
+          account_created: Boolean(payment?.account_created),
+          account_email: payment?.account_email || null,
           invoice_number: invoiceNumber,
           public_key: publicKey,
           amount,
@@ -1107,9 +1248,24 @@ export function publicRoutes(router) {
       ).catch(() => null);
       if (payment && String(payment.status) !== "paid") {
         const remote = await iremboInvoiceStatus(payment.invoice_number || invoice).catch(() => null);
-        if (remote?.paymentStatus === "PAID") payment = await confirmPaidInvoice(payment, remote);
+        if (remote?.paymentStatus === "PAID") {
+          payment = await confirmPaidInvoice(payment, remote);
+          const account = await attachPayerAccount(payment).catch(() => null);
+          payment.account_created = Boolean(account?.created);
+          payment.account_email = account?.email || null;
+        }
       }
-      res.json({ status: payment?.status || "pending", payment: payment ? await presentRow("payments", payment) : null });
+      if (payment && String(payment.status) === "paid" && !payment.account_email) {
+        const account = await attachPayerAccount(payment).catch(() => null);
+        payment.account_created = Boolean(account?.created);
+        payment.account_email = account?.email || null;
+      }
+      res.json({
+        status: payment?.status || "pending",
+        account_created: Boolean(payment?.account_created),
+        account_email: payment?.account_email || null,
+        payment: payment ? await presentRow("payments", payment) : null,
+      });
     } catch (error) {
       next(error);
     }

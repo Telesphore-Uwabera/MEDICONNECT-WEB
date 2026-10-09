@@ -379,6 +379,7 @@ export const ConnectDialogContent = ({
   const [guestPassword, setGuestPassword] = useState("");
   const [guestPasswordConfirm, setGuestPasswordConfirm] = useState("");
   const [authMode, setAuthMode] = useState<"register" | "login">("register");
+  const [accountEmailed, setAccountEmailed] = useState(false);
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginCountryCode, setLoginCountryCode] = useState("+250");
   const [loginPassword, setLoginPassword] = useState("");
@@ -833,16 +834,24 @@ export const ConnectDialogContent = ({
         payment_uuid: payRes?.payment_uuid ? "[set]" : null,
       }));
 
-      const finishPaid = () => {
+      const finishPaid = (result?: { account_created?: boolean; account_email?: string | null }) => {
         const name = me?.name ?? guestName;
         const phone = me?.phone ?? guestPhone;
         if (consultationToken) session.save(consultationToken, name, phone, consultationId);
-        setAuthMode("register");
-        setPhase(signedInRef.current ? "polling" : "create_account");
+        if (signedInRef.current) {
+          setPhase("polling");
+          return;
+        }
+        const email = result?.account_email || guestEmail;
+        setGuestEmail(email);
+        setLoginIdentifier(email);
+        setAuthMode("login");
+        setAccountEmailed(Boolean(result?.account_created));
+        setPhase("create_account");
       };
 
       if (payRes.status === "paid" || payRes.already_paid) {
-        finishPaid();
+        finishPaid(payRes);
         return;
       }
 
@@ -1494,9 +1503,11 @@ export const ConnectDialogContent = ({
               <div className="flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                 <p className="text-sm text-muted-foreground">
-                  {authMode === "login"
-                    ? t("consult.connect.signin_to_continue")
-                    : t("consult.connect.account_after_payment")}
+                  {accountEmailed
+                    ? t("consult.connect.account_emailed", "We created your account and emailed a temporary password. Sign in with it so the doctor can keep your visit details.")
+                    : authMode === "login"
+                      ? t("consult.connect.signin_to_continue")
+                      : t("consult.connect.account_after_payment")}
                 </p>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-[6px] border border-border bg-muted/30">
@@ -1510,7 +1521,7 @@ export const ConnectDialogContent = ({
                   <p className="text-sm font-semibold text-foreground truncate">{doctorName}</p>
                 </div>
               </div>
-              {authMode === "login" ? (
+              {authMode === "login" || accountEmailed ? (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">{t("consult.connect.email_or_phone")}</Label>
@@ -1571,7 +1582,7 @@ export const ConnectDialogContent = ({
               )}
               <div className="space-y-2">
                 <Button
-                  onClick={authMode === "login" ? handleLoginSubmit : handleCreateAccount}
+                  onClick={authMode === "login" || accountEmailed ? handleLoginSubmit : handleCreateAccount}
                   disabled={registerMutation.isPending || loginMutation.isPending}
                   className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]"
                 >
@@ -1580,10 +1591,11 @@ export const ConnectDialogContent = ({
                   ) : (
                     <ArrowRight className="h-4 w-4" />
                   )}
-                  {authMode === "login"
+                  {authMode === "login" || accountEmailed
                     ? t("consult.connect.sign_in")
                     : t("consult.connect.create_and_join")}
                 </Button>
+                {!accountEmailed && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1596,6 +1608,7 @@ export const ConnectDialogContent = ({
                     ? t("consult.connect.create_account")
                     : t("consult.connect.already_have_account")}
                 </button>
+                )}
               </div>
             </div>
           )}

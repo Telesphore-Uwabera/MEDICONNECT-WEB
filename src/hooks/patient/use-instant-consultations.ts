@@ -68,10 +68,14 @@ export interface InstantConsultationPayResponse {
   payment_uuid: string;
   status?: "paid" | "pending" | string;
   already_paid?: boolean;
+  account_created?: boolean;
+  account_email?: string | null;
 }
 
 export interface CheckInvoiceResponse {
   status: "paid" | "pending" | string;
+  account_created?: boolean;
+  account_email?: string | null;
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -232,7 +236,7 @@ export function useInvoicePoller(): UseInvoicePollerResult {
   const start = useCallback(
     (
       invoiceNumber: string,
-      onPaid: () => void,
+      onPaid: (result?: CheckInvoiceResponse) => void,
       onFailed: (msg: string) => void,
       {
         intervalMs  = 3_000,
@@ -255,7 +259,7 @@ export function useInvoicePoller(): UseInvoicePollerResult {
           if (cancelledRef.current) return;
 
           if (data.status === "paid") {
-            onPaid();
+            onPaid(data);
             return;
           }
 

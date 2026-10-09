@@ -12,6 +12,8 @@ import {
   setLicenseExpiry,
   submitProfileForReview,
 } from "./doctor-review.js";
+import { callToken } from "./call-token.js";
+import { notifyDoctorReady } from "./visit-notify.js";
 import { withTeamPhoto } from "./public.js";
 import { checkSocialLink } from "./social-links.js";
 import {
@@ -1174,13 +1176,12 @@ export function appRoutes(router) {
   }
 
   function instantDoctorToken(row, roomName) {
-    const payload = {
-      consultation_id: Number(row.id),
-      role: "doctor",
+    return callToken({
       room: roomName,
-      doctor_id: row.doctor_id ?? null,
-    };
-    return encodeURIComponent(Buffer.from(JSON.stringify(payload)).toString("base64"));
+      role: "doctor",
+      consultationId: row.id,
+      name: "Doctor",
+    });
   }
 
   router.get("/doctor/instant-consultations/queue", requireAuth, requireRole("doctor"), async (req, res, next) => {
@@ -1260,7 +1261,8 @@ export function appRoutes(router) {
       const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
       const roomName = updated.daily_room_name || updated.room_name || `instant-${updated.id}`;
       const roomUrl = updated.daily_room_url || updated.room_url || `/consultation/${roomName}`;
-      const doctorToken = updated.daily_doctor_token || instantDoctorToken(updated, roomName);
+      const doctorToken = instantDoctorToken(updated, roomName);
+      notifyDoctorReady(updated).catch(() => null);
       res.json({
         message: "Request accepted.",
         room_url: roomUrl,
@@ -1309,7 +1311,7 @@ export function appRoutes(router) {
       }
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       const roomUrl = row.daily_room_url || row.room_url || `/consultation/${roomName}`;
-      const doctorToken = row.daily_doctor_token || instantDoctorToken(row, roomName);
+      const doctorToken = instantDoctorToken(row, roomName);
       const patch = { status: "in_progress" };
       if (await hasColumn(table, "doctor_id")) patch.doctor_id = doctorId;
       if (await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
@@ -1386,12 +1388,76 @@ export function appRoutes(router) {
       const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       const room = `appointment-${appointment.id}`;
+      const token = callToken({
+        room,
+        role: "patient",
+        consultationId: appointment.id,
+        name: "Patient",
+      });
       res.json({
         message: "Session ready.",
         room_url: `/consultation/${room}`,
         room_name: room,
-        token: req.headers.authorization?.slice(7) || "",
+        token,
         join_url: `/consultation/${room}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/appointments/:id/join", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
+      if (!appointment) return res.status(404).json({ message: "Appointment not found." });
+      if (appointment.doctor_id && Number(appointment.doctor_id) !== Number(doctorId)) {
+        return res.status(403).json({ message: "This appointment belongs to another doctor." });
+      }
+      const room = `appointment-${appointment.id}`;
+      const token = callToken({
+        room,
+        role: "doctor",
+        consultationId: appointment.id,
+        name: "Doctor",
+      });
+      if (await hasColumn("appointments", "status") && ["pending", "confirmed", "accepted", "paid"].includes(String(appointment.status || ""))) {
+        await update("appointments", appointment.id, { status: "in_progress" });
+      }
+      res.json({
+        message: "Session ready.",
+        room_url: `/consultation/${room}`,
+        room_name: room,
+        token,
+        join_url: `/consultation/${room}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/patient/quick/:id", requireAuth, async (req, res, next) => {
+    try {
+      const table = (await tableExists("instant_consultation_requests"))
+        ? "instant_consultation_requests"
+        : "instant_consultations";
+      const row = await tableExists(table)
+        ? await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null)
+        : null;
+      if (!row) return next();
+      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+      res.json({
+        id: row.id,
+        status: row.status,
+        booking_type: "instant",
+        daily_room_name: roomName,
+        daily_room_url: row.daily_room_url || row.room_url || `/consultation/${roomName}`,
+        daily_guest_token: callToken({
+          room: roomName,
+          role: "patient",
+          consultationId: row.id,
+          name: row.guest_name || req.user?.name || "Patient",
+        }),
       });
     } catch (error) {
       next(error);
@@ -2176,6 +2242,37 @@ export function appRoutes(router) {
     }
   });
 
+  router.post("/admin/manageusers/doctors/:userId/upload-image", requireAuth, requireRole("admin", "moderator"), licenseUpload.any(), async (req, res, next) => {
+    try {
+      const doctor = await one("SELECT id FROM doctors WHERE user_id = ? ORDER BY id DESC LIMIT 1", [req.params.userId]);
+      if (!doctor) return res.status(404).json({ message: "Doctor profile not found." });
+      const file = (req.files || []).find((item) => item.fieldname === "image") || req.files?.[0];
+      if (!file) return res.status(422).json({ message: "Choose a profile photo." });
+      const url = saveUploadedFile(file, `doctor_photo_${doctor.id}`);
+      await update("doctors", doctor.id, { image: url });
+      res.json({ message: "Image uploaded.", image: url });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/manageusers/doctors/:userId/upload-document", requireAuth, requireRole("admin", "moderator"), licenseUpload.any(), async (req, res, next) => {
+    try {
+      const doctor = await one("SELECT id FROM doctors WHERE user_id = ? ORDER BY id DESC LIMIT 1", [req.params.userId]);
+      if (!doctor) return res.status(404).json({ message: "Doctor profile not found." });
+      const type = String(req.body?.type || "");
+      const allowed = ["degree_document", "medical_license_document", "national_id_document", "cv_document", "signature_image"];
+      if (!allowed.includes(type)) return res.status(422).json({ message: "Choose a document type." });
+      const file = (req.files || []).find((item) => item.fieldname === "document") || req.files?.[0];
+      if (!file) return res.status(422).json({ message: "Choose a file." });
+      const url = saveUploadedFile(file, `doctor_${type}_${doctor.id}`);
+      await update("doctors", doctor.id, { [type]: url });
+      res.json({ message: "Document uploaded.", type, url });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   const MANAGED_PROFILES = {
     patients: "patient",
     doctors: "doctor",
@@ -2303,6 +2400,133 @@ export function appRoutes(router) {
       const found = await managedProfile(req.params.userId, "patients");
       if (!found) return res.status(404).json({ message: "User not found." });
       res.json({ insurance: found.merged.insurance ?? null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/admin/wallets/main", requireAuth, requireRole("admin", "moderator", "finance"), async (req, res, next) => {
+    try {
+      const paid = await one(
+        "SELECT COALESCE(SUM(amount), 0) AS total, MAX(paid_at) AS last_paid FROM payments WHERE status = 'paid'",
+      ).catch(() => ({ total: 0, last_paid: null }));
+      const paidOut = await tableExists("payouts")
+        ? await one(
+          "SELECT COALESCE(SUM(amount), 0) AS total, MAX(paid_at) AS last_paid FROM payouts WHERE status IN ('completed','paid') AND deleted_at IS NULL",
+        ).catch(() => ({ total: 0, last_paid: null }))
+        : { total: 0, last_paid: null };
+      const balance = Math.max(0, Number(paid?.total || 0) - Number(paidOut?.total || 0));
+      res.json({
+        wallet: {
+          id: 1,
+          balance: balance.toFixed(2),
+          currency: "RWF",
+          last_withdrawn: paidOut?.last_paid || null,
+          last_topup: paid?.last_paid || null,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/admin/wallets/doctors", requireAuth, requireRole("admin", "moderator", "finance"), async (req, res, next) => {
+    try {
+      const { page, perPage, offset } = pageArgs(req, 20);
+      const search = String(req.query.search || "").trim();
+      const like = `%${search}%`;
+      const earnedParts = [];
+      const earnedParams = [];
+      if (await tableExists("instant_consultation_requests")) {
+        earnedParts.push(
+          `SELECT r.doctor_id AS doctor_id, p.amount AS amount, p.paid_at AS paid_at
+           FROM payments p
+           JOIN instant_consultation_requests r ON r.id = p.payable_id
+           WHERE p.status = 'paid' AND p.payable_type IN (?, ?)`,
+        );
+        earnedParams.push("instant_consultation", "App\\Models\\InstantConsultationRequest");
+      }
+      if (await tableExists("appointments")) {
+        earnedParts.push(
+          `SELECT a.doctor_id AS doctor_id, p.amount AS amount, p.paid_at AS paid_at
+           FROM payments p
+           JOIN appointments a ON a.id = p.payable_id
+           WHERE p.status = 'paid' AND p.payable_type IN (?, ?)`,
+        );
+        earnedParams.push("appointment", "App\\Models\\Appointment");
+      }
+      const earnedSql = earnedParts.length
+        ? `LEFT JOIN (
+            SELECT doctor_id, SUM(amount) AS earned, MAX(paid_at) AS last_paid
+            FROM (${earnedParts.join(" UNION ALL ")}) paid
+            WHERE doctor_id IS NOT NULL
+            GROUP BY doctor_id
+          ) earned ON earned.doctor_id = d.id`
+        : "LEFT JOIN (SELECT NULL AS doctor_id, 0 AS earned, NULL AS last_paid) earned ON 1=0";
+      const where = `(w.id IS NOT NULL OR COALESCE(earned.earned, 0) > 0)
+        AND (? = '' OR u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)`;
+      const whereParams = [search, like, like, like];
+      const from = `FROM doctors d
+        JOIN users u ON u.id = d.user_id
+        LEFT JOIN doctor_wallets w ON w.id = (
+          SELECT id FROM doctor_wallets
+          WHERE doctor_id = d.id AND deleted_at IS NULL
+          ORDER BY id DESC LIMIT 1
+        )
+        ${earnedSql}`;
+      const totalRow = await one(
+        `SELECT COUNT(*) AS total ${from} WHERE ${where}`,
+        [...earnedParams, ...whereParams],
+      );
+      const total = Number(totalRow?.total || 0);
+      const rows = await q(
+        `SELECT d.id AS doctor_id, d.user_id, d.slug, d.specialization, d.currency,
+                u.name AS doctor_name, u.email AS doctor_email, u.phone AS doctor_phone,
+                w.id AS wallet_id, w.balance AS stored_balance, w.last_withdrawn, w.last_topup,
+                w.created_at, w.updated_at,
+                COALESCE(earned.earned, 0) AS earned, earned.last_paid
+         ${from}
+         WHERE ${where}
+         ORDER BY (COALESCE(w.balance, 0) + COALESCE(earned.earned, 0)) DESC, d.id DESC
+         LIMIT ? OFFSET ?`,
+        [...earnedParams, ...whereParams, perPage, offset],
+      );
+      const data = rows.map((row) => {
+        const balance = Number(row.stored_balance || 0) + Number(row.earned || 0);
+        return {
+          id: row.wallet_id || row.doctor_id,
+          doctor_id: row.doctor_id,
+          balance: balance.toFixed(2),
+          currency: row.currency || "RWF",
+          last_withdrawn: row.last_withdrawn || null,
+          last_topup: row.last_topup || row.last_paid || null,
+          created_at: row.created_at || null,
+          updated_at: row.updated_at || null,
+          deleted_at: null,
+          doctor: {
+            id: row.doctor_id,
+            user_id: row.user_id,
+            slug: row.slug,
+            specialization: row.specialization,
+            currency: row.currency || "RWF",
+            user: {
+              id: row.user_id,
+              name: row.doctor_name,
+              email: row.doctor_email,
+              phone: row.doctor_phone || "",
+            },
+          },
+        };
+      });
+      res.json({
+        current_page: page,
+        data,
+        per_page: perPage,
+        total,
+        last_page: Math.max(1, Math.ceil(total / perPage) || 1),
+        from: total ? offset + 1 : null,
+        to: total ? Math.min(offset + data.length, total) : null,
+      });
     } catch (error) {
       next(error);
     }

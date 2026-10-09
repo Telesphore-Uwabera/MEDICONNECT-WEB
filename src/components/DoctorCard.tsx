@@ -52,6 +52,25 @@ import { RichTextRenderer } from "./ui/rich-textarea";
 
 type ModalMode = "details" | "connect";
 
+const SPECIALTY_BY_DEPARTMENT: Record<string, string> = {
+  pediatrics: "Pediatrician",
+  orthopedics: "Orthopedist",
+  "general practice": "General Practitioner",
+};
+
+function doctorSpecialtyLabel(doctor: ApiDoctor) {
+  const raw = String(doctor.specialization || "").trim();
+  const primary = SPECIALTY_BY_DEPARTMENT[raw.toLowerCase()] || raw;
+  const extras = (doctor.sub_specializations || [])
+    .map((item) => String(item.name || item.sub_type || item.sub_specialization || "").trim())
+    .filter((name) => name && name.toLowerCase() !== raw.toLowerCase() && name.toLowerCase() !== primary.toLowerCase());
+  const labels: string[] = [];
+  for (const label of [primary, ...extras]) {
+    if (label && !labels.some((item) => item.toLowerCase() === label.toLowerCase())) labels.push(label);
+  }
+  return labels.join(", ");
+}
+
 function DoctorAvatar({
   doctor,
   size = "sm",
@@ -504,7 +523,7 @@ export function UnifiedModal({
                     </div>
                     
                     <p className="text-xs text-primary font-medium mt-1">
-                      {doctor.specialization}
+                      {doctorSpecialtyLabel(doctor)}
                       {doctor.doctor_degree ? ` - ${doctor.doctor_degree}` : ""}
                     </p>
                     {doctor.designations && (
@@ -750,7 +769,7 @@ export const DoctorCard = ({
       name: doctor.user.name,
       avatar: doctor.user.avatar,
     },
-    specialization: doctor.specialization,
+    specialization: doctorSpecialtyLabel(doctor),
   };
 
   const isThisDoctor = call.doctor?.id === doctor.id;
@@ -829,7 +848,7 @@ export const DoctorCard = ({
             </h3>
             <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-primary">
               <BriefcaseMedical className="h-3.5 w-3.5 shrink-0" />
-              {doctor.specialization || t("pages.landing.general_practitioner", "General Practitioner")}
+              {doctorSpecialtyLabel(doctor) || t("pages.landing.general_practitioner", "General Practitioner")}
             </p>
             {locationLabel && (
               <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">

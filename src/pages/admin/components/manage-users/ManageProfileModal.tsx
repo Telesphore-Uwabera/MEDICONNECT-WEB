@@ -281,6 +281,7 @@ function DoctorProfileForm({ userId }: { userId: number }) {
                 { value: "medical_license_document", label: "Medical license" },
                 { value: "national_id_document", label: "National ID" },
                 { value: "cv_document", label: "CV" },
+                { value: "signature_image", label: "Signature" },
               ]}
               className="w-full"
             />

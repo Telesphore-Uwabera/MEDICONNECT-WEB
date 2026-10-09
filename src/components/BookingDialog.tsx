@@ -463,12 +463,14 @@ export const BookingDialog = ({
                 setVerifyingPayment(true);
                 invoicePoller.start(
                   payRes.invoice_number,
-                  () => {
+                  (result) => {
                     setVerifyingPayment(false);
-                    toast.success(t("booking.doctorAppointment.paymentSuccessful"), { description: t("booking.doctorAppointment.paymentSuccessfulDesc") });
-                    // Invalidate appointments to refresh the UI
+                    toast.success(t("booking.doctorAppointment.paymentSuccessful"), {
+                      description: result?.account_created
+                        ? t("booking.doctorAppointment.accountEmailed", "We emailed a temporary password. Sign in with it to see this appointment. Your doctor keeps these details on your account.")
+                        : t("booking.doctorAppointment.paymentSuccessfulDesc"),
+                    });
                     queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
-                    // Send the patient to their appointments list to see / join it.
                     onOpenChange(false);
                     navigate("/patient/appointments");
                   },

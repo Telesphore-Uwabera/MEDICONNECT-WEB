@@ -156,7 +156,8 @@ export type DoctorDocumentType =
   | "degree_document"
   | "medical_license_document"
   | "national_id_document"
-  | "cv_document";
+  | "cv_document"
+  | "signature_image";
 
 export interface UploadDocumentResponse {
   message: string;

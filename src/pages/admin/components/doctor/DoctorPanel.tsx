@@ -1184,7 +1184,7 @@ function DocumentsTab({ doctor }: { doctor: ApiDoctor }) {
     { label: "Degree document", path: doctor.degree_document },
     { label: "Medical license", path: doctor.medical_license_document },
     { label: "National ID", path: doctor.national_id_document },
-    { label: "Signature", path: doctor.signature },
+    { label: "Signature", path: doctor.signature || (doctor as { signature_image?: string | null }).signature_image },
   ].filter((d) => d.path);
 
   return (

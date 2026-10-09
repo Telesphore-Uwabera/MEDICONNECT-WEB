@@ -42,6 +42,30 @@ export function startRealtime(target) {
   return wss;
 }
 
+const signals = [];
+let signalSeq = 0;
+
+export function publishSignal(room, body) {
+  const item = {
+    id: ++signalSeq,
+    room,
+    type: body?.type,
+    data: body?.data ?? {},
+    from: body?.from || "",
+    at: Date.now(),
+  };
+  signals.push(item);
+  const cutoff = Date.now() - 2 * 60 * 1000;
+  while (signals.length && (signals.length > 400 || signals[0].at < cutoff)) signals.shift();
+  broadcast(`consultation.${room}`, "webrtc.signal", item);
+  return item;
+}
+
+export function signalsSince(room, after = 0) {
+  const cutoff = Date.now() - 2 * 60 * 1000;
+  return signals.filter((item) => item.room === room && item.id > Number(after || 0) && item.at >= cutoff);
+}
+
 export function broadcast(channel, event, data) {
   const sockets = channels.get(channel);
   if (!sockets) return;

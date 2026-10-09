@@ -9,6 +9,7 @@ import { publicRoutes } from "./public.js";
 import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";
 import { remindExpiringLicenses } from "./doctor-review.js";
+import { remindUpcomingVisits } from "./visit-notify.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -116,8 +117,13 @@ pool.query("SELECT 1").then(async () => {
   const remind = () => remindExpiringLicenses().catch((error) => {
     console.error("License reminder failed:", error?.message || error);
   });
+  const remindVisits = () => remindUpcomingVisits().catch((error) => {
+    console.error("Visit reminder failed:", error?.message || error);
+  });
   remind();
+  remindVisits();
   setInterval(remind, 12 * 60 * 60 * 1000);
+  setInterval(remindVisits, 10 * 60 * 1000);
 }).catch((error) => {
   console.error("Database connection failed", error.message);
   process.exit(1);

@@ -61,6 +61,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedSinceRef = useRef<number | null>(null);
   const durationWarningShownRef = useRef(false);
+  const seenSignalIds = useRef(new Set<number>());
   const audioEnabledRef = useRef(true);
   const videoEnabledRef = useRef(true);
   // Refs holding the latest callbacks so the main effect can stay decoupled
@@ -354,7 +355,12 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   const handleSignalRef = useRef<((payload: any) => Promise<void>) | null>(null);
 
-  handleSignalRef.current = async (payload: { type: string; data: unknown; from: string }) => {
+  handleSignalRef.current = async (payload: { type: string; data: unknown; from: string; id?: number }) => {
+    const signalId = Number(payload.id);
+    if (Number.isFinite(signalId) && signalId > 0) {
+      if (seenSignalIds.current.has(signalId)) return;
+      seenSignalIds.current.add(signalId);
+    }
     if (payload.from === selfId) return;
 
     let pc = pcRef.current;
@@ -475,6 +481,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // ── Main setup ────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
+    let signalTimer: ReturnType<typeof setTimeout> | null = null;
 
     const setup = async () => {
       try {
@@ -516,6 +523,26 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       };
 
       subscribeToChannel();
+
+      let signalAfter = 0;
+      const pollSignals = async () => {
+        if (cancelled) return;
+        try {
+          const url = `${import.meta.env.VITE_APP_BASE_URL}/public/consultations/signal/${encodeURIComponent(roomName)}?after=${signalAfter}`;
+          const res = await fetch(url, { headers: { Accept: "application/json" } });
+          if (res.ok) {
+            const body = await res.json();
+            for (const signal of body.signals || []) {
+              signalAfter = Math.max(signalAfter, Number(signal.id) || 0);
+              handleSignalRef.current?.(signal);
+            }
+          }
+        } catch {
+          /* The next poll retries. */
+        }
+        if (!cancelled) signalTimer = setTimeout(pollSignals, 1000);
+      };
+      signalTimer = setTimeout(pollSignals, 400);
 
       echo.connector.pusher.connection.bind("connected", () => {
         if (!channelRef.current) subscribeToChannel();
@@ -589,6 +616,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     return () => {
       cancelled = true;
+      if (signalTimer) clearTimeout(signalTimer);
       if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
       if (channelRef.current) {
         channelRef.current.stopListening(".webrtc.signal");

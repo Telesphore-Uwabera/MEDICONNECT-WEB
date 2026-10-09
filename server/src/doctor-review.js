@@ -1,8 +1,11 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { columns, forgetColumns, hasColumn, insert, one, pool, q, update } from "./db.js";
+import * as db from "./db.js";
 import { sendMail } from "./mail.js";
+
+const { columns, hasColumn, insert, one, pool, q, update } = db;
+const forgetColumns = db.forgetColumns || (() => {});
 
 const APPROVED = new Set(["active", "approved", "verified"]);
 

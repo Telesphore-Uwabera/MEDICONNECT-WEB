@@ -368,13 +368,6 @@ async function fillGap(req, res, parts) {
     return true;
   }
 
-  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "wallets" && parts[2] === "main" && !parts[3]) {
-    res.json({
-      wallet: { id: 0, balance: "0", currency: "RWF", last_withdrawn: null, last_topup: null },
-    });
-    return true;
-  }
-
   if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2] === "public") {
     res.json({ settings: {} });
     return true;
@@ -461,7 +454,8 @@ async function fillGap(req, res, parts) {
     const file = req.files?.[0];
     if (file && id) {
       const url = saveUpload(file, `${parts[0]}_${parts[2]}`);
-      const column = parts[2] === "documents" ? (req.body?.type || "document") : parts[2] === "avatar" ? "avatar" : parts[2];
+      const requested = parts[2] === "documents" ? (req.body?.type || "document") : parts[2] === "avatar" ? "avatar" : parts[2];
+      const column = FILE_COLUMNS[requested] || requested;
       if (parts[0] === "doctor" && column === "medical_license_document") {
         const current = await one("SELECT medical_license_document FROM doctors WHERE id = ?", [id]);
         if (current?.medical_license_document) {
@@ -472,7 +466,7 @@ async function fillGap(req, res, parts) {
         }
       }
       if (await hasColumn(table, column)) await update(table, id, { [column]: url });
-      else if (await hasColumn(table, "image")) await update(table, id, { image: url });
+      else if (column !== "signature_image" && await hasColumn(table, "image")) await update(table, id, { image: url });
       res.json({ message: "Saved.", image: url, logo: url, signature: url, avatar: url, url });
       return true;
     }
