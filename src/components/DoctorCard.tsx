@@ -832,7 +832,7 @@ export const DoctorCard = ({
 
             {/* Hover overlay — inside the rounded image */}
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
-              <span className="translate-y-2 scale-95 rounded-xl bg-white/90 px-4 py-2 text-xs font-bold text-foreground shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
+              <span className="translate-y-2 scale-95 rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
                 {t("pages.cards.view_details", "View Profile")}
               </span>
             </div>
@@ -893,28 +893,6 @@ export const DoctorCard = ({
           </div>
         </div>
       </Card>
-      {/* -- Live-call resume pill -- (unchanged) */}
-      {showResumePill && (
-        <ResumePill
-          doctorName={doctor.user.name}
-          phase={call.phase}
-          onResume={() => {
-            setInitialMode("connect");
-            setModalOpen(true);
-          }}
-          onEndCompletely={handleCloseCompletely}
-        />
-      )}
-
-      {/* -- Saved-session pill -- (unchanged) */}
-      {showSavedSessionPill && (
-        <SavedSessionPill
-          doctorName={doctor.user.name}
-          onResume={openResume}
-          onDismiss={() => setSavedSessionPillDismissed(true)}
-        />
-      )}
-
       {/* -- Unified modal -- (unchanged) */}
       <UnifiedModal
         doctor={doctor}

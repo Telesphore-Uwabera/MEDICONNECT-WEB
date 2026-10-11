@@ -1039,8 +1039,16 @@ export const ConnectDialogContent = ({
       setGuestCountryCode(data.user.country_code ?? "+250");
       setLoginCountryCode(data.user.country_code ?? "+250");
       if (phase === "create_account") {
-        onCloseCompletely();
-        navigate("/patient");
+        // Patient just logged in after payment — resume polling for their
+        // existing confirmed consultation instead of navigating to dashboard.
+        if (consultationToken) {
+          session.save(consultationToken, data.user.name, data.user.phone ?? "", consultationId ?? undefined);
+          setPhase("polling");
+        } else {
+          // No active consultation token — fall back to patient instant page
+          onCloseCompletely();
+          navigate("/patient/instant");
+        }
         return;
       }
       await handleRequest({
@@ -1081,8 +1089,15 @@ export const ConnectDialogContent = ({
         auth_method: "password",
         password: guestPassword,
       });
-      onCloseCompletely();
-      navigate("/patient");
+      // After registration + login, resume the consultation polling flow
+      // rather than navigating to the generic patient dashboard.
+      if (consultationToken) {
+        session.save(consultationToken, name, guestPhone ?? "", consultationId ?? undefined);
+        setPhase("polling");
+      } else {
+        onCloseCompletely();
+        navigate("/patient/instant");
+      }
     } catch (err: unknown) {
       setGuestError(err instanceof Error ? err.message : t("consult.connect.err_request_failed"));
     }
@@ -1568,9 +1583,9 @@ export const ConnectDialogContent = ({
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                 <p className="text-sm text-muted-foreground">
                   {accountEmailed
-                    ? t("consult.connect.account_emailed", "We created your account and emailed a temporary password. Sign in with it so the doctor can keep your visit details.")
+                    ? t("consult.connect.account_emailed", "Your payment is confirmed! We emailed your temporary password. Sign in below to join your consultation.")
                     : authMode === "login"
-                      ? t("consult.connect.signin_to_continue")
+                      ? t("consult.connect.signin_to_continue", "Sign in to join your consultation. The doctor will see you in the queue once you're logged in.")
                       : t("consult.connect.account_after_payment")}
                 </p>
               </div>

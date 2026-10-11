@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { apiFetch } from "@/lib/api";
 import { fetchDoctorLiveSession, type LiveSessionResponse } from "@/lib/rejoin";
+import echo from "@/lib/echo";
 
 const BASE = "/doctor/appointments";
 
@@ -465,11 +467,36 @@ export interface InstantJoinResponse {
 /* 10.1  useGetInstantQueue  →  GET /instant-consultations/queue */
 
 export function useGetInstantQueue(enabled = true) {
+    const qc = useQueryClient();
+
+    // Listen for the server-side broadcast that fires when a patient pays.
+    // This gives the doctor an instant queue refresh instead of waiting for
+    // the 3-second poll to catch the new "confirmed" row.
+    useEffect(() => {
+        if (!enabled) return;
+        const me = qc.getQueryData<{ user?: { id?: number } }>(["auth", "me"])?.user;
+        const doctorUserId = me?.id;
+        if (!doctorUserId) return;
+
+        let channel: ReturnType<typeof echo.private> | null = null;
+        try {
+            channel = echo.private(`doctor.${doctorUserId}`);
+            channel.listen(".instant.queue.updated", () => {
+                qc.invalidateQueries({ queryKey: ["instant-consultations", "queue"] });
+            });
+        } catch { /* echo unavailable */ }
+
+        return () => {
+            try { channel?.stopListening(".instant.queue.updated"); } catch { /* ignore */ }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [enabled]);
+
     return useQuery({
         queryKey: ["instant-consultations", "queue"],
         queryFn: () =>
             apiFetch<InstantConsultQueueResponse>(`${IC}/queue`),
-        refetchInterval: enabled ? 10_000 : false, // poll every 10s while on that tab
+        refetchInterval: enabled ? 3_000 : false, // poll every 3s (was 10s)
         enabled,
     });
 }

@@ -1,5 +1,6 @@
 import { hasColumn, insert, one, q, tableExists } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
+import { broadcast } from "./realtime.js";
 
 const reminded = new Set();
 
@@ -156,6 +157,22 @@ export async function notifyPaidVisit(payment) {
     });
 
     await deliver({ userId: patient.userId, email: patient.email, subject: subjectPatient, text: textPatient, html: htmlPatient, type: "visit.paid" });
+  }
+
+  // ── Broadcast realtime queue-refresh event to the doctor's channel ─────────
+  // The doctor's queue React component polls every 3s but that's still a delay.
+  // Pushing a WebSocket event lets it invalidate immediately when a patient pays.
+  if (instant && row.doctor_id) {
+    // Look up the doctor's user_id to target the right private channel
+    const doctorUser = await doctorContact(row.doctor_id);
+    if (doctorUser?.user_id) {
+      // Private channel name in Pusher protocol is "private-{name}"
+      broadcast(`private-doctor.${doctorUser.user_id}`, "instant.queue.updated", {
+        consultation_id: payableId,
+        patient_name: patient.name,
+        status: "confirmed",
+      });
+    }
   }
 }
 
