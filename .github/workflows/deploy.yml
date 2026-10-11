@@ -1,0 +1,26 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Trigger server deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify server to pull and restart
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST https://api.mediconnect.rw/deploy \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
+            --max-time 15)
+          echo "HTTP status: $RESPONSE"
+          if [ "$RESPONSE" = "202" ]; then
+            echo "Deploy triggered successfully"
+          else
+            echo "Deploy trigger failed with status $RESPONSE"
+            exit 1
+          fi

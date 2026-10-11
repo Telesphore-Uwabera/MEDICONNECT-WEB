@@ -227,10 +227,12 @@ function AppointmentCardItem({
   appt,
   onDetails,
   onJoin,
+  hasJoined,
 }: {
   appt: ApiAppointment;
   onDetails: () => void;
   onJoin: () => void;
+  hasJoined?: boolean;
 }) {
   const { t } = useTranslation();
   const avatar = getDoctorAvatar(appt);
@@ -325,7 +327,13 @@ function AppointmentCardItem({
             onClick={(e) => { e.stopPropagation(); onJoin(); }}
             className="h-8 px-3 text-xs font-bold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
           >
-            {actionable ? t("pages.patient.appt_join_call") : t("pages.patient.appt_unavailable")}
+            {appt.status === "completed"
+              ? t("pages.patient.appt_ended_short", { defaultValue: "Ended" })
+              : actionable
+                ? (hasJoined
+                    ? t("pages.patient.appt_rejoin_call", { defaultValue: "Rejoin" })
+                    : t("pages.patient.appt_join_call", { defaultValue: "Join" }))
+                : t("pages.patient.appt_unavailable")}
           </Button>
         </div>
       </div>
@@ -386,17 +394,39 @@ const PatientAppointments = () => {
       apiFetch<JoinResponse>(`/patient/appointments/${id}/join`, { method: "POST" }),
   });
 
+  // Track which appointments the patient has already joined this session.
+  // We use sessionStorage so it survives tab refreshes but clears when the tab closes.
+  const joinedSetRef = useRef<Set<number>>(
+    (() => {
+      try {
+        const raw = sessionStorage.getItem("patient_joined_appts");
+        return new Set<number>(raw ? JSON.parse(raw) : []);
+      } catch { return new Set<number>(); }
+    })(),
+  );
+  const markJoined = useCallback((id: number) => {
+    joinedSetRef.current.add(id);
+    try { sessionStorage.setItem("patient_joined_appts", JSON.stringify([...joinedSetRef.current])); } catch {}
+  }, []);
+
   // Call the join endpoint, then open the SAME in-app ConsultationRoom the doctor
   // uses. Never open the bare daily_room_url (it carries no token → "Invalid
   // consultation link").
   const handleJoin = useCallback(
     (appt: ApiAppointment) => {
+      // Completed appointment — consultation is over, block join
+      if (appt.status === "completed") {
+        toast.info(t("pages.patient.appt_ended", { defaultValue: "This consultation has ended. View your prescriptions or book a follow-up." }));
+        openDetail(appt.id);
+        return;
+      }
       if (!canJoinAppointment(appt)) {
         toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 10 minutes before the appointment time." }));
         return;
       }
       joinMutation.mutate(appt.id, {
         onSuccess: (res) => {
+          markJoined(appt.id);
           // If it's our custom WebRTC token, open the in-app ConsultationRoom.
           const started = startInAppCallFromJoin(startCall, res, {
             consultationId: appt.id,
@@ -796,7 +826,11 @@ const PatientAppointments = () => {
                                   handleJoin(a);
                                 }}
                               >
-                                {a.status === "in_progress" ? t("pages.patient.appt_rejoin_call") : t("pages.patient.appt_join_call")}
+                                {a.status === "completed"
+                                  ? t("pages.patient.appt_ended_short", { defaultValue: "Ended" })
+                                  : joinedSetRef.current.has(Number(a.id))
+                                    ? t("pages.patient.appt_rejoin_call", { defaultValue: "Rejoin" })
+                                    : t("pages.patient.appt_join_call", { defaultValue: "Join" })}
                               </Button>
                             ) : (
                               <Button
@@ -831,6 +865,7 @@ const PatientAppointments = () => {
                       appt={a}
                       onDetails={() => openDetail(a.id)}
                       onJoin={() => handleJoin(a)}
+                      hasJoined={joinedSetRef.current.has(Number(a.id))}
                     />
                   ))}
               </div>

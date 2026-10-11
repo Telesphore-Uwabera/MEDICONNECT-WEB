@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -239,11 +239,14 @@ function AppointmentCardItem({
   appt,
   onDetails,
   onJoin,
+  hasJoined,
 }: {
   appt: ApiAppointment;
   onDetails: () => void;
   onJoin: () => void;
+  hasJoined?: boolean;
 }) {
+  const { t } = useTranslation();
   const avatar = getDoctorAvatar(appt);
   const actionable = isActionable(appt);
 
@@ -336,7 +339,13 @@ function AppointmentCardItem({
             onClick={(e) => { e.stopPropagation(); onJoin(); }}
             className="h-8 px-3 text-xs font-bold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
           >
-            {actionable ? "Join Call" : "Unavailable"}
+            {appt.status === "completed"
+              ? t("pages.patient.appt_ended_short", { defaultValue: "Ended" })
+              : actionable
+                ? (hasJoined
+                    ? t("pages.patient.appt_rejoin_call", { defaultValue: "Rejoin" })
+                    : t("pages.patient.appt_join_call", { defaultValue: "Join" }))
+                : t("pages.patient.appt_unavailable", { defaultValue: "Unavailable" })}
           </Button>
         </div>
       </div>
@@ -454,20 +463,42 @@ const PatientInstant = () => {
     },
   });
 
+  // Track which consultations the patient has already joined this session
+  const joinedInstantRef = useRef<Set<number>>(
+    (() => {
+      try {
+        const raw = sessionStorage.getItem("patient_joined_instants");
+        return new Set<number>(raw ? JSON.parse(raw) : []);
+      } catch { return new Set<number>(); }
+    })(),
+  );
+  const markInstantJoined = useCallback((id: number) => {
+    joinedInstantRef.current.add(id);
+    try { sessionStorage.setItem("patient_joined_instants", JSON.stringify([...joinedInstantRef.current])); } catch {}
+  }, []);
+
   const handleJoin = useCallback(
     (appt: ApiAppointment) => {
+      // Completed consultation — ended by doctor
+      if (appt.status === "completed") {
+        toast.info(t("pages.patient.appt_ended", { defaultValue: "This consultation has ended. Check your prescriptions for any notes from the doctor." }));
+        return;
+      }
       if (!canJoinAppointment(appt)) {
         toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 10 minutes before the appointment time." }));
         return;
       }
       joinMutation.mutate(appt, {
+        onSuccess: () => {
+          markInstantJoined(appt.id);
+        },
         onError: (err: any) => {
           console.error("[Quick] join failed:", err?.status, err?.data);
           toast.error(err?.message || t("consult.booking.join_failed"));
         },
       });
     },
-    [joinMutation, t],
+    [joinMutation, markInstantJoined, t],
   );
 
   // ── API ────────────────────────────────────────────────────────────────────
@@ -932,7 +963,11 @@ const PatientInstant = () => {
                             </Badge>
                           </td>
                           <td className="px-5 py-4 text-right">
-                            {isActionable(a) ? (
+                            {a.status === "completed" ? (
+                              <span className="inline-flex items-center px-3 h-8 text-xs text-muted-foreground rounded-[6px] border border-border/40 bg-muted/30">
+                                {t("pages.patient.appt_ended_short", { defaultValue: "Ended" })}
+                              </span>
+                            ) : isActionable(a) ? (
                               <Button
                                 size="sm"
                                 className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
@@ -942,7 +977,9 @@ const PatientInstant = () => {
                                   handleJoin(a);
                                 }}
                               >
-                                Join call
+                                {joinedInstantRef.current.has(Number(a.id))
+                                  ? t("pages.patient.appt_rejoin_call", { defaultValue: "Rejoin" })
+                                  : t("pages.patient.appt_join_call", { defaultValue: "Join" })}
                               </Button>
                             ) : (
                               <Button
@@ -976,6 +1013,7 @@ const PatientInstant = () => {
                       appt={a}
                       onDetails={() => openDetail(a.id)}
                       onJoin={() => handleJoin(a)}
+                      hasJoined={joinedInstantRef.current.has(Number(a.id))}
                     />
                   ))}
               </div>
