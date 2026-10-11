@@ -62,8 +62,16 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const disconnectedSinceRef = useRef<number | null>(null);
   const durationWarningShownRef = useRef(false);
   const seenSignalIds = useRef(new Set<number>());
+  // Deduplication for offer/answer by SDP fingerprint (prevents processing the
+  // same SDP twice when it arrives via both WebSocket and HTTP poll).
+  const seenSdpHashes = useRef(new Set<string>());
   const audioEnabledRef = useRef(true);
   const videoEnabledRef = useRef(true);
+  // Signal processing mutex — ensures only one signal is handled at a time,
+  // preventing races where two concurrent "answer" handlers both pass the
+  // signalingState check then the second throws "wrong state: stable".
+  const signalQueueRef = useRef<Array<() => Promise<void>>>([]);
+  const signalProcessingRef = useRef(false);
   // Refs holding the latest callbacks so the main effect can stay decoupled
   // from their identities (prevents tearing down the call on parent re-render).
   const sendSignalRef = useRef<((type: string, data?: unknown) => Promise<void>) | null>(null);
@@ -353,15 +361,38 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     }
   }, [remoteStream]);
 
-  const handleSignalRef = useRef<((payload: any) => Promise<void>) | null>(null);
+  const handleSignalRef = useRef<((payload: any) => void) | null>(null);
 
-  handleSignalRef.current = async (payload: { type: string; data: unknown; from: string; id?: number }) => {
+  // Drains the signal queue one item at a time — ensures serialized processing.
+  const drainSignalQueue = useRef<(() => void) | null>(null);
+
+  handleSignalRef.current = (payload: { type: string; data: unknown; from: string; id?: number }) => {
+    // Enqueue the signal and drain sequentially.
+    signalQueueRef.current.push(() => processSignal(payload));
+    drainSignalQueue.current?.();
+  };
+
+  // processSignal is the actual async handler — called serially via the queue.
+  const processSignal = async (payload: { type: string; data: unknown; from: string; id?: number }) => {
     const signalId = Number(payload.id);
     if (Number.isFinite(signalId) && signalId > 0) {
       if (seenSignalIds.current.has(signalId)) return;
       seenSignalIds.current.add(signalId);
     }
     if (payload.from === selfId) return;
+
+    // SDP-based deduplication for offer/answer — the same SDP can arrive via
+    // both WebSocket and HTTP poll. Use first 120 chars as a stable fingerprint.
+    if (payload.type === "offer" || payload.type === "answer") {
+      const sdp = (payload.data as any)?.sdp;
+      if (sdp) {
+        const fingerprint = `${payload.type}:${String(sdp).slice(0, 120)}`;
+        if (seenSdpHashes.current.has(fingerprint)) return;
+        seenSdpHashes.current.add(fingerprint);
+        // Keep the set small
+        if (seenSdpHashes.current.size > 20) seenSdpHashes.current.clear();
+      }
+    }
 
     let pc = pcRef.current;
 
@@ -485,6 +516,19 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       // Genuine errors will still surface during development.
       console.debug("[WebRTC] Signal handling error", e);
     }
+  };
+
+  // Drain function — picks the next signal off the queue and processes it.
+  // Runs serially so concurrent arrivals never race each other.
+  drainSignalQueue.current = () => {
+    if (signalProcessingRef.current) return; // already running
+    const next = signalQueueRef.current.shift();
+    if (!next) return;
+    signalProcessingRef.current = true;
+    next().finally(() => {
+      signalProcessingRef.current = false;
+      drainSignalQueue.current?.(); // process next item if any
+    });
   };
 
   // ── Main setup ────────────────────────────────────────────────────────────
