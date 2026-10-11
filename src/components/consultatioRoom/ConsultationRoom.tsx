@@ -277,10 +277,17 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     };
 
     pc.oniceconnectionstatechange = () => {
+      const iceState = pc.iceConnectionState;
       // Some browsers surface failures on the ICE state before connectionState.
-      if (pc.iceConnectionState === "failed") {
+      if (iceState === "failed") {
         setConnState("failed");
         scheduleRecovery(0);
+      }
+      // If ICE is stuck checking for 10s with a TURN server available,
+      // restart ICE — this forces the browser to try TURN relay candidates.
+      if (iceState === "checking") {
+        if (recoveryTimerRef.current) return; // already scheduled
+        scheduleRecovery(10000);
       }
     };
 

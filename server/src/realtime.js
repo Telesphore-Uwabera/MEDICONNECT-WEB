@@ -55,14 +55,16 @@ export function publishSignal(room, body) {
     at: Date.now(),
   };
   signals.push(item);
-  const cutoff = Date.now() - 2 * 60 * 1000;
-  while (signals.length && (signals.length > 400 || signals[0].at < cutoff)) signals.shift();
+  // Keep signals for 10 minutes (was 2 min) so slow joiners and rejoiners
+  // can still retrieve the offer/answer/ICE candidates they missed.
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  while (signals.length && (signals.length > 1000 || signals[0].at < cutoff)) signals.shift();
   broadcast(`consultation.${room}`, "webrtc.signal", item);
   return item;
 }
 
 export function signalsSince(room, after = 0) {
-  const cutoff = Date.now() - 2 * 60 * 1000;
+  const cutoff = Date.now() - 10 * 60 * 1000;
   const roomItems = signals.filter((item) => item.room === room && item.at >= cutoff);
   const maxId = roomItems.reduce((max, item) => Math.max(max, item.id), 0);
   const since = Number(after || 0) > maxId ? 0 : Number(after || 0);
