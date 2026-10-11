@@ -225,8 +225,9 @@ export function GlobalInstantPill() {
 
   const isPatient = user?.role === "patient";
   const showJoin = hasInstant || doctorWaiting || !!activeInstant;
-  const showBook = isPatient && !showJoin;
-  const showAction = (showJoin || showBook) && !activeCall && !open;
+  // Only show the pill when there's an active consultation to join —
+  // the "Book appointment" shortcut button has been removed.
+  const showAction = showJoin && !activeCall && !open;
 
   // Reconstruct a minimal doctor so ConnectDialogContent reads the right saved
   // session (keyed by doctor id). doctorId 0 means a general "any doctor" request.
