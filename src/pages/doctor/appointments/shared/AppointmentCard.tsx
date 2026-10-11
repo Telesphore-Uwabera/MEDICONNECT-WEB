@@ -30,6 +30,9 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm font-semibold text-foreground">{apptLabel(appt)}</span>
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-muted/60 border border-border/50 text-[10px] font-mono font-semibold text-muted-foreground">
+            #{appt.id}
+          </span>
           <Badge variant="outline" className={cn("text-xs px-2.5 py-0.5 font-medium border", STATUS_STYLES[status])}>
             <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[status])} />
             {statusLabel(status, t)}

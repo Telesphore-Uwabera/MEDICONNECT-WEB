@@ -18,7 +18,7 @@ export interface FilterState {
 export const INITIAL_FILTERS: FilterState = {
   search: "", status: "All", type: "All",
   date: "", today: false, upcoming: false,
-  sort: "date-asc",
+  sort: "date-desc",
 };
 
 export const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [

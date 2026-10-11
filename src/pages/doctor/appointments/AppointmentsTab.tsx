@@ -192,8 +192,9 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         if (filters.sort === "name") {
           return (a.patient?.name ?? "").localeCompare(b.patient?.name ?? "");
         }
-        return `${a.appointment_date}${a.appointment_time}`.localeCompare(
-          `${b.appointment_date}${b.appointment_time}`
+        // default: date-desc (newest/most recent first)
+        return `${b.appointment_date}${b.appointment_time}`.localeCompare(
+          `${a.appointment_date}${a.appointment_time}`
         );
       });
   }, [appointments, filters.search, filters.sort]);
@@ -578,6 +579,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                 <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                   <tr>
                     <th className="text-left px-5 py-4 font-semibold">{t("pages.doctor.th_patient")}</th>
+                    <th className="text-left px-5 py-4 font-semibold text-muted-foreground/60">#ID</th>
                     <th className="text-left px-5 py-4 font-semibold">{t("pages.doctor.th_when")}</th>
                     <th className="text-left px-5 py-4 font-semibold">{t("pages.doctor.th_type")}</th>
                     <th className="text-left px-5 py-4 font-semibold">{t("pages.doctor.th_status")}</th>
@@ -608,6 +610,13 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                                 <p className="text-xs text-muted-foreground/70 capitalize">{a.booking_type}</p>
                               </div>
                             </div>
+                          </td>
+
+                          {/* ID */}
+                          <td className="px-5 py-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-muted/60 border border-border/50 text-[10px] font-mono font-semibold text-muted-foreground">
+                              #{a.id}
+                            </span>
                           </td>
 
                           {/* When */}

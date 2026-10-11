@@ -295,6 +295,9 @@ export function IncomingCard({
               <p className="text-[11px] font-semibold text-foreground tracking-wide">
                 {item.guest_name || item.guest_phone}
               </p>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-muted/60 border border-border/50 text-[9px] font-mono font-semibold text-muted-foreground">
+                #{item.id}
+              </span>
               {item.guest_name && item.guest_phone && (
                 <span className="text-[10px] text-muted-foreground font-mono">
                   {item.guest_phone}

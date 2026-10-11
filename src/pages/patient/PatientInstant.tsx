@@ -254,9 +254,14 @@ function AppointmentCardItem({
     >
       {/* ── Top strip ── */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
-        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Request
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Request
+          </span>
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-background border border-border/60 text-[10px] font-mono font-semibold text-muted-foreground">
+            #{appt.id}
+          </span>
+        </div>
         <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_STYLES[appt.status])}>
           {STATUS_LABEL[appt.status]}
         </span>

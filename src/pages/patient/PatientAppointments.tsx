@@ -65,7 +65,7 @@ const INITIAL_FILTERS: FilterState = {
   type: "all",
   date_from: "",
   date_to: "",
-  sort: "date-asc",
+  sort: "date-desc",
   page: 1,
 };
 
@@ -243,9 +243,14 @@ function AppointmentCardItem({
     >
       {/* ── Top strip ── */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
-        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          {t("pages.patient.appt_card_badge")}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            {t("pages.patient.appt_card_badge")}
+          </span>
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-background border border-border/60 text-[10px] font-mono font-semibold text-muted-foreground">
+            #{appt.id}
+          </span>
+        </div>
         <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_STYLES[appt.status])}>
           {getStatusLabel(t, appt.status)}
         </span>
@@ -436,9 +441,10 @@ const PatientAppointments = () => {
   const sorted = useMemo(() => {
     return [...appointments].sort((a, b) => {
       switch (filters.sort) {
-        case "date-desc": return b.appointment_date.localeCompare(a.appointment_date);
+        case "date-asc": return a.appointment_date.localeCompare(b.appointment_date);
         case "doctor": return getDoctorName(a).localeCompare(getDoctorName(b));
-        default: return a.appointment_date.localeCompare(b.appointment_date);
+        default: // date-desc — newest first
+          return b.appointment_date.localeCompare(a.appointment_date);
       }
     });
   }, [appointments, filters.sort]);
@@ -718,6 +724,7 @@ const PatientAppointments = () => {
                   <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_doctor_hospital")}</th>
+                      <th className="text-left px-5 py-4 font-semibold text-muted-foreground/60">#ID</th>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_specialty")}</th>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_datetime")}</th>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_filter_type_label")}</th>
@@ -745,6 +752,11 @@ const PatientAppointments = () => {
                               </div>
                               <span className="font-semibold text-sm text-foreground">{getDoctorName(a)}</span>
                             </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-[4px] bg-muted/60 border border-border/50 text-[10px] font-mono font-semibold text-muted-foreground">
+                              #{a.id}
+                            </span>
                           </td>
                           <td className="px-5 py-4 text-muted-foreground/80">{getSpecialty(a)}</td>
                           <td className="px-5 py-4 whitespace-nowrap">
