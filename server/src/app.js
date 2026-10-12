@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { execFile } from "child_process";
 import multer from "multer";
 import { registerActions } from "./actions.js";
 import {
@@ -2964,6 +2965,27 @@ export function appRoutes(router) {
     } catch (error) {
       next(error);
     }
+  });
+
+  // ── Self-deploy webhook ───────────────────────────────────────────────────
+  // GitHub Actions POSTs here on every push to main.
+  // Runs deploy.sh which git-pulls latest server/src/* and restarts the service.
+  router.post("/deploy", (req, res) => {
+    const secret = process.env.DEPLOY_SECRET || "MediDeploy@2026!";
+    const header = (req.headers["authorization"] || req.headers["x-deploy-secret"] || "").trim();
+    const token = header.startsWith("Bearer ") ? header.slice(7) : header;
+    // Constant-time compare via HMAC to avoid timing attacks
+    const a = crypto.createHmac("sha256", "k").update(token).digest("hex");
+    const b = crypto.createHmac("sha256", "k").update(secret).digest("hex");
+    if (a !== b) return res.status(401).json({ message: "Unauthorized" });
+
+    res.status(202).json({ message: "Deploy started" });
+
+    // Run the deploy script asynchronously — don't block the response
+    execFile("bash", ["/opt/mediconnect-node/deploy.sh"], { timeout: 120000 }, (err, stdout, stderr) => {
+      if (err) console.error("[deploy] FAILED:", err.message, stderr?.slice(0, 300));
+      else console.log("[deploy] SUCCESS:", stdout?.slice(-200));
+    });
   });
 
   registerActions(router, RESOURCES);

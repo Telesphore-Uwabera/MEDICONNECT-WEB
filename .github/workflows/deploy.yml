@@ -12,15 +12,17 @@ jobs:
 
     steps:
       - name: Notify server to pull and restart
+        env:
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
         run: |
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST https://api.mediconnect.rw/deploy \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
-            --max-time 15)
+            -X POST https://api.mediconnect.rw/api/v1/deploy \
+            -H "Authorization: Bearer ${DEPLOY_SECRET}" \
+            --max-time 30)
           echo "HTTP status: $RESPONSE"
           if [ "$RESPONSE" = "202" ]; then
             echo "Deploy triggered successfully"
           else
-            echo "Deploy trigger failed with status $RESPONSE"
+            echo "Deploy trigger failed with HTTP $RESPONSE"
             exit 1
           fi
