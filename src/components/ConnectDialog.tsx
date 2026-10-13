@@ -567,7 +567,10 @@ export const ConnectDialogContent = ({
     console.info("[Poll] statusData:", JSON.stringify(statusData));
 
     setDoctorBusy(Boolean(statusData.doctor_busy));
-    if (statusData.status === "accepted" || statusData.status === "in_progress") {
+    if (statusData.status === "accepted" || statusData.status === "in_progress" ||
+        // Treat confirmed+paid as accepted: room is ready, patient can join
+        // immediately without waiting for the doctor to click Accept.
+        (statusData.status === "confirmed" && statusData.payment_status === "paid")) {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
@@ -891,14 +894,32 @@ export const ConnectDialogContent = ({
         payment_uuid: payRes?.payment_uuid ? "[set]" : null,
       }));
 
-      const finishPaid = (result?: { account_created?: boolean; account_email?: string | null }) => {
+      const finishPaid = (result?: { account_created?: boolean; account_email?: string | null; consultation?: { status: string; payment_status: string | null; room_url: string; daily_guest_token: string } | null }) => {
         const name = me?.name ?? guestName;
         const phone = me?.phone ?? guestPhone;
         if (consultationToken) session.save(consultationToken, name, phone, consultationId);
+
+        // If the consultation is already confirmed+paid (or accepted/in_progress),
+        // transition immediately to the join phase without waiting for the doctor.
+        const consult = result?.consultation;
+        const canJoinNow = consult &&
+          (consult.status === "accepted" || consult.status === "in_progress" ||
+           (consult.status === "confirmed" && consult.payment_status === "paid"));
+
+        if (canJoinNow && signedInRef.current) {
+          setRoomUrl(consult!.room_url);
+          setDailyToken(consult!.daily_guest_token);
+          setPhase(consult!.status === "in_progress" ? "in_progress" : "accepted");
+          session.clear();
+          return;
+        }
+
         if (signedInRef.current) {
           setPhase("polling");
           return;
         }
+
+        // Guest path — show login form with credentials
         const email = result?.account_email || guestEmail;
         setGuestEmail(email);
         setLoginIdentifier(email);
@@ -1043,6 +1064,22 @@ export const ConnectDialogContent = ({
         // existing confirmed consultation instead of navigating to dashboard.
         if (consultationToken) {
           session.save(consultationToken, data.user.name, data.user.phone ?? "", consultationId ?? undefined);
+          // Check if consultation is already confirmed+paid — if so, jump
+          // directly to the join phase instead of making the patient wait for polling.
+          try {
+            const statusRes = await apiFetch<{ status: string; payment_status: string | null; room_url: string; daily_guest_token: string; daily_room_name?: string }>(
+              `/public/instant-consultations/${consultationToken}/status`,
+            );
+            const readyNow = statusRes.status === "accepted" || statusRes.status === "in_progress" ||
+              (statusRes.status === "confirmed" && statusRes.payment_status === "paid");
+            if (readyNow) {
+              setRoomUrl(statusRes.room_url);
+              setDailyToken(statusRes.daily_guest_token);
+              setPhase(statusRes.status === "in_progress" ? "in_progress" : "accepted");
+              session.clear();
+              return;
+            }
+          } catch { /* fall through to polling */ }
           setPhase("polling");
         } else {
           // No active consultation token — fall back to patient instant page

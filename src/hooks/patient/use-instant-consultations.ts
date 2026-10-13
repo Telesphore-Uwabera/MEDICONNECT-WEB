@@ -80,6 +80,14 @@ export interface CheckInvoiceResponse {
   status: "paid" | "pending" | string;
   account_created?: boolean;
   account_email?: string | null;
+  consultation?: {
+    id: number;
+    status: string;
+    payment_status: string | null;
+    room_name: string;
+    room_url: string;
+    daily_guest_token: string;
+  } | null;
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────

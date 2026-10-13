@@ -258,13 +258,20 @@ async function confirmPaidInvoice(payment, remote) {
     const table = (await tableExists("instant_consultation_requests"))
       ? "instant_consultation_requests"
       : "instant_consultations";
-    const row = await one(`SELECT id, status FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
+    const row = await one(`SELECT id, status, doctor_id, room_name, daily_room_name FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
     if (row) {
       const open = ["pending", "queued", "waiting", "payment_pending", ""].includes(String(row.status || ""));
-      await update(table, row.id, {
+      // Pre-create the consultation room name so the patient can get a token
+      // immediately after payment without waiting for the doctor to click Accept.
+      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+      const patch = {
         payment_status: "paid",
         ...(open ? { status: "confirmed" } : {}),
-      });
+      };
+      // Store the room name if not already set so the patient token works
+      if (!row.room_name && await hasColumn(table, "room_name")) patch.room_name = roomName;
+      if (!row.daily_room_name && await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
+      await update(table, row.id, patch);
     }
   }
   if (payableId && payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
@@ -1592,6 +1599,27 @@ export function publicRoutes(router) {
         account_created: Boolean(payment?.account_created),
         account_email: payment?.account_email || null,
         payment: payment ? await presentRow("payments", payment) : null,
+        // Also return the consultation status so the frontend can transition
+        // to "accepted" immediately when status=confirmed and payment=paid.
+        consultation: await (async () => {
+          if (!payment?.payable_id || !String(payment?.payable_type || "").includes("instant")) return null;
+          const table = (await tableExists("instant_consultation_requests"))
+            ? "instant_consultation_requests" : "instant_consultations";
+          const row = await one(`SELECT id, status, payment_status, guest_token, daily_room_name, room_name, daily_guest_token FROM \`${table}\` WHERE id = ?`, [payment.payable_id]).catch(() => null);
+          if (!row) return null;
+          const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+          return {
+            id: row.id,
+            status: row.status,
+            payment_status: row.payment_status,
+            room_name: roomName,
+            room_url: `/consultation/${roomName}`,
+            daily_guest_token: row.daily_guest_token || callToken({
+              room: roomName, role: "patient", consultationId: row.id,
+              name: "Patient",
+            }),
+          };
+        })(),
       });
     } catch (error) {
       next(error);
