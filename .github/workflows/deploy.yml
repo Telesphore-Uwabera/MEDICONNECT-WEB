@@ -7,27 +7,28 @@ on:
 
 jobs:
   deploy:
-    name: Deploy server files
+    name: Trigger server deploy
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Copy server files and restart via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 197.243.29.114
-          username: root
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: 22
-          timeout: 120s
-          script: |
-            cd /opt/mediconnect-node
-            git -C /tmp/mediconnect-deploy fetch --depth=1 origin main 2>/dev/null || \
-              git clone --depth=1 --branch main https://github.com/Telesphore-Uwabera/MEDICONNECT-WEB.git /tmp/mediconnect-deploy
-            git -C /tmp/mediconnect-deploy reset --hard origin/main
-            cp -r /tmp/mediconnect-deploy/server/src/* /opt/mediconnect-node/src/
-            systemctl restart mediconnect-node
-            sleep 4
-            systemctl is-active mediconnect-node && echo "DEPLOY SUCCESS" || echo "DEPLOY FAILED"
+      - name: Notify server to pull and restart
+        env:
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+        run: |
+          for i in 1 2 3; do
+            RESPONSE=$(curl -s -o /tmp/deploy_resp.txt -w "%{http_code}" \
+              -X POST https://api.mediconnect.rw/api/v1/deploy \
+              -H "Authorization: Bearer ${DEPLOY_SECRET}" \
+              --max-time 60 \
+              --retry 2 \
+              --retry-delay 5)
+            echo "Attempt $i — HTTP status: $RESPONSE"
+            cat /tmp/deploy_resp.txt || true
+            if [ "$RESPONSE" = "202" ]; then
+              echo "Deploy triggered successfully"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "All attempts failed"
+          exit 1
