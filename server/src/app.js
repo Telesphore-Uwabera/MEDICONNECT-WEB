@@ -2971,7 +2971,7 @@ export function appRoutes(router) {
   // GitHub Actions POSTs here on every push to main.
   // Runs deploy.sh which git-pulls latest server/src/* and restarts the service.
   router.post("/deploy", (req, res) => {
-    const secret = process.env.DEPLOY_SECRET || "MediDeploy@2026!";
+    const secret = process.env.DEPLOY_SECRET || "MediDeploy2026Rw";
     const header = (req.headers["authorization"] || req.headers["x-deploy-secret"] || "").trim();
     const token = header.startsWith("Bearer ") ? header.slice(7) : header;
     // Constant-time compare via HMAC to avoid timing attacks
