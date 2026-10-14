@@ -528,7 +528,9 @@ export function InstantConsultTab() {
                   dotCls="bg-[hsl(var(--success))]"
                   label={doctorBusy
                     ? t("consult.bookings.waiting_in_queue", { defaultValue: "Waiting in queue" })
-                    : t("consult.bookings.ready_to_accept")}
+                    : confirmed.some(i => i.payment_status === "paid")
+                      ? t("consult.bookings.ready_to_join", { defaultValue: "Paid — Ready to Join" })
+                      : t("consult.bookings.ready_to_accept")}
                   count={confirmed.length}
                 />
                 {confirmed.map((item) => (
@@ -539,6 +541,27 @@ export function InstantConsultTab() {
                     onDecline={() => handleDecline(item)}
                     isAccepting={activeAction?.id === item.id && activeAction.action === "accepting"}
                     isDeclining={activeAction?.id === item.id && activeAction.action === "declining"}
+                    onJoin={
+                      // Paid + confirmed: doctor can join directly (accept+join in one step)
+                      item.payment_status === "paid" && !doctorBusy
+                        ? () => {
+                            setActiveAction({ id: item.id, action: "accepting" });
+                            acceptInstant.mutate(item.id, {
+                              onSuccess: (res) => {
+                                setActiveAction({ id: item.id, action: "joining" });
+                                const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
+                                try {
+                                  const decoded = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
+                                  decoded.consultation_id = item.id;
+                                  startCall(roomName, decoded);
+                                } catch { /* fallback */ }
+                              },
+                              onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_accept"))),
+                              onSettled: () => setActiveAction(null),
+                            });
+                          }
+                        : undefined
+                    }
                   />
                 ))}
               </section>

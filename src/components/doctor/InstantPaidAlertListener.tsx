@@ -227,7 +227,9 @@ export function InstantPaidAlertListener() {
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {activeAlert.kind === "instant"
-                  ? "A patient is waiting for you to accept the call."
+                  ? activeAlert.item.payment_status === "paid"
+                    ? "Payment confirmed — the patient is ready. Join now or open the queue."
+                    : "A patient is waiting for you to accept the call."
                   : "A scheduled appointment is ready for you to review or join."}
               </p>
             </div>
@@ -267,6 +269,22 @@ export function InstantPaidAlertListener() {
             >
               Later
             </button>
+            {activeAlert.kind === "instant" && activeAlert.item.payment_status === "paid" && (
+              <button
+                type="button"
+                onClick={() => {
+                  dismiss();
+                  navigate("/doctor/appointments?tab=instant");
+                }}
+                className={cn(
+                  "inline-flex h-9 items-center gap-2 rounded-[6px] bg-emerald-600 px-3 text-xs font-semibold text-white",
+                  "hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400",
+                )}
+              >
+                <Phone className="h-3.5 w-3.5" />
+                Join Now
+              </button>
+            )}
             <button
               type="button"
               onClick={openQueue}
