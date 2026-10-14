@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2, Paperclip } from "lucide-react";
+import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2, Paperclip, Monitor, MonitorOff, Hand, Clock, Signal } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
 import { useAudioVolume } from "@/hooks/video/use-audio-volume";
 import { usePictureInPicture } from "@/hooks/video/usePictureInPicture";
@@ -95,9 +95,106 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const [unreadProofCount, setUnreadProofCount] = useState(0);
   const [proofSignal, setProofSignal] = useState<{ id: number; nonce: number } | null>(null);
 
+  // ── Screen sharing ────────────────────────────────────────────────────────
+  const [screenSharing, setScreenSharing] = useState(false);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const screenVideoRef = useRef<HTMLVideoElement>(null);
+
+  const startScreenShare = useCallback(async () => {
+    try {
+      const stream = await (navigator.mediaDevices as any).getDisplayMedia({
+        video: { frameRate: { ideal: 15, max: 30 } },
+        audio: false,
+      });
+      screenStreamRef.current = stream;
+      if (screenVideoRef.current) screenVideoRef.current.srcObject = stream;
+      // Replace video track in peer connection
+      const videoTrack = stream.getVideoTracks()[0];
+      const pc = pcRef.current;
+      if (pc && videoTrack) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+        if (sender) await sender.replaceTrack(videoTrack);
+      }
+      setScreenSharing(true);
+      sendSignalRef.current?.("screen-sharing", { active: true });
+      // Auto-stop when user stops via browser UI
+      videoTrack.onended = () => stopScreenShare();
+    } catch (e: any) {
+      if (e?.name !== "NotAllowedError") toast.error("Could not start screen share.");
+    }
+  }, []);
+
+  const stopScreenShare = useCallback(async () => {
+    const stream = screenStreamRef.current;
+    stream?.getTracks().forEach((t) => t.stop());
+    screenStreamRef.current = null;
+    if (screenVideoRef.current) screenVideoRef.current.srcObject = null;
+    // Restore camera track
+    const videoTrack = localStreamRef.current?.getVideoTracks()[0];
+    const pc = pcRef.current;
+    if (pc && videoTrack) {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (sender) await sender.replaceTrack(videoTrack);
+    }
+    setScreenSharing(false);
+    sendSignalRef.current?.("screen-sharing", { active: false });
+  }, []);
+
+  // ── Raise hand ────────────────────────────────────────────────────────────
+  const [handRaised, setHandRaised] = useState(false);
+  const [remoteHandRaised, setRemoteHandRaised] = useState(false);
+  const handTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toggleHand = useCallback(() => {
+    const next = !handRaised;
+    setHandRaised(next);
+    sendSignalRef.current?.("raise-hand", { raised: next });
+    if (next) {
+      // Auto-lower after 30s
+      if (handTimerRef.current) clearTimeout(handTimerRef.current);
+      handTimerRef.current = setTimeout(() => {
+        setHandRaised(false);
+        sendSignalRef.current?.("raise-hand", { raised: false });
+      }, 30_000);
+    } else {
+      if (handTimerRef.current) clearTimeout(handTimerRef.current);
+    }
+  }, [handRaised]);
+
+  // ── Connection quality ────────────────────────────────────────────────────
+  const [connQuality, setConnQuality] = useState<"good" | "fair" | "poor" | null>(null);
+  const qualityTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (connState !== "connected") { setConnQuality(null); return; }
+    const measure = async () => {
+      const pc = pcRef.current;
+      if (!pc) return;
+      try {
+        const stats = await pc.getStats();
+        let rtt = 0; let lost = 0; let packets = 0;
+        stats.forEach((s: any) => {
+          if (s.type === "remote-inbound-rtp" && s.kind === "video") {
+            rtt = s.roundTripTime ?? 0;
+            lost = s.packetsLost ?? 0;
+            packets = s.packetsReceived ?? 1;
+          }
+        });
+        const lossRate = packets > 0 ? lost / (lost + packets) : 0;
+        if (rtt < 0.15 && lossRate < 0.02) setConnQuality("good");
+        else if (rtt < 0.4 && lossRate < 0.08) setConnQuality("fair");
+        else setConnQuality("poor");
+      } catch { /* ignore */ }
+    };
+    measure();
+    qualityTimerRef.current = setInterval(measure, 5000);
+    return () => { if (qualityTimerRef.current) clearInterval(qualityTimerRef.current); };
+  }, [connState]);
+
   // Remote media status
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(true);
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(true);
+  const [remoteScreenSharing, setRemoteScreenSharing] = useState(false);
   const [durationWarningVisible, setDurationWarningVisible] = useState(false);
 
   // Audio wave status
@@ -513,6 +610,22 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         if (audio !== undefined) setRemoteAudioEnabled(audio);
         if (video !== undefined) setRemoteVideoEnabled(video);
       }
+      else if (payload.type === "screen-sharing") {
+        const { active } = payload.data as { active: boolean };
+        setRemoteScreenSharing(Boolean(active));
+        if (active && !isOwner) toast.info("Doctor is sharing their screen.");
+      }
+      else if (payload.type === "raise-hand") {
+        const { raised } = payload.data as { raised: boolean };
+        setRemoteHandRaised(Boolean(raised));
+        if (raised) {
+          toast.info(isOwner ? "✋ Patient raised their hand." : "✋ You raised your hand — the doctor has been notified.", { duration: 5000 });
+          // Play a subtle notification sound if doctor
+          if (isOwner) {
+            try { new Audio("/audio/new-notification-057-494255.mp3").play().catch(() => {}); } catch {}
+          }
+        }
+      }
       else if (payload.type === "consultation-meta") {
         // Peer is telling us the consultation id (used when our token lacked one).
         const id = Number((payload.data as { consultation_id?: unknown })?.consultation_id);
@@ -817,12 +930,16 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const endCall = () => {
     sendSignal("bye");
     if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+    if (handTimerRef.current) clearTimeout(handTimerRef.current);
+    if (qualityTimerRef.current) clearInterval(qualityTimerRef.current);
+    // Stop screen share if active
+    if (screenSharing) {
+      screenStreamRef.current?.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
     pcRef.current?.close();
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     echo.leaveChannel(`consultation.${roomName}`);
-    // When the doctor ends a scheduled-appointment call, kick off the same
-    // post-call flow as instant: required medical record → optional booking →
-    // mark the appointment complete. Patient-ended / instant calls just close.
     if (isOwner && chatMode === "appointment" && effectiveConsultationId != null) {
       requestAppointmentCompletion({ appointmentId: effectiveConsultationId });
     }
@@ -922,6 +1039,16 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
               )}
             </div>
 
+            {/* Screen share preview — shows the local screen being shared */}
+            {screenSharing && !isMinimized && (
+              <div className="absolute bottom-4 right-[11rem] sm:right-[10rem] w-48 h-28 sm:w-56 sm:h-32 rounded-[6px] border border-blue-500/50 overflow-hidden shadow-xl z-10 bg-[#0c0c0c]">
+                <video ref={screenVideoRef} autoPlay playsInline muted className="w-full h-full object-contain" />
+                <div className="absolute top-1 left-1 flex items-center gap-1 bg-blue-600/80 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-[4px]">
+                  <Monitor className="w-3 h-3" /> Your screen
+                </div>
+              </div>
+            )}
+
             <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between z-20 transition-all bg-gradient-to-b from-black/70 via-black/25 to-transparent", isMinimized ? "px-2.5 py-2" : "px-4 py-3 sm:px-5 sm:py-4")}>
               {/* Status pill */}
               <div
@@ -940,12 +1067,39 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                     {connState === "connected" && (
                       <>
                         <span className="text-white/25">·</span>
-                        <span className={cn("text-[11px] font-mono tabular-nums leading-none", isDurationWarningActive ? "text-amber-200" : "text-white/55")}>{fmtElapsed(elapsed)}</span>
+                        <span className={cn("text-[11px] font-mono tabular-nums leading-none", isDurationWarningActive ? "text-amber-200" : "text-white/55")}>
+                          <Clock className="inline w-3 h-3 mr-0.5 opacity-60" />{fmtElapsed(elapsed)}
+                        </span>
+                        {connQuality && (
+                          <>
+                            <span className="text-white/25">·</span>
+                            <span className={cn("text-[10px] font-medium leading-none flex items-center gap-0.5",
+                              connQuality === "good" ? "text-emerald-400" : connQuality === "fair" ? "text-amber-400" : "text-red-400")}>
+                              <Signal className="w-3 h-3" />
+                              {connQuality === "good" ? "Good" : connQuality === "fair" ? "Fair" : "Poor"}
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </>
                 )}
               </div>
+
+              {/* Screen sharing indicator */}
+              {!isMinimized && (remoteScreenSharing || screenSharing) && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[11px] font-medium">
+                  <Monitor className="w-3 h-3" />
+                  {screenSharing ? "Sharing your screen" : `${isOwner ? "Patient" : "Doctor"} is sharing screen`}
+                </div>
+              )}
+
+              {/* Raise hand indicator (remote) */}
+              {!isMinimized && remoteHandRaised && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[11px] font-semibold animate-pulse">
+                  ✋ {isOwner ? "Patient raised hand" : "Hand raised"}
+                </div>
+              )}
 
               {/* Window controls */}
               <div className="flex items-center gap-1.5">
@@ -1104,6 +1258,35 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                     <FileText className="w-5 h-5" />
                   </button>
                 )}
+
+                {/* ── Screen share — both doctor and patient ── */}
+                <div className="w-px h-6 bg-white/10 mx-0.5 sm:mx-1" />
+                <button
+                  onClick={screenSharing ? stopScreenShare : startScreenShare}
+                  title={screenSharing ? "Stop sharing screen" : "Share your screen"}
+                  aria-label={screenSharing ? "Stop screen share" : "Share screen"}
+                  aria-pressed={screenSharing}
+                  className={cn(
+                    "h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0",
+                    screenSharing ? "bg-blue-500 hover:bg-blue-400 text-white ring-2 ring-blue-400/40" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white",
+                  )}
+                >
+                  {screenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                </button>
+
+                {/* ── Raise hand — both ── */}
+                <button
+                  onClick={toggleHand}
+                  title={handRaised ? "Lower hand" : "Raise hand"}
+                  aria-label={handRaised ? "Lower hand" : "Raise hand"}
+                  aria-pressed={handRaised}
+                  className={cn(
+                    "h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0",
+                    handRaised ? "bg-amber-500 hover:bg-amber-400 text-white ring-2 ring-amber-400/40 animate-pulse" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white",
+                  )}
+                >
+                  <Hand className="w-5 h-5" />
+                </button>
               </>
             )}
           </div>
