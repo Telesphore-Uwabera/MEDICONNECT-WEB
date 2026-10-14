@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-001",
+  "type": "refactor",
+  "description": "Update use-hospital-dashboard.ts to export all dashboard types and useGetHospitalDashboard, then refactor HospitalAnalytics.tsx to import from the hook file instead of defining them locally. These two files are coupled: the page must import from the hook, so both are done in this single feature.",
+  "status": "completed",
+  "steps": [
+    "READ src/hooks/hospital/use-hospital-dashboard.ts — note the existing useGetHospitalStats stub (keep it for backward compat, just remove the console.log and unused useMutation/useQueryClient imports).",
+    "READ src/pages/hospital/HospitalAnalytics.tsx — locate all type/interface declarations (DashboardPeriod, ChartGroup, BookingStatus, HospitalDashboardParams, BookingStatusCounts, AppointmentStatusCounts, TodaySnapshot, RevenueStats, BookingsChartPoint, DailyAppointmentPoint, UpcomingAppointment, Department, TopService, ServicesStats, TopDoctor, DoctorsStats, RecentReview, ReviewsStats, HospitalDashboardData) and the local useGetHospitalStats function defined in the page file. These are the items to migrate.",
+    "REWRITE src/hooks/hospital/use-hospital-dashboard.ts: imports are 'import { useQuery } from @tanstack/react-query' and 'import { apiFetch } from @/lib/api'. Export every type/interface listed above. Export function useGetHospitalDashboard(params: HospitalDashboardParams = {}) that builds URLSearchParams from all params fields (period, start_date, end_date, chart_group, department_id as String, status, search), constructs url = qs ? BASE + '?' + qs : BASE, and returns useQuery<HospitalDashboardData>({ queryKey: ['hospital-dashboard', params], queryFn: () => apiFetch(url), staleTime: 60_000 }). Keep existing useGetHospitalStats() as a bare no-params function for backward compat (just remove the console.log inside it).",
+    "REWRITE src/pages/hospital/HospitalAnalytics.tsx: remove the block of type/interface declarations (everything from 'export type DashboardPeriod' down through 'interface HospitalDashboardData { ... }'). Remove the const BASE = '/hospital/dashboard' line and the local useGetHospitalStats function. Add to the import section: import { useGetHospitalDashboard, type HospitalDashboardParams, type DashboardPeriod, type ChartGroup, type BookingStatus, type BookingsChartPoint, type DailyAppointmentPoint, type UpcomingAppointment, type Department } from '@/hooks/hospital/use-hospital-dashboard'. Change the call site from useGetHospitalStats(dashboardParams) to useGetHospitalDashboard(dashboardParams). Keep ALL JSX, Recharts charts, FilterBar usage, helper components (Skeleton, SectionTitle, Card, StatusRow, MiniBar), tab logic, and local derived types (DeptPieSlice, StatusSlice, StarRow) exactly unchanged.",
+    "Run npm run build and fix any TypeScript errors before committing."
+  ],
+  "acceptance_criteria": [
+    "src/hooks/hospital/use-hospital-dashboard.ts exports useGetHospitalDashboard, useGetHospitalStats, HospitalDashboardParams, HospitalDashboardData, and all sub-types",
+    "src/pages/hospital/HospitalAnalytics.tsx contains zero locally-defined API type interfaces — all imported from the hook file",
+    "The component still uses useGetHospitalDashboard (not useGetHospitalStats) at the call site",
+    "npm run build completes with zero TypeScript or bundle errors"
+  ],
+  "verification": [
+    "cd 'c:\\Users\\uwabe\\Desktop\\MEDICONNECT WEB' && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "All 19 exported types/interfaces now live in use-hospital-dashboard.ts. HospitalAnalytics.tsx imports only the 8 types it references directly (HospitalDashboardParams, DashboardPeriod, ChartGroup, BookingStatus, BookingsChartPoint, DailyAppointmentPoint, UpcomingAppointment, Department) — the remaining types (RevenueStats, ServicesStats, DoctorsStats, ReviewsStats, etc.) are consumed indirectly through HospitalDashboardData. FEAT-002 note: useGetHospitalStats() backward-compat stub is now parameter-free and uses queryKey 'hospital-stats'; any caller that previously passed params to it should be migrated to useGetHospitalDashboard."
+}
