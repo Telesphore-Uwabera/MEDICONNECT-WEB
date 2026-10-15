@@ -109,23 +109,21 @@ function PeriodBar({
   const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Period pills */}
-      <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
-        {PERIODS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => onPeriod(p.value)}
-            className={cn(
-              "px-3 py-1.5 text-[11px] font-medium transition-all duration-150 border-r border-border/60 last:border-r-0",
-              period === p.value
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
-            )}
-          >
-            {t(p.labelKey)}
-          </button>
-        ))}
-      </div>
+      {/* Period pills — match site pattern: individual bordered pills */}
+      {PERIODS.map((p) => (
+        <button
+          key={p.value}
+          onClick={() => onPeriod(p.value)}
+          className={cn(
+            "px-4 py-1.5 rounded-[6px] text-xs font-semibold border transition-colors",
+            period === p.value
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-card border-border/60 text-muted-foreground hover:border-primary/50 hover:text-foreground",
+          )}
+        >
+          {t(p.labelKey)}
+        </button>
+      ))}
 
       {/* Custom date range inputs */}
       {period === "custom" && (
@@ -147,20 +145,18 @@ function PeriodBar({
       {/* Fetching indicator */}
       {isFetching && <Loader2 size={13} className="animate-spin text-primary" />}
 
-      {/* Chart group */}
-      <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm ml-auto">
-        <span className="px-2 py-1.5 text-[10px] text-muted-foreground/70 font-medium border-r border-border/60 bg-muted/30">
-          {t("pages.pharmacy.group")}
-        </span>
+      {/* Chart group — match site: individual pills right-aligned */}
+      <div className="flex items-center gap-1 ml-auto">
+        <span className="text-[10px] text-muted-foreground/70 font-medium mr-1">{t("pages.pharmacy.group")}</span>
         {CHART_GROUPS.map((g) => (
           <button
             key={g.value}
             onClick={() => onChartGroup(g.value)}
             className={cn(
-              "px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 border-r border-border/60 last:border-r-0",
+              "px-3 py-1.5 rounded-[6px] text-xs border transition-colors capitalize",
               chartGroup === g.value
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                ? "bg-secondary text-foreground border-border"
+                : "bg-transparent border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
             {t(g.labelKey)}
@@ -183,15 +179,15 @@ function Section({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-[6px] border border-border bg-card shadow-sm overflow-hidden", className)}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+    <div className={cn("rounded-[6px] border border-border/70 bg-card shadow-soft overflow-hidden", className)}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-muted/20">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-[6px] bg-primary/15 flex items-center justify-center text-primary">
-            <Icon size={13} />
+          <div className="w-7 h-7 rounded-[6px] bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <Icon size={14} />
           </div>
-          <span className="text-xs font-semibold text-foreground">{title}</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{title}</span>
         </div>
-        {action && <div className="text-[11px] text-muted-foreground">{action}</div>}
+        {action && <div className="text-[11px]">{action}</div>}
       </div>
       {children}
     </div>
@@ -744,7 +740,7 @@ function PharmacyDashboard() {
           subtitle={t("pages.pharmacy.overview_sub")}
         />
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
 
           {/* Period / chart-group controls */}
           <PeriodBar
@@ -840,13 +836,13 @@ function PharmacyDashboard() {
 
               {/* OVERVIEW TAB */}
               {activeTab === "overview" && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
                   {/* KPI cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {isLoading
                       ? Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="rounded-[6px] border border-border bg-card p-4 animate-pulse space-y-2">
+                        <div key={i} className="rounded-[6px] border border-border/70 bg-card p-3 shadow-soft animate-pulse space-y-2">
                           <SkeletonBox className="h-3 w-20" />
                           <SkeletonBox className="h-7 w-16" />
                         </div>
@@ -893,7 +889,7 @@ function PharmacyDashboard() {
 
               {/* INVENTORY TAB */}
               {activeTab === "inventory" && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   {/* Top medicines + Stock alerts */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     <TopMedicines medicines={data?.top_medicines ?? []} loading={isLoading} />
@@ -986,7 +982,7 @@ function PharmacyDashboard() {
 
               {/* PRESCRIPTIONS TAB */}
               {activeTab === "prescriptions" && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <Awaiting 
                     items={data?.prescriptions.awaiting_action ?? []}
                     counts={{ pending: data?.prescriptions.pending ?? 0, reviewing: data?.prescriptions.reviewing ?? 0 }}

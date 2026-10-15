@@ -67,9 +67,9 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-[12px] font-semibold text-foreground mb-3">
+    <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
       {children}
-    </h3>
+    </p>
   );
 }
 
@@ -82,7 +82,7 @@ function Card({
 }) {
   return (
     <div
-      className={`rounded-[6px] border border-border/70 bg-card p-4 shadow-sm ${className}`}
+      className={`rounded-[6px] border border-border/70 bg-card p-4 shadow-soft ${className}`}
     >
       {children}
     </div>
@@ -386,7 +386,7 @@ const HospitalAnalytics = () => {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-3">
             <div className="rounded-[6px] border border-border/70 bg-card shadow-sm overflow-hidden">
               <div className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
                 <div className="flex items-center gap-2 min-w-0">
@@ -540,7 +540,7 @@ const HospitalAnalytics = () => {
 
             {/* OVERVIEW TAB */}
             {activeTab === "overview" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/*  TOP STAT STRIP   */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {isLoading ? (
@@ -577,7 +577,7 @@ const HospitalAnalytics = () => {
                   )}
                 </div>
  
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <Card>
                     <SectionTitle>
                       {t("pages.hospital.today_bookings")}
@@ -721,7 +721,7 @@ const HospitalAnalytics = () => {
                 </div>
 
                 {/*   BOOKINGS CHART + DEPT PIE   */}
-                <div className="grid lg:grid-cols-3 gap-4">
+                <div className="grid lg:grid-cols-3 gap-3">
                   <Card className="lg:col-span-2">
                     <SectionTitle>{t("pages.hospital.patient_flow")}</SectionTitle>
                     {isLoading ? (
@@ -915,7 +915,7 @@ const HospitalAnalytics = () => {
 
             {/* FINANCIAL TAB */}
             {activeTab === "financial" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/*  REVENUE   */}
                 <Card>
                   <div className="flex items-center justify-between mb-3">
@@ -1030,9 +1030,9 @@ const HospitalAnalytics = () => {
 
             {/* CLINICAL TAB */}
             {activeTab === "clinical" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/*  APPOINTMENTS DAILY + UPCOMING   */}
-                <div className="grid lg:grid-cols-3 gap-4">
+                <div className="grid lg:grid-cols-3 gap-3">
                   <Card className="lg:col-span-2">
                     <SectionTitle>{t("pages.hospital.daily_appointments")}</SectionTitle>
                     {isLoading ? (
@@ -1160,7 +1160,7 @@ const HospitalAnalytics = () => {
                 </div>
 
                 {/*   SERVICES + DOCTORS   */}
-                <div className="grid lg:grid-cols-2 gap-4">
+                <div className="grid lg:grid-cols-2 gap-3">
                   <Card>
                     <SectionTitle>{t("pages.hospital.services")}</SectionTitle>
                     {isLoading ? (
@@ -1314,7 +1314,7 @@ const HospitalAnalytics = () => {
 
             {/* REVIEWS TAB */}
             {activeTab === "reviews" && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/*   REVIEWS   */}
                 <Card>
                   <div className="flex items-center justify-between mb-3">
