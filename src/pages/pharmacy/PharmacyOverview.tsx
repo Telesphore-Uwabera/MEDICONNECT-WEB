@@ -41,7 +41,6 @@ import {
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 import { useGetPharmacyProfile } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { Link } from "react-router-dom";
-import { t } from "i18next";
 import { DateField } from "@/components/ui/date-field";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -292,25 +291,25 @@ function StockAlertsSection({
       action={<Link to={'/pharmacy/restock-requests'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">{t("pages.pharmacy.manage")} <ChevronRight size={11} /></Link>}
     >
       <div className="flex border-b border-border">
-        {tabs.map((t) => (
+        {tabs.map((tabItem) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tabItem.id}
+            onClick={() => setTab(tabItem.id)}
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium border-b-2 transition-all duration-150",
-              tab === t.id
+              tab === tabItem.id
                 ? "border-primary text-primary bg-primary/5"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40",
             )}
           >
-            <t.icon size={11} />
-            {t.label}
-            {t.count > 0 && (
+            <tabItem.icon size={11} />
+            {tabItem.label}
+            {tabItem.count > 0 && (
               <span className={cn(
                 "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
-                tab === t.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                tab === tabItem.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
               )}>
-                {t.count}
+                {tabItem.count}
               </span>
             )}
           </button>
@@ -442,7 +441,7 @@ function Awaiting({ items, counts, loading }: {
   const { t } = useTranslation();
   return (
     <Section title={t("pages.pharmacy.prescriptions")} icon={ClipboardList}
-      action={<span className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">{t("pages.pharmacy.view_all")} <ChevronRight size={11} /></span>}
+      action={<Link to="/pharmacy/prescriptions" className="flex items-center gap-1 text-primary font-medium hover:underline">{t("pages.pharmacy.view_all")} <ChevronRight size={11} /></Link>}
     >
       <div className="grid grid-cols-2 gap-px border-b border-border bg-border">
         {[
@@ -663,6 +662,12 @@ function ExternalSyncBanner({ sync }: {
 
 function QuickActions() {
   const { t } = useTranslation();
+  const routes: Record<string, string> = {
+    [t("pages.pharmacy.new_order")]: "/pharmacy/orders",
+    [t("pages.pharmacy.add_stock")]: "/pharmacy/restock-requests",
+    [t("pages.pharmacy.view_reports")]: "/pharmacy/overview",
+    [t("pages.pharmacy.deliveries")]: "/pharmacy/deliveries",
+  };
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {([
@@ -671,8 +676,9 @@ function QuickActions() {
         { label: t("pages.pharmacy.view_reports"), icon: TrendingUp, primary: false },
         { label: t("pages.pharmacy.deliveries"), icon: Truck, primary: false },
       ] as const).map(({ label, icon: Icon, primary }) => (
-        <button
+        <Link
           key={label}
+          to={routes[label] ?? "/pharmacy"}
           className={cn(
             "flex items-center gap-2 rounded-[6px] border px-3 py-2.5 text-xs font-semibold transition-all hover:shadow-sm active:scale-[0.98]",
             primary
@@ -682,7 +688,7 @@ function QuickActions() {
         >
           <Icon size={13} />
           {label}
-        </button>
+        </Link>
       ))}
     </div>
   );
@@ -930,6 +936,50 @@ function PharmacyDashboard() {
                         ))}
                       </div>
                     </div>
+                  )}
+                  {/* Stock requests mini-section */}
+                  {!isLoading && data && (
+                    <Section
+                      title={t("pages.pharmacy.restock_requests", { defaultValue: "Restock Requests" })}
+                      icon={RefreshCw}
+                      action={
+                        <Link to="/pharmacy/restock-requests" className="flex items-center gap-1 text-primary font-medium hover:underline text-[11px]">
+                          {t("pages.pharmacy.manage")} <ChevronRight size={11} />
+                        </Link>
+                      }
+                    >
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border">
+                        {[
+                          { label: t("pages.pharmacy.total", { defaultValue: "Total" }), value: data.stock_requests.total, cls: "text-foreground" },
+                          { label: t("pages.pharmacy.pending"), value: data.stock_requests.pending, cls: "text-amber-600 dark:text-amber-400" },
+                          { label: t("pages.pharmacy.approved", { defaultValue: "Approved" }), value: data.stock_requests.approved, cls: "text-emerald-600 dark:text-emerald-400" },
+                          { label: t("pages.pharmacy.received", { defaultValue: "Received" }), value: data.stock_requests.received, cls: "text-primary" },
+                        ].map(({ label, value, cls }) => (
+                          <div key={label} className="bg-card px-4 py-3 text-center">
+                            <p className={`text-base font-bold ${cls}`}>{value}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {data.stock_requests.pending_list.length > 0 && (
+                        <div className="divide-y divide-border max-h-48 overflow-y-auto">
+                          {data.stock_requests.pending_list.slice(0, 5).map((req) => (
+                            <div key={req.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                              <div className="w-7 h-7 rounded-[6px] bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-900">
+                                <RefreshCw size={12} className="text-amber-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-foreground truncate">{req.medicine_name}</p>
+                                <p className="text-[10px] text-muted-foreground">{t("pages.pharmacy.qty", { defaultValue: "Qty:" })} {req.requested_quantity} · {req.submitted}</p>
+                              </div>
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
+                                {t("pages.pharmacy.pending")}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </Section>
                   )}
                 </div>
               )}

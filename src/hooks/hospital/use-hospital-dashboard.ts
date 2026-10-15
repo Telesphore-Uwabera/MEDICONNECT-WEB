@@ -1,19 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '@/lib/api';
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
-const BASE = '/hospital/dashboard';
+const BASE = "/hospital/dashboard";
 
-// ─── Exported types ────────────────────────────────────────────────────────────
+// ─── Filter params ────────────────────────────────────────────────────────────
 
-export type DashboardPeriod = 'today' | 'week' | 'month' | 'year' | 'custom';
-export type ChartGroup = 'day' | 'week' | 'month';
+export type DashboardPeriod = "today" | "week" | "month" | "year" | "custom";
+export type ChartGroup = "day" | "week" | "month";
 export type BookingStatus =
-  | 'pending'
-  | 'accepted'
-  | 'completed'
-  | 'rejected'
-  | 'cancelled'
-  | 'all';
+  | "pending"
+  | "accepted"
+  | "completed"
+  | "rejected"
+  | "cancelled"
+  | "all";
 
 export interface HospitalDashboardParams {
   period?: DashboardPeriod;
@@ -24,6 +24,8 @@ export interface HospitalDashboardParams {
   status?: BookingStatus;
   search?: string;
 }
+
+// ─── Response types ───────────────────────────────────────────────────────────
 
 export interface BookingStatusCounts {
   total: number;
@@ -89,6 +91,9 @@ export interface UpcomingAppointment {
 export interface Department {
   id: number;
   name: string;
+  name_en?: string;
+  name_fr?: string;
+  name_kiny?: string;
   period_bookings: number;
 }
 
@@ -163,31 +168,33 @@ export interface HospitalDashboardData {
   reviews?: ReviewsStats;
 }
 
-// ─── Hooks ─────────────────────────────────────────────────────────────────────
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
-/* useGetHospitalDashboard — parameterised query used by HospitalAnalytics */
 export function useGetHospitalDashboard(params: HospitalDashboardParams = {}) {
-  const query = new URLSearchParams();
-  if (params.period) query.set('period', params.period);
-  if (params.start_date) query.set('start_date', params.start_date);
-  if (params.end_date) query.set('end_date', params.end_date);
-  if (params.chart_group) query.set('chart_group', params.chart_group);
-  if (params.department_id) query.set('department_id', String(params.department_id));
-  if (params.status) query.set('status', params.status);
-  if (params.search) query.set('search', params.search);
-  const qs = query.toString();
-  const url = qs ? `${BASE}?${qs}` : BASE;
+  const qs = new URLSearchParams();
+  if (params.period) qs.set("period", params.period);
+  if (params.period === "custom") {
+    if (params.start_date) qs.set("start_date", params.start_date);
+    if (params.end_date) qs.set("end_date", params.end_date);
+  }
+  if (params.chart_group) qs.set("chart_group", params.chart_group);
+  if (params.department_id) qs.set("department_id", String(params.department_id));
+  if (params.status) qs.set("status", params.status);
+  if (params.search?.trim()) qs.set("search", params.search.trim());
+  const qStr = qs.toString();
+  const url = qStr ? `${BASE}?${qStr}` : BASE;
+
   return useQuery<HospitalDashboardData>({
-    queryKey: ['hospital-dashboard', params],
-    queryFn: () => apiFetch(url),
+    queryKey: ["hospital-dashboard", params],
+    queryFn: () => apiFetch<HospitalDashboardData>(url),
     staleTime: 60_000,
   });
 }
 
-/* useGetHospitalStats — kept for backward compatibility */
+/** @deprecated Use useGetHospitalDashboard instead */
 export function useGetHospitalStats() {
   return useQuery({
-    queryKey: ['hospital-stats'],
+    queryKey: ["hospital-stats"],
     queryFn: () => apiFetch(BASE),
   });
 }
