@@ -37,6 +37,11 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
     return url;
   }
 
+  // Already a resolved /api/v1/media/ path — return as-is
+  if (url.startsWith("/api/v1/media/")) {
+    return url.split("?")[0];
+  }
+
   // 3. mediconnect.rw/api/v1/media/... URLs (written by saveUpload on the server)
   const mediaMatch = url.match(
     /^https?:\/\/(?:api\.mediconnect\.rw|mediconnect\.rw)(?::\d+)?\/api\/v1\/media\/([^?#]+)/i
@@ -72,6 +77,12 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
     cleanPath.startsWith("services/")
   ) {
     return `/minio/mediconnect-avatars/${cleanPath.split("?")[0]}`;
+  }
+
+  // Bare webp/jpg/png filenames written by saveUpload() on the server
+  // (e.g. "doctor_photo_31_1791508287423.webp") → served from /api/v1/media/
+  if (/\.(webp|jpe?g|png|gif|bmp|tiff?)$/i.test(cleanPath) && !cleanPath.includes("/")) {
+    return `/api/v1/media/${cleanPath}`;
   }
 
   return `/storage/${cleanPath}`;

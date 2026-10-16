@@ -44,22 +44,26 @@ export const notificationKeys = {
 /* ─── useGetNotifications  GET /notifications ────────────────────── */
 
 export function useGetNotifications(params?: { per_page?: number }) {
+  const isAuthenticated = !!localStorage.getItem("auth_token");
   return useQuery({
     queryKey: notificationKeys.list(params),
     queryFn: () => {
       const qs = params?.per_page ? `?per_page=${params.per_page}` : "";
       return apiFetch<NotificationsResponse>(`${BASE}${qs}`);
     },
+    enabled: isAuthenticated,
   });
 }
 
 /* ─── useUnreadCount  GET /notifications/unread-count ───────────── */
 
 export function useUnreadCount() {
+  const isAuthenticated = !!localStorage.getItem("auth_token");
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => apiFetch<UnreadCountResponse>(`${BASE}/unread-count`),
-    refetchInterval: 60_000, // poll every 60s
+    refetchInterval: isAuthenticated ? 60_000 : false,
+    enabled: isAuthenticated,
   });
 }
 

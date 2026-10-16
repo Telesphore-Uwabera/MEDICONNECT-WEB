@@ -144,15 +144,18 @@ const isActiveAppointmentCall = (activeCall: { roomName: string; token: any } | 
 
 export function PatientCallAlertListener() {
   const { startCall, activeCall } = useCallContext();
-  const { data: certificateData } = useGetPatientCertificates(undefined, { refetchInterval: POLL_INTERVAL_MS });
+  const isAuthenticated = !!localStorage.getItem("auth_token");
+
+  const { data: certificateData } = useGetPatientCertificates(undefined, { refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false });
   const { data: appointmentData } = useGetPatientAppointments(
     { status: "in_progress", type: "online" },
-    { refetchInterval: POLL_INTERVAL_MS },
+    { refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false },
   );
   const { data: readyInstantData } = useQuery({
     queryKey: ["patient-instant-ready"],
     queryFn: () => apiFetch<{ data: ReadyInstant | null }>("/patient/instant-consultations/ready"),
-    refetchInterval: POLL_INTERVAL_MS,
+    refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false,
+    enabled: isAuthenticated,
   });
   const readyInstant = readyInstantData?.data ?? null;
   const [activeAlert, setActiveAlert] = useState<SessionAlert | null>(null);
