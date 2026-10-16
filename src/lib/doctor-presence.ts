@@ -106,38 +106,49 @@ function isCurrentWindow(window: ScheduleWindow) {
 
 /** Instant consultation is offered only while the doctor's own schedule is open.
  *
- * Pass `ignoreSchedule = true` when the caller already knows the context is
- * instant-only (e.g. the user searched with ?type=instant) — in that case the
- * schedule-window check is skipped and the doctor's instant_consultation flag
- * alone is used to decide. This prevents instant-enabled doctors without a
- * schedule from being listed but having their "Instant Consultation" button
- * hidden.
+ * Logic:
+ * - Returns false immediately if doctor.instant_consultation is off or bookings paused.
+ * - If no schedule data has loaded yet (schedule === undefined), returns true as a
+ *   temporary optimistic state — the button will disappear once schedule loads if
+ *   the doctor is outside hours.
+ * - If schedule is loaded but has NO slots/windows at all, trust the flag (doctor
+ *   may not use the slot system but has instant on).
+ * - If schedule has slots/windows for today, at least one must cover the current
+ *   Kigali time for the button to show.
  */
 export function doctorOffersInstant(
   doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
   schedule: PublicDoctorSchedule | undefined,
   now = new Date(),
-  ignoreSchedule = false,
 ) {
   if (doctor.bookings_paused || !doctor.instant_consultation) return false;
 
-  // In explicit instant-search context: trust the flag, skip the schedule gate.
-  if (ignoreSchedule) return true;
-
-  if (!schedule) return false;
+  // Schedule hasn't loaded yet — optimistically show the button (loading state)
+  if (!schedule) return true;
 
   const { weekday, date, minutes } = kigaliNow(now);
-  const slots = (schedule.slots_for_date ?? []).filter(isCurrentWindow);
-  const todaysSlots = slots.filter((window) => onDate(window, date, weekday));
-  const openSlots = todaysSlots.filter(
-    (window) => !isBusy(window) && coversNow(window.start_time, window.end_time, minutes) && isOnlineVisit(window),
-  );
-  if (todaysSlots.length) return openSlots.length > 0;
 
+  // Check slots_for_date first (most precise — actual generated slots for today)
+  const todaySlots = (schedule.slots_for_date ?? []).filter(isCurrentWindow);
+  if (todaySlots.length > 0) {
+    // Slots exist for today — at least one must cover now and be available
+    return todaySlots.some(
+      (s) => !isBusy(s) && coversNow(s.start_time, s.end_time, minutes) && isOnlineVisit(s),
+    );
+  }
+
+  // No slots for today — check recurring + period windows
   const windows = [
     ...(schedule.recurring_availability ?? []),
     ...(schedule.availability_periods ?? []),
   ];
+
+  if (windows.length === 0) {
+    // No schedule configured at all — trust the flag (doctor doesn't use slots)
+    return true;
+  }
+
+  // Windows exist — check if current time falls inside one
   return windows.some(
     (window) =>
       isCurrentWindow(window) &&
