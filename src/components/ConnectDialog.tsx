@@ -953,7 +953,7 @@ export const ConnectDialogContent = ({
         payRes.invoice_number,
         finishPaid,
         (msg) => { setErrorMsg(msg); setPhase("payment"); },
-        { maxAttempts: 40, intervalMs: 3_000 },
+        { maxAttempts: 200, intervalMs: 3_000 },
       );
 
       (window as any).IremboPay.initiate({

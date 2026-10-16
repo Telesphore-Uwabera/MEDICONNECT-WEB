@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useIdleLogout } from "@/hooks/useIdleLogout";
 import {
   BrowserRouter,
   Navigate,
@@ -271,12 +272,19 @@ const AccessPromptManager = () => {
   );
 };
 
+/** Mounts the idle-logout timer — placed inside BrowserRouter so useNavigate works. */
+const IdleLogoutGuard = () => {
+  useIdleLogout();
+  return null;
+};
+
 const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <CallProvider>
           <Toaster />
           <Sonner />
+          <IdleLogoutGuard />
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
           <GlobalInstantPill />

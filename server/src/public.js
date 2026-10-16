@@ -536,10 +536,10 @@ async function attachPayerAccount(payment) {
       html,
     });
     if (!sent) {
-      console.error("Payer account email was not sent.");
-      await q("DELETE FROM model_has_roles WHERE model_id = ?", [user.id]).catch(() => null);
-      await q("DELETE FROM users WHERE id = ?", [user.id]).catch(() => null);
-      return { created: false, email };
+      // Email failed — log it but DO NOT delete the user account.
+      // The patient has already paid; destroying their account here locks them out
+      // and causes account_created to return false despite the payment succeeding.
+      console.error("Payer account email was not sent — account kept, patient must sign in manually.");
     }
   }
 

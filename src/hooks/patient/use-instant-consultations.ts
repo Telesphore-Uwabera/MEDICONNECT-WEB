@@ -196,7 +196,7 @@ export function useCheckInvoice() {
 interface InvoicePollerOptions {
   /** How long to wait between checks. Default: 3000 ms */
   intervalMs?: number;
-  /** Give up after this many attempts. Default: 20 (~1 min at 3 s) */
+  /** Give up after this many attempts. Default: 200 (10 min at 3 s intervals) */
   maxAttempts?: number;
 }
 
@@ -252,7 +252,7 @@ export function useInvoicePoller(): UseInvoicePollerResult {
       onFailed: (msg: string) => void,
       {
         intervalMs  = 3_000,
-        maxAttempts = 20,
+        maxAttempts = 200,   // 200 × 3s = 600s = 10 minutes
       }: InvoicePollerOptions = {},
     ) => {
       // Cancel any previous poll before starting fresh

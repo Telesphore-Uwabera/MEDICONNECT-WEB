@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { dashboardPath } from "@/lib/auth-store";
@@ -18,9 +18,14 @@ import Footer from "@/components/landing/Footer";
 const Auth = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [params] = useSearchParams();
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
+  // Show idle-timeout banner when redirected here automatically
+  const idleMessage = (location.state as { reason?: string; message?: string } | null)?.reason === "idle_timeout"
+    ? ((location.state as { message?: string }).message ?? "You were logged out after 1 hour of inactivity.")
+    : null;
   useEffect(() => {
   setTab(params.get("mode") === "signup" ? "signup" : "signin");
 }, [params]);
@@ -63,6 +68,16 @@ const { data: publicSettings } = usePublicSettings();
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
       />
+
+      {/* Idle-timeout banner */}
+      {idleMessage && (
+        <div className="mx-4 mt-4 sm:mx-auto sm:w-full sm:max-w-md rounded-[6px] bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+          <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+          {idleMessage}
+        </div>
+      )}
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-5 lg:p-6">
