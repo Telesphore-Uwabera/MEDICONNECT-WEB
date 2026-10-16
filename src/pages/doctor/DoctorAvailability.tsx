@@ -670,46 +670,6 @@ const DoctorAvailability = () => {
 
   const currentDay = days[selectedDay] ?? null;
 
-  /* ── Schedule-aware instant availability ─────────────────────────────── */
-  // Check if the current wall-clock time falls inside any available slot today.
-  // Used to warn the doctor and auto-turn-off instant when they're off-schedule.
-  const isInsideScheduleNow = useMemo(() => {
-    const todayStr = moment().format("YYYY-MM-DD");
-    const todayEntry = days.find((d) => d.date === todayStr);
-    if (!todayEntry) return false; // today not in loaded range → unknown
-    const nowMinutes = moment().hours() * 60 + moment().minutes();
-    return todayEntry.slots.some((s) => {
-      if (s.status !== "available") return false;
-      const [sh, sm] = (s.start_time || "").split(":").map(Number);
-      const [eh, em] = (s.end_time || "").split(":").map(Number);
-      const start = sh * 60 + (sm || 0);
-      const end = eh * 60 + (em || 0);
-      return nowMinutes >= start && nowMinutes < end;
-    });
-  }, [days]);
-
-  // Auto-turn off instant consultation when doctor is outside their schedule
-  useEffect(() => {
-    if (!instant || !generatedRange) return; // only act when instant is ON and schedule loaded
-    const todayStr = moment().format("YYYY-MM-DD");
-    const todayInRange =
-      todayStr >= generatedRange.from && todayStr <= generatedRange.to;
-    if (!todayInRange) return; // today not in the loaded range — can't judge
-    if (!isInsideScheduleNow) {
-      // Outside schedule — auto-disable
-      toggleInstantMutation.mutate(undefined, {
-        onSuccess: (res) => {
-          setInstant(res.instant_consultation);
-          toast.warning("Instant consultation turned off — you're outside your scheduled hours.", {
-            description: "It will need to be manually turned back on when you're available.",
-          });
-        },
-      });
-    }
-  // Only run when schedule data arrives / changes, not every render
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInsideScheduleNow, generatedRange]);
-
   /* ── Stats ── */
   const allSlots = useMemo(() => days.flatMap((d) => d.slots), [days]);
   const stats = useMemo(
@@ -982,26 +942,10 @@ const DoctorAvailability = () => {
             {/* ── Disable schedule banner ── */}
             {scheduleDisabled && (
               <div className="flex items-center gap-3 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
-                <AlertTriangle
-                  size={16}
-                  className="flex-shrink-0 text-red-500"
-                />
+                <AlertTriangle size={16} className="flex-shrink-0 text-red-500" />
                 <span className="font-medium">
                   {t("pages.doctor.schedule_hidden_banner")}
                 </span>
-              </div>
-            )}
-
-            {/* ── Outside schedule + instant ON warning ── */}
-            {instant && !isInsideScheduleNow && generatedRange && !scheduleDisabled && (
-              <div className="flex items-start gap-3 rounded-[6px] border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 px-5 py-4 text-sm text-amber-800 dark:text-amber-300">
-                <AlertTriangle size={16} className="flex-shrink-0 text-amber-500 mt-0.5" />
-                <div>
-                  <p className="font-semibold">Instant consultation is on, but you have no available slots right now.</p>
-                  <p className="mt-0.5 text-amber-700/80 dark:text-amber-400/80 text-xs">
-                    The system will automatically turn it off. Generate a schedule that covers the current time, or turn it off manually.
-                  </p>
-                </div>
               </div>
             )}
 
@@ -1009,12 +953,7 @@ const DoctorAvailability = () => {
             <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] bg-card border border-border/70 p-3">
               <div className="grid min-w-0 gap-3 md:grid-cols-3">
                 {/* Instant consultation */}
-                <div className={cn(
-                  "flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border bg-background/40 p-3",
-                  instant && !isInsideScheduleNow && generatedRange
-                    ? "border-amber-400/60 bg-amber-50/60 dark:bg-amber-950/20"
-                    : "border-border/50"
-                )}>
+                <div className="flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border border-border/50 bg-background/40 p-3">
                   <div
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
@@ -1032,9 +971,7 @@ const DoctorAvailability = () => {
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
                       {!profileApproved
                         ? t("doctorProfile.after_approval", { defaultValue: "Opens after admin approval" })
-                        : instant && !isInsideScheduleNow && generatedRange
-                          ? "⚠ Outside scheduled hours — will auto-disable"
-                          : instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
+                        : instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
                     </p>
                   </div>
                   <Switch

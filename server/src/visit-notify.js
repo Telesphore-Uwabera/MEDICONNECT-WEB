@@ -1,5 +1,4 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
-import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { broadcast } from "./realtime.js";
 

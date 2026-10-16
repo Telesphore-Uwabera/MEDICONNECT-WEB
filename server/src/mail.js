@@ -127,7 +127,7 @@ export function buildEmailHtml({ title, preheader = "", body, accentHex }) {
                   <td>
                     <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#ffffff;font-family:'Segoe UI',Arial,sans-serif;">MediConnect Rwanda</p>
                     <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">📧 <a href="mailto:admin@mediconnect.rw" style="color:${BRAND.footerText};">admin@mediconnect.rw</a></p>
-                    <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">📞 <a href="tel:+250792363601" style="color:${BRAND.footerText};">+250 792 363 601</a></p>
+                    <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">📞 <a href="tel:+250792353501" style="color:${BRAND.footerText};">+250 792 363 601</a></p>
                     <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">🌐 <a href="https://mediconnect.rw" style="color:${BRAND.accent};">mediconnect.rw</a></p>
                   </td>
                   <td align="right" valign="top" class="hide-mobile">

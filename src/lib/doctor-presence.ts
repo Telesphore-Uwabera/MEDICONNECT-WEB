@@ -104,57 +104,16 @@ function isCurrentWindow(window: ScheduleWindow) {
   return true;
 }
 
-/** Instant consultation is offered only while the doctor's own schedule is open.
+/** Returns true if the doctor currently offers instant consultation.
  *
- * Logic:
- * - Returns false immediately if doctor.instant_consultation is off or bookings paused.
- * - If no schedule data has loaded yet (schedule === undefined), returns true as a
- *   temporary optimistic state — the button will disappear once schedule loads if
- *   the doctor is outside hours.
- * - If schedule is loaded but has NO slots/windows at all, trust the flag (doctor
- *   may not use the slot system but has instant on).
- * - If schedule has slots/windows for today, at least one must cover the current
- *   Kigali time for the button to show.
+ * Rule: show the button if and only if doctor.instant_consultation === true
+ * and bookings are not paused. Schedule-based availability is enforced
+ * server-side (auto-disable cron) — the frontend just reads the flag.
  */
 export function doctorOffersInstant(
   doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
-  schedule: PublicDoctorSchedule | undefined,
-  now = new Date(),
+  _schedule?: PublicDoctorSchedule,
+  _now?: Date,
 ) {
-  if (doctor.bookings_paused || !doctor.instant_consultation) return false;
-
-  // Schedule hasn't loaded yet — optimistically show the button (loading state)
-  if (!schedule) return true;
-
-  const { weekday, date, minutes } = kigaliNow(now);
-
-  // Check slots_for_date first (most precise — actual generated slots for today)
-  const todaySlots = (schedule.slots_for_date ?? []).filter(isCurrentWindow);
-  if (todaySlots.length > 0) {
-    // Slots exist for today — at least one must cover now and be available
-    return todaySlots.some(
-      (s) => !isBusy(s) && coversNow(s.start_time, s.end_time, minutes) && isOnlineVisit(s),
-    );
-  }
-
-  // No slots for today — check recurring + period windows
-  const windows = [
-    ...(schedule.recurring_availability ?? []),
-    ...(schedule.availability_periods ?? []),
-  ];
-
-  if (windows.length === 0) {
-    // No schedule configured at all — trust the flag (doctor doesn't use slots)
-    return true;
-  }
-
-  // Windows exist — check if current time falls inside one
-  return windows.some(
-    (window) =>
-      isCurrentWindow(window) &&
-      !isBusy(window) &&
-      onDate(window, date, weekday) &&
-      coversNow(window.start_time, window.end_time, minutes) &&
-      isOnlineVisit(window),
-  );
+  return !doctor.bookings_paused && Boolean(doctor.instant_consultation);
 }
