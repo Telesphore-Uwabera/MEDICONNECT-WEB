@@ -655,8 +655,18 @@ const DoctorAvailability = () => {
 
   const [selectedDay, setSelectedDay] = useState(0);
   useEffect(() => {
-    setSelectedDay(0);
-  }, [generatedRange]);
+    if (days.length === 0) return;
+    // Default to today's date; fall back to the nearest future date, then index 0
+    const todayStr = moment().format("YYYY-MM-DD");
+    const todayIdx = days.findIndex((d) => d.date === todayStr);
+    if (todayIdx !== -1) {
+      setSelectedDay(todayIdx);
+      return;
+    }
+    // Today not in range — pick the first date that is >= today
+    const futureIdx = days.findIndex((d) => d.date >= todayStr);
+    setSelectedDay(futureIdx !== -1 ? futureIdx : 0);
+  }, [days]);
 
   const currentDay = days[selectedDay] ?? null;
 
