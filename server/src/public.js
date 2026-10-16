@@ -563,7 +563,7 @@ async function attachPayerAccount(payment) {
   if (patient?.id && payment?.id && await hasColumn("payments", "patient_id") && !payment.patient_id) {
     await update("payments", payment.id, { patient_id: patient.id });
   }
-  return { created, email };
+  return { created, email, plain: created ? plain : null };
 }
 
 function kigaliClock() {
@@ -1542,6 +1542,7 @@ export function publicRoutes(router) {
           const account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
+          payment.account_temp_password = account?.plain || null;
         }
         return res.json({
           message: "Payment already completed.",
@@ -1549,6 +1550,7 @@ export function publicRoutes(router) {
           already_paid: true,
           account_created: Boolean(payment?.account_created),
           account_email: payment?.account_email || null,
+          temp_password: payment?.account_temp_password || null,
           invoice_number: invoiceNumber,
           public_key: publicKey,
           amount,
@@ -1585,6 +1587,7 @@ export function publicRoutes(router) {
           const account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
+          payment.account_temp_password = account?.plain || null;
         } else {
           payment = await expirePaymentRecord(payment);
         }
@@ -1593,11 +1596,13 @@ export function publicRoutes(router) {
         const account = await attachPayerAccount(payment).catch(() => null);
         payment.account_created = Boolean(account?.created);
         payment.account_email = account?.email || null;
+        payment.account_temp_password = account?.plain || null;
       }
       res.json({
         status: payment?.status || "pending",
         account_created: Boolean(payment?.account_created),
         account_email: payment?.account_email || null,
+        temp_password: payment?.account_temp_password || null,
         payment: payment ? await presentRow("payments", payment) : null,
         // Also return the consultation status so the frontend can transition
         // to "accepted" immediately when status=confirmed and payment=paid.
@@ -1699,6 +1704,7 @@ export function publicRoutes(router) {
         payment_id: confirmed.id,
         account_created: Boolean(account?.created),
         account_email: account?.email || null,
+        temp_password: account?.plain || null,
       });
     } catch (error) {
       // Always return 200 to IremboPay so it doesn't retry forever;

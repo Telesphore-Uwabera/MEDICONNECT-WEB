@@ -74,12 +74,14 @@ export interface InstantConsultationPayResponse {
   already_paid?: boolean;
   account_created?: boolean;
   account_email?: string | null;
+  temp_password?: string | null;
 }
 
 export interface CheckInvoiceResponse {
   status: "paid" | "pending" | string;
   account_created?: boolean;
   account_email?: string | null;
+  temp_password?: string | null;
   consultation?: {
     id: number;
     status: string;

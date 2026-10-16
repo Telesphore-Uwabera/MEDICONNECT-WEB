@@ -383,6 +383,8 @@ export const ConnectDialogContent = ({
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginCountryCode, setLoginCountryCode] = useState("+250");
   const [loginPassword, setLoginPassword] = useState("");
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [showTempPwd, setShowTempPwd] = useState(false);
   const [guestDescription, setGuestDescription] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
 
@@ -894,7 +896,7 @@ export const ConnectDialogContent = ({
         payment_uuid: payRes?.payment_uuid ? "[set]" : null,
       }));
 
-      const finishPaid = (result?: { account_created?: boolean; account_email?: string | null; consultation?: { status: string; payment_status: string | null; room_url: string; daily_guest_token: string } | null }) => {
+      const finishPaid = (result?: { account_created?: boolean; account_email?: string | null; temp_password?: string | null; consultation?: { status: string; payment_status: string | null; room_url: string; daily_guest_token: string } | null }) => {
         const name = me?.name ?? guestName;
         const phone = me?.phone ?? guestPhone;
         if (consultationToken) session.save(consultationToken, name, phone, consultationId);
@@ -919,12 +921,17 @@ export const ConnectDialogContent = ({
           return;
         }
 
-        // Guest path — show login form with credentials
+        // Guest path — show login form with credentials pre-filled
         const email = result?.account_email || guestEmail;
         setGuestEmail(email);
         setLoginIdentifier(email);
         setAuthMode("login");
         setAccountEmailed(Boolean(result?.account_created));
+        // Auto-fill the temporary password so the guest can sign in with one click
+        if (result?.temp_password) {
+          setLoginPassword(result.temp_password);
+          setTempPassword(result.temp_password);
+        }
         setPhase("create_account");
       };
 
@@ -1650,15 +1657,40 @@ export const ConnectDialogContent = ({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
-                    <Input
-                      type="password"
-                      placeholder={t("consult.connect.password_placeholder")}
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="h-9 text-sm"
-                      onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
-                    />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
+                      {tempPassword && (
+                        <button
+                          type="button"
+                          onClick={() => setShowTempPwd((v) => !v)}
+                          className="text-[11px] text-primary hover:text-primary/80 font-semibold transition-colors"
+                        >
+                          {showTempPwd ? t("common.hide", "Hide") : t("common.show", "Show")}
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showTempPwd ? "text" : "password"}
+                        placeholder={t("consult.connect.password_placeholder")}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="h-9 text-sm pr-10"
+                        onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
+                        autoComplete="current-password"
+                      />
+                      {tempPassword && (
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        </span>
+                      )}
+                    </div>
+                    {tempPassword && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        {t("consult.connect.temp_password_autofilled", "Temporary password autofilled — also sent to your email.")}
+                      </p>
+                    )}
                   </div>
                 </div>
               ) : (
