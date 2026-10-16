@@ -446,12 +446,12 @@ function ConsultationTypeBadge({
   );
 }
 
-function DoctorGridCard({ doctor }: { doctor: ApiDoctor }) {
-  return <DoctorCard doctor={doctor} />;
+function DoctorGridCard({ doctor, forceInstant }: { doctor: ApiDoctor; forceInstant?: boolean }) {
+  return <DoctorCard doctor={doctor} forceInstant={forceInstant} />;
 }
 
-function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
-  const a = useDoctorActions(doctorProp);
+function DoctorListItem({ doctor: doctorProp, forceInstant }: { doctor: ApiDoctor; forceInstant?: boolean }) {
+  const a = useDoctorActions(doctorProp, forceInstant);
   const doctor = a.doctor;
   const fee = parseFloat(doctor.consultation_fee);
   const rating = parseFloat(doctor.rating_avg);
@@ -1123,13 +1123,13 @@ const PatientDoctors = () => {
               ) : view === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-2">
                   {visibleDoctors.map((d) => (
-                    <DoctorGridCard key={d.id} doctor={d} />
+                    <DoctorGridCard key={d.id} doctor={d} forceInstant={filters.instant || filters.type === "instant"} />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {visibleDoctors.map((d) => (
-                    <DoctorListItem key={d.id} doctor={d} />
+                    <DoctorListItem key={d.id} doctor={d} forceInstant={filters.instant || filters.type === "instant"} />
                   ))}
                 </div>
               )}

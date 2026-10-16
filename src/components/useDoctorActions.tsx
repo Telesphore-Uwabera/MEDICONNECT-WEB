@@ -18,7 +18,7 @@ import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-pre
 
 type ModalMode = "details" | "connect";
 
-export function useDoctorActions(doctorProp: ApiDoctor) {
+export function useDoctorActions(doctorProp: ApiDoctor, forceInstant = false) {
   const call = useCallStore();
   const [doctor, setDoctor] = useState<ApiDoctor>(doctorProp);
   const [bookOpen, setBookOpen] = useState(false);
@@ -49,7 +49,7 @@ export function useDoctorActions(doctorProp: ApiDoctor) {
     staleTime: 60_000,
   });
 
-  const canConnect = doctorOffersInstant(doctor, schedule) || isCallInProgress;
+  const canConnect = doctorOffersInstant(doctor, schedule, new Date(), forceInstant) || isCallInProgress;
   const canBook = true;
 
   const openDetails = () => { setInitialMode("details"); setModalOpen(true); };

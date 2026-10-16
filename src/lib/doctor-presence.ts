@@ -104,13 +104,27 @@ function isCurrentWindow(window: ScheduleWindow) {
   return true;
 }
 
-/** Instant consultation is offered only while the doctor's own schedule is open. */
+/** Instant consultation is offered only while the doctor's own schedule is open.
+ *
+ * Pass `ignoreSchedule = true` when the caller already knows the context is
+ * instant-only (e.g. the user searched with ?type=instant) — in that case the
+ * schedule-window check is skipped and the doctor's instant_consultation flag
+ * alone is used to decide. This prevents instant-enabled doctors without a
+ * schedule from being listed but having their "Instant Consultation" button
+ * hidden.
+ */
 export function doctorOffersInstant(
   doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
   schedule: PublicDoctorSchedule | undefined,
   now = new Date(),
+  ignoreSchedule = false,
 ) {
-  if (doctor.bookings_paused || !doctor.instant_consultation || !schedule) return false;
+  if (doctor.bookings_paused || !doctor.instant_consultation) return false;
+
+  // In explicit instant-search context: trust the flag, skip the schedule gate.
+  if (ignoreSchedule) return true;
+
+  if (!schedule) return false;
 
   const { weekday, date, minutes } = kigaliNow(now);
   const slots = (schedule.slots_for_date ?? []).filter(isCurrentWindow);

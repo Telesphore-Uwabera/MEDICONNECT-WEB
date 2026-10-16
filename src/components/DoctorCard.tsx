@@ -703,9 +703,14 @@ export function UnifiedModal({
 export const DoctorCard = ({
   doctor: doctorProp,
   compact = false,
+  forceInstant = false,
 }: {
   doctor: ApiDoctor;
   compact?: boolean;
+  /** When true (e.g. the page is already filtered to instant-only doctors),
+   *  skip the schedule-window check and show the Instant Consultation button
+   *  for any doctor that has instant_consultation enabled. */
+  forceInstant?: boolean;
 }) => {
   const { t, i18n } = useTranslation();
   const [bookOpen, setBookOpen] = useState(false);
@@ -778,7 +783,7 @@ export const DoctorCard = ({
     isThisDoctor && call.phase !== "idle" && call.phase !== "ended";
   const isConnected = isThisDoctor && call.phase === "connected";
 
-  const canConnect = doctorOffersInstant(doctor, schedule) || isCallInProgress || hasSavedSession;
+  const canConnect = doctorOffersInstant(doctor, schedule, new Date(), forceInstant) || isCallInProgress || hasSavedSession;
   const canBook = true;
 
   const showResumePill = isCallInProgress && !modalOpen && !bookOpen;
