@@ -285,6 +285,13 @@ async function confirmPaidInvoice(payment, remote) {
   return saved;
 }
 
+async function confirmPaidInvoiceAndNotify(payment, remote, account = null) {
+  const saved = await confirmPaidInvoice(payment, remote);
+  // Fire notification with account info (includes temp_password for new guests)
+  notifyPaidVisit(saved, account).catch(() => null);
+  return saved;
+}
+
 const UNPAID_PAYMENT = ["pending", "initiated", "new", "unpaid", "processing"];
 const CLOSED_VISIT = new Set(["accepted", "in_progress", "completed", "done", "declined", "cancelled", "canceled", "expired", "rejected"]);
 
@@ -1543,6 +1550,8 @@ export function publicRoutes(router) {
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
           payment.account_temp_password = account?.plain || null;
+          // Notify with account so patient email includes sign-in credentials
+          notifyPaidVisit(payment, account).catch(() => null);
         }
         return res.json({
           message: "Payment already completed.",
@@ -1588,6 +1597,7 @@ export function publicRoutes(router) {
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
           payment.account_temp_password = account?.plain || null;
+          notifyPaidVisit(payment, account).catch(() => null);
         } else {
           payment = await expirePaymentRecord(payment);
         }
@@ -1597,6 +1607,8 @@ export function publicRoutes(router) {
         payment.account_created = Boolean(account?.created);
         payment.account_email = account?.email || null;
         payment.account_temp_password = account?.plain || null;
+        // Only notify if this is the first time we're attaching the account
+        if (account?.created) notifyPaidVisit(payment, account).catch(() => null);
       }
       res.json({
         status: payment?.status || "pending",

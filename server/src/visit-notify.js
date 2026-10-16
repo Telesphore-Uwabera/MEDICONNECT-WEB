@@ -1,4 +1,5 @@
-import { hasColumn, insert, one, q, tableExists } from "./db.js";
+import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { broadcast } from "./realtime.js";
 
@@ -67,7 +68,7 @@ function greeting(name) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyPaidVisit
 // ─────────────────────────────────────────────────────────────────────────────
-export async function notifyPaidVisit(payment) {
+export async function notifyPaidVisit(payment, account = null) {
   const payableType = String(payment?.payable_type || "");
   const payableId = payment?.payable_id;
   if (!payableId) return;
@@ -138,9 +139,27 @@ export async function notifyPaidVisit(payment) {
       !instant && ["Scheduled", when],
     ].filter(Boolean);
 
+    // If a new guest account was just created, include sign-in credentials
+    const hasNewAccount = account?.created && account?.plain;
+    const credentialsBlock = hasNewAccount ? `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+        style="margin:20px 0;border-radius:8px;border:1px solid #0BA59B44;background:#f0fafa;overflow:hidden;">
+        <tr>
+          <td style="padding:18px 22px;border-left:4px solid #0BA59B;">
+            <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Your sign-in credentials</p>
+            <p style="margin:4px 0;font-size:13px;color:#1a2e2d;font-family:'Segoe UI',Arial,sans-serif;"><strong>Email:</strong> ${account.email || patient.email}</p>
+            <p style="margin:4px 0;font-size:13px;color:#1a2e2d;font-family:'Segoe UI',Arial,sans-serif;"><strong>Temporary password:</strong></p>
+            <p style="margin:8px 0 0;font-size:22px;font-weight:800;letter-spacing:4px;color:#0BA59B;font-family:'Courier New',monospace;">${account.plain}</p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 16px;font-size:12px;color:#6b7280;font-family:'Segoe UI',Arial,sans-serif;">You can change this password from <strong>Account Settings</strong> after signing in.</p>
+    ` : "";
+
     const htmlPatient = buildEmailHtml({
       title: subjectPatient,
       preheader: textPatient,
+      accentHex: "#38a169",
       body: `
         ${emailP(greeting(patient.name))}
         ${emailHtml(instant
@@ -148,11 +167,13 @@ export async function notifyPaidVisit(payment) {
           : `Your payment${amountStr ? ` of <strong>${amountStr}</strong>` : ""} has been received. Your appointment is now pending the doctor's confirmation — you'll receive another email once they confirm.`
         )}
         ${infoRows.length ? emailInfoBox(infoRows, "#38a169") : ""}
+        ${credentialsBlock}
         ${emailBtn(
-          instant ? "Join Consultation" : "View My Appointments",
-          instant ? "https://mediconnect.rw/patient/instant" : "https://mediconnect.rw/patient/appointments",
+          instant ? "Sign In & Join Consultation" : "View My Appointments",
+          instant ? "https://mediconnect.rw/auth" : "https://mediconnect.rw/patient/appointments",
           "#38a169",
         )}
+        ${hasNewAccount ? `<p style="margin:8px 0 0;font-size:12px;color:#6b7280;font-family:'Segoe UI',Arial,sans-serif;text-align:center;">After signing in, go to <strong>Search Doctors → Instant Consultation</strong> to join your session.</p>` : ""}
       `,
     });
 
@@ -529,6 +550,88 @@ export async function remindUpcomingVisits() {
         });
         await deliver({ userId: doctor?.user_id, email: doctor?.email, subject, text, html, type: "visit.reminder" });
       }
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  autoDisableInstantOutsideSchedule
+//  Runs on a timer (every 5 min). For every doctor who has instant_consultation=1,
+//  checks whether they have at least one `available` slot covering the current
+//  Kigali time. If not, sets instant_consultation=0 automatically.
+// ─────────────────────────────────────────────────────────────────────────────
+export async function autoDisableInstantOutsideSchedule() {
+  if (!(await tableExists("doctors")) || !(await hasColumn("doctors", "instant_consultation"))) return;
+
+  // Resolve current Kigali time
+  const now = new Date();
+  const kigaliDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Kigali",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(now); // YYYY-MM-DD
+
+  const kigaliTime = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Kigali",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hourCycle: "h23",
+  }).format(now); // HH:MM:SS
+
+  // Find all instant-enabled doctors
+  const instantDoctors = await q(
+    "SELECT id FROM doctors WHERE instant_consultation = 1 AND (deleted_at IS NULL OR deleted_at > NOW())",
+  ).catch(() => []);
+
+  if (!instantDoctors.length) return;
+
+  const slotsTable = (await tableExists("doctor_slots")) ? "doctor_slots"
+    : (await tableExists("availability_slots")) ? "availability_slots"
+    : null;
+
+  for (const { id: doctorId } of instantDoctors) {
+    let hasActiveSlot = false;
+
+    if (slotsTable && await hasColumn(slotsTable, "slot_date") && await hasColumn(slotsTable, "start_time")) {
+      // Check for an available slot covering right now
+      const slot = await one(
+        `SELECT id FROM \`${slotsTable}\`
+         WHERE doctor_id = ?
+           AND slot_date = ?
+           AND start_time <= ?
+           AND end_time > ?
+           AND status = 'available'
+           AND (deleted_at IS NULL OR deleted_at > NOW())
+         LIMIT 1`,
+        [doctorId, kigaliDate, kigaliTime, kigaliTime],
+      ).catch(() => null);
+      hasActiveSlot = Boolean(slot);
+    } else {
+      // No slots table — fall back to recurring availability windows
+      if (await tableExists("recurring_availabilities") || await tableExists("doctor_availability")) {
+        const avTable = (await tableExists("recurring_availabilities"))
+          ? "recurring_availabilities"
+          : "doctor_availability";
+        const dayOfWeek = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Africa/Kigali", weekday: "long",
+        }).format(now).toLowerCase();
+        const window = await one(
+          `SELECT id FROM \`${avTable}\`
+           WHERE doctor_id = ?
+             AND LOWER(day_of_week) = ?
+             AND start_time <= ?
+             AND end_time > ?
+           LIMIT 1`,
+          [doctorId, dayOfWeek, kigaliTime, kigaliTime],
+        ).catch(() => null);
+        hasActiveSlot = Boolean(window);
+      } else {
+        // No schedule data at all → keep instant on (can't determine)
+        hasActiveSlot = true;
+      }
+    }
+
+    if (!hasActiveSlot) {
+      await update("doctors", doctorId, { instant_consultation: 0 }).catch(() => null);
+      console.info(`[autoDisable] Turned off instant_consultation for doctor ${doctorId} — outside schedule at ${kigaliDate} ${kigaliTime}`);
     }
   }
 }

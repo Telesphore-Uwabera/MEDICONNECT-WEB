@@ -220,9 +220,9 @@ export function emailOtpBlock(code) {
 
 // ─── Send ─────────────────────────────────────────────────────────────────────
 /**
- * @param {{ to: string, subject: string, text: string, html?: string }} opts
+ * @param {{ to: string, subject: string, text: string, html?: string, replyTo?: string }} opts
  */
-export async function sendMail({ to, subject, text, html }) {
+export async function sendMail({ to, subject, text, html, replyTo }) {
   const config = mailConfig();
   if (!config || !to) return false;
   try {
@@ -231,13 +231,34 @@ export async function sendMail({ to, subject, text, html }) {
       port: config.port,
       secure: config.secure,
       auth: config.auth,
+      // Increase deliverability: identify ourselves properly
+      name: "mediconnect.rw",
     });
+
+    // Build a deterministic Message-ID for this message
+    const domain = config.from.split("@")[1] || "mediconnect.rw";
+    const msgId = `<${Date.now()}-${Math.random().toString(36).slice(2)}@${domain}>`;
+
     await transport.sendMail({
       from: `"${config.fromName}" <${config.from}>`,
       to,
       subject,
       text,
       ...(html ? { html } : {}),
+      ...(replyTo ? { replyTo } : { replyTo: `"MediConnect Support" <admin@mediconnect.rw>` }),
+      messageId: msgId,
+      headers: {
+        // Help recipients mark as legitimate and avoid spam filters
+        "X-Mailer": "MediConnect Mailer 2.0",
+        "X-Entity-Ref-ID": msgId,
+        // List-Unsubscribe tells Gmail this is transactional, not bulk
+        "List-Unsubscribe": "<mailto:admin@mediconnect.rw?subject=unsubscribe>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        // Explicitly mark as transactional (not promotional/bulk)
+        "Precedence": "transactional",
+        // MIME version declaration
+        "MIME-Version": "1.0",
+      },
     });
     return true;
   } catch (error) {

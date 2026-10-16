@@ -11,7 +11,7 @@ import { publicRoutes } from "./public.js";
 import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";
 import { remindExpiringLicenses } from "./doctor-review.js";
-import { remindUpcomingVisits } from "./visit-notify.js";
+import { remindUpcomingVisits, autoDisableInstantOutsideSchedule } from "./visit-notify.js";
 import { expireUnpaidPayments } from "./public.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -126,12 +126,17 @@ pool.query("SELECT 1").then(async () => {
   const expirePayments = () => expireUnpaidPayments().catch((error) => {
     console.error("Payment expiry failed:", error?.message || error);
   });
+  const autoDisableInstant = () => autoDisableInstantOutsideSchedule().catch((error) => {
+    console.error("Auto-disable instant failed:", error?.message || error);
+  });
   remind();
   remindVisits();
   expirePayments();
+  autoDisableInstant();
   setInterval(remind, 12 * 60 * 60 * 1000);
   setInterval(remindVisits, 5 * 60 * 1000);   // every 5 min for accurate 30-min & 1-hour windows
   setInterval(expirePayments, 60 * 1000);
+  setInterval(autoDisableInstant, 5 * 60 * 1000); // every 5 min
 }).catch((error) => {
   console.error("Database connection failed", error.message);
   process.exit(1);
