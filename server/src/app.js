@@ -3149,13 +3149,22 @@ export function appRoutes(router) {
   // GitHub Actions POSTs here on every push to main.
   // Runs deploy.sh which git-pulls latest server/src/* and restarts the service.
   router.post("/deploy", (req, res) => {
-    const secret = process.env.DEPLOY_SECRET || "MediDeploy2026Rw";
+    // A default written into a public repository is not a secret: anyone reading
+    // the source could restart production at will. GitHub Actions supplies
+    // DEPLOY_SECRET from a repository secret, so a box without it refuses to
+    // self-deploy instead of accepting the published fallback.
+    const secret = String(process.env.DEPLOY_SECRET || "").trim();
+    if (!secret) {
+      console.warn("[deploy] DEPLOY_SECRET is not set, so the self-deploy webhook is disabled.");
+      return res.status(503).json({ message: "Deploy webhook is not configured on this server." });
+    }
     const header = (req.headers["authorization"] || req.headers["x-deploy-secret"] || "").trim();
     const token = header.startsWith("Bearer ") ? header.slice(7) : header;
-    // Constant-time compare via HMAC to avoid timing attacks
-    const a = crypto.createHmac("sha256", "k").update(token).digest("hex");
-    const b = crypto.createHmac("sha256", "k").update(secret).digest("hex");
-    if (a !== b) return res.status(401).json({ message: "Unauthorized" });
+    // Digest both sides first so the comparison is always the same length and can
+    // use a constant-time check instead of a short-circuiting string compare.
+    const given = crypto.createHmac("sha256", "deploy-guard").update(token).digest();
+    const expected = crypto.createHmac("sha256", "deploy-guard").update(secret).digest();
+    if (!crypto.timingSafeEqual(given, expected)) return res.status(401).json({ message: "Unauthorized" });
 
     res.status(202).json({ message: "Deploy started" });
 
