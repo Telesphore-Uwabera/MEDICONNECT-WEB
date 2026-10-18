@@ -15,6 +15,7 @@ import {
 } from "./doctor-review.js";
 import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
+import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
@@ -1132,9 +1133,17 @@ export function appRoutes(router) {
 
   router.get("/doctor/toggle/mystatus", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const { doctor } = await currentDoctor(req);
+      const { doctor, doctorId } = await currentDoctor(req);
+      let instant = Boolean(Number(doctor?.instant_consultation ?? 0));
+      if (instant && doctorId) {
+        const onSchedule = await doctorOnInstantSchedule(doctorId);
+        if (!onSchedule) {
+          await update("doctors", doctorId, { instant_consultation: 0 }).catch(() => null);
+          instant = false;
+        }
+      }
       res.json({
-        instant_consultation: Boolean(Number(doctor?.instant_consultation ?? 0)),
+        instant_consultation: instant,
         bookings_paused: Boolean(Number(doctor?.bookings_paused ?? doctor?.pause_bookings ?? 0)),
       });
     } catch (error) {
@@ -1169,9 +1178,23 @@ export function appRoutes(router) {
   }
 
   router.patch("/doctor/toggle/instant", requireAuth, requireRole("doctor"), async (req, res, next) => {
-    const { doctor } = await currentDoctor(req);
-    const current = Boolean(Number(doctor?.instant_consultation ?? 0));
-    return setDoctorFlag(req, res, next, "instant_consultation", flagValue(req.body, ["instant_consultation", "enabled", "status"], current));
+    try {
+      const { doctor, doctorId } = await currentDoctor(req);
+      if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      const current = Boolean(Number(doctor?.instant_consultation ?? 0));
+      const target = flagValue(req.body, ["instant_consultation", "enabled", "status"], current);
+      if (target) {
+        const onSchedule = await doctorOnInstantSchedule(doctorId);
+        if (!onSchedule) {
+          return res.status(422).json({
+            message: "You cannot enable instant consultation outside your consultation hours. Please add available online hours in your schedule first.",
+          });
+        }
+      }
+      return setDoctorFlag(req, res, next, "instant_consultation", target);
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.patch("/doctor/toggle/pause", requireAuth, requireRole("doctor"), async (req, res, next) => {
@@ -1183,7 +1206,13 @@ export function appRoutes(router) {
 
   router.get("/doctor/dashboard", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const { doctorId } = await currentDoctor(req);
+      const { doctor, doctorId } = await currentDoctor(req);
+      if (doctorId && Number(doctor?.instant_consultation) === 1) {
+        const onSchedule = await doctorOnInstantSchedule(doctorId);
+        if (!onSchedule) {
+          await update("doctors", doctorId, { instant_consultation: 0 }).catch(() => null);
+        }
+      }
       const period = String(req.query.period || "week");
       const chartGroup = String(req.query.chart_group || "day");
       const count = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
@@ -2316,7 +2345,15 @@ export function appRoutes(router) {
       }
       delete fields.license_expires_at;
       delete fields.license_expiry_reminded_for;
-      if (fields.instant_consultation != null) fields.instant_consultation = fields.instant_consultation ? 1 : 0;
+      if (fields.instant_consultation != null) {
+        const target = fields.instant_consultation ? 1 : 0;
+        if (target === 1) {
+          const onSchedule = await doctorOnInstantSchedule(doctorId);
+          fields.instant_consultation = onSchedule ? 1 : 0;
+        } else {
+          fields.instant_consultation = 0;
+        }
+      }
       if (Object.keys(fields).length) await update("doctors", doctorId, fields);
       if (body.gender && await hasColumn("users", "gender")) {
         await update("users", req.user.id, { gender: String(body.gender).toLowerCase() });

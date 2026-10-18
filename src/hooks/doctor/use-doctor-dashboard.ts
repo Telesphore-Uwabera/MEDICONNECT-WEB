@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -206,8 +207,12 @@ export function useDoctorDashboard(
         queryKey: doctorDashboardKeys.status(),
       });
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.error("Toggle instant consultation failed:", err);
+      toast.error(err?.message || "Failed to toggle instant consultation");
+      queryClient.invalidateQueries({
+        queryKey: doctorDashboardKeys.status(),
+      });
     },
   });
 

@@ -136,7 +136,7 @@ pool.query("SELECT 1").then(async () => {
   setInterval(remind, 12 * 60 * 60 * 1000);
   setInterval(remindVisits, 5 * 60 * 1000);   // every 5 min for accurate 30-min & 1-hour windows
   setInterval(expirePayments, 60 * 1000);
-  setInterval(autoDisableInstant, 5 * 60 * 1000); // every 5 min
+  setInterval(autoDisableInstant, 60 * 1000); // every 1 min
 }).catch((error) => {
   console.error("Database connection failed", error.message);
   process.exit(1);

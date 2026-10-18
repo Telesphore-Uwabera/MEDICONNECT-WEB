@@ -6,6 +6,7 @@ import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } 
 import { publishSignal, signalsSince } from "./realtime.js";
 import { callToken } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
+import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 
 function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -634,37 +635,6 @@ function onlineVisit(type) {
   return !value || value === "online" || value === "both" || value === "instant";
 }
 
-async function doctorOnInstantSchedule(doctorId) {
-  if (!doctorId) return false;
-  const now = kigaliClock();
-  const slots = await q(
-    `SELECT start_time, end_time, type, status
-     FROM appointment_slots
-     WHERE doctor_id = ? AND slot_date = ?
-       AND (is_active = 1 OR is_active IS NULL)`,
-    [doctorId, now.date],
-  ).catch(() => []);
-  if (slots.length) {
-    return slots.some((slot) => {
-      const status = String(slot.status || "").toLowerCase();
-      const open = !status || status === "available" || status === "open";
-      return open && onlineVisit(slot.type) && timeCovers(slot.start_time, slot.end_time, now.minutes);
-    });
-  }
-  const periods = await q(
-    `SELECT start_time, end_time, type, days_of_week
-     FROM doctor_availability_periods
-     WHERE doctor_id = ?
-       AND (is_active = 1 OR is_active IS NULL)
-       AND (deleted_at IS NULL)
-       AND ? BETWEEN DATE(from_date) AND DATE(to_date)`,
-    [doctorId, now.date],
-  ).catch(() => []);
-  return periods.some((period) =>
-    dayListed(period.days_of_week, now.weekday)
-    && onlineVisit(period.type)
-    && timeCovers(period.start_time, period.end_time, now.minutes));
-}
 
 function scheduleOnDay() {
   return `(
@@ -709,6 +679,7 @@ async function doctorStats(whereSql, params) {
 export function publicRoutes(router) {
   router.get("/public/doctors/available-doctors", async (req, res, next) => {
     try {
+      await autoDisableInstantOutsideSchedule().catch(() => null);
       const { page, perPage, offset } = pageArgs(req, 15);
       const filters = ["(" + (await whereActive("doctors", "d")) + ")"];
       const params = [];
@@ -1337,6 +1308,7 @@ export function publicRoutes(router) {
         return res.status(422).json({ message: "This doctor is not available for consultations yet." });
       }
       if (doctor && !(await doctorOnInstantSchedule(doctor.id))) {
+        await update("doctors", doctor.id, { instant_consultation: 0 }).catch(() => null);
         return res.status(422).json({
           message: "This doctor is outside their consultation hours. Book an appointment inside their schedule.",
         });

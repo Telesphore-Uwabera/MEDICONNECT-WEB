@@ -664,14 +664,17 @@ export function UnifiedModal({
                   </Button>
                 )}
                 <Button
-                  variant="outline"
+                  variant={canConnect ? "outline" : "default"}
                   size="sm"
                   disabled={!canBook}
                   onClick={() => {
                     onMinimize();
                     onBook();
                   }}
-                  className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px]"
+                  className={cn(
+                    "w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px]",
+                    !canConnect && "bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+                  )}
                 >
                   <CalendarCheck className="h-4 w-4 mr-1.5" />
                   {t("pages.landing.book_appointment")}
@@ -778,12 +781,14 @@ export const DoctorCard = ({
     isThisDoctor && call.phase !== "idle" && call.phase !== "ended";
   const isConnected = isThisDoctor && call.phase === "connected";
 
-  const canConnect = doctorOffersInstant(doctor, schedule) || isCallInProgress || hasSavedSession;
+  const offersInstant = doctorOffersInstant(doctor, schedule);
+  const canConnect = (offersInstant && (hasSavedSession || true)) || isCallInProgress;
   const canBook = true;
 
   const showResumePill = isCallInProgress && !modalOpen && !bookOpen;
 
   const showSavedSessionPill =
+    offersInstant &&
     hasSavedSession &&
     !isCallInProgress &&
     !modalOpen &&
@@ -859,7 +864,7 @@ export const DoctorCard = ({
             )}
           </div>
 
-          {/* One row: Instant Consultation first when the schedule says the doctor is present, then Book Appointment */}
+          {/* One row: Instant Consultation first when instant is on, otherwise only Book Appointment */}
           <div
             className="flex flex-row items-stretch gap-2"
             onClick={(e) => e.stopPropagation()}
@@ -882,10 +887,15 @@ export const DoctorCard = ({
               </Button>
             )}
             <Button
-              variant="outline"
+              variant={canConnect ? "outline" : "default"}
               size="sm"
               onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
-              className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal rounded-lg border-primary/40 px-2 py-2 text-center text-[11px] font-semibold leading-tight text-primary hover:bg-primary/5"
+              className={cn(
+                "h-auto min-h-9 min-w-0 flex-1 whitespace-normal rounded-lg px-2 py-2 text-center text-[11px] font-semibold leading-tight",
+                canConnect
+                  ? "border border-primary/40 text-primary hover:bg-primary/5 bg-transparent"
+                  : "bg-primary text-primary-foreground font-bold hover:bg-primary/90"
+              )}
             >
               <CalendarCheck className="shrink-0" />
               {t("pages.cards.book", "Book Appointment")}

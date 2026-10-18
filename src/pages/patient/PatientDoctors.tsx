@@ -473,7 +473,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
               <span className="text-sm font-bold text-foreground leading-tight tracking-tight">
                 {doctor.user.name}
               </span>
-              {doctor.instant_consultation && (
+              {doctor.instant_consultation && a.canConnect && (
                 <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                   <Zap className="w-3 h-3" />
                   {t("pages.cards.instant")}

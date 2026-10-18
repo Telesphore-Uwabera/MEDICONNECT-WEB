@@ -26,6 +26,7 @@ src/**/dist/
 # Tooling leftovers
 .snapshots/
 .claude/
+.agents/
 vite.config.ts.timestamp-*
 
 # Local documents — credentials, API docs, Office lock files

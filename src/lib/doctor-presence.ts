@@ -104,16 +104,58 @@ function isCurrentWindow(window: ScheduleWindow) {
   return true;
 }
 
+export function isDoctorOnInstantSchedule(
+  schedule?: PublicDoctorSchedule,
+  now = new Date(),
+): boolean {
+  if (!schedule) return true;
+  const kigali = kigaliNow(now);
+
+  const slots = schedule.slots_for_date ?? [];
+  if (slots.length > 0) {
+    return slots.some(
+      (slot) =>
+        isCurrentWindow(slot) &&
+        !isBusy(slot) &&
+        isOnlineVisit(slot) &&
+        coversNow(slot.start_time, slot.end_time, kigali.minutes),
+    );
+  }
+
+  const periods = schedule.availability_periods ?? [];
+  const recurring = schedule.recurring_availability ?? [];
+  const allWindows = [...periods, ...recurring];
+
+  if (allWindows.length === 0) {
+    return false;
+  }
+
+  return allWindows.some(
+    (win) =>
+      isCurrentWindow(win) &&
+      !isBusy(win) &&
+      isOnlineVisit(win) &&
+      onDate(win, kigali.date, kigali.weekday) &&
+      coversNow(win.start_time, win.end_time, kigali.minutes),
+  );
+}
+
 /** Returns true if the doctor currently offers instant consultation.
  *
- * Rule: show the button if and only if doctor.instant_consultation === true
- * and bookings are not paused. Schedule-based availability is enforced
- * server-side (auto-disable cron) — the frontend just reads the flag.
+ * Rule: show the button if and only if doctor.instant_consultation === true,
+ * bookings are not paused, and if schedule is loaded, current time is within
+ * consultation hours.
  */
 export function doctorOffersInstant(
   doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
-  _schedule?: PublicDoctorSchedule,
-  _now?: Date,
+  schedule?: PublicDoctorSchedule,
+  now = new Date(),
 ) {
-  return !doctor.bookings_paused && Boolean(doctor.instant_consultation);
+  if (doctor.bookings_paused || !doctor.instant_consultation) {
+    return false;
+  }
+  if (schedule) {
+    return isDoctorOnInstantSchedule(schedule, now);
+  }
+  return true;
 }
