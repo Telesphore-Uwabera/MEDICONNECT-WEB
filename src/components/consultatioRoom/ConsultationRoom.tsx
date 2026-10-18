@@ -39,6 +39,17 @@ interface ConsultationRoomProps {
 
 type ConnectionState = "connecting" | "connected" | "disconnected" | "failed";
 
+// A call that cannot cross networks always ends the same way on screen —
+// "Connection failed" — so the room states which relay layer broke instead.
+interface RelayIssue {
+  reason: "missing" | "unauthenticated" | "rejected" | "unreachable";
+  headline: string;
+  detail: string;
+  evidence: string;
+}
+
+const ICE_SERVER_RELAY_RE = /^turns?:/i;
+
 const INSTANT_DURATION_WARNING_SECONDS = 25 * 60;
 const SESSION_WARNING_LEAD_SECONDS = 5 * 60;
 const ALERT_AUDIO_SRC = "/audio/new-notification-057-494255.mp3";
@@ -178,27 +189,47 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   // ── Connection quality ────────────────────────────────────────────────────
   const [connQuality, setConnQuality] = useState<"good" | "fair" | "poor" | null>(null);
+  // "relay" proves the TURN server is actually carrying this call's media —
+  // the single visible answer to "did the relay fix work?".
+  const [relayPath, setRelayPath] = useState<"direct" | "relay" | null>(null);
   const qualityTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (connState !== "connected") { setConnQuality(null); return; }
+    if (connState !== "connected") { setConnQuality(null); setRelayPath(null); return; }
     const measure = async () => {
       const pc = pcRef.current;
       if (!pc) return;
       try {
         const stats = await pc.getStats();
         let rtt = 0; let lost = 0; let packets = 0;
+        let chosen: { localCandidateId?: string; remoteCandidateId?: string; selected?: boolean; state?: string; rank: number } | null = null;
+        const candidateTypes = new Map<string, string>();
         stats.forEach((s: any) => {
           if (s.type === "remote-inbound-rtp" && s.kind === "video") {
             rtt = s.roundTripTime ?? 0;
             lost = s.packetsLost ?? 0;
             packets = s.packetsReceived ?? 1;
           }
+          if ((s.type === "local-candidate" || s.type === "remote-candidate") && s.id) {
+            candidateTypes.set(s.id, String(s.candidateType ?? ""));
+          }
+          // Chromium marks the nominated pair with `selected`, and the surviving
+          // one with state "completed"; accept either so the label works across
+          // browser versions instead of silently staying blank.
+          if (s.type === "candidate-pair") {
+            const rank = s.selected ? 3 : s.state === "completed" ? 2 : s.state === "in-progress" ? 1 : 0;
+            if (rank > 0 && (!chosen || rank > chosen.rank)) chosen = { ...s, rank };
+          }
         });
         const lossRate = packets > 0 ? lost / (lost + packets) : 0;
         if (rtt < 0.15 && lossRate < 0.02) setConnQuality("good");
         else if (rtt < 0.4 && lossRate < 0.08) setConnQuality("fair");
         else setConnQuality("poor");
+
+        if (chosen) {
+          const path = [candidateTypes.get(chosen.localCandidateId), candidateTypes.get(chosen.remoteCandidateId)];
+          setRelayPath(path.includes("relay") ? "relay" : "direct");
+        }
       } catch { /* ignore */ }
     };
     measure();
@@ -352,6 +383,87 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     }
   };
 
+  // ── Relay (TURN) diagnostics ──────────────────────────────────────────────
+  // A relay candidate is the only ICE path that survives CGNAT and symmetric
+  // NAT, so "no relay candidate was ever gathered" is a TURN fault, not a missing
+  // peer. Naming the exact fault is what makes the next report actionable.
+  const relayServers = useMemo(() => {
+    const out: Array<{ url: string; authenticated: boolean }> = [];
+    for (const server of token.ice_servers ?? []) {
+      // The RTCIceServer initializer allows a list of URLs; the API sends one.
+      const urls = (server as { urls?: string | string[] }).urls ?? server.urls;
+      for (const url of Array.isArray(urls) ? urls : [urls]) {
+        if (ICE_SERVER_RELAY_RE.test(String(url))) {
+          out.push({ url: String(url), authenticated: Boolean(server.username && server.credential) });
+        }
+      }
+    }
+    return out;
+  }, [token.ice_servers]);
+
+  const [relayIssue, setRelayIssue] = useState<RelayIssue | null>(null);
+  const [relayIssueVisible, setRelayIssueVisible] = useState(false);
+  const relayCandidateRef = useRef(false);
+  const peerRelayCandidateRef = useRef(false);
+  const turnErrorRef = useRef<string | null>(null);
+  const localCandidateTypesRef = useRef<string[]>([]);
+  const peerCandidateTypesRef = useRef<string[]>([]);
+  const relayReportedRef = useRef(false);
+
+  const relayDiagnosis = useCallback((): RelayIssue | null => {
+    if (relayCandidateRef.current) return null; // the relay is working — no fault to report
+    const evidence = [
+      `relays: ${relayServers.length ? relayServers.map((s) => `${s.url}${s.authenticated ? "" : " (no credentials)"}`).join(", ") : "none"}`,
+      `local: ${localCandidateTypesRef.current.join(", ") || "none gathered"}`,
+      `peer: ${peerCandidateTypesRef.current.join(", ") || "none seen"}`,
+      turnErrorRef.current ? `last relay error: ${turnErrorRef.current}` : "",
+    ].filter(Boolean).join(" · ");
+
+    if (relayServers.length === 0) {
+      return {
+        reason: "missing",
+        headline: "No relay server in this call",
+        detail: "The call token lists STUN servers only. STUN cannot traverse mobile data or symmetric NAT, so this call connects only when both sides share a network. The API host must be given TURN_HOST plus TURN_SECRET (or TURN_USERNAME and TURN_PASSWORD).",
+        evidence,
+      };
+    }
+    if (relayServers.every((s) => !s.authenticated)) {
+      return {
+        reason: "unauthenticated",
+        headline: "The relay was sent without credentials",
+        detail: "The API handed out a turn: URL with no username or password, so the relay rejects every allocation. Set TURN_SECRET in the API environment (it must match coTURN's static-auth-secret).",
+        evidence,
+      };
+    }
+    if (turnErrorRef.current) {
+      return {
+        reason: "rejected",
+        headline: "The relay refused these credentials",
+        detail: "The TURN server answered the allocation request with an error, so no relay path exists. Check that TURN_SECRET matches the relay's static-auth-secret, or that the configured user exists.",
+        evidence,
+      };
+    }
+    return {
+      reason: "unreachable",
+      headline: "The relay is not answering",
+      detail: peerRelayCandidateRef.current
+        ? "The other side obtained a relay candidate but this device did not, so the fault is local: this network blocks the relay's ports, or the relay address differs from the one that worked."
+        : "Credentials were sent and the relay never returned a candidate. The coTURN process is reachable for STUN but drops allocations (started with stun-only, TURN support off) or its relay/UDP ports are firewalled.",
+      evidence,
+    };
+  }, [relayServers]);
+
+  const raiseRelayIssue = useCallback(() => {
+    if (relayReportedRef.current) return;
+    if (pcRef.current?.connectionState === "connected") return;
+    const issue = relayDiagnosis();
+    if (!issue) return;
+    relayReportedRef.current = true;
+    setRelayIssue(issue);
+    setRelayIssueVisible(true);
+    console.warn(`[WebRTC] Relay unavailable (${issue.reason}): ${issue.headline} — ${issue.evidence}`);
+  }, [relayDiagnosis]);
+
   // ── Setup RTCPeerConnection ───────────────────────────────────────────────
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({
@@ -360,8 +472,44 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       rtcpMuxPolicy: "require"
     });
 
+    // Fresh evidence for this attempt: an ICE restart re-gathers candidates, and
+    // a relay that starts answering must be able to report success again.
+    relayCandidateRef.current = false;
+    peerRelayCandidateRef.current = false;
+    turnErrorRef.current = null;
+    localCandidateTypesRef.current = [];
+    peerCandidateTypesRef.current = [];
+    relayReportedRef.current = false;
+    if (relayServers.length === 0) {
+      console.warn("[WebRTC] This call token lists no TURN relay — the call can only connect on a shared network.");
+    }
+
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate) sendSignal("ice-candidate", candidate.toJSON());
+      if (candidate) {
+        const type = candidate.type ?? "unknown";
+        if (!localCandidateTypesRef.current.includes(type)) localCandidateTypesRef.current.push(type);
+        if (type === "relay") relayCandidateRef.current = true;
+        sendSignal("ice-candidate", candidate.toJSON());
+      } else {
+        // End-of-candidates: whatever we gathered is all we are going to get.
+        raiseRelayIssue();
+      }
+    };
+
+    // Per-candidate failures are where the relay's rejection becomes visible:
+    // 401/403 means wrong credentials, anything else means it never answered.
+    pc.onicecandidateerror = (event: Event) => {
+      const e = event as unknown as { url?: string; errorCode?: number; errorText?: string };
+      const url = String(e.url ?? "");
+      if (!ICE_SERVER_RELAY_RE.test(url) && !/turn/i.test(url)) return;
+      const code = Number(e.errorCode ?? 0);
+      turnErrorRef.current = `${url} → ${code || "?"} ${String(e.errorText ?? "").trim()}`.trim();
+      console.warn("[WebRTC] Relay candidate error:", turnErrorRef.current);
+      if (code) raiseRelayIssue();
+    };
+
+    pc.onicegatheringstatechange = () => {
+      if (pc.iceGatheringState === "complete") raiseRelayIssue();
     };
 
     pc.onconnectionstatechange = () => {
@@ -370,6 +518,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         setConnState("connected");
         disconnectedSinceRef.current = null;
         clearRecovery();
+        // A live call means the path it found is fine, whatever it says about
+        // the relay — drop a warning that turned out to be moot.
+        setRelayIssue(null);
+        setRelayIssueVisible(false);
         // Sync our current mic/camera state so the peer's indicators are correct.
         sendSignalRef.current?.("media-status", {
           audio: audioEnabledRef.current,
@@ -382,6 +534,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         scheduleRecovery(5000);
       } else if (s === "failed") {
         setConnState("failed");
+        raiseRelayIssue();
         scheduleRecovery(0);
       } else if (s === "closed") {
         setConnState("disconnected");
@@ -393,6 +546,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       // Some browsers surface failures on the ICE state before connectionState.
       if (iceState === "failed") {
         setConnState("failed");
+        raiseRelayIssue();
         scheduleRecovery(0);
       }
       // If ICE is stuck checking for 10s with a TURN server available,
@@ -430,7 +584,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     pcRef.current = pc;
     return pc;
-  }, [token.ice_servers, sendSignal]);
+  }, [token.ice_servers, sendSignal, relayServers, raiseRelayIssue]);
 
   // ── SDP Optimizer ─────────────────────────────────────────────────────────
   const optimizeAudioSDP = (sdp: string | undefined) => {
@@ -605,8 +759,15 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         }
       }
       else if (payload.type === "ice-candidate") {
+        // Record what the peer could gather: if it produced a relay candidate and
+        // we did not, the fault is on this side's path to the relay.
+        const init = payload.data as RTCIceCandidateInit;
+        const peerType = /typ (\w+)/.exec(String(init?.candidate ?? ""))?.[1];
+        if (peerType && !peerCandidateTypesRef.current.includes(peerType)) peerCandidateTypesRef.current.push(peerType);
+        if (peerType === "relay") peerRelayCandidateRef.current = true;
+
         if (!pc.remoteDescription) {
-          candidateQueue.current.push(payload.data as RTCIceCandidateInit);
+          candidateQueue.current.push(init);
           return;
         }
         // Adding a candidate can fail benignly (it arrived for a since-reset/
@@ -869,6 +1030,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   useEffect(() => {
     durationWarningShownRef.current = false;
     setDurationWarningVisible(false);
+    setRelayIssue(null);
+    setRelayIssueVisible(false);
   }, [roomName]);
 
   const durationWarningTitle =
@@ -1101,6 +1264,18 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                             </span>
                           </>
                         )}
+                        {relayPath && (
+                          <>
+                            <span className="text-white/25">·</span>
+                            <span
+                              title={relayPath === "relay" ? "Media is relayed through the TURN server" : "Media goes peer-to-peer without a relay"}
+                              className={cn("text-[10px] font-medium leading-none flex items-center gap-0.5", relayPath === "relay" ? "text-sky-300" : "text-white/55")}
+                            >
+                              <Wifi className="w-3 h-3" />
+                              {relayPath === "relay" ? "Relay" : "Direct"}
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </>
@@ -1144,23 +1319,49 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
               </div>
             </div>
 
-            {!isMinimized && durationWarningVisible && (
-              <div className="absolute left-1/2 top-16 z-20 w-[min(92vw,28rem)] -translate-x-1/2 rounded-[6px] border border-amber-400/35 bg-amber-500/15 px-3 py-2.5 text-amber-50 shadow-2xl shadow-black/40 backdrop-blur-md">
-                <div className="flex items-start gap-2.5">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold">{durationWarningTitle}</p>
-                    <p className="mt-0.5 text-[11px] leading-relaxed ">{durationWarningMessage}</p>
+            {!isMinimized && (durationWarningVisible || (relayIssueVisible && relayIssue)) && (
+              <div className="absolute left-1/2 top-16 z-20 flex w-[min(92vw,28rem)] -translate-x-1/2 flex-col gap-2">
+                {durationWarningVisible && (
+                  <div className="rounded-[6px] border border-amber-400/35 bg-amber-500/15 px-3 py-2.5 text-amber-50 shadow-2xl shadow-black/40 backdrop-blur-md">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold">{durationWarningTitle}</p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed ">{durationWarningMessage}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDurationWarningVisible(false)}
+                        className="rounded-[6px] p-1 text-amber-100/70 hover:bg-amber-400/15 hover:text-amber-50"
+                        aria-label="Dismiss time warning"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setDurationWarningVisible(false)}
-                    className="rounded-[6px] p-1 text-amber-100/70 hover:bg-amber-400/15 hover:text-amber-50"
-                    aria-label="Dismiss time warning"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                )}
+
+                {relayIssue && relayIssueVisible && (
+                  <div role="alert" className="rounded-[6px] border border-red-400/35 bg-red-500/15 px-3 py-2.5 text-red-50 shadow-2xl shadow-black/40 backdrop-blur-md">
+                    <div className="flex items-start gap-2.5">
+                      <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold">{relayIssue.headline}</p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed">{relayIssue.detail}</p>
+                        {/* Verbatim ICE evidence — this is the line to paste when reporting a call fault. */}
+                        <p className="mt-1.5 break-all font-mono text-[10px] leading-relaxed text-white/45">{relayIssue.evidence}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRelayIssueVisible(false)}
+                        className="rounded-[6px] p-1 text-red-100/70 hover:bg-red-400/15 hover:text-red-50"
+                        aria-label="Dismiss relay warning"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
