@@ -137,12 +137,23 @@ VITE_REVERB_HOST=ws.mediconnect.rw
 VITE_REVERB_PORT=443
 VITE_REVERB_SCHEME=wss
 
-# ── WebRTC TURN server ────────────────────────────────────────────
-VITE_TURN_HOST=197.243.29.114
-VITE_TURN_PORT=3478
-# Keep relay credentials unprefixed: Vite inlines every VITE_ variable into the
-# public bundle, and these are read by the API server, never by the browser.
-TURN_SECRET=your_turn_secret_here
+# ── WebRTC relay (API server only — server/.env) ─────────────────
+# The browser never reads these. Node uses them to sign relay credentials into
+# every call token, so they belong in the API env, not in the frontend bundle.
+TURN_HOST=<relay address>          # also accepted as TURN_URL / VITE_TURN_HOST
+TURN_PORT=3478
+TURNS_PORT=5349
+# Set ONE of these pairs, matching how coTURN was configured:
+TURN_SECRET=<static-auth-secret>   # when turnserver.conf has use-auth-secret
+TURN_USERNAME=mediconnect          # when turnserver.conf has a static user= entry
+TURN_PASSWORD=<user= password>
+# Signs consultation room tokens so the signal relay can reject a forged room.
+CALL_TOKEN_SECRET=<random 32+ bytes hex>
+
+# ── Deploy webhook (API server only — server/.env) ────────────────
+# GitHub Actions sends this to POST /api/v1/deploy. Without it the webhook
+# answers 503 and pushes to main do not restart the API.
+DEPLOY_SECRET=<same value as the repository's DEPLOY_SECRET secret>
 
 # ── Mode ──────────────────────────────────────────────────────────
 VITE_DEV=true   # set to false for production builds
@@ -205,7 +216,7 @@ VITE_DEV=false
 | Field | Value |
 |---|---|
 | URL | `vpn.aos.rw` |
-| Username | `user.mediconnect` |
+| Username | `<your VPN user — kept out of this public repo>` |
 | Group | `MEDICONNECT-LTD` |
 
 Use Cisco AnyConnect or any OpenConnect client.
@@ -217,11 +228,12 @@ Use Cisco AnyConnect or any OpenConnect client.
 Once VPN is connected:
 
 ```bash
-ssh root@10.10.141.149
+# The address and login are not published here: this repository is public, and
+# naming root@<internal address> hands an attacker half of the credential pair.
+# They live in your local repo-root .env, which git no longer tracks.
+export API_HOST=<internal API address>
+ssh root@$API_HOST
 ```
-
-- **Server:** `10.10.141.149`
-- **Username:** `root`
 
 The server runs **Ubuntu** with **Nginx** as the web server.
 
@@ -249,14 +261,14 @@ Config files live in `/etc/nginx/sites-available/`.
 
 ```
 https://db.mediconnect.rw
-Username: medi.connect
+Username: <phpMyAdmin user — kept out of this public repo>
 ```
 
 **Option 2 — Desktop tool via SSH tunnel** (TablePlus, DBeaver, MySQL Workbench)
 
 ```bash
 # Open tunnel — keep this terminal open (VPN required)
-ssh -L 3307:127.0.0.1:3306 root@10.10.141.149
+ssh -L 3307:127.0.0.1:3306 root@$API_HOST
 ```
 
 Then connect your tool to:
@@ -266,12 +278,12 @@ Then connect your tool to:
 | Host | `127.0.0.1` |
 | Port | `3307` |
 | Database | `mediconnect` |
-| Username | `root` |
+| Username | `root` (password stays in `server/.env` as `DB_PASSWORD`) |
 
 **Option 3 — CLI directly on server**
 
 ```bash
-ssh root@10.10.141.149
+ssh root@$API_HOST
 mysql -u root mediconnect
 ```
 
@@ -304,6 +316,43 @@ Laravel API → MySQL database
 ```
 
 No VPN needed for this — the production API is publicly accessible over HTTPS.
+
+---
+
+### Video call relay (cross-network calls)
+
+A call connects on the same Wi-Fi using `host` ICE candidates alone. Across
+different networks — home broadband versus mobile data — NAT usually makes
+`srflx` (STUN) fail too, so the peers can only meet through a `relay` candidate
+from TURN. When that is missing the call ends at ICE `failed` no matter how the
+room UI is written.
+
+**Check a deployment without reading logs:**
+
+```bash
+curl -s https://api.mediconnect.rw/api/v1/public/consultations/relay-health
+```
+
+`ok: true` means the API is putting credentialed relays into every call token.
+`missing` names the layer that is not: `relay_configured`, `relay_credentials`,
+`tls_fallback` or `room_token_signing`, and each `checks[].detail` says which
+variable closes it. It never returns a credential value.
+
+**Compare the two boxes (read-only, safe to paste to anyone):**
+
+```bash
+bash server/verify-turn.sh          # on the API box
+sudo bash verify-turn.sh            # on the coTURN box
+```
+
+The script reduces every credential to a length plus a short match code, then
+says MATCH or MISMATCH — so `TURN_SECRET` vs coTURN's `static-auth-secret`, or
+`TURN_PASSWORD` vs its `user=` entry, can be proven equal without printing one.
+
+**In the room**, the header pill reads **Direct** or **Relay** for the selected
+candidate pair. If a relay cannot be used, a red banner names the fault: no
+relay in the token, relay without credentials, credentials refused, or relay not
+answering — with the candidate types it saw as evidence.
 
 ---
 
@@ -492,8 +541,8 @@ netlify deploy --dir=dist --prod
 **Option C — Direct to server** (VPN required)
 
 ```bash
-scp -r dist/* root@10.10.141.149:/var/www/mediconnect/
-ssh root@10.10.141.149 "nginx -t && systemctl reload nginx"
+scp -r dist/* root@$API_HOST:/var/www/mediconnect/
+ssh root@$API_HOST "nginx -t && systemctl reload nginx"
 ```
 
 ---
@@ -571,7 +620,7 @@ server {
 
 The backend is a **Laravel PHP API** at `/var/www/mediconnect-api` on the server.
 
-> **Requires SSH access.** Connect VPN first, then `ssh root@10.10.141.149`.
+> **Requires SSH access.** Connect VPN first, then `ssh root@$API_HOST`.
 
 ---
 
