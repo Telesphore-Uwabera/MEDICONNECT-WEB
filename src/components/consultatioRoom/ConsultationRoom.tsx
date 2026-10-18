@@ -29,6 +29,7 @@ interface ConsultationToken {
   ice_servers: IceServer[];
   consultation_id?: number;
   appointment_duration_minutes?: number;
+  sig?: string;
 }
 
 interface ConsultationRoomProps {
@@ -83,6 +84,20 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // which would make each peer ignore the other's signals (the "ignore my own
   // broadcast" filter). Suffixing with the role guarantees the two differ.
   const selfId = `${token.username}#${isOwner ? "owner" : "guest"}`;
+
+  // The relay admits callers that already hold this room's token, so a guessed
+  // room name no longer lets a stranger read or poison someone else's SDP. The
+  // raw string is dropped once the join response is decoded, so the room and its
+  // signature are re-presented from the decoded token.
+  const roomToken = useMemo(() => {
+    try {
+      return btoa(JSON.stringify({ room: token.room ?? roomName, sig: token.sig }));
+    } catch {
+      return "";
+    }
+  }, [token.room, token.sig, roomName]);
+  const roomTokenRef = useRef(roomToken);
+  roomTokenRef.current = roomToken;
 
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
@@ -282,7 +297,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const sendSignal = useCallback(
     async (type: string, data: unknown = {}) => {
       const url = `${import.meta.env.VITE_APP_BASE_URL}${import.meta.env.VITE_SIGNAL_PATH ?? "/public/consultations/signal"}`;
-      const payload = JSON.stringify({ room: roomName, type, data, from: selfId });
+      const payload = JSON.stringify({ room: roomName, type, data, from: selfId, token: roomToken });
       // Signaling is critical (offer/answer/ICE), and the network can flake
       // briefly during renegotiation, so retry a transient failure once before
       // giving up. The `ready` heartbeat also keeps re-announcing, so a missed
@@ -310,7 +325,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         }
       }
     },
-    [roomName, selfId]
+    [roomName, selfId, roomToken]
   );
 
   // ── Connection recovery ───────────────────────────────────────────────────
@@ -698,10 +713,11 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       subscribeToChannel();
 
       let signalAfter = 0;
+      let relayAuthWarned = false;
       const pollSignals = async () => {
         if (cancelled) return;
         try {
-          const url = `${import.meta.env.VITE_APP_BASE_URL}/public/consultations/signal/${encodeURIComponent(roomName)}?after=${signalAfter}`;
+          const url = `${import.meta.env.VITE_APP_BASE_URL}/public/consultations/signal/${encodeURIComponent(roomName)}?after=${signalAfter}&token=${encodeURIComponent(roomTokenRef.current)}`;
           const res = await fetch(url, { headers: { Accept: "application/json" } });
           if (res.ok) {
             const body = await res.json();
@@ -709,6 +725,11 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
               signalAfter = Math.max(signalAfter, Number(signal.id) || 0);
               handleSignalRef.current?.(signal);
             }
+          } else if (!relayAuthWarned) {
+            // A rejected room token means the call can never connect, so say so
+            // once instead of polling a 401 every second in silence.
+            relayAuthWarned = true;
+            console.warn(`[WebRTC] Signal relay refused (HTTP ${res.status}) — this link's room token is not valid for ${roomName}.`);
           }
         } catch {
           /* The next poll retries. */
