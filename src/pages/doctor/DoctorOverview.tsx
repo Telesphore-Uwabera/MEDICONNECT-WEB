@@ -432,6 +432,7 @@ const DoctorOverview = () => {
               weekday: "long",
               month: "long",
               day: "numeric",
+              year: "numeric",
             }),
           })}
         />
@@ -439,8 +440,12 @@ const DoctorOverview = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
 
-            {/*  Toolbar: period picker + chart group + refresh  */}
+            {/*  Toolbar: today badge + period picker + chart group + refresh  */}
             <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
+                <Calendar className="h-3.5 w-3.5" />
+                <span>Today: {new Date().toLocaleDateString(i18n.language, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
+              </div>
               {PERIOD_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}

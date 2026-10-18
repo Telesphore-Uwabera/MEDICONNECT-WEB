@@ -20,6 +20,7 @@ import {
   Moon,
   Sunrise,
   UserCircle,
+  Calendar,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -147,7 +148,7 @@ const resolveSessionState = (): SessionState => {
 /* ─── Component ──────────────────────────────────────────────────── */
 
 export const PageHeader = ({ title, subtitle, actions }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -269,6 +270,11 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                 {actions}
               </div>
             )}
+
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] bg-secondary/50 border border-border/50 text-[11px] font-semibold text-foreground mr-1">
+              <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>{new Intl.DateTimeFormat(i18n.language || "en", { weekday: "short", month: "short", day: "numeric", year: "numeric" }).format(new Date())}</span>
+            </div>
 
             <ThemeToggle />
             <LanguageSwitcher compact />

@@ -653,19 +653,26 @@ const DoctorAvailability = () => {
       .map(([date, slots]) => ({ date, slots }));
   }, [slotsData]);
 
+  const todayStr = useMemo(() => moment().format("YYYY-MM-DD"), []);
+  const todayIdx = useMemo(() => days.findIndex((d) => d.date === todayStr), [days, todayStr]);
+
   const [selectedDay, setSelectedDay] = useState(0);
   useEffect(() => {
     if (days.length === 0) return;
-    // Default to today's date; fall back to the nearest future date, then index 0
-    const todayStr = moment().format("YYYY-MM-DD");
-    const todayIdx = days.findIndex((d) => d.date === todayStr);
-    if (todayIdx !== -1) {
-      setSelectedDay(todayIdx);
+    const currentTodayStr = moment().format("YYYY-MM-DD");
+    const idx = days.findIndex((d) => d.date === currentTodayStr);
+    if (idx !== -1) {
+      setSelectedDay(idx);
       return;
     }
     // Today not in range — pick the first date that is >= today
-    const futureIdx = days.findIndex((d) => d.date >= todayStr);
-    setSelectedDay(futureIdx !== -1 ? futureIdx : 0);
+    const futureIdx = days.findIndex((d) => d.date >= currentTodayStr);
+    if (futureIdx !== -1) {
+      setSelectedDay(futureIdx);
+    } else {
+      // All dates in the past: select the most recent one instead of the oldest
+      setSelectedDay(days.length - 1);
+    }
   }, [days]);
 
   const currentDay = days[selectedDay] ?? null;
@@ -927,7 +934,7 @@ const DoctorAvailability = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.doctor.availability_title")}
-          subtitle={t("pages.doctor.availability_sub")}
+          subtitle={`${moment().format("dddd, MMMM D, YYYY")} — ${t("pages.doctor.availability_sub")}`}
         />
 
         <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
@@ -1344,17 +1351,23 @@ const DoctorAvailability = () => {
               <div className="min-w-0 xl:col-span-8 space-y-3">
                 {/* Day Picker — grouped by month */}
                 <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4 sm:p-5">
-                  <div className="flex min-w-0 items-center justify-between gap-3 mb-4">
+                  <div className="flex min-w-0 items-center justify-between gap-3 mb-4 flex-wrap">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
                         <CalendarDays size={16} className="text-primary" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-base font-semibold text-foreground leading-tight">
-                          {t("pages.doctor.day_picker")}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-semibold text-foreground leading-tight">
+                            {t("pages.doctor.day_picker")}
+                          </h3>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            Today: {moment().format("ddd, D MMM YYYY")}
+                          </span>
+                        </div>
                         {days.length > 0 && (
-                          <p className="truncate text-sm text-muted-foreground/60">
+                          <p className="truncate text-sm text-muted-foreground/60 mt-0.5">
                             {t("pages.doctor.days_interval_meta", {
                               days: days.length,
                               interval,
@@ -1364,31 +1377,62 @@ const DoctorAvailability = () => {
                       </div>
                     </div>
 
-                    {days.length > 0 && (
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      {todayIdx !== -1 && selectedDay !== todayIdx && (
                         <button
-                          onClick={() =>
-                            setSelectedDay(Math.max(0, selectedDay - 1))
-                          }
-                          disabled={selectedDay === 0}
-                          className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          type="button"
+                          onClick={() => setSelectedDay(todayIdx)}
+                          className="px-2.5 py-1 rounded-[6px] text-xs font-bold border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 transition-colors"
                         >
-                          <ChevronLeft size={16} />
+                          Jump to Today
                         </button>
-                        <button
-                          onClick={() =>
-                            setSelectedDay(
-                              Math.min(days.length - 1, selectedDay + 1),
-                            )
-                          }
-                          disabled={selectedDay >= days.length - 1}
-                          className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-                    )}
+                      )}
+                      {days.length > 0 && (
+                        <>
+                          <button
+                            onClick={() =>
+                              setSelectedDay(Math.max(0, selectedDay - 1))
+                            }
+                            disabled={selectedDay === 0}
+                            className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setSelectedDay(
+                                Math.min(days.length - 1, selectedDay + 1),
+                              )
+                            }
+                            disabled={selectedDay >= days.length - 1}
+                            className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {todayIdx === -1 && days.length > 0 && (
+                    <div className="mb-3 px-3.5 py-2.5 rounded-[6px] bg-primary/5 border border-primary/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                        <span className="text-foreground font-medium">
+                          Today is <strong className="text-primary font-bold">{moment().format("dddd, MMMM D, YYYY")}</strong> — no slots exist for today yet.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRange({ from: today, to: moment(today).add(6, "days").toDate() });
+                        }}
+                        className="font-bold text-primary underline hover:opacity-80"
+                      >
+                        Select this week on calendar
+                      </button>
+                    </div>
+                  )}
 
                   <DayPickerByMonth
                     days={days}
@@ -1404,8 +1448,21 @@ const DoctorAvailability = () => {
                     {/* Header */}
                     <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                       <div>
-                        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-                          {moment(currentDay.date).format("dddd, MMMM D")}
+                        <h3 className="text-base font-semibold text-foreground flex items-center gap-2 flex-wrap">
+                          <span>{moment(currentDay.date).format("dddd, MMMM D, YYYY")}</span>
+                          {moment(currentDay.date).isSame(moment(), "day") ? (
+                            <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-primary text-primary-foreground shadow-sm">
+                              Today
+                            </span>
+                          ) : moment(currentDay.date).isBefore(moment(), "day") ? (
+                            <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-muted text-muted-foreground border border-border/60">
+                              Past Date
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                              Upcoming
+                            </span>
+                          )}
                           {slotsFetching && (
                             <Loader2
                               size={14}
