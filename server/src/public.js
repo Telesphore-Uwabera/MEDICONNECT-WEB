@@ -438,6 +438,39 @@ function temporaryPassword() {
   return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
 }
 
+const tempPasswordCache = new Map();
+
+function cacheGuestCredentials(keys, creds) {
+  if (!creds?.plain && !creds?.tempPassword) return;
+  const tempPassword = creds.plain || creds.tempPassword;
+  const email = creds.email || null;
+  const entry = {
+    email,
+    tempPassword,
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+  };
+  for (const k of keys) {
+    if (k !== undefined && k !== null && k !== "") {
+      tempPasswordCache.set(String(k), entry);
+    }
+  }
+}
+
+function getCachedGuestCredentials(keys) {
+  const now = Date.now();
+  for (const k of keys) {
+    if (k === undefined || k === null || k === "") continue;
+    const entry = tempPasswordCache.get(String(k));
+    if (entry) {
+      if (entry.expiresAt > now) {
+        return entry;
+      }
+      tempPasswordCache.delete(String(k));
+    }
+  }
+  return null;
+}
+
 async function payerRecord(payment) {
   const payableType = String(payment?.payable_type || "");
   const payableId = payment?.payable_id;
@@ -458,26 +491,39 @@ async function payerRecord(payment) {
 
 async function attachPayerAccount(payment) {
   const found = await payerRecord(payment);
-  if (!found) return { created: false, email: null };
+  if (!found) return { created: false, email: null, plain: null };
   const { table, row } = found;
+  const email = String(row.guest_email || row.email || row.patient_email || "").trim().toLowerCase();
+
+  const lookupKeys = [
+    payment?.invoice_number,
+    payment?.id,
+    payment?.uuid,
+    payment?.transaction_id,
+    payment?.payable_id,
+    row?.id,
+    row?.guest_token,
+    email,
+  ];
+  const cached = getCachedGuestCredentials(lookupKeys);
+
   if (row.user_id) {
     const existing = await one("SELECT email FROM users WHERE id = ? LIMIT 1", [row.user_id]).catch(() => null);
-    return { created: false, email: existing?.email || null };
+    return {
+      created: Boolean(cached),
+      email: existing?.email || email || null,
+      plain: cached?.tempPassword || null,
+    };
   }
-  const email = String(row.guest_email || row.email || row.patient_email || "").trim().toLowerCase();
-  if (!email.includes("@")) return { created: false, email: null };
+
+  if (!email.includes("@")) return { created: false, email: null, plain: null };
   const name = String(row.guest_name || row.patient_name || row.name || email).trim() || email;
   const phone = String(row.guest_phone || row.phone || row.patient_phone || "").trim();
 
   let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
   let created = false;
-  let plain = null;
-  const mailReady = Boolean(
-    (process.env.MAIL_HOST || process.env.SMTP_HOST)
-    && (process.env.MAIL_USERNAME || process.env.SMTP_USER)
-    && (process.env.MAIL_PASSWORD || process.env.SMTP_PASS),
-  );
-  if (!user && !mailReady) return { created: false, email };
+  let plain = cached?.tempPassword || null;
+
   if (!user) {
     plain = temporaryPassword();
     try {
@@ -497,10 +543,13 @@ async function attachPayerAccount(payment) {
       user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
       if (!user) {
         console.error("Could not create payer account:", error?.message || error);
-        return { created: false, email };
+        return { created: false, email, plain: null };
       }
-      plain = null;
     }
+  }
+
+  if (plain) {
+    cacheGuestCredentials(lookupKeys, { email, tempPassword: plain });
   }
 
   if (created && plain) {
@@ -527,7 +576,7 @@ async function attachPayerAccount(payment) {
         ${emailP("If you did not make this payment, contact us immediately at admin@mediconnect.rw.", "font-size:12px;color:#dc2626;")}
       `,
     });
-    const sent = await sendMail({
+    sendMail({
       to: email,
       subject: "Your MediConnect account — sign in to join your consultation",
       text: [
@@ -542,16 +591,12 @@ async function attachPayerAccount(payment) {
         "You can change the password from Account Settings after signing in.",
       ].join("\n"),
       html,
+    }).catch((err) => {
+      console.warn("Payer account email error:", err?.message || err);
     });
-    if (!sent) {
-      // Email failed — log it but DO NOT delete the user account.
-      // The patient has already paid; destroying their account here locks them out
-      // and causes account_created to return false despite the payment succeeding.
-      console.error("Payer account email was not sent — account kept, patient must sign in manually.");
-    }
   }
 
-  if (created && user && await tableExists("patients") && !(await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null))) {
+  if (user && await tableExists("patients") && !(await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null))) {
     await insert("patients", {
       user_id: user.id,
       name: user.name,
@@ -571,8 +616,9 @@ async function attachPayerAccount(payment) {
   if (patient?.id && payment?.id && await hasColumn("payments", "patient_id") && !payment.patient_id) {
     await update("payments", payment.id, { patient_id: patient.id });
   }
-  return { created, email, plain: created ? plain : null };
+  return { created: created || Boolean(plain), email, plain };
 }
+
 
 function kigaliClock() {
   const now = new Date();
@@ -1516,22 +1562,33 @@ export function publicRoutes(router) {
 
       const remote = await iremboInvoiceStatus(invoiceNumber).catch(() => null);
       if (remote?.paymentStatus === "PAID") {
+        let account = null;
         if (payment?.id) {
           payment = await confirmPaidInvoice(payment, remote);
-          const account = await attachPayerAccount(payment).catch(() => null);
+          account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
           payment.account_temp_password = account?.plain || null;
           // Notify with account so patient email includes sign-in credentials
           notifyPaidVisit(payment, account).catch(() => null);
         }
+        const cached = getCachedGuestCredentials([
+          invoiceNumber,
+          payment?.id,
+          payment?.uuid,
+          payment?.payable_id,
+        ]);
+        const tempPassword = payment?.account_temp_password || account?.plain || cached?.tempPassword || null;
+        const accountEmail = payment?.account_email || account?.email || cached?.email || null;
+        const accountCreated = Boolean(payment?.account_created || account?.created || tempPassword);
+
         return res.json({
           message: "Payment already completed.",
           status: "paid",
           already_paid: true,
-          account_created: Boolean(payment?.account_created),
-          account_email: payment?.account_email || null,
-          temp_password: payment?.account_temp_password || null,
+          account_created: accountCreated,
+          account_email: accountEmail,
+          temp_password: tempPassword,
           invoice_number: invoiceNumber,
           public_key: publicKey,
           amount,
@@ -1561,11 +1618,12 @@ export function publicRoutes(router) {
         "SELECT * FROM payments WHERE invoice_number = ? OR uuid = ? OR transaction_id = ? ORDER BY id DESC LIMIT 1",
         [invoice, invoice, invoice],
       ).catch(() => null);
+      let account = null;
       if (payment && String(payment.status).toLowerCase() !== "paid") {
         const remote = await iremboInvoiceStatus(payment.invoice_number || invoice).catch(() => null);
         if (remote?.paymentStatus === "PAID") {
           payment = await confirmPaidInvoice(payment, remote);
-          const account = await attachPayerAccount(payment).catch(() => null);
+          account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
           payment.account_temp_password = account?.plain || null;
@@ -1574,19 +1632,30 @@ export function publicRoutes(router) {
           payment = await expirePaymentRecord(payment);
         }
       }
-      if (payment && String(payment.status) === "paid" && !payment.account_email) {
-        const account = await attachPayerAccount(payment).catch(() => null);
-        payment.account_created = Boolean(account?.created);
-        payment.account_email = account?.email || null;
-        payment.account_temp_password = account?.plain || null;
-        // Only notify if this is the first time we're attaching the account
-        if (account?.created) notifyPaidVisit(payment, account).catch(() => null);
+      if (payment && String(payment.status) === "paid") {
+        account = await attachPayerAccount(payment).catch(() => null);
+        if (account?.created || account?.plain) {
+          payment.account_created = true;
+          payment.account_email = account.email || payment.account_email;
+          payment.account_temp_password = account.plain || payment.account_temp_password;
+        }
       }
+      const cached = getCachedGuestCredentials([
+        invoice,
+        payment?.invoice_number,
+        payment?.id,
+        payment?.uuid,
+        payment?.payable_id,
+      ]);
+      const tempPassword = payment?.account_temp_password || account?.plain || cached?.tempPassword || null;
+      const accountEmail = payment?.account_email || account?.email || cached?.email || null;
+      const accountCreated = Boolean(payment?.account_created || account?.created || tempPassword);
+
       res.json({
         status: payment?.status || "pending",
-        account_created: Boolean(payment?.account_created),
-        account_email: payment?.account_email || null,
-        temp_password: payment?.account_temp_password || null,
+        account_created: accountCreated,
+        account_email: accountEmail,
+        temp_password: tempPassword,
         payment: payment ? await presentRow("payments", payment) : null,
         // Also return the consultation status so the frontend can transition
         // to "accepted" immediately when status=confirmed and payment=paid.
@@ -1681,14 +1750,24 @@ export function publicRoutes(router) {
       };
       const confirmed = await confirmPaidInvoice(payment, remote);
       const account = await attachPayerAccount(confirmed).catch(() => null);
+      const cached = getCachedGuestCredentials([
+        invoiceNumber,
+        confirmed?.id,
+        confirmed?.uuid,
+        confirmed?.payable_id,
+        payload.transactionId,
+      ]);
+      const tempPassword = account?.plain || cached?.tempPassword || null;
+      const accountEmail = account?.email || cached?.email || null;
+      const accountCreated = Boolean(account?.created || tempPassword);
 
       res.json({
         received: true,
         processed: true,
         payment_id: confirmed.id,
-        account_created: Boolean(account?.created),
-        account_email: account?.email || null,
-        temp_password: account?.plain || null,
+        account_created: accountCreated,
+        account_email: accountEmail,
+        temp_password: tempPassword,
       });
     } catch (error) {
       // Always return 200 to IremboPay so it doesn't retry forever;

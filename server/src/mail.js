@@ -19,9 +19,12 @@ const BRAND = {
 
 // ─── SMTP config ──────────────────────────────────────────────────────────────
 function mailConfig() {
-  const host = process.env.MAIL_HOST || process.env.SMTP_HOST || "";
   const user = process.env.MAIL_USERNAME || process.env.SMTP_USER || "";
   const pass = process.env.MAIL_PASSWORD || process.env.SMTP_PASS || "";
+  let host = process.env.MAIL_HOST || process.env.SMTP_HOST || "";
+  if (!host && (user.includes("@gmail.com") || user.toLowerCase().includes("gmail"))) {
+    host = "smtp.gmail.com";
+  }
   if (!host || !user || !pass) return null;
   const port = Number(process.env.MAIL_PORT || process.env.SMTP_PORT || 587);
   const encryption = String(process.env.MAIL_ENCRYPTION || "").toLowerCase();

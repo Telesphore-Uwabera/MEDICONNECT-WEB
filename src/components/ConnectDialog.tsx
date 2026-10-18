@@ -926,13 +926,47 @@ export const ConnectDialogContent = ({
         setGuestEmail(email);
         setLoginIdentifier(email);
         setAuthMode("login");
-        setAccountEmailed(Boolean(result?.account_created));
+        setAccountEmailed(Boolean(result?.account_created || result?.temp_password));
         // Auto-fill the temporary password so the guest can sign in with one click
-        if (result?.temp_password) {
-          setLoginPassword(result.temp_password);
-          setTempPassword(result.temp_password);
+        const tempPwd = result?.temp_password || tempPassword;
+        if (tempPwd) {
+          setLoginPassword(tempPwd);
+          setTempPassword(tempPwd);
         }
+        setGuestError(null);
         setPhase("create_account");
+
+        if (tempPwd && email) {
+          // Attempt automatic background sign-in so guest is instantly logged in
+          loginMutation.mutateAsync({
+            email,
+            auth_method: "password",
+            password: tempPwd,
+          }).then(async (data) => {
+            const currentName = splitName(data.user.name);
+            setGuestName(data.user.name);
+            setGuestFirstName(currentName.firstName);
+            setGuestLastName(currentName.lastName);
+            setGuestEmail(data.user.email ?? "");
+            setGuestPhone(data.user.phone ?? "");
+            if (consultationToken) {
+              session.save(consultationToken, data.user.name, data.user.phone ?? "", consultationId ?? undefined);
+              if (canJoinNow) {
+                setRoomUrl(consult!.room_url);
+                setDailyToken(consult!.daily_guest_token);
+                setPhase(consult!.status === "in_progress" ? "in_progress" : "accepted");
+                session.clear();
+                return;
+              }
+              setPhase("polling");
+            } else {
+              onCloseCompletely();
+              navigate("/patient/instant");
+            }
+          }).catch((err) => {
+            console.warn("[AutoLogin] background login failed, credentials stay prefilled:", err);
+          });
+        }
       };
 
       if (payRes.status === "paid" || payRes.already_paid) {
@@ -1031,8 +1065,9 @@ export const ConnectDialogContent = ({
 
   const handleLoginSubmit = async () => {
     const identifier = loginIdentifier.trim();
+    const passwordToUse = loginPassword.trim() || tempPassword?.trim() || "";
     if (!identifier) { setGuestError(t("consult.connect.err_identifier_required")); return; }
-    if (!loginPassword.trim()) { setGuestError(t("consult.connect.err_password_required")); return; }
+    if (!passwordToUse) { setGuestError(t("consult.connect.err_password_required")); return; }
 
     setGuestError(null);
     try {
@@ -1050,12 +1085,12 @@ export const ConnectDialogContent = ({
 
       const data = await loginMutation.mutateAsync(
         isEmail
-          ? { email: identifier, auth_method: "password" as const, password: loginPassword }
+          ? { email: identifier, auth_method: "password" as const, password: passwordToUse }
           : {
             phone: phoneValidation?.normalizedPhone ?? identifier,
             country_code: phoneValidation?.normalizedCountryCode ?? "+250",
             auth_method: "password" as const,
-            password: loginPassword,
+            password: passwordToUse,
           },
       );
       const currentName = splitName(data.user.name);
@@ -1626,8 +1661,8 @@ export const ConnectDialogContent = ({
               <div className="flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                 <p className="text-sm text-muted-foreground">
-                  {accountEmailed
-                    ? t("consult.connect.account_emailed", "Your payment is confirmed! We emailed your temporary password. Sign in below to join your consultation.")
+                  {accountEmailed || tempPassword
+                    ? t("consult.connect.account_emailed", "Your payment is confirmed! We created your account and auto-filled your temporary password. Sign in below to continue.")
                     : authMode === "login"
                       ? t("consult.connect.signin_to_continue", "Sign in to join your consultation. The doctor will see you in the queue once you're logged in.")
                       : t("consult.connect.account_after_payment")}
@@ -1644,7 +1679,7 @@ export const ConnectDialogContent = ({
                   <p className="text-sm font-semibold text-foreground truncate">{doctorName}</p>
                 </div>
               </div>
-              {authMode === "login" || accountEmailed ? (
+              {authMode === "login" || accountEmailed || Boolean(tempPassword) ? (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">{t("consult.connect.email_or_phone")}</Label>
@@ -1730,7 +1765,7 @@ export const ConnectDialogContent = ({
               )}
               <div className="space-y-2">
                 <Button
-                  onClick={authMode === "login" || accountEmailed ? handleLoginSubmit : handleCreateAccount}
+                  onClick={authMode === "login" || accountEmailed || Boolean(tempPassword) ? handleLoginSubmit : handleCreateAccount}
                   disabled={registerMutation.isPending || loginMutation.isPending}
                   className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]"
                 >
@@ -1739,11 +1774,11 @@ export const ConnectDialogContent = ({
                   ) : (
                     <ArrowRight className="h-4 w-4" />
                   )}
-                  {authMode === "login" || accountEmailed
+                  {authMode === "login" || accountEmailed || Boolean(tempPassword)
                     ? t("consult.connect.sign_in")
                     : t("consult.connect.create_and_join")}
                 </Button>
-                {!accountEmailed && (
+                {!accountEmailed && !tempPassword && (
                 <button
                   type="button"
                   onClick={() => {
