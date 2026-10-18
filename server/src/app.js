@@ -17,6 +17,21 @@ import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
 import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
+import {
+  appointmentCollision,
+  appointmentJoinWindow,
+  appointmentStartIsInPast,
+  bookableSlot,
+  claimSlot,
+  patientOwnsAppointment,
+  patientOwnsInstant,
+  releaseSlot,
+  visitAwaitsPayment,
+  visitBodyGuard,
+  visitIsClosed,
+  visitIsSettled,
+  visitOpenTo,
+} from "./visit-rules.js";
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto } from "./public.js";
@@ -1429,7 +1444,13 @@ export function appRoutes(router) {
       const amountColumn = await firstColumn("appointments", ["fee", "amount", "consultation_fee", "price", "total_amount"]);
       const dateColumn = await firstColumn("appointments", ["appointment_date", "scheduled_at", "completed_at", "created_at"]);
       const alive = (await hasColumn("appointments", "deleted_at")) ? "deleted_at IS NULL" : "1=1";
-      const where = `doctor_id = ? AND ${alive} AND status IN ('completed','done','complete','paid')`;
+      // Earnings pay out from this list, so a completed visit only counts when the
+      // money actually arrived (or the doctor charges nothing).
+      const feeColumn = await firstColumn("appointments", ["consultation_fee", "patient_pays", "fee", "amount", "price", "total_amount"]);
+      const settled = feeColumn && await hasColumn("appointments", "payment_status")
+        ? ` AND (LOWER(COALESCE(payment_status, '')) = 'paid' OR COALESCE(\`${feeColumn}\`, 0) <= 0)`
+        : "";
+      const where = `doctor_id = ? AND ${alive} AND status IN ('completed','done','complete','paid')${settled}`;
       const summary = await one(
         `SELECT COUNT(*) AS total_appointments, COALESCE(SUM(${amountColumn ? `\`${amountColumn}\`` : "0"}), 0) AS total_earned, MAX(${dateColumn ? `\`${dateColumn}\`` : "NULL"}) AS last_appointment_at FROM appointments WHERE ${where}`,
         [doctorId],
@@ -1607,6 +1628,11 @@ export function appRoutes(router) {
       if (["expired", "declined", "cancelled", "completed"].includes(String(row.status || ""))) {
         return res.status(422).json({ message: "This request is no longer waiting." });
       }
+      // 'confirmed' is the only state a patient can reach by paying, so anything
+      // still pending is an unpaid queue row the doctor must not be able to take.
+      if (visitAwaitsPayment(row)) {
+        return res.status(422).json({ message: "This patient has not paid yet." });
+      }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
         return res.status(409).json({
@@ -1662,6 +1688,9 @@ export function appRoutes(router) {
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
       }
+      if (visitAwaitsPayment(row)) {
+        return res.status(422).json({ message: "This patient has not paid yet." });
+      }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
         return res.status(409).json({
@@ -1707,6 +1736,9 @@ export function appRoutes(router) {
       if (String(row.status || "") === "completed") {
         return res.json({ message: "Session completed.", data: await presentRow(table, row) });
       }
+      if (visitAwaitsPayment(row)) {
+        return res.status(422).json({ message: "This patient has not paid yet, so this consultation cannot be completed." });
+      }
       const patch = { status: "completed" };
       if (await hasColumn(table, "completed_at")) patch.completed_at = new Date();
       await update(table, row.id, patch);
@@ -1722,6 +1754,24 @@ export function appRoutes(router) {
     try {
       const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
+      if (!(await patientOwnsAppointment(appointment, req.user))) {
+        return res.status(403).json({ message: "This appointment belongs to another patient." });
+      }
+      if (visitIsClosed(appointment)) {
+        return res.status(422).json({ message: "This appointment is no longer open." });
+      }
+      if (!visitIsSettled(appointment)) {
+        return res.status(422).json({ message: "Pay for this visit and wait for the doctor to confirm it before joining." });
+      }
+      const window = appointmentJoinWindow(appointment);
+      if (!window.ok) {
+        const message = window.reason === "too-early"
+          ? "This consultation has not started yet. Join a few minutes before your slot."
+          : window.reason === "too-late"
+            ? "This consultation slot has passed. Contact the doctor to reschedule."
+            : "Consultations can only be joined on the booked day.";
+        return res.status(422).json({ message, reason: window.reason });
+      }
       const room = `appointment-${appointment.id}`;
       const token = callToken({
         room,
@@ -1749,6 +1799,9 @@ export function appRoutes(router) {
       if (appointment.doctor_id && Number(appointment.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This appointment belongs to another doctor." });
       }
+      if (!visitIsSettled(appointment)) {
+        return res.status(422).json({ message: "Confirm this appointment before starting it — the patient has not paid yet." });
+      }
       const room = `appointment-${appointment.id}`;
       const token = callToken({
         room,
@@ -1756,6 +1809,8 @@ export function appRoutes(router) {
         consultationId: appointment.id,
         name: "Doctor",
       });
+      // 'pending' is safe to flip because the settled guard above already ran:
+      // an unpaid visit never reaches this line.
       if (await hasColumn("appointments", "status") && ["pending", "confirmed", "accepted", "paid"].includes(String(appointment.status || ""))) {
         await update("appointments", appointment.id, { status: "in_progress" });
       }
@@ -1785,6 +1840,11 @@ export function appRoutes(router) {
       if (String(appointment.status || "") === "completed") {
         return res.json({ message: "Appointment completed.", appointment: await presentRow("appointments", appointment) });
       }
+      // Completion feeds earnings, so an unpaid visit that was never confirmed
+      // must not be able to reach it.
+      if (visitAwaitsPayment(appointment)) {
+        return res.status(422).json({ message: "Confirm this appointment before completing it — the patient has not paid yet." });
+      }
       const patch = { status: "completed" };
       if (await hasColumn("appointments", "completed_at")) patch.completed_at = new Date();
       if (await hasColumn("appointments", "ended_at")) patch.ended_at = new Date();
@@ -1809,6 +1869,10 @@ export function appRoutes(router) {
       if (patient?.id && await hasColumn(table, "patient_id")) {
         clauses.push("patient_id = ?");
         params.push(patient.id);
+      }
+      if (await hasColumn(table, "user_id")) {
+        clauses.push("user_id = ?");
+        params.push(req.user.id);
       }
       if (req.user.email && await hasColumn(table, "guest_email")) {
         clauses.push("guest_email = ?");
@@ -1845,6 +1909,9 @@ export function appRoutes(router) {
     }
   });
 
+  // Mints a patient WebRTC token, so the id is treated as a capability: the
+  // caller must own the row. Booked ids are resolved here too, which keeps this
+  // route from falling through to the unscoped generic GET-by-id.
   router.get("/patient/quick/:id", requireAuth, async (req, res, next) => {
     try {
       const table = (await tableExists("instant_consultation_requests"))
@@ -1853,7 +1920,24 @@ export function appRoutes(router) {
       const row = await tableExists(table)
         ? await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null)
         : null;
-      if (!row) return next();
+      if (row && !(await patientOwnsInstant(row, req.user))) {
+        return res.status(403).json({ message: "This consultation belongs to another patient." });
+      }
+      // A completed row still resolves here (the summary lookup needs it), but an
+      // expired or declined one must not hand out a room.
+      if (row && visitIsClosed(row)) {
+        return res.status(422).json({ message: "This consultation is no longer open." });
+      }
+      if (!row) {
+        const appointment = await tableExists("appointments")
+          ? await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]).catch(() => null)
+          : null;
+        if (!appointment) return next();
+        if (!(await patientOwnsAppointment(appointment, req.user))) {
+          return res.status(403).json({ message: "This appointment belongs to another patient." });
+        }
+        return res.json(await presentRow("appointments", appointment));
+      }
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       res.json({
         id: row.id,
@@ -1873,15 +1957,85 @@ export function appRoutes(router) {
     }
   });
 
+  // Cancelling used to reach the generic hard DELETE, which destroyed the record
+  // and left the doctor's slot marked as booked forever.
+  router.delete("/patient/appointments/:id", requireAuth, requireRole("patient"), async (req, res, next) => {
+    try {
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]).catch(() => null);
+      if (!appointment) return res.status(404).json({ message: "Appointment not found." });
+      if (!(await patientOwnsAppointment(appointment, req.user))) {
+        return res.status(403).json({ message: "This appointment belongs to another patient." });
+      }
+      const status = String(appointment.status || "").toLowerCase();
+      if (["in_progress", "accepted", "completed", "done"].includes(status)) {
+        return res.status(422).json({ message: "This visit has already started, so it cannot be cancelled here. Ask the doctor or support to close it." });
+      }
+      if (status === "cancelled" || status === "canceled") {
+        return res.json({ message: "This appointment is already cancelled." });
+      }
+      const patch = { status: "cancelled" };
+      if (await hasColumn("appointments", "cancelled_at")) patch.cancelled_at = new Date();
+      if (await hasColumn("appointments", "cancellation_reason")) patch.cancellation_reason = req.body?.reason ?? null;
+      // payment_status keeps the money trail: a paid visit stays recorded as paid
+      // even after the patient cancels, and 'cancelled' is not a value the column
+      // is guaranteed to accept.
+      await update("appointments", appointment.id, patch);
+      await releaseSlot(appointment);
+      const updated = await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [appointment.id]));
+      res.json({ message: "Appointment cancelled.", appointment: updated });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/patient/appointments/:id/reschedule", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
-      await update("appointments", req.params.id, {
-        appointment_date: req.body?.appointment_date,
-        appointment_time: req.body?.appointment_time,
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]).catch(() => null);
+      if (!appointment) return res.status(404).json({ message: "Appointment not found." });
+      if (!(await patientOwnsAppointment(appointment, req.user))) {
+        return res.status(403).json({ message: "This appointment belongs to another patient." });
+      }
+      const status = String(appointment.status || "").toLowerCase();
+      if (["cancelled", "canceled", "expired", "completed", "done", "in_progress", "accepted"].includes(status)) {
+        return res.status(422).json({ message: "This appointment can no longer be moved." });
+      }
+      const date = String(req.body?.appointment_date || "").slice(0, 10);
+      const time = String(req.body?.appointment_time || "");
+      if (!date || !time) return res.status(422).json({ message: "Choose a new date and time." });
+      if (appointmentStartIsInPast(date, time)) {
+        return res.status(422).json({ message: "Choose a time later today, or another day." });
+      }
+      const taken = await appointmentCollision(appointment.doctor_id, date, time, appointment.id);
+      if (taken) {
+        return res.status(409).json({ message: "That slot is already booked. Choose another time.", collision_id: taken.id });
+      }
+      const slot = await bookableSlot(appointment.doctor_id, date, time);
+      if (slot.found && !slot.bookable) {
+        return res.status(409).json({ message: "This doctor has closed that slot. Choose another time." });
+      }
+      const oldSlot = await bookableSlot(appointment.doctor_id, appointment.appointment_date, appointment.appointment_time);
+      if (oldSlot.found && slot.found && oldSlot.slot.id === slot.slot.id) {
+        return res.json({ message: "This appointment is already at that time.", appointment: await presentRow("appointments", appointment) });
+      }
+      // Free the old minute before claiming the new one: while the link column
+      // still points at this appointment, releasing it would clear the new slot.
+      await releaseSlot(appointment);
+      await update("appointments", appointment.id, {
+        appointment_date: date,
+        appointment_time: time,
         status: "pending",
       });
-      const appointment = await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]));
-      res.json({ message: "Appointment rescheduled.", appointment });
+      if (slot.found && (await claimSlot(slot.slot.id, appointment.id)) === false) {
+        await update("appointments", appointment.id, {
+          appointment_date: String(appointment.appointment_date).slice(0, 10),
+          appointment_time: appointment.appointment_time,
+          status: appointment.status,
+        }).catch(() => null);
+        if (oldSlot.found) await claimSlot(oldSlot.slot.id, appointment.id).catch(() => null);
+        return res.status(409).json({ message: "That slot was taken a moment ago. Choose another time." });
+      }
+      const updated = await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [appointment.id]));
+      res.json({ message: "Appointment rescheduled. The doctor will confirm the new time.", appointment: updated });
     } catch (error) {
       next(error);
     }
@@ -2564,7 +2718,11 @@ export function appRoutes(router) {
       }
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
-      let row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]));
+      const raw = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
+      if (!(await visitOpenTo(req.params.scope, table, raw, req.user))) {
+        return res.status(403).json({ message: "You do not have access to this record." });
+      }
+      let row = await presentRow(table, raw);
       if (table === "appointments") row = await decorateAppointments(row);
       if (!row) return res.status(404).json({ message: "Record not found." });
       if (["doctors", "hospitals", "pharmacies", "patients", "users"].includes(table)) {
@@ -2624,9 +2782,14 @@ export function appRoutes(router) {
     try {
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
+      const current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
+      if (!(await visitOpenTo(req.params.scope, table, current, req.user))) {
+        return res.status(403).json({ message: "You do not have access to this record." });
+      }
       if (await hasColumn(table, "deleted_at")) await update(table, req.params.id, { deleted_at: new Date() });
       else if (await hasColumn(table, "status")) await update(table, req.params.id, { status: "cancelled" });
       else await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      if (table === "appointments" && current) await releaseSlot(current);
       res.json({ message: "Deleted." });
     } catch (error) {
       next(error);
@@ -3010,7 +3173,11 @@ async function updateResource(req, res, next) {
   try {
     const table = await resolveResourceTable(req.params.scope, req.params.resource);
     if (!table) return next();
-    const body = { ...(req.body ?? {}) };
+    const current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
+    if (!(await visitOpenTo(req.params.scope, table, current, req.user))) {
+      return res.status(403).json({ message: "You do not have access to this record." });
+    }
+    const body = visitBodyGuard(req.params.scope, table, { ...(req.body ?? {}) });
     delete body.password;
     await update(table, req.params.id, body);
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]));

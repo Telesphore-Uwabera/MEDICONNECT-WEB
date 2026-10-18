@@ -63,7 +63,11 @@ app.use("/minio", (req, res) => {
   proxyRequest(req, res, { hostname: "10.10.141.148", port: 80, host: "api.mediconnect.rw" });
 });
 app.use(cors());
-app.use(express.json({ limit: "20mb" }));
+// Keep the untouched bytes for the payment webhook's HMAC check.
+app.use(express.json({
+  limit: "20mb",
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
 const uploadDir = process.env.UPLOAD_DIR || path.join(root, "storage");
 app.use("/storage", express.static(uploadDir));
 app.use("/storage", (req, res) => {

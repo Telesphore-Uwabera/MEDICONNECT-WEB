@@ -4,9 +4,10 @@ import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
 import { publishSignal, signalsSince } from "./realtime.js";
-import { callToken } from "./call-token.js";
+import { callToken, roomFromToken } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
+import { releaseSlot } from "./visit-rules.js";
 
 function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -131,6 +132,20 @@ function paymentApiBase() {
 
 function isLocalInvoiceNumber(value) {
   return !value || /^MC-/i.test(String(value));
+}
+
+/**
+ * HMAC over the exact bytes IremboPay sent. The body must not be re-serialised
+ * (key order and whitespace change the digest), so this route needs the raw
+ * buffer captured by express.json's verify hook.
+ */
+function webhookSignatureOk(req, secret, header) {
+  const digest = crypto.createHmac("sha256", secret)
+    .update(req.rawBody ?? Buffer.from(JSON.stringify(req.body ?? {})))
+    .digest("hex");
+  const given = String(header).replace(/^sha256=/i, "").trim().toLowerCase();
+  if (given.length !== digest.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(digest, "hex"), Buffer.from(given, "hex"));
 }
 
 export async function createIremboInvoice({ transactionId, amount, customer, description }) {
@@ -358,7 +373,7 @@ async function expireLinkedVisit(payment) {
   if (payableType.includes("appointment") && await tableExists("appointments")) {
     await ensureEnumValue("appointments", "status", "expired").catch(() => null);
     await ensureEnumValue("appointments", "payment_status", "expired").catch(() => null);
-    const row = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
+    const row = await one("SELECT * FROM appointments WHERE id = ?", [payableId]).catch(() => null);
     if (!row || String(row.payment_status || "").toLowerCase() === "paid") return;
     const status = String(row.status || "").toLowerCase();
     if (CLOSED_VISIT.has(status) || ["confirmed"].includes(status)) {
@@ -366,6 +381,8 @@ async function expireLinkedVisit(payment) {
       return;
     }
     await update("appointments", row.id, { status: "expired", payment_status: "expired" });
+    // The unpaid hold is over — give the minute back to the doctor's calendar.
+    await releaseSlot(row);
   }
 }
 
@@ -1416,23 +1433,36 @@ export function publicRoutes(router) {
     }
   });
 
+  // Both peers already hold a room token from the join endpoint; presenting it
+  // here is what keeps a guessed room name from reading or poisoning someone
+  // else's SDP. The token is stripped before relaying so it never appears in
+  // the signal log the other peer receives.
   router.post("/public/consultations/signal", (req, res) => {
-    const room = req.body?.room;
-    if (room) publishSignal(room, req.body);
+    const room = String(req.body?.room ?? "").trim();
+    if (!room || roomFromToken(req.body?.token) !== room) {
+      return res.status(401).json({ message: "A valid room token is required." });
+    }
+    const { token: _token, ...signal } = req.body;
+    publishSignal(room, signal);
     res.json({ message: "Signal sent." });
   });
 
   router.get("/public/consultations/signal/:room", (req, res) => {
     const room = decodeURIComponent(req.params.room);
+    if (roomFromToken(req.query.token) !== room) {
+      return res.status(401).json({ message: "A valid room token is required." });
+    }
     res.json({ signals: signalsSince(room, req.query.after) });
   });
 
   router.get("/public/instant-consultations/:token/status", async (req, res, next) => {
     try {
       const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
+      // Token only. `OR id = ?` let anyone walk the numeric ids and read — and
+      // then write, via the status field below — other patients' consultations.
       const row = await one(
-        `SELECT * FROM \`${table}\` WHERE guest_token = ? OR id = ? ORDER BY id DESC LIMIT 1`,
-        [req.params.token, req.params.token],
+        `SELECT * FROM \`${table}\` WHERE guest_token = ? ORDER BY id DESC LIMIT 1`,
+        [req.params.token],
       ).catch(() => null);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
       const payment = await one(
@@ -1723,22 +1753,21 @@ export function publicRoutes(router) {
   //
   // Signature verification: IremboPay sends an HMAC-SHA256 signature in the
   // `irembopay-signature` header, computed over the raw request body using the
-  // PAYMENT_SECRET_KEY. We verify it before processing.
+  // PAYMENT_SECRET_KEY. A valid signature is accepted as proof of payment; a
+  // missing one is not — then the invoice is re-queried from IremboPay and only
+  // a PAID answer settles the visit.
   router.post("/public/payment/webhook", async (req, res, next) => {
     try {
       const secret = paymentSecretKey();
-      const sigHeader = req.headers["irembopay-signature"] || req.headers["x-irembopay-signature"] || "";
+      const sigHeader = String(req.headers["irembopay-signature"] || req.headers["x-irembopay-signature"] || "");
 
-      // Verify signature when secret is configured
-      if (secret && sigHeader) {
-        const rawBody = JSON.stringify(req.body);
-        const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
-        const sigToCheck = sigHeader.replace(/^sha256=/i, "");
-        const bufA = Buffer.from(expected, "hex");
-        const bufB = Buffer.from(sigToCheck.length === expected.length ? sigToCheck : expected, "hex");
-        if (!crypto.timingSafeEqual(bufA, bufB)) {
-          return res.status(401).json({ message: "Webhook signature mismatch." });
-        }
+      // A signature that is present but wrong is a forgery: refuse outright.
+      // A missing signature is merely untrusted, and falls through to the
+      // IremboPay re-check below, so real webhooks keep working whether or not
+      // the dashboard is configured to sign them.
+      const signed = secret && sigHeader ? webhookSignatureOk(req, secret, sigHeader) : false;
+      if (secret && sigHeader && !signed) {
+        return res.status(401).json({ message: "Webhook signature mismatch." });
       }
 
       const payload = req.body ?? {};
@@ -1773,13 +1802,29 @@ export function publicRoutes(router) {
         return res.json({ received: true, processed: false, reason: "already_paid" });
       }
 
+      const claimedAmount = Number(payload.amount ?? payload.totalAmount ?? 0);
+      if (claimedAmount > 0 && Number(payment.amount) > 0 && claimedAmount !== Number(payment.amount)) {
+        return res.status(400).json({ received: true, processed: false, reason: "amount_mismatch" });
+      }
+
       // Confirm the payment, update statuses, and notify
-      const remote = {
+      let remote = {
         paymentStatus: "PAID",
         paidAt: payload.paidAt || payload.paid_at || null,
         paymentMethod: payload.paymentMethod || payload.payment_method || null,
         paymentReference: payload.paymentReference || payload.payment_reference || null,
       };
+      if (!signed) {
+        // No usable signature: only IremboPay itself may settle this visit.
+        const proof = isLocalInvoiceNumber(invoiceNumber)
+          ? null
+          : await iremboInvoiceStatus(invoiceNumber).catch(() => null);
+        if (proof?.paymentStatus !== "PAID") {
+          // 202 leaves IremboPay retrying while the normal invoice poll settles it.
+          return res.status(202).json({ received: true, processed: false, reason: "provider_unverified" });
+        }
+        remote = proof;
+      }
       const confirmed = await confirmPaidInvoice(payment, remote, { notify: false });
       const account = await attachPayerAccount(confirmed).catch(() => null);
       // Notify with the account so a new guest's email actually carries their credentials.

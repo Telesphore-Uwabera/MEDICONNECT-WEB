@@ -5,6 +5,7 @@ import { hasColumn, insert, one, pool, presentRow, presentRows, q, tableExists, 
 import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, releaseSlot, visitAwaitsPayment, visitBodyGuard, visitOpenTo } from "./visit-rules.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -528,8 +529,26 @@ async function fillGap(req, res, parts) {
   const id = parsed.ids[0];
   const action = parsed.action;
 
+  // One ownership check for every id-based shape below: read, join, reschedule,
+  // status change, update or delete.
+  const current = id
+    ? await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => null)
+    : null;
+  if (id && current && !(await visitOpenTo(parts[0], table, current, req.user))) {
+    res.status(403).json({
+      message: parts[0] === "patient"
+        ? "This record belongs to another patient."
+        : "This record belongs to another doctor.",
+    });
+    return true;
+  }
+
   if (action === "join" && id) {
-    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    const row = await presentRow(table, current);
+    if (!row) {
+      res.status(404).json({ message: "Record not found." });
+      return true;
+    }
     res.json({
       message: "Join ready.",
       data: row,
@@ -557,6 +576,13 @@ async function fillGap(req, res, parts) {
 
   const status = action ? (EXTRA_STATUS[action] || STATUS_ACTIONS[action]) : null;
   if (action && id && status && await hasColumn(table, "status")) {
+    if (
+      parts[0] === "doctor" && VISIT_TABLES.has(table) && DOCTOR_WORK_STATUSES.has(status) &&
+      visitAwaitsPayment(current)
+    ) {
+      res.status(422).json({ message: "This patient has not paid yet, so this visit cannot be started or completed." });
+      return true;
+    }
     const isInstantTable = ["instant_consultation_requests", "instant_consultations"].includes(table);
     if (isInstantTable && action === "accept" && await hasColumn(table, "doctor_id")) {
       const target = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => null);
@@ -576,6 +602,9 @@ async function fillGap(req, res, parts) {
       }
     }
     await update(table, id, { status });
+    if (table === "appointments" && ["cancelled", "canceled", "declined", "no_show"].includes(status)) {
+      await releaseSlot(current);
+    }
     const stamp = {};
     if (status === "completed" && await hasColumn(table, "completed_at")) stamp.completed_at = new Date();
     if (status === "completed" && await hasColumn(table, "ended_at")) stamp.ended_at = new Date();
@@ -617,7 +646,9 @@ async function fillGap(req, res, parts) {
   }
 
   if (id && ["PUT", "PATCH", "POST"].includes(req.method)) {
-    await update(table, id, req.body ?? {});
+    // Neither side of a visit may buy its way to "paid" or reassign itself with a
+    // plain field update; payment moves status through the payment routes only.
+    await update(table, id, visitBodyGuard(parts[0], table, req.body ?? {}));
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
     res.json({ message: "Updated.", data: row, ...(row ?? {}) });
     return true;

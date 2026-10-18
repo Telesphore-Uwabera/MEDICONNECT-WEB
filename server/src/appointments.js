@@ -4,6 +4,7 @@ import { loadOwnedId } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
 import { notifyAppointmentConfirmed, notifyBookedVisit } from "./visit-notify.js";
+import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot } from "./visit-rules.js";
 
 export async function doctorOnlineFee(doctorId) {
   const doctor = await one(
@@ -121,6 +122,19 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
       if (!doctor || !doctorIsApproved(doctor.status)) {
         return res.status(422).json({ message: "This doctor is not available for appointments yet." });
       }
+      const date = String(body.appointment_date).slice(0, 10);
+      const time = String(body.appointment_time);
+      if (appointmentStartIsInPast(date, time)) {
+        return res.status(422).json({ message: "Choose a time later today, or another day." });
+      }
+      const taken = await appointmentCollision(doctorId, date, time);
+      if (taken) {
+        return res.status(409).json({ message: "That slot is already booked. Choose another time.", collision_id: taken.id });
+      }
+      const slot = await bookableSlot(doctorId, date, time);
+      if (slot.found && !slot.bookable) {
+        return res.status(409).json({ message: "This doctor has closed that slot. Choose another time." });
+      }
       const amount = await doctorOnlineFee(doctorId);
       const id = await insert("appointments", {
         doctor_id: doctorId,
@@ -137,6 +151,14 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         currency: "RWF",
         payment_status: "unpaid",
       });
+      if (slot.found) {
+        const claimed = await claimSlot(slot.slot.id, id);
+        if (claimed === false) {
+          // Someone won the race for this minute; retire our row before it counts.
+          await update("appointments", id, { status: "cancelled" }).catch(() => null);
+          return res.status(409).json({ message: "That slot was taken a moment ago. Choose another time." });
+        }
+      }
       const row = await decorateAppointments(await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [id])));
       notifyBookedVisit({ ...row, patient_id: req.user.id, doctor_id: doctorId, patient_pays: amount, consultation_fee: amount }).catch(() => null);
       res.status(201).json({
