@@ -8,6 +8,7 @@ import { pool } from "./db.js";
 // ensureDoctorSearchFields is not in all db.js versions — no-op fallback
 const ensureDoctorSearchFields = async () => {};
 import { publicRoutes } from "./public.js";
+import { relayDiagnostics } from "./call-token.js";
 import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";
 import { remindExpiringLicenses } from "./doctor-review.js";
@@ -111,12 +112,27 @@ app.use((error, _req, res, _next) => {
 const port = Number(process.env.PORT || 4000);
 const wsPort = Number(process.env.WS_PORT || 8080);
 
+// Losing an env file is invisible until a patient tries to call: the API boots,
+// answers requests and only fails inside ICE. Report each absent layer at start
+// so the same log explains a failed call without needing a second request.
+function warnOnMissingConfig() {
+  const report = relayDiagnostics();
+  for (const name of report.missing) {
+    const check = report.checks.find((item) => item.name === name);
+    console.warn(`[config] ${name}: ${check?.detail}`);
+  }
+  if (!String(process.env.DEPLOY_SECRET || "").trim()) {
+    console.warn("[config] deploy_webhook: DEPLOY_SECRET is unset, so pushes to main will not restart this server.");
+  }
+}
+
 pool.query("SELECT 1").then(async () => {
   await ensureDoctorSearchFields().catch((error) => {
     console.error("Could not prepare doctor search fields", error.message);
   });
   const server = app.listen(port, "127.0.0.1", () => {
     console.log(`MediConnect API listening on ${port}`);
+    warnOnMissingConfig();
   });
   startRealtime(server);
   startRealtime(wsPort);

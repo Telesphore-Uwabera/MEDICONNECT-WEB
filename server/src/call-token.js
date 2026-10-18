@@ -33,21 +33,41 @@ function warnOnce(message) {
   console.warn(`[WebRTC] ${message}`);
 }
 
+const SECRET_ENV = ["TURN_SECRET", "VITE_TURN_SECRET", "TURN_AUTH_SECRET", "VITE_TURN_AUTH_SECRET"];
+const USERNAME_ENV = ["TURN_USERNAME", "VITE_TURN_USERNAME"];
+const PASSWORD_ENV = ["TURN_PASSWORD", "TURN_CREDENTIAL", "VITE_TURN_PASSWORD", "VITE_TURN_CREDENTIAL"];
+
 /**
- * A relay configured with coTURN's `use-auth-secret` (the `VITE_TURN_SECRET`
- * documented in the README) accepts short-lived credentials derived from that
- * secret. A relay configured with a static `user=` entry needs the username and
- * password instead, so prefer the secret and fall back to the static pair.
+ * A relay configured with coTURN's `use-auth-secret` accepts short-lived
+ * credentials derived from that secret. A relay configured with a static `user=`
+ * entry needs the username and password instead, so prefer the secret and fall
+ * back to the static pair. The mode is reported so a deployment can be audited
+ * without printing the credential itself.
  */
 function relayAuth() {
-  const secret = setting("TURN_SECRET", "VITE_TURN_SECRET", "TURN_AUTH_SECRET", "VITE_TURN_AUTH_SECRET");
+  const secret = setting(...SECRET_ENV);
   if (secret) {
     const username = `${Math.floor(Date.now() / 1000) + 12 * 3600}:mediconnect`;
-    return { username, credential: crypto.createHmac("sha1", secret).update(username).digest("base64") };
+    return {
+      mode: "auth-secret",
+      username,
+      credential: crypto.createHmac("sha1", secret).update(username).digest("base64"),
+    };
   }
-  const username = setting("TURN_USERNAME", "VITE_TURN_USERNAME");
-  const credential = setting("TURN_PASSWORD", "TURN_CREDENTIAL", "VITE_TURN_PASSWORD", "VITE_TURN_CREDENTIAL");
-  return username && credential ? { username, credential } : {};
+  const username = setting(...USERNAME_ENV);
+  const credential = setting(...PASSWORD_ENV);
+  if (username && credential) return { mode: "static", username, credential };
+  return { mode: "none" };
+}
+
+/** Where the relay lives. TLS is derived from the host on 5349 unless configured. */
+function relayEndpoints() {
+  const relay = setting("TURN_URL", "TURN_HOST", "VITE_TURN_URL", "VITE_TURN_HOST");
+  const secure = setting("TURNS_URL", "TURNS_HOST", "VITE_TURNS_URL", "VITE_TURNS_HOST");
+  const turnsPort = setting("TURNS_PORT", "VITE_TURNS_PORT") || "5349";
+  const plain = relay ? hostPort(relay, setting("TURN_PORT", "VITE_TURN_PORT") || "3478") : null;
+  const tls = secure ? hostPort(secure, turnsPort) : plain ? { host: plain.host, port: turnsPort } : null;
+  return { plain, tls };
 }
 
 export function iceServers() {
@@ -57,30 +77,91 @@ export function iceServers() {
     { urls: "stun:stun1.l.google.com:19302" },
   ];
 
-  const relay = setting("TURN_URL", "TURN_HOST", "VITE_TURN_URL", "VITE_TURN_HOST");
-  const secure = setting("TURNS_URL", "TURNS_HOST", "VITE_TURNS_URL", "VITE_TURNS_HOST");
-  const turnsPort = setting("TURNS_PORT", "VITE_TURNS_PORT") || "5349";
-  const plain = relay ? hostPort(relay, setting("TURN_PORT", "VITE_TURN_PORT") || "3478") : null;
-  // TLS is derived from the relay host on 5349 unless configured separately.
-  const tls = secure ? hostPort(secure, turnsPort) : (plain ? { host: plain.host, port: turnsPort } : null);
-
+  const { plain, tls } = relayEndpoints();
   if (plain) {
     const auth = relayAuth();
-    if (!auth.username) {
+    if (auth.mode === "none") {
       warnOnce(`TURN host ${plain.host}:${plain.port} is set but no credentials are configured (TURN_SECRET or TURN_USERNAME + TURN_PASSWORD) — the relay will reject every allocation.`);
     }
-    servers.push({ urls: `turn:${plain.host}:${plain.port}`, ...auth });
-    // Second candidate for networks that block UDP 3478.
-    servers.push({ urls: `turn:${plain.host}:${plain.port}?transport=tcp`, ...auth });
+    const { credential, username, mode } = auth;
+    const urls = [
+      `turn:${plain.host}:${plain.port}`,
+      // Second candidate for networks that block UDP 3478.
+      `turn:${plain.host}:${plain.port}?transport=tcp`,
+    ];
     if (tls) {
       // TLS penetrates strict firewalls (hospitals, offices) that drop UDP.
-      servers.push({ urls: `turns:${tls.host}:${tls.port}`, ...auth });
+      urls.push(`turns:${tls.host}:${tls.port}`);
+    }
+    for (const url of urls) {
+      servers.push(mode === "none" ? { urls: url } : { urls: url, username, credential });
     }
   } else {
     warnOnce("No TURN server configured (set VITE_TURN_HOST or TURN_HOST). Calls will fail whenever both peers are not on a directly reachable network.");
   }
 
   return servers;
+}
+
+/**
+ * A read-only audit of the relay configuration for operators: which layer of the
+ * TURN setup is missing, expressed as the env var names that would close it.
+ * Never returns a credential. The relay host and the auth-secret username are
+ * already inside every call token the browser receives, so reporting them adds
+ * no exposure.
+ */
+export function relayDiagnostics() {
+  const { plain, tls } = relayEndpoints();
+  const auth = relayAuth();
+  const relays = iceServers().filter((server) =>
+    (Array.isArray(server.urls) ? server.urls : [server.urls]).some((url) => /^turns?:/i.test(String(url))),
+  );
+
+  const checks = [
+    {
+      name: "relay_configured",
+      ok: Boolean(plain),
+      detail: plain
+        ? `Relay resolved to ${plain.host}:${plain.port}.`
+        : "No relay host: set TURN_HOST (or TURN_URL) in server/.env to the coTURN address.",
+    },
+    {
+      name: "relay_credentials",
+      ok: auth.mode !== "none",
+      detail:
+        auth.mode === "auth-secret"
+          ? "Short-lived credentials are signed with TURN_SECRET; coTURN must run with use-auth-secret and the same secret."
+          : auth.mode === "static"
+            ? `Static credentials from TURN_USERNAME/TURN_PASSWORD; they must match coTURN's user= entry exactly.`
+            : "No credentials: set TURN_SECRET when coTURN uses use-auth-secret, or TURN_USERNAME and TURN_PASSWORD when it uses user=.",
+    },
+    {
+      name: "tls_fallback",
+      ok: Boolean(tls),
+      detail: tls
+        ? `turns:${tls.host}:${tls.port} is offered for carriers that drop UDP 3478 — it only helps if TCP ${tls.port} is open.`
+        : plain
+          ? "TLS relay not derived; set TURNS_HOST to re-enable it."
+          : "No TLS relay, because no relay host is set.",
+    },
+    {
+      name: "room_token_signing",
+      ok: Boolean(setting("CALL_TOKEN_SECRET")),
+      detail: setting("CALL_TOKEN_SECRET")
+        ? "Room tokens are HMAC-signed, so a guessed room name cannot read a consultation's SDP."
+        : "CALL_TOKEN_SECRET is unset: room entry and the signal relay fall back to matching the room name alone.",
+    },
+  ];
+
+  return {
+    ok: Boolean(plain) && auth.mode !== "none",
+    relay: plain ? { host: plain.host, port: plain.port, tls: tls ? `${tls.host}:${tls.port}` : null } : null,
+    credential_mode: auth.mode,
+    username: auth.username ?? null,
+    relays_in_call_token: relays.length,
+    checks,
+    missing: checks.filter((check) => !check.ok).map((check) => check.name),
+  };
 }
 
 /**

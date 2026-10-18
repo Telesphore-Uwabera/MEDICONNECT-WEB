@@ -3,8 +3,8 @@ import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, pool, presen
 import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
-import { publishSignal, signalsSince } from "./realtime.js";
-import { callToken, roomFromToken } from "./call-token.js";
+import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
+import { callToken, relayDiagnostics, roomFromToken } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { releaseSlot } from "./visit-rules.js";
@@ -1453,6 +1453,21 @@ export function publicRoutes(router) {
       return res.status(401).json({ message: "A valid room token is required." });
     }
     res.json({ signals: signalsSince(room, req.query.after) });
+  });
+
+  // Read-only operator self-check for cross-network calls, so a deployment can
+  // be verified with one request instead of reading service logs. It reports
+  // which configuration layer is missing and never returns a credential; the
+  // relay host and the auth username it does show are already inside every call
+  // token the browser receives.
+  router.get("/public/consultations/relay-health", (_req, res) => {
+    res.json({
+      ...relayDiagnostics(),
+      signaling: realtimeStats(),
+      // POST /deploy refuses to run without this, so a deployment can confirm
+      // here that pushes to main will still reach it.
+      deploy_webhook_configured: Boolean(String(process.env.DEPLOY_SECRET || "").trim()),
+    });
   });
 
   router.get("/public/instant-consultations/:token/status", async (req, res, next) => {

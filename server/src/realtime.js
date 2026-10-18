@@ -83,3 +83,18 @@ export function broadcast(channel, event, data) {
     if (socket.readyState === 1) socket.send(payload);
   }
 }
+
+/**
+ * Counters for the relay self-check. Counts only: a room or channel name would
+ * identify an ongoing consultation, so it stays inside this process.
+ */
+export function realtimeStats() {
+  let sockets = 0;
+  for (const subscribers of channels.values()) sockets += subscribers.size;
+  return {
+    channels: channels.size,
+    sockets,
+    rooms_awaiting_signal: new Set(signals.map((item) => item.room)).size,
+    buffered_signals: signals.length,
+  };
+}
