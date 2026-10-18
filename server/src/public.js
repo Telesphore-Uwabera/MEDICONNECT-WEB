@@ -1434,8 +1434,31 @@ export function publicRoutes(router) {
         "SELECT * FROM payments WHERE payable_id = ? AND payable_type LIKE '%instant%' ORDER BY id DESC LIMIT 1",
         [row.id],
       ).catch(() => null);
-      if (payment) await expirePaymentRecord(payment).catch(() => null);
-      else {
+      if (payment) {
+        const paymentStatus = String(payment.status || "").toLowerCase();
+        if (["paid", "completed", "success", "successful"].includes(paymentStatus)) {
+          if (String(row.payment_status || "").toLowerCase() !== "paid") {
+            const open = ["pending", "queued", "waiting", "payment_pending", ""].includes(String(row.status || "").toLowerCase());
+            const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+            const patch = {
+              payment_status: "paid",
+              ...(open ? { status: "confirmed" } : {}),
+            };
+            if (!row.room_name && await hasColumn(table, "room_name")) patch.room_name = roomName;
+            if (!row.daily_room_name && await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
+            await update(table, row.id, patch).catch(() => null);
+          }
+        } else if (payment.invoice_number && !isLocalInvoiceNumber(payment.invoice_number)) {
+          const remote = await iremboInvoiceStatus(payment.invoice_number).catch(() => null);
+          if (remote?.paymentStatus === "PAID") {
+            await confirmPaidInvoice(payment, remote).catch(() => null);
+          } else {
+            await expirePaymentRecord(payment).catch(() => null);
+          }
+        } else {
+          await expirePaymentRecord(payment).catch(() => null);
+        }
+      } else {
         const createdAt = row.created_at ? new Date(row.created_at).getTime() : 0;
         const waiting = ["pending", "queued", "waiting", "payment_pending"].includes(String(row.status || "").toLowerCase());
         const unpaid = !row.payment_status || UNPAID_PAYMENT.includes(String(row.payment_status).toLowerCase());

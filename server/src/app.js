@@ -1840,6 +1840,10 @@ export function appRoutes(router) {
         clauses.push("guest_email = ?");
         params.push(req.user.email);
       }
+      if (req.user.phone && await hasColumn(table, "guest_phone")) {
+        clauses.push("guest_phone = ?");
+        params.push(req.user.phone);
+      }
       if (!clauses.length) return res.json({ data: null });
       const row = await one(
         `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND status IN ('accepted','in_progress') ORDER BY id DESC LIMIT 1`,

@@ -569,10 +569,7 @@ export const ConnectDialogContent = ({
     console.info("[Poll] statusData:", JSON.stringify(statusData));
 
     setDoctorBusy(Boolean(statusData.doctor_busy));
-    if (statusData.status === "accepted" || statusData.status === "in_progress" ||
-        // Treat confirmed+paid as accepted: room is ready, patient can join
-        // immediately without waiting for the doctor to click Accept.
-        (statusData.status === "confirmed" && statusData.payment_status === "paid")) {
+    if (statusData.status === "accepted" || statusData.status === "in_progress") {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
@@ -901,12 +898,10 @@ export const ConnectDialogContent = ({
         const phone = me?.phone ?? guestPhone;
         if (consultationToken) session.save(consultationToken, name, phone, consultationId);
 
-        // If the consultation is already confirmed+paid (or accepted/in_progress),
-        // transition immediately to the join phase without waiting for the doctor.
         const consult = result?.consultation;
-        const canJoinNow = consult &&
-          (consult.status === "accepted" || consult.status === "in_progress" ||
-           (consult.status === "confirmed" && consult.payment_status === "paid"));
+        const canJoinNow = Boolean(
+          consult && (consult.status === "accepted" || consult.status === "in_progress")
+        );
 
         if (canJoinNow && signedInRef.current) {
           setRoomUrl(consult!.room_url);
@@ -951,18 +946,9 @@ export const ConnectDialogContent = ({
             setGuestPhone(data.user.phone ?? "");
             if (consultationToken) {
               session.save(consultationToken, data.user.name, data.user.phone ?? "", consultationId ?? undefined);
-              if (canJoinNow) {
-                setRoomUrl(consult!.room_url);
-                setDailyToken(consult!.daily_guest_token);
-                setPhase(consult!.status === "in_progress" ? "in_progress" : "accepted");
-                session.clear();
-                return;
-              }
-              setPhase("polling");
-            } else {
-              onCloseCompletely();
-              navigate("/patient/instant");
             }
+            onCloseCompletely();
+            navigate("/patient/instant");
           }).catch((err) => {
             console.warn("[AutoLogin] background login failed, credentials stay prefilled:", err);
           });
@@ -1102,32 +1088,11 @@ export const ConnectDialogContent = ({
       setGuestCountryCode(data.user.country_code ?? "+250");
       setLoginCountryCode(data.user.country_code ?? "+250");
       if (phase === "create_account") {
-        // Patient just logged in after payment — resume polling for their
-        // existing confirmed consultation instead of navigating to dashboard.
         if (consultationToken) {
           session.save(consultationToken, data.user.name, data.user.phone ?? "", consultationId ?? undefined);
-          // Check if consultation is already confirmed+paid — if so, jump
-          // directly to the join phase instead of making the patient wait for polling.
-          try {
-            const statusRes = await apiFetch<{ status: string; payment_status: string | null; room_url: string; daily_guest_token: string; daily_room_name?: string }>(
-              `/public/instant-consultations/${consultationToken}/status`,
-            );
-            const readyNow = statusRes.status === "accepted" || statusRes.status === "in_progress" ||
-              (statusRes.status === "confirmed" && statusRes.payment_status === "paid");
-            if (readyNow) {
-              setRoomUrl(statusRes.room_url);
-              setDailyToken(statusRes.daily_guest_token);
-              setPhase(statusRes.status === "in_progress" ? "in_progress" : "accepted");
-              session.clear();
-              return;
-            }
-          } catch { /* fall through to polling */ }
-          setPhase("polling");
-        } else {
-          // No active consultation token — fall back to patient instant page
-          onCloseCompletely();
-          navigate("/patient/instant");
         }
+        onCloseCompletely();
+        navigate("/patient/instant");
         return;
       }
       await handleRequest({
@@ -1168,15 +1133,11 @@ export const ConnectDialogContent = ({
         auth_method: "password",
         password: guestPassword,
       });
-      // After registration + login, resume the consultation polling flow
-      // rather than navigating to the generic patient dashboard.
       if (consultationToken) {
         session.save(consultationToken, name, guestPhone ?? "", consultationId ?? undefined);
-        setPhase("polling");
-      } else {
-        onCloseCompletely();
-        navigate("/patient/instant");
       }
+      onCloseCompletely();
+      navigate("/patient/instant");
     } catch (err: unknown) {
       setGuestError(err instanceof Error ? err.message : t("consult.connect.err_request_failed"));
     }
@@ -1907,6 +1868,17 @@ export const ConnectDialogContent = ({
           {/* ── Polling ── */}
           {phase === "polling" && (
             <div className="space-y-3">
+              {statusData?.payment_status === "paid" && (
+                <div className="p-3.5 rounded-[6px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-200 space-y-1">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{t("consult.connect.payment_confirmed", { defaultValue: "Payment Confirmed" })}</span>
+                  </div>
+                  <p className="text-xs text-emerald-700/90 dark:text-emerald-300/90 leading-relaxed">
+                    {t("consult.connect.waiting_for_doctor", { defaultValue: "Waiting for your doctor to accept and join. Your spot in the queue is confirmed." })}
+                  </p>
+                </div>
+              )}
               {doctorBusy && (
                 <div className="p-3 rounded-[6px] bg-amber-500/10 border border-amber-500/30 text-sm text-amber-800 dark:text-amber-200">
                   {t("consult.connect.doctor_busy_queue", {

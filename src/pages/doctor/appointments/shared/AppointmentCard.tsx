@@ -1,11 +1,12 @@
-import { Video, MapPin, Calendar, Clock, FileText, Eye } from "lucide-react";
+import { Video, MapPin, Calendar, Clock, FileText, Eye, Mail, Phone, CreditCard, CheckCircle2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { type Appointment } from "@/hooks/doctor/use-doctor-appointment";
+import { type Appointment, useConfirmAppointment } from "@/hooks/doctor/use-doctor-appointment";
 import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
-import { fmtDate, fmtTime, apptLabel, statusLabel } from "./helpers";
+import { fmtDate, fmtTime, apptLabel, statusLabel, getErrMsg } from "./helpers";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
 interface Props {
   appt: Appointment;
@@ -17,9 +18,25 @@ interface Props {
 
 export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: Props) {
   const { t } = useTranslation();
+  const confirmAppointment = useConfirmAppointment();
   const status = appt.status as UIStatus;
   const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
+
+  type ExtendedAppointment = Appointment & {
+    consultation_fee?: string;
+    patient_pays?: string;
+    currency?: string;
+    payment_status?: string;
+  };
+  const raw = appt as ExtendedAppointment;
+  const fee = Number(raw.patient_pays || raw.consultation_fee || 0);
+  const currency = raw.currency || "RWF";
+  const isPaid = String(raw.payment_status || "").toLowerCase() === "paid" || !(fee > 0);
+  const canConfirm = status === "pending" && isPaid;
+
+  const patientEmail = appt.patient?.email?.trim();
+  const patientPhone = appt.patient?.phone?.trim();
 
   return (
     <div className="bg-card border border-border/70 rounded-[6px] p-4 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
@@ -43,12 +60,37 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
             </span>
           )}
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/80 mt-1">
-          {appt.type === "online"
-            ? <Video className="h-4 w-4 text-sky-500" />
-            : <MapPin className="h-4 w-4 text-amber-500" />}
-          {appt.type === "online" ? t("pages.doctor.video_consult") : t("pages.doctor.in_person")}
-        </span>
+
+        {/* Patient contact info & fee */}
+        <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground/80 mt-1.5">
+          <span className="inline-flex items-center gap-1">
+            {appt.type === "online"
+              ? <Video className="h-3.5 w-3.5 text-sky-500" />
+              : <MapPin className="h-3.5 w-3.5 text-amber-500" />}
+            {appt.type === "online" ? t("pages.doctor.video_consult") : t("pages.doctor.in_person")}
+          </span>
+
+          {patientEmail && (
+            <span className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+              <Mail className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <span className="truncate max-w-[180px]">{patientEmail}</span>
+            </span>
+          )}
+
+          {patientPhone && (
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <Phone className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <span>{patientPhone}</span>
+            </span>
+          )}
+
+          {fee > 0 && (
+            <span className="inline-flex items-center gap-1 font-semibold text-foreground/90">
+              <CreditCard className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <span>{Math.round(fee).toLocaleString()} {currency}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-4 flex-shrink-0">
@@ -83,7 +125,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           </Button>
         )}
 
-        {/* Start — pending / confirmed */}
+        {/* Start — confirmed only */}
         {canStart && (
           <Button
             size="sm"
@@ -94,15 +136,25 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           </Button>
         )}
 
-        {/* Notes — completed */}
-        {status === "pending" && (
+        {/* Pending: Confirm appointment if paid; otherwise Awaiting payment */}
+        {status === "pending" && canConfirm && (
+          <Button
+            size="sm"
+            onClick={() => confirmAppointment.mutate(appt.id, {
+              onSuccess: () => toast.success(t("pages.doctor.confirm_appointment", { defaultValue: "Appointment confirmed" })),
+              onError: (err: unknown) => toast.error(getErrMsg(err, t("pages.doctor.confirm_failed", { defaultValue: "Failed to confirm appointment" }))),
+            })}
+            disabled={confirmAppointment.isPending}
+            className="h-9 px-4 text-sm font-semibold rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5"
+          >
+            {confirmAppointment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {t("pages.doctor.confirm_appointment", { defaultValue: "Confirm appointment" })}
+          </Button>
+        )}
+
+        {status === "pending" && !canConfirm && (
           <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-            {t(
-              Number((appt as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (appt as Appointment & { consultation_fee?: string }).consultation_fee || 0) > 0
-              && String((appt as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() !== "paid"
-                ? "pages.doctor.awaiting_payment"
-                : "pages.doctor.awaiting_confirmation",
-            )}
+            {t("pages.doctor.awaiting_payment")}
           </span>
         )}
 

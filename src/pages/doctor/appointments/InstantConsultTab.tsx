@@ -155,13 +155,18 @@ export function InstantConsultTab() {
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
   const stats = queueData?.stats;
 
+  const isPaid = (item: InstantConsultQueueItem) =>
+    item.payment_status === "paid" || item.status === "confirmed";
+
   const visibleQueue = queue.filter((i) => i.status !== "expired");
   const completed = visibleQueue.filter((i) => i.status === "completed");
   const activeItems = visibleQueue.filter((i) => i.status !== "completed");
   const waiting = activeItems.filter((i) =>
-    ["pending", "queued", "waiting"].includes(i.status),
+    ["pending", "queued", "waiting"].includes(i.status) && !isPaid(i),
   );
-  const confirmed = activeItems.filter((i) => i.status === "confirmed");
+  const confirmed = activeItems.filter((i) =>
+    isPaid(i) && !["accepted", "in_progress", "completed", "declined", "withdrawn"].includes(i.status),
+  );
   const accepted = activeItems.filter((i) => i.status === "accepted");
   const joined = activeItems.filter((i) => i.status === "in_progress");
   const others = activeItems.filter((i) =>
@@ -542,8 +547,8 @@ export function InstantConsultTab() {
                     isAccepting={activeAction?.id === item.id && activeAction.action === "accepting"}
                     isDeclining={activeAction?.id === item.id && activeAction.action === "declining"}
                     onJoin={
-                      // Paid + confirmed: doctor can join directly (accept+join in one step)
-                      item.payment_status === "paid" && !doctorBusy
+                      // Paid / confirmed: doctor can join directly (accept+join in one step)
+                      !doctorBusy
                         ? () => {
                             setActiveAction({ id: item.id, action: "accepting" });
                             acceptInstant.mutate(item.id, {

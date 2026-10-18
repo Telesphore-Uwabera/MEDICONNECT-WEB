@@ -41,7 +41,7 @@ const saveSeenIds = (storageKey: string, ids: Set<number>) => {
 };
 
 const getInstantPatientLabel = (item: InstantConsultQueueItem) =>
-  item.guest_phone?.trim() || `Instant request #${item.id}`;
+  item.guest_name?.trim() || item.guest_phone?.trim() || `Instant request #${item.id}`;
 
 const getAppointmentPatientLabel = (item: Appointment) =>
   item.patient?.name?.trim() || item.patient?.phone?.trim() || `Appointment #${item.id}`;
@@ -84,7 +84,7 @@ export function InstantPaidAlertListener() {
   const speechTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const paidRequests = useMemo(
-    () => (instantData?.queue ?? []).filter((item) => item.status === "confirmed"),
+    () => (instantData?.queue ?? []).filter((item) => item.payment_status === "paid" || item.status === "confirmed"),
     [instantData?.queue],
   );
 

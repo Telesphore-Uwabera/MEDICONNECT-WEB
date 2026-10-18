@@ -283,8 +283,9 @@ export function useConfirmAppointment() {
     return useMutation({
         mutationFn: (id: number) =>
             apiFetch<{ message: string; appointment: Appointment }>(`${BASE}/${id}/confirm`, { method: "POST" }),
-        onSuccess: () => {
+        onSuccess: (_data, id) => {
             qc.invalidateQueries({ queryKey: appointmentKeys.all() });
+            qc.invalidateQueries({ queryKey: appointmentKeys.detail(id) });
         },
     });
 }
