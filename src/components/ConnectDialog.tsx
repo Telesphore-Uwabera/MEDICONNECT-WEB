@@ -498,9 +498,29 @@ export const ConnectDialogContent = ({
             setPhase("payment");
           }
         } else {
-          // Payment confirmed (or free) — show resume banner, polling on confirm
-          setSavedSession(existing);
-          setPhase("idle");
+          // Session was saved after payment completed. If the visit is still live,
+          // go straight into the waiting state instead of showing a banner that
+          // needs another click — a patient who reloads mid-wait must not be dumped
+          // back to the idle screen.
+          let waitingLive = false;
+          try {
+            const live = await apiFetch<{ status?: string; payment_status?: string | null }>(
+              `/public/instant-consultations/${existing.token}/status`,
+            );
+            const liveStatus = String(live?.status || "");
+            waitingLive = live?.payment_status === "paid"
+              || ["confirmed", "accepted", "in_progress"].includes(liveStatus);
+          } catch {
+            waitingLive = false;
+          }
+          if (cancelled) return;
+          if (waitingLive) {
+            setSavedSession(null);
+            setPhase("polling");
+          } else {
+            setSavedSession(existing);
+            setPhase("idle");
+          }
         }
       } else {
         setSavedSession(null);
@@ -912,7 +932,11 @@ export const ConnectDialogContent = ({
         }
 
         if (signedInRef.current) {
+          // Land the patient on the instant page so the visit survives the dialog
+          // closing or the source card unmounting; the pill + saved session keep the
+          // waiting state alive from there.
           setPhase("polling");
+          navigate("/patient/instant");
           return;
         }
 

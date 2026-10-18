@@ -80,7 +80,9 @@ export function GlobalInstantPill() {
   // Poll localStorage for an in-flight instant session.
   useEffect(() => {
     const hasToken = !!localStorage.getItem("auth_token");
-    const isPatient = user?.role === "patient";
+    // Dual-role accounts switch workspace with active_role, so checking `role`
+    // alone left patients whose primary role is doctor with no waiting surface.
+    const isPatient = (user?.active_role ?? user?.role) === "patient";
 
     if (hasToken && userLoading) return;
 

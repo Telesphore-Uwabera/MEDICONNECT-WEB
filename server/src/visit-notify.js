@@ -29,6 +29,22 @@ async function doctorContact(doctorId) {
   ).catch(() => null);
 }
 
+// A "any available doctor" request carries no doctor_id, so nobody is the
+// obvious recipient. The queue endpoint shows such rows to every doctor
+// (`doctor_id = ? OR doctor_id IS NULL`), so the matching audience for a
+// notification is every doctor currently flagged as accepting instant work.
+async function instantAvailableDoctors(limit = 50) {
+  if (!(await tableExists("doctors"))) return [];
+  if (!(await hasColumn("doctors", "instant_consultation"))) return [];
+  return q(
+    `SELECT d.id, u.id AS user_id, u.name
+     FROM doctors d JOIN users u ON u.id = d.user_id
+     WHERE d.instant_consultation = 1
+     ORDER BY d.id ASC LIMIT ?`,
+    [limit],
+  ).catch(() => []);
+}
+
 async function patientContact(row) {
   const email = String(row?.guest_email || row?.email || row?.patient_email || "").trim();
   const phone = String(row?.guest_phone || row?.phone || row?.patient_phone || "").trim();
@@ -182,12 +198,28 @@ export async function notifyPaidVisit(payment, account = null) {
   // ── Broadcast realtime queue-refresh event to the doctor's channel ─────────
   // The doctor's queue React component polls every 3s but that's still a delay.
   // Pushing a WebSocket event lets it invalidate immediately when a patient pays.
-  if (instant && row.doctor_id) {
-    // Look up the doctor's user_id to target the right private channel
-    const doctorUser = await doctorContact(row.doctor_id);
-    if (doctorUser?.user_id) {
+  if (instant) {
+    const recipients = row.doctor_id
+      ? [await doctorContact(row.doctor_id)]
+      // General request: nobody was emailed above, so at minimum push the new
+      // paid patient into every doctor's queue in real time and leave them an
+      // in-app notice.
+      : await instantAvailableDoctors();
+
+    for (const target of recipients.filter(Boolean)) {
+      if (!target.user_id) continue;
+
+      if (!row.doctor_id) {
+        await notifyInApp(
+          target.user_id,
+          "New instant consultation — patient has paid and is waiting",
+          `A patient is waiting in the instant queue with a paid consultation. Open your MediConnect dashboard to accept and join.`,
+          "visit.paid",
+        ).catch(() => null);
+      }
+
       // Private channel name in Pusher protocol is "private-{name}"
-      broadcast(`private-doctor.${doctorUser.user_id}`, "instant.queue.updated", {
+      broadcast(`private-doctor.${target.user_id}`, "instant.queue.updated", {
         consultation_id: payableId,
         patient_name: patient.name,
         status: "confirmed",

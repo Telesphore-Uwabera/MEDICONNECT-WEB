@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { apiFetch } from "@/lib/api";
 import {
   ShieldCheck,
   RefreshCw,
@@ -82,11 +83,32 @@ interface PaymentPanelProps {
   /**
    * Called after IremboPay modal closes successfully to verify payment.
    * Should return true when payment is confirmed, false otherwise.
+   * Defaults to re-checking the invoice against the backend.
    */
   onVerifyPayment?: (invoiceNumber: string) => Promise<boolean>;
 }
 
 // ─── Helper: Parse API error to check if invoice expired ───────────────────────
+
+/** How long to keep asking the backend whether an invoice is paid. */
+const VERIFY_ATTEMPTS = 10;
+const VERIFY_INTERVAL_MS = 3_000;
+
+const PAID_STATUSES = new Set(["paid", "completed", "success", "successful"]);
+
+/**
+ * Used when a caller does not supply `onVerifyPayment`. This asks the backend to
+ * pull the live status from IremboPay rather than trusting the modal closing.
+ * An invoice with no backend record comes back as `pending` instead of an error,
+ * so an unresolved invoice keeps the poll going rather than throwing.
+ */
+async function verifyInvoiceViaBackend(invoiceNumber: string): Promise<boolean> {
+  const res = await apiFetch<{ status?: string }>(
+    `/public/payments/check-invoice/${encodeURIComponent(invoiceNumber)}`,
+    { method: "POST" },
+  );
+  return PAID_STATUSES.has(String(res?.status || "").toLowerCase());
+}
 
 function isInvoiceExpiredError(err: unknown): boolean {
   if (err && typeof err === "object") {
@@ -164,6 +186,51 @@ export default function PaymentPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRefreshInvoice]);
 
+  // ─── Verify payment with the backend ─────────────────────────────────────────
+
+  /**
+   * IremboPay's confirmation usually lands a few seconds after the modal closes,
+   * so one check reports a successful payment as failed. Keep asking until the
+   * backend agrees, until it says the invoice expired, or until the window runs
+   * out. A failed request is retried rather than treated as a rejection — the
+   * money is already captured, so a transient blip must not lose the visit.
+   */
+  const pollVerification = useCallback(
+    async (invoiceNumber: string) => {
+      const verify = onVerifyPayment ?? verifyInvoiceViaBackend;
+      let lastError: unknown = null;
+
+      for (let attempt = 1; attempt <= VERIFY_ATTEMPTS; attempt += 1) {
+        try {
+          if (await verify(invoiceNumber)) {
+            setPhase("done");
+            onPaymentConfirmed();
+            return;
+          }
+          lastError = null;
+        } catch (err) {
+          if (isInvoiceExpiredError(err)) {
+            setError({ message: getErrorMessage(err, t), isExpired: true });
+            setPhase("idle");
+            return;
+          }
+          lastError = err;
+        }
+
+        if (attempt < VERIFY_ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, VERIFY_INTERVAL_MS));
+        }
+      }
+
+      setError({
+        message: lastError ? getErrorMessage(lastError, t) : t("fitness.pp_verification_failed"),
+        isExpired: false,
+      });
+      setPhase("idle");
+    },
+    [onVerifyPayment, onPaymentConfirmed, t],
+  );
+
   // ─── REAL payment flow — mirrors ConnectDialog exactly ───────────────────────
 
   const handlePay = useCallback(async () => {
@@ -216,35 +283,9 @@ export default function PaymentPanel({
             return;
           }
 
-          // Step 3: Verify payment
+          // Step 3: Verify payment before reporting success.
           setPhase("verifying");
-
-          if (onVerifyPayment) {
-            onVerifyPayment(invoiceNumber)
-              .then((isPaid) => {
-                if (isPaid) {
-                  setPhase("done");
-                  onPaymentConfirmed();
-                } else {
-                  setError({
-                    message: t("fitness.pp_verification_failed"),
-                    isExpired: false,
-                  });
-                  setPhase("idle");
-                }
-              })
-              .catch((verifyErr) => {
-                const expired = isInvoiceExpiredError(verifyErr);
-                setError({
-                  message: getErrorMessage(verifyErr, t),
-                  isExpired: expired,
-                });
-                setPhase("idle");
-              });
-          } else {
-            setPhase("done");
-            onPaymentConfirmed();
-          }
+          void pollVerification(invoiceNumber);
         },
       });
     } catch (err: unknown) {
@@ -256,7 +297,7 @@ export default function PaymentPanel({
       setPhase("idle");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentInfo, onPayInitiate, onVerifyPayment, onPaymentConfirmed]);
+  }, [paymentInfo, onPayInitiate, pollVerification, onPaymentConfirmed]);
 
   // ─── Verifying state ─────────────────────────────────────────────────────────
 

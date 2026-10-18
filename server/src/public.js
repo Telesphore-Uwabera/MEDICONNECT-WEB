@@ -242,7 +242,7 @@ async function doctorBusyInstant(doctorId, exceptId = null) {
   return one(sql, params).catch(() => null);
 }
 
-async function confirmPaidInvoice(payment, remote) {
+async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
   if (!payment?.id) return payment;
   const patch = { status: "paid" };
   if (remote?.paidAt) {
@@ -282,13 +282,14 @@ async function confirmPaidInvoice(payment, remote) {
     }
   }
   const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
-  if (String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
+  if (notify && String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
   return saved;
 }
 
 async function confirmPaidInvoiceAndNotify(payment, remote, account = null) {
-  const saved = await confirmPaidInvoice(payment, remote);
-  // Fire notification with account info (includes temp_password for new guests)
+  // notify:false — the account-aware notification below is the only one that
+  // should go out, otherwise the patient gets a second email without credentials.
+  const saved = await confirmPaidInvoice(payment, remote, { notify: false });
   notifyPaidVisit(saved, account).catch(() => null);
   return saved;
 }
@@ -347,7 +348,8 @@ async function expireLinkedVisit(payment) {
     if (!(await tableExists(table))) return;
     await ensureEnumValue(table, "status", "expired").catch(() => null);
     await ensureEnumValue(table, "payment_status", "expired").catch(() => null);
-    const row = await one(`SELECT id, status, payment_status FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
+    const paidCol = await hasColumn(table, "payment_status");
+    const row = await one(`SELECT id, status${paidCol ? ", payment_status" : ""} FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
     if (!row || CLOSED_VISIT.has(String(row.status || "").toLowerCase())) return;
     if (String(row.payment_status || "").toLowerCase() === "paid") return;
     await update(table, row.id, { status: "expired", payment_status: "expired" });
@@ -388,10 +390,13 @@ async function expireStaleUnpaidVisits() {
     : ((await tableExists("instant_consultations")) ? "instant_consultations" : null);
   if (!table || !(await hasColumn(table, "created_at"))) return;
   await ensureEnumValue(table, "status", "expired").catch(() => null);
+  // Same reason as the doctor queue: selecting a payment_status column the table
+  // does not have fails the query, and the expired sweep would silently never run.
+  const paidCol = await hasColumn(table, "payment_status");
   const rows = await q(
-    `SELECT id, status, payment_status FROM \`${table}\`
+    `SELECT id, status${paidCol ? ", payment_status" : ""} FROM \`${table}\`
      WHERE status IN ('pending','queued','waiting','payment_pending')
-       AND (payment_status IS NULL OR LOWER(payment_status) IN ('pending','unpaid','initiated','new'))
+       ${paidCol ? "AND (payment_status IS NULL OR LOWER(payment_status) IN ('pending','unpaid','initiated','new'))" : ""}
        AND created_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
      ORDER BY id ASC LIMIT 100`,
   ).catch(() => []);
@@ -1480,7 +1485,9 @@ export function publicRoutes(router) {
       res.json({
         id: fresh.id,
         status: fresh.status || "pending",
-        payment_status: fresh.payment_status || null,
+        // status='confirmed' only happens once the money is in, so report it as
+        // paid even when the table has no payment_status column to store it in.
+        payment_status: fresh.payment_status || (fresh.status === "confirmed" ? "paid" : null),
         queue_position: Number(fresh.queue_position || 1),
         people_ahead: Number(fresh.people_ahead || 0),
         doctor_busy: doctorBusy,
@@ -1587,7 +1594,7 @@ export function publicRoutes(router) {
       if (remote?.paymentStatus === "PAID") {
         let account = null;
         if (payment?.id) {
-          payment = await confirmPaidInvoice(payment, remote);
+          payment = await confirmPaidInvoice(payment, remote, { notify: false });
           account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
@@ -1645,7 +1652,7 @@ export function publicRoutes(router) {
       if (payment && String(payment.status).toLowerCase() !== "paid") {
         const remote = await iremboInvoiceStatus(payment.invoice_number || invoice).catch(() => null);
         if (remote?.paymentStatus === "PAID") {
-          payment = await confirmPaidInvoice(payment, remote);
+          payment = await confirmPaidInvoice(payment, remote, { notify: false });
           account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
@@ -1686,7 +1693,9 @@ export function publicRoutes(router) {
           if (!payment?.payable_id || !String(payment?.payable_type || "").includes("instant")) return null;
           const table = (await tableExists("instant_consultation_requests"))
             ? "instant_consultation_requests" : "instant_consultations";
-          const row = await one(`SELECT id, status, payment_status, guest_token, daily_room_name, room_name, daily_guest_token FROM \`${table}\` WHERE id = ?`, [payment.payable_id]).catch(() => null);
+          // SELECT * because room_name/payment_status are not present on every
+          // deployment's instant table, and a named column list would fail here.
+          const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [payment.payable_id]).catch(() => null);
           if (!row) return null;
           const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
           return {
@@ -1771,8 +1780,10 @@ export function publicRoutes(router) {
         paymentMethod: payload.paymentMethod || payload.payment_method || null,
         paymentReference: payload.paymentReference || payload.payment_reference || null,
       };
-      const confirmed = await confirmPaidInvoice(payment, remote);
+      const confirmed = await confirmPaidInvoice(payment, remote, { notify: false });
       const account = await attachPayerAccount(confirmed).catch(() => null);
+      // Notify with the account so a new guest's email actually carries their credentials.
+      notifyPaidVisit(confirmed, account).catch(() => null);
       const cached = getCachedGuestCredentials([
         invoiceNumber,
         confirmed?.id,

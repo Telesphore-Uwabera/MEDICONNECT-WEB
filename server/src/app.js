@@ -1312,11 +1312,16 @@ export function appRoutes(router) {
         [doctorId],
       ).catch(() => []) : [];
       const instantTable = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
-      const instantOwned = instantTable && (await hasColumn(instantTable, "doctor_id")) ? "doctor_id = ?" : "1=0";
+      // Must match the ownership clause used by /doctor/instant-consultations/queue,
+      // otherwise the dashboard stat and the queue tab can never agree.
+      const instantOwned = instantTable && (await hasColumn(instantTable, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=0";
       const instantParams = instantOwned === "1=0" ? [] : [doctorId];
       const instantStatus = async (extra) => instantTable
         ? count(`SELECT COUNT(*) AS total FROM \`${instantTable}\` WHERE ${instantOwned} AND ${extra}`, instantParams)
         : 0;
+      // A patient who has just paid moves to 'confirmed', so the live queue has to
+      // include it — counting only unpaid statuses hides the patients waiting on the doctor.
+      const instantQueueSql = "status IN ('pending','queued','waiting','confirmed','accepted','in_progress')";
 
       res.json({
         filters_applied: {
@@ -1327,7 +1332,7 @@ export function appRoutes(router) {
           search: req.query.search || null,
           chart_group: chartGroup,
         },
-        today: { ...today, instant_queue: await instantStatus("status IN ('pending','queued','waiting')") },
+        today: { ...today, instant_queue: await instantStatus(instantQueueSql) },
         period_stats: {
           total_appointments: periodStats.total,
           completed: periodStats.completed,
@@ -1366,7 +1371,8 @@ export function appRoutes(router) {
           completed: await instantStatus("status IN ('completed','done')"),
           declined: await instantStatus("status IN ('declined','rejected','cancelled','canceled')"),
           pending: await instantStatus("status IN ('pending','queued','waiting')"),
-          current_queue: await instantStatus("status IN ('pending','queued','waiting')"),
+          current_queue: await instantStatus(instantQueueSql),
+          paid_waiting: await instantStatus("status = 'confirmed'"),
           avg_duration_min: 0,
         },
         prescriptions: {
@@ -1523,10 +1529,17 @@ export function appRoutes(router) {
       if (table) {
         const owner = (await hasColumn(table, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=1";
         const params = owner.includes("?") ? [doctorId] : [];
+        // Not every deployment stores payment_status on the instant table (the
+        // column is absent in production, where a paid visit is only marked by
+        // status='confirmed'). Naming it in ORDER BY makes the whole query fail,
+        // and the catch below would then report an empty queue to every doctor.
+        const paidFirst = await hasColumn(table, "payment_status")
+          ? "CASE WHEN LOWER(payment_status) = 'paid' THEN 0 ELSE 1 END ASC,"
+          : "";
         const rows = await q(
           `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed','accepted','in_progress','completed')
            ORDER BY
-             CASE WHEN LOWER(payment_status) = 'paid' THEN 0 ELSE 1 END ASC,
+             ${paidFirst}
              CASE status
                WHEN 'in_progress' THEN 0
                WHEN 'accepted'    THEN 1
@@ -1547,7 +1560,9 @@ export function appRoutes(router) {
           guest_phone: row.guest_phone || row.phone || "",
           description: row.description || row.reason || null,
           status: row.status || "pending",
-          payment_status: row.payment_status || null,
+          // 'confirmed' is only reachable by paying, so report it as paid even
+          // where the column is absent or was never written.
+          payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
           queue_position: index + 1,
           waiting_seconds: 0,
           waiting_label: "Waiting",
@@ -1698,47 +1713,6 @@ export function appRoutes(router) {
       const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
       notifyVisitCompleted(updated || row, "instant consultation").catch(() => null);
       res.json({ message: "Session completed.", data: await presentRow(table, updated || row) });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post("/patient/appointments/:id/pay", requireAuth, requireRole("patient"), async (req, res, next) => {
-    try {
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
-      if (!appointment) return res.status(404).json({ message: "Appointment not found." });
-      let amount = Number(appointment.amount || appointment.fee || appointment.consultation_fee || 0);
-      if (!(amount > 0)) amount = await doctorOnlineFee(appointment.doctor_id);
-      if (!(amount > 0)) {
-        return res.status(422).json({ message: "This appointment has no payable fee." });
-      }
-      const paymentUuid = crypto.randomUUID();
-      const invoiceNumber = `MC-${appointment.id}-${paymentUuid.slice(0, 8)}`;
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
-      await insert("payments", {
-        patient_id: appointment.patient_id,
-        appointment_id: appointment.id,
-        payable_type: "appointment",
-        payable_id: appointment.id,
-        invoice_number: invoiceNumber,
-        transaction_id: paymentUuid,
-        idempotency_key: paymentUuid,
-        amount,
-        currency: appointment.currency || "RWF",
-        status: "pending",
-        description: `Appointment ${appointment.id}`,
-        expires_at: expiresAt,
-        uuid: paymentUuid,
-        payment_uuid: paymentUuid,
-      });
-      res.json({
-        message: "Payment started.",
-        invoice_number: invoiceNumber,
-        public_key: process.env.PAYMENT_PUBLIC_KEY || "",
-        amount,
-        currency: appointment.currency || "RWF",
-        payment_uuid: paymentUuid,
-      });
     } catch (error) {
       next(error);
     }
