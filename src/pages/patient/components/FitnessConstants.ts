@@ -19,10 +19,13 @@ export const JOB_TYPE_VALUES = [
 export const YES_NO = ["Yes", "No"] as const;
 
 export const getPurposes = (t: TFunction) => [
-  { value: "general_fitness", label: t("fitness.purpose_general_fitness") },
-  { value: "school_work", label: t("fitness.purpose_school_work") },
-  { value: "return_to_work", label: t("fitness.purpose_return_to_work") },
-  { value: "fitness_for_travel", label: t("fitness.purpose_fitness_for_travel") },
+  { value: "workplace", label: t("fitness.purpose_workplace") },
+  { value: "school", label: t("fitness.purpose_school") },
+  { value: "sports", label: t("fitness.purpose_sports") },
+  { value: "transport", label: t("fitness.purpose_transport") },
+  { value: "food", label: t("fitness.purpose_food") },
+  { value: "travel", label: t("fitness.purpose_travel") },
+  { value: "construction", label: t("fitness.purpose_construction") },
   { value: "other", label: t("fitness.purpose_other_option") },
 ];
 
@@ -114,6 +117,11 @@ export const getStatusMeta = (
     label: t("fitness.status_draft"),
     color: "bg-muted text-muted-foreground border-border",
     icon: FileText,
+  },
+  awaiting_payment: {
+    label: t("fitness.status_awaiting_payment"),
+    color: "bg-amber-500/15 text-amber-600 border-amber-400/30",
+    icon: Clock,
   },
   pending: {
     label: t("fitness.status_pending"),

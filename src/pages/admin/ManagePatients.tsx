@@ -48,8 +48,8 @@ export default function ManagePatients() {
     <DashboardLayout role="admin">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.admin.overview_title")}
-          subtitle={t("pages.admin.overview_sub")}
+          title={t("pages.admin.patients_title")}
+          subtitle={t("pages.admin.patients_sub")}
         />
 
         <FilterBar

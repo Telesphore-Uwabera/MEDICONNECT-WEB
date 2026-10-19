@@ -7,7 +7,7 @@ const BASE = "/patient/certificates";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type CertStatus = "draft" | "pending" | "in_review" | "approved" | "rejected" | "issued" | "withdrawn" | "expired";
+export type CertStatus = "draft" | "awaiting_payment" | "pending" | "in_review" | "approved" | "rejected" | "issued" | "withdrawn" | "expired";
 
 export interface Doctor {
   id: number;
@@ -83,6 +83,9 @@ export interface Certificate {
   consent_given?: boolean;
   initial_fee_paid?: number;
   actual_fee_paid?: number;
+  fee_amount?: number;
+  fee_paid?: boolean;
+  payment_status?: string | null;
   is_signed?: boolean;
   signed_at?: string | null;
   updated_at?: string;
@@ -122,6 +125,7 @@ export interface StepDataResponse {
   purpose?: string;
   purpose_other?: string | null;
   job_type?: string;
+  doctor_id?: number | null;
   // Step 4
   vitals?: {
     temperature?: string;
@@ -137,6 +141,7 @@ export interface Step1Payload {
   purpose: string;
   purpose_other?: string | null;
   job_type: string;
+  doctor_id: number;
 }
 
 export interface StepAnswersPayload {
@@ -299,7 +304,7 @@ export function useGetPatientCertificates(
   return useQuery<CertificatesListResponse>({
     queryKey: certKeys.list(status),
     queryFn: () => apiFetch(status ? `${BASE}?status=${status}` : BASE),
-    refetchInterval: options?.refetchInterval,
+    refetchInterval: options?.refetchInterval ?? 8_000,
   });
 }
 

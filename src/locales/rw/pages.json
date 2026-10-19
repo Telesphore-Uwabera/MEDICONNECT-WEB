@@ -1080,13 +1080,22 @@
     "bills_paid": "Byishyuwe",
     "bills_receipts": "Inyemezabuguzi",
     "bills_loading": "Turimo gufungura...",
-    "bills_empty": "Nta kwishyura kuraboneka."
+    "bills_empty": "Nta kwishyura kuraboneka.",
+    "bills_service": "Serivisi",
+    "bill_service_fitness_certificate": "Impamyabushobozi y'ubuzima",
+    "bill_service_instant_consultation": "Ubujyanama bwihuse",
+    "bill_service_appointment": "Gahunda",
+    "bill_service_pharmacy_order": "Icyifuzo cya farumasi",
+    "bill_service_service_booking": "Serivisi y'ikigo",
+    "bill_service_other": "Ibindi"
   },
   "doctor": {
     "profile_title": "Umwirondoro w'Umuganga",
     "profile_sub": "Cunga amakuru yawe y'akazi",
     "overview_title": "Mwaramutse",
     "overview_sub": "{{date}} · abarwayi muri gahunda yawe uyu munsi",
+    "appointments_title": "Gahunda",
+    "appointments_sub": "{{date}} · ibyifuzo byinjira n'amateraniro ateganyijwe",
     "instant_title": "Kwivuza ako kanya",
     "instant_visible": "Urebwa n'abarwayi bashaka ubufasha bwihuse",
     "instant_hidden": "Urahishwe ku rutonde rw'ako kanya",
@@ -1839,9 +1848,17 @@
     "cert_status_rejected": "Zanzwe",
     "cert_status_revoked": "Zateshejwe agaciro",
     "cert_decision_fit": "Arakwiriye",
+    "cert_decision_fit_with_restrictions": "Arakwiriye n'amabwiriza",
     "cert_decision_temporarily_unfit": "Ntakwiriye by agateganyo",
     "cert_decision_needs_physical_exam": "Akeneye gusuzumwa imbonankubone",
     "cert_decision_referred": "Yoherejwe ku kigo kimwegereye",
+    "cert_purpose_workplace": "Ubuzima ku kazi n'ibiro",
+    "cert_purpose_school": "Kwinjira mu ishuri n'kaminuza",
+    "cert_purpose_sports": "Siporo, gym n'imikino",
+    "cert_purpose_transport": "Umushoferi w'ubucuruzi",
+    "cert_purpose_food": "Gufata ibiryo n'isuku",
+    "cert_purpose_travel": "Visa n'urugendo",
+    "cert_purpose_construction": "Ubwubatsi n'ubutumburuke",
     "cert_purpose_general_fitness": "Ubuzima rusange",
     "cert_purpose_school_work": "Ubuzima ku ishuri / akazi",
     "cert_purpose_return_to_work": "Gusubira ku kazi",
@@ -2167,7 +2184,7 @@
     "doctors_sub": "Abaganga {{count}} bakora",
     "add_doctor": "Ongeraho umuganga",
     "departments_title": "Amashami",
-    "departments_sub": "Amashami 6 bikora",
+    "departments_sub": "Amashami {{count}} akora",
     "dept_doctors": "Abaganga",
     "dept_beds": "Ibitanda",
     "rx_title": "Imiti",
@@ -3171,7 +3188,31 @@
     "overview_sub": "Incamake y'urubuga rwose",
     "overview_title": "Murakaza neza, {{name}}",
     "doctors_sub": "Gucunga abaganga n'abakozi b'ubuvuzi",
-    "doctors_title": "Abaganga"
+    "doctors_title": "Abaganga",
+    "patients_title": "Abarwayi",
+    "patients_sub": "Gucunga konti z'abarwayi",
+    "facilities_title": "Ibigo by'ubuzima",
+    "facilities_sub": "Gucunga ibitaro n'amakliniki",
+    "pharmacies_title": "Farumasi",
+    "pharmacies_sub": "Gucunga farumasi",
+    "appointments_title": "Gahunda",
+    "appointments_sub": "Genzura no gucunga amahitamo",
+    "insurances_title": "Ubwishingizi",
+    "insurances_sub": "Gucunga abatanga ubwishingizi",
+    "wallet_title": "Amafaranga",
+    "wallet_sub": "Amafaranga y'urubuga n'ishyura"
+  },
+  "specializations": {
+    "overview_title": "Ubuhanga",
+    "overview_sub": "Gucunga ubuhanga bw'ubuvuzi"
+  },
+  "checklist_questions": {
+    "overview_title": "Ibibazo by'urutonde",
+    "overview_sub": "Gucunga ibibazo by'icyemezo"
+  },
+  "service_pricing": {
+    "overview_title": "Ibiciro by'ibikorwa",
+    "overview_sub": "Amafaranga y'ibikorwa by'urubuga"
   },
   "cards": {
     "from": "Kuva kuri",

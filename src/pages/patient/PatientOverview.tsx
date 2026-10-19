@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import PatientStats from "./components/PatientStats";
+import { PatientCareNext } from "./PatientCareNext";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActions";
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
@@ -178,6 +179,7 @@ const PatientOverview = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 space-y-6">
+            <PatientCareNext />
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {[
                 {

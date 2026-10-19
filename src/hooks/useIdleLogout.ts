@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
+import { clearAuthToken, getAuthToken } from "@/lib/auth-session";
 
 /** Idle activity events we treat as "user is present" */
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
@@ -31,7 +32,7 @@ export function useIdleLogout() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const performLogout = useCallback(async () => {
-    const token = localStorage.getItem("auth_token");
+    const token = getAuthToken();
     if (!token) return; // already logged out
 
     console.info("[useIdleLogout] 1 hour of inactivity — logging out automatically.");
@@ -39,9 +40,7 @@ export function useIdleLogout() {
     // Fire-and-forget the server logout; don't block on it
     apiFetch("/auth/logout", { method: "POST" }).catch(() => null);
 
-    // Clear local state immediately
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("guest_token");
+    clearAuthToken();
     qc.clear();
 
     navigate("/auth", {
@@ -59,13 +58,13 @@ export function useIdleLogout() {
 
   const resetTimer = useCallback(() => {
     clearTimer();
-    const token = localStorage.getItem("auth_token");
+    const token = getAuthToken();
     if (!token) return; // not logged in — nothing to do
     timerRef.current = setTimeout(performLogout, IDLE_MS);
   }, [clearTimer, performLogout]);
 
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = getAuthToken();
     if (!token) return; // not logged in on mount — skip
 
     // Start the initial timer

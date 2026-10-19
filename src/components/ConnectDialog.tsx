@@ -37,6 +37,7 @@ import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import { useConsultationSession, pruneIfEnded } from "@/hooks/patient/se-consultation-session";
 import { useLogin, useRegister } from "@/hooks/useAuth";
+import { setAuthToken } from "@/lib/auth-session";
 import { useCallContext } from "@/context/CallContext";
 import { useNavigate } from "react-router-dom";
 import { ChatPanel } from "./consultatioRoom/ChatPanel";
@@ -810,7 +811,7 @@ export const ConnectDialogContent = ({
 
       const attemptedPassword = override?.password ?? guestPassword;
       if (res.token && res.user) {
-        localStorage.setItem("auth_token", res.token);
+        setAuthToken(res.token);
         qc.setQueryData(["auth", "me"], { user: res.user });
         qc.invalidateQueries({ queryKey: ["auth", "me"] });
       } else if (attemptedPassword) {

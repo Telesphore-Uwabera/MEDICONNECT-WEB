@@ -87,6 +87,7 @@ export async function notifyPaidVisit(payment, account = null) {
   const payableType = String(payment?.payable_type || "");
   const payableId = payment?.payable_id;
   if (!payableId) return;
+  if (payableType.toLowerCase().includes("fitness")) return;
   const instant = payableType.toLowerCase().includes("instant");
   const table = instant
     ? ((await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations")

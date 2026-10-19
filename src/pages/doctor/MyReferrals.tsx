@@ -484,12 +484,15 @@ function ReferralCard({
 
         {/* Footer */}
         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border/60">
-          {referral.referred_to_doctor && (
+          {(referral.referred_to_doctor || referral.hospital || referral.pharmacy) && (
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <Stethoscope className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="text-[11px] text-muted-foreground truncate">
-                {t("pages.doctor.to")}: <span className="text-foreground font-medium">{referral.referred_to_doctor.name}</span>
-                {referral.referred_to_doctor.specialization && (
+                {t("pages.doctor.to")}:{" "}
+                <span className="text-foreground font-medium">
+                  {referral.referred_to_doctor?.name || referral.hospital?.name || referral.pharmacy?.name}
+                </span>
+                {referral.referred_to_doctor?.specialization && (
                   <> · {referral.referred_to_doctor.specialization}</>
                 )}
               </span>

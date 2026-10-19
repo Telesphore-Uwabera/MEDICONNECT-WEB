@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useIdleLogout } from "@/hooks/useIdleLogout";
+import { useSessionSync } from "@/hooks/useSessionSync";
 import {
   BrowserRouter,
   Navigate,
@@ -38,6 +39,8 @@ import PatientMedicalRecords from "./pages/patient/PatientMedicalRecords.tsx";
 import PatientPharmacy from "./pages/patient/PatientPharmacy";
 import PatientProfile from "./pages/patient/PatientProfile.tsx";
 import PatientFitnessCertificates from "./pages/patient/FitnessCertificates.tsx";
+import PatientReferrals from "./pages/patient/PatientReferrals.tsx";
+import PatientCareOrders from "./pages/patient/PatientCareOrders.tsx";
 import MedicalInfo from "./pages/patient/MedicalInfo.tsx";
 import PatientInsurence from "./pages/patient/PatientInsurence.tsx";
 import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
@@ -58,6 +61,7 @@ import DoctorConsultationSummaries from "./pages/doctor/DoctorConsultationSummar
 import DoctorProfile from "./pages/doctor/DoctorProfile.tsx";
 import DoctorFitnessCertificates from "./pages/doctor/FitnessCertificates.tsx";
 import MyReferrals from "./pages/doctor/MyReferrals.tsx";
+import DoctorCareOrders from "./pages/doctor/DoctorCareOrders.tsx";
 import DoctorSettings from "./pages/doctor/DoctorSettings.tsx";
 import DoctorEarnings from "./pages/doctor/DoctorEarnings.tsx";
 import DoctorFollowUps from "./pages/doctor/DoctorFollowUps.tsx";
@@ -73,6 +77,8 @@ import HospitalPrescriptions from "./pages/hospital/HospitalPrescriptions";
 import HospitalProfile from "./pages/hospital/HospitalProfile.tsx";
 import HospitalInsurances from "./pages/hospital/HospitalInsurances.tsx";
 import HospitalServiceBookings from "./pages/hospital/HospitalServiceBookings.tsx";
+import HospitalReferrals from "./pages/hospital/HospitalReferrals.tsx";
+import HospitalCareOrders from "./pages/hospital/HospitalCareOrders.tsx";
 import HospitalSettings from "./pages/hospital/HospitalSettings.tsx";
 
 /* ── Pharmacy ── */
@@ -85,6 +91,7 @@ import PharmacyCategories from "./pages/pharmacy/PharmacyCategories.tsx";
 import PharmacyDeliveries from "./pages/pharmacy/PharmacyDeliveries.tsx";
 import PharmacySettings from "./pages/pharmacy/PharmacySettings.tsx";
 import RestockRequests from "./pages/pharmacy/RestockRequests.tsx";
+import PharmacyCareOrders from "./pages/pharmacy/PharmacyCareOrders.tsx";
 
 /* ── Admin ── */
 import AdminOverview from "./pages/admin/AdminOverview";
@@ -102,6 +109,7 @@ import ManageInsurances from "./pages/admin/ManageInsurances.tsx";
 import ManageServicePricing from "./pages/admin/ManageServicePricing.tsx";
 import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
 import ManageCertificationDoctor from "./pages/admin/ManageCertificationDoctor.tsx";
+import ManageFitnessCertificates from "./pages/admin/ManageFitnessCertificates.tsx";
 import ManageHelpCenterLinks from "./pages/admin/ManageHelpCenterLinks.tsx";
 import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
@@ -281,6 +289,7 @@ const AccessPromptManager = () => {
 /** Mounts the idle-logout timer — placed inside BrowserRouter so useNavigate works. */
 const IdleLogoutGuard = () => {
   useIdleLogout();
+  useSessionSync();
   return null;
 };
 
@@ -410,6 +419,22 @@ const App = () => (
               element={
                 <RequireAuth>
                   <ServiceBookings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/referrals"
+              element={
+                <RequireAuth>
+                  <PatientReferrals />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/care-orders"
+              element={
+                <RequireAuth>
+                  <PatientCareOrders />
                 </RequireAuth>
               }
             />
@@ -560,6 +585,14 @@ const App = () => (
               }
             />
             <Route
+              path="/doctor/care-orders"
+              element={
+                <RequireAuth>
+                  <DoctorCareOrders />
+                </RequireAuth>
+              }
+            />
+            <Route
               path="/doctor/settings"
               element={
                 <RequireAuth>
@@ -642,6 +675,22 @@ const App = () => (
               }
             />
             <Route
+              path="/hospital/referrals"
+              element={
+                <RequireAuth>
+                  <HospitalReferrals />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/care-orders"
+              element={
+                <RequireAuth>
+                  <HospitalCareOrders />
+                </RequireAuth>
+              }
+            />
+            <Route
               path="/hospital/settings"
               element={
                 <RequireAuth>
@@ -688,6 +737,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <PharmacyPrescriptions />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/care-orders"
+              element={
+                <RequireAuth>
+                  <PharmacyCareOrders />
                 </RequireAuth>
               }
             />
@@ -882,6 +939,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <ManageCertificationDoctor />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/fitness-certificates"
+              element={
+                <RequireAuth>
+                  <ManageFitnessCertificates />
                 </RequireAuth>
               }
             />

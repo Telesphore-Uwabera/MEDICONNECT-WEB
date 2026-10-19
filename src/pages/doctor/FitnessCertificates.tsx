@@ -80,12 +80,20 @@ const FILTER_TABS: { id: CertStatus | "all"; label: string }[] = [
 
 const DECISION_OPTIONS: { value: CertDecision; labelKey: string }[] = [
   { value: "fit", labelKey: "pages.doctor.cert_decision_fit" },
-  { value: "temporarily_unfit", labelKey: "pages.doctor.cert_decision_temporarily_unfit" },
+  { value: "fit_with_restrictions", labelKey: "pages.doctor.cert_decision_fit_with_restrictions" },
   { value: "needs_physical_exam", labelKey: "pages.doctor.cert_decision_needs_physical_exam" },
+  { value: "temporarily_unfit", labelKey: "pages.doctor.cert_decision_temporarily_unfit" },
   { value: "referred", labelKey: "pages.doctor.cert_decision_referred" },
 ];
 
 const PURPOSE_LABELS: Record<string, string> = {
+  workplace: "pages.doctor.cert_purpose_workplace",
+  school: "pages.doctor.cert_purpose_school",
+  sports: "pages.doctor.cert_purpose_sports",
+  transport: "pages.doctor.cert_purpose_transport",
+  food: "pages.doctor.cert_purpose_food",
+  travel: "pages.doctor.cert_purpose_travel",
+  construction: "pages.doctor.cert_purpose_construction",
   general_fitness: "pages.doctor.cert_purpose_general_fitness",
   school_work: "pages.doctor.cert_purpose_school_work",
   return_to_work: "pages.doctor.cert_purpose_return_to_work",
@@ -557,10 +565,9 @@ function RequestDetail({
     if (cert) {
       setDecision(cert.decision ?? "");
       setDoctorNotes(cert.doctor_notes ?? "");
-      // Default validity to one year out when none is set yet.
-      const oneYear = new Date();
-      oneYear.setFullYear(oneYear.getFullYear() + 1);
-      setValidUntil(cert.valid_until?.slice(0, 10) ?? toLocalDateInputValue(oneYear));
+      const sixMonths = new Date();
+      sixMonths.setMonth(sixMonths.getMonth() + 6);
+      setValidUntil(cert.valid_until?.slice(0, 10) ?? toLocalDateInputValue(sixMonths));
     }
   }, [cert?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -732,7 +739,7 @@ function RequestDetail({
         <CertStepper cert={cert} />
 
         {/*   Cannot-sign warning  */}
-        {decidable && decision === "fit" && !signable && (
+        {decidable && (decision === "fit" || decision === "fit_with_restrictions") && !signable && (
           <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-blue-400/30 bg-blue-500/10">
             <AlertTriangle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700 dark:text-blue-400">
@@ -945,6 +952,24 @@ function RequestDetail({
           )}
         </SectionCard>
 
+        {!!cert.answers?.length && (
+          <SectionCard icon={ClipboardList} title={t("pages.doctor.patient_questionnaire", { defaultValue: "Patient questionnaire" })}>
+            <div className="space-y-1">
+              {cert.answers.map((item, index) => {
+                const key = item.question_key || item.field || `a-${index}`;
+                const value = item.answer ?? item.value ?? (item.boolean_answer ? "Yes" : "No");
+                return (
+                  <InfoRow
+                    key={`${key}-${index}`}
+                    label={key.replace(/_/g, " ")}
+                    value={String(value)}
+                  />
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
+
         {/*  6. Red Flag Assessment   */}
         <SectionCard icon={Activity} title={t("pages.doctor.red_flag_assessment")}>
           <div className="mb-3">
@@ -1093,9 +1118,9 @@ function RequestDetail({
                       className={cn(
                         "px-3 py-1.5 rounded-[6px] text-xs font-medium border transition-all",
                         decision === value.value
-                          ? value.value === "fit"
+                          ? value.value === "fit" || value.value === "fit_with_restrictions"
                             ? "bg-emerald-500 text-white border-emerald-500"
-                            : value.value === "temporarily_unfit"
+                            : value.value === "needs_physical_exam"
                               ? "bg-amber-500 text-white border-amber-500"
                               : "bg-destructive text-destructive-foreground border-destructive"
                           : "bg-transparent text-muted-foreground border-border hover:bg-muted hover:text-foreground",
@@ -1120,7 +1145,7 @@ function RequestDetail({
                 />
               </div>
 
-              {decision === "fit" && (
+              {(decision === "fit" || decision === "fit_with_restrictions") && (
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {t("pages.doctor.valid_until")}
@@ -1196,7 +1221,7 @@ function RequestDetail({
                 <Badge
                   className={cn(
                     "text-[11px] font-medium rounded-full px-3 border",
-                    cert.decision === "fit"
+                    cert.decision === "fit" || cert.decision === "fit_with_restrictions"
                       ? "bg-emerald-500/15 text-emerald-600 border-emerald-400/30"
                       : cert.decision === "temporarily_unfit"
                         ? "bg-amber-500/15 text-amber-600 border-amber-400/30"
@@ -1465,6 +1490,11 @@ function DoctorFitnessCertificates() {
                     <ClipboardList className="h-6 w-6 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">
                       {t("pages.doctor.no_requests_found")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/80 text-center px-4">
+                      {t("pages.doctor.paid_requests_appear_here", {
+                        defaultValue: "Paid 5,000 FRW requests appear here for review, video identity check, and signing.",
+                      })}
                     </p>
                   </div>
                 ) : (

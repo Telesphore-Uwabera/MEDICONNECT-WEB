@@ -58,6 +58,7 @@ export default function PatientBills() {
                   <thead className="bg-secondary/40 text-left text-[11px] uppercase tracking-widest text-muted-foreground">
                     <tr>
                       <th className="px-5 py-3 font-semibold">{t("pages.patient.refund_payment")}</th>
+                      <th className="px-5 py-3 font-semibold">{t("pages.patient.bills_service")}</th>
                       <th className="px-5 py-3 font-semibold">{t("pages.doctor.amount")}</th>
                       <th className="px-5 py-3 font-semibold">{t("pages.doctor.status")}</th>
                       <th className="px-5 py-3 font-semibold">{t("pages.patient.documents_col_date")}</th>
@@ -67,6 +68,11 @@ export default function PatientBills() {
                     {rows.map((row, index) => (
                       <tr key={String(row.uuid || row.id || index)} className="border-t border-border/50">
                         <td className="px-5 py-3 font-medium">{row.invoice_number || row.uuid || "—"}</td>
+                        <td className="px-5 py-3">
+                          {t(`pages.patient.bill_service_${String(row.service_key || "other")}`, {
+                            defaultValue: String(row.service || row.description || t("pages.patient.bill_service_other")),
+                          })}
+                        </td>
                         <td className="px-5 py-3">{money(row.amount, String(row.currency || "RWF"))}</td>
                         <td className="px-5 py-3">
                           <Badge variant="secondary" className="rounded-[6px] capitalize">{row.status || "—"}</Badge>

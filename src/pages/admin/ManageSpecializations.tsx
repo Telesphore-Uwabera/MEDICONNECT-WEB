@@ -1505,7 +1505,7 @@ function ManageSpecializations() {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.specializations.overview_title")}
-          subtitle={t("pages.admin.overview_sub")}
+          subtitle={t("pages.specializations.overview_sub")}
         />
 
         <main className="flex-1 overflow-y-auto">

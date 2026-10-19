@@ -30,7 +30,11 @@ import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSi
 import { readCallChart } from "@/lib/call-note-form";
 import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
-import { TransferPatientPrompt } from "./shared/TransferPatientPrompt";
+import { CareContinuePanel, orderTypeFromChoice, referralKindFromChoice } from "./shared/CareContinuePanel";
+import { ReferralCreateModal } from "./shared/ReferralCreateModal";
+import { ClinicalOrderModal } from "./shared/ClinicalOrderModal";
+import type { ReferralTargetType } from "@/hooks/doctor/use-doctor-referrals";
+import type { CareOrderType } from "@/hooks/doctor/use-care-orders";
 import { ConsultationSummaryModal } from "./shared/ConsultationSummaryModal";
 import { QuickPrescriptionModal } from "./shared/QuickPrescriptionModal";
 import { t } from "i18next";
@@ -152,7 +156,11 @@ export function InstantConsultTab() {
   const [queuePage, setQueuePage] = useState(1);
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
-  const [transferPromptItem, setTransferPromptItem] = useState<InstantConsultQueueItem | null>(null);
+  const [careItem, setCareItem] = useState<InstantConsultQueueItem | null>(null);
+  const [referItem, setReferItem] = useState<InstantConsultQueueItem | null>(null);
+  const [referKind, setReferKind] = useState<ReferralTargetType>("hospital");
+  const [orderKind, setOrderKind] = useState<CareOrderType>("lab");
+  const [orderKindShown, setOrderKindShown] = useState(false);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
   const [prescriptionItem, setPrescriptionItem] = useState<InstantConsultQueueItem | null>(null);
 
@@ -797,30 +805,66 @@ export function InstantConsultTab() {
           onSkip={() => {
             const item = prescriptionItem;
             setPrescriptionItem(null);
-            setTransferPromptItem(item);
+            setCareItem(item);
           }}
           onDone={() => {
             const item = prescriptionItem;
             setPrescriptionItem(null);
-            setTransferPromptItem(item);
+            setCareItem(item);
           }}
         />
       )}
 
-      {/* Step 3 - ask whether to transfer before opening facility booking */}
-      {transferPromptItem != null && (
-        <TransferPatientPrompt
-          patientName={transferPromptItem.guest_phone}
-          onConfirm={() => {
-            const item = transferPromptItem;
-            setTransferPromptItem(null);
-            setBookingItem(item);
+      {careItem != null && !bookingItem && !referItem && !orderKindShown && (
+        <CareContinuePanel
+          patientName={careItem.guest_phone}
+          onChoose={(choice) => {
+            const item = careItem;
+            if (choice === "done") {
+              setCareItem(null);
+              if (item) completeConsult(item);
+              return;
+            }
+            if (choice === "facility-book") {
+              setBookingItem(item);
+              return;
+            }
+            const referral = referralKindFromChoice(choice);
+            if (referral) {
+              setReferKind(referral);
+              setReferItem(item);
+              return;
+            }
+            const orderType = orderTypeFromChoice(choice);
+            if (orderType) {
+              setOrderKind(orderType);
+              setOrderKindShown(true);
+            }
           }}
-          onDecline={() => {
-            const item = transferPromptItem;
-            setTransferPromptItem(null);
-            if (item) completeConsult(item);
-          }}
+        />
+      )}
+      {referItem != null && (
+        <ReferralCreateModal
+          open
+          kind={referKind}
+          patientId={patientIdOf(referItem)}
+          patientName={referItem.guest_phone}
+          instantConsultationId={resolveInstantConsultId(referItem) ?? undefined}
+          onClose={() => setReferItem(null)}
+          onSkip={() => setReferItem(null)}
+          onCreated={() => setReferItem(null)}
+        />
+      )}
+      {careItem != null && orderKindShown && (
+        <ClinicalOrderModal
+          open
+          kind={orderKind}
+          patientId={patientIdOf(careItem)}
+          patientName={careItem.guest_phone}
+          instantConsultationId={resolveInstantConsultId(careItem) ?? undefined}
+          onClose={() => setOrderKindShown(false)}
+          onSkip={() => setOrderKindShown(false)}
+          onCreated={() => setOrderKindShown(false)}
         />
       )}
       {/* Step 4 - optional: book physical appointment, then complete */}
@@ -831,16 +875,8 @@ export function InstantConsultTab() {
           patientId={bookingPatientId}
           patientPhone={bookingItem?.guest_phone}
           defaultNotes={bookingDefaultNotes}
-          onSkip={() => {
-            const item = bookingItem;
-            setBookingItem(null);
-            if (item) completeConsult(item);
-          }}
-          onBooked={() => {
-            const item = bookingItem;
-            setBookingItem(null);
-            if (item) completeConsult(item);
-          }}
+          onSkip={() => setBookingItem(null)}
+          onBooked={() => setBookingItem(null)}
         />
       )}
     </div>

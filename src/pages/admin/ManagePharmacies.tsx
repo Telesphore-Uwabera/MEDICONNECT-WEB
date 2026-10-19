@@ -115,7 +115,7 @@ function ManagePharmacies() {
   return (
     <DashboardLayout role="admin">
       <div className="flex flex-col h-full">
-        <PageHeader title={t("pages.admin.overview_title")} subtitle={t("pages.admin.overview_sub")} />
+        <PageHeader title={t("pages.admin.pharmacies_title")} subtitle={t("pages.admin.pharmacies_sub")} />
 
         <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
           <StatCard label="Total pharmacies" value={total} icon={FlaskConical} accent="primary" />

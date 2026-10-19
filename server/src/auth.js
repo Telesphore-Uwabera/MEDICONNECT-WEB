@@ -66,6 +66,10 @@ export async function issueToken(userId, role) {
     token: sha256(plain),
     abilities: ["*", `role:${role}`],
   });
+  await q(
+    "DELETE FROM personal_access_tokens WHERE tokenable_id = ? AND id <> ?",
+    [userId, id],
+  ).catch(() => null);
   return `${id}|${plain}`;
 }
 

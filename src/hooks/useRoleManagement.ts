@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiFetch, type ApiError } from "@/lib/api";
+import { setAuthToken } from "@/lib/auth-session";
 import { useMe } from "@/hooks/useAuth";
 import type { User, SwitchableRole } from "@/types/auth";
 
@@ -93,7 +94,7 @@ export function useGoToRole() {
 
       const res = await switchRole.mutateAsync(role);
       // Old token revoked — store the new one for all subsequent requests.
-      localStorage.setItem("auth_token", res.token);
+      setAuthToken(res.token);
 
       if (opts?.stay) {
         // Update the cached session in place so the app sees the new role

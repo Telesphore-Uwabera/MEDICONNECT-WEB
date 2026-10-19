@@ -380,7 +380,7 @@ const AdminOverview = () => {
 
           {/* Appointments */}
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Appointments" href="/admin/appointments" linkLabel="View all" />
+            <SectionHeader title="Appointments" href="/admin/manage-appointments" linkLabel="View all" />
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, i) => <SkeletonBlock key={i} className="h-14" />)}
@@ -408,17 +408,18 @@ const AdminOverview = () => {
 
           {/* Certificates */}
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Certificates" />
+            <SectionHeader title="Certificates" href="/admin/fitness-certificates" linkLabel="Track" />
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(2)].map((_, i) => <SkeletonBlock key={i} className="h-14" />)}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="grid grid-cols-3 gap-2 mb-3">
                   {[
-                    { label: "Approved", value: certificates?.approved ?? 0, icon: CheckCircle2, color: "text-success bg-success/10" },
-                    { label: "Pending", value: certificates?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
+                    { label: "Issued", value: certificates?.approved ?? 0, icon: CheckCircle2, color: "text-success bg-success/10" },
+                    { label: "With doctor", value: certificates?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
+                    { label: "Awaiting pay", value: certificates?.awaiting_payment ?? 0, icon: Clock, color: "text-amber-600 bg-amber-500/10" },
                   ].map(({ label, value, icon: Icon, color }) => (
                     <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5">
                       <div className={cn("w-6 h-6 rounded-[6px] flex items-center justify-center mb-1.5", color)}>
@@ -497,9 +498,9 @@ const AdminOverview = () => {
               {[
                 { label: "Manage users", href: "/admin/users", icon: Users },
                 { label: "Pending approvals", href: "/admin/approvals", icon: UserCheck },
-                { label: "Flagged accounts", href: "/admin/flags", icon: ShieldAlert },
-                { label: "System reports", href: "/admin/reports", icon: BarChart3 },
-                { label: "Appointments", href: "/admin/appointments", icon: CalendarDays },
+                { label: "Flagged accounts", href: "/admin/moderation", icon: ShieldAlert },
+                { label: "System reports", href: "/admin/analytics", icon: BarChart3 },
+                { label: "Appointments", href: "/admin/manage-appointments", icon: CalendarDays },
               ].map(({ label, href, icon: Icon }) => (
                 <Link key={href} to={href}>
                   <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-border bg-muted/40 hover:border-primary/40 hover:bg-primary/5 text-[11px] font-medium text-foreground transition-all">

@@ -1081,13 +1081,22 @@
     "bills_paid": "Paye",
     "bills_receipts": "Recus de paiement",
     "bills_loading": "Chargement des factures...",
-    "bills_empty": "Aucun paiement pour le moment."
+    "bills_empty": "Aucun paiement pour le moment.",
+    "bills_service": "Service",
+    "bill_service_fitness_certificate": "Certificat d'aptitude",
+    "bill_service_instant_consultation": "Consultation instantanee",
+    "bill_service_appointment": "Rendez-vous",
+    "bill_service_pharmacy_order": "Commande pharmacie",
+    "bill_service_service_booking": "Service d'etablissement",
+    "bill_service_other": "Autre"
   },
   "doctor": {
     "profile_title": "Profil du médecin",
     "profile_sub": "Gérez vos informations professionnelles",
     "overview_title": "Bonjour",
     "overview_sub": "{{date}} · patients à votre programme aujourd'hui",
+    "appointments_title": "Rendez-vous",
+    "appointments_sub": "{{date}} · visites programmées et demandes entrantes",
     "instant_title": "Consultation instantanée",
     "instant_visible": "Vous êtes visible aux patients cherchant une aide immédiate",
     "instant_hidden": "Vous êtes masqué de la file instantanée",
@@ -1846,9 +1855,17 @@
     "cert_status_rejected": "Rejete",
     "cert_status_revoked": "Revoque",
     "cert_decision_fit": "Apte",
+    "cert_decision_fit_with_restrictions": "Apte avec restrictions",
     "cert_decision_temporarily_unfit": "Temporairement inapte",
     "cert_decision_needs_physical_exam": "Examen physique requis",
     "cert_decision_referred": "Adresse au centre le plus proche",
+    "cert_purpose_workplace": "Aptitude bureau et emploi",
+    "cert_purpose_school": "Admission scolaire et universitaire",
+    "cert_purpose_sports": "Aptitude sport et athletisme",
+    "cert_purpose_transport": "Conducteur commercial et transport",
+    "cert_purpose_food": "Manipulateur d'aliments et hygiene",
+    "cert_purpose_travel": "Visa et voyage international",
+    "cert_purpose_construction": "Chantier et travail en hauteur",
     "cert_purpose_general_fitness": "Aptitude generale",
     "cert_purpose_school_work": "Aptitude ecole / travail",
     "cert_purpose_return_to_work": "Retour au travail",
@@ -2180,7 +2197,7 @@
     "doctors_sub": "{{count}} médecins en service",
     "add_doctor": "Ajouter un médecin",
     "departments_title": "Départements",
-    "departments_sub": "6 départements actifs",
+    "departments_sub": "{{count}} départements actifs",
     "dept_doctors": "Médecins",
     "dept_beds": "Lits",
     "rx_title": "Ordonnances",
@@ -3191,7 +3208,31 @@
     "overview_sub": "Aperçu du tableau de bord",
     "overview_title": "Content de te revoir, {{name}}",
     "doctors_sub": "Gérer les médecins et le personnel médical",
-    "doctors_title": "Médecins"
+    "doctors_title": "Médecins",
+    "patients_title": "Patients",
+    "patients_sub": "Gérer les comptes patients",
+    "facilities_title": "Établissements de santé",
+    "facilities_sub": "Gérer les hôpitaux et cliniques",
+    "pharmacies_title": "Pharmacies",
+    "pharmacies_sub": "Gérer les pharmacies",
+    "appointments_title": "Rendez-vous",
+    "appointments_sub": "Consulter et gérer les réservations",
+    "insurances_title": "Assurances",
+    "insurances_sub": "Gérer les assureurs",
+    "wallet_title": "Portefeuilles",
+    "wallet_sub": "Portefeuille de la plateforme et paiements"
+  },
+  "specializations": {
+    "overview_title": "Spécialisations",
+    "overview_sub": "Gérer les spécialisations médicales"
+  },
+  "checklist_questions": {
+    "overview_title": "Questions de checklist",
+    "overview_sub": "Gérer les questions de certification"
+  },
+  "service_pricing": {
+    "overview_title": "Tarifs des services",
+    "overview_sub": "Frais des services de la plateforme"
   },
   "cards": {
     "from": "À partir de",

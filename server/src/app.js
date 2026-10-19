@@ -17,6 +17,9 @@ import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
 import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
+import { registerCareOrderRoutes } from "./care-orders.js";
+import { registerCareReferralRoutes } from "./care-referrals.js";
+import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicated-ids.js";
 import {
   appointmentCollision,
   appointmentJoinWindow,
@@ -105,6 +108,37 @@ async function ownedFilter(req, table, scope) {
   const ownerId = profile ? await loadOwnedId(req.user.id, profile) : null;
   if (table === "appointments" && scope === "patient") {
     return { sql: "(`patient_id` = ? OR `patient_id` = ?)", params: [req.user.id, ownerId ?? 0] };
+  }
+  if (table === "referrals") {
+    const clauses = [];
+    const params = [];
+    const add = async (column, value) => {
+      if (value != null && (await hasColumn(table, column))) {
+        clauses.push(`\`${column}\` = ?`);
+        params.push(value);
+      }
+    };
+    if (scope === "doctor") {
+      await add("doctor_id", ownerId);
+      await add("referring_doctor_id", ownerId);
+      await add("referred_to_doctor_id", ownerId);
+      if (clauses.length) return { sql: `(${clauses.join(" OR ")})`, params };
+    }
+    if (scope === "patient") {
+      await add("patient_id", ownerId);
+      await add("patient_id", req.user.id);
+      if (clauses.length) return { sql: `(${clauses.join(" OR ")})`, params };
+    }
+    if (scope === "hospital") {
+      await add("hospital_id", ownerId);
+      await add("referred_hospital_id", ownerId);
+      if (clauses.length) return { sql: `(${clauses.join(" OR ")})`, params };
+    }
+    if (scope === "pharmacy") {
+      await add("pharmacy_id", ownerId);
+      await add("referred_pharmacy_id", ownerId);
+      if (clauses.length) return { sql: `(${clauses.join(" OR ")})`, params };
+    }
   }
   if (await hasColumn(table, `${scope}_id`)) {
     return { sql: `\`${scope}_id\` = ?`, params: [ownerId ?? 0] };
@@ -281,6 +315,7 @@ async function resolveResourceTable(scope, resource) {
     "patient:instant-consultations": ["instant_consultation_requests", "instant_consultations"],
   }[`${scope}:${resource}`];
   const candidates = [];
+  if (isDedicatedResource(resource)) return null;
   if (scoped) candidates.push(...scoped);
   else if (RESOURCES[resource]) candidates.push(RESOURCES[resource]);
   else if (resource && resource !== "profile") candidates.push(String(resource).replace(/-/g, "_"));
@@ -368,6 +403,9 @@ const DOCTOR_SCHEDULE_PREFIXES = ["/doctor/availability", "/doctor/slots"];
 export function appRoutes(router) {
   attachAppointmentRoutes(router, { requireAuth, requireRole });
   attachChatRoutes(router, { requireAuth });
+  registerCareOrderRoutes(router, { requireAuth, requireRole });
+  registerCareReferralRoutes(router, { requireAuth, requireRole });
+  registerDedicatedResourceRoutes(router, { requireAuth, requireRole });
   router.use(async (req, res, next) => {
     try {
       if (!req.user || req.user.active_role !== "doctor" || !req.path.startsWith("/doctor")) return next();
@@ -1968,12 +2006,12 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/doctor/instant-consultations/:id/accept", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/instant-consultations/:instantConsultationId/accept", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
       const table = await instantTable();
       if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
-      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.instantConsultationId]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
@@ -2014,12 +2052,12 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/doctor/instant-consultations/:id/decline", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/instant-consultations/:instantConsultationId/decline", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
       const table = await instantTable();
       if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
-      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.instantConsultationId]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
@@ -2031,12 +2069,12 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/doctor/instant-consultations/:id/join", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/instant-consultations/:instantConsultationId/join", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
       const table = await instantTable();
       if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
-      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.instantConsultationId]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
@@ -2073,12 +2111,12 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/doctor/instant-consultations/:id/complete", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/instant-consultations/:instantConsultationId/complete", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
       const table = await instantTable();
       if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
-      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.instantConsultationId]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
@@ -2103,9 +2141,9 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/patient/appointments/:id/join", requireAuth, requireRole("patient"), async (req, res, next) => {
+  router.post("/patient/appointments/:appointmentId/join", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (!(await patientOwnsAppointment(appointment, req.user))) {
         return res.status(403).json({ message: "This appointment belongs to another patient." });
@@ -2144,10 +2182,10 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/doctor/appointments/:id/join", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/appointments/:appointmentId/join", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (appointment.doctor_id && Number(appointment.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This appointment belongs to another doctor." });
@@ -2179,10 +2217,10 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/doctor/appointments/:id/complete", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/appointments/:appointmentId/complete", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (appointment.doctor_id && Number(appointment.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This appointment belongs to another doctor." });
@@ -2312,9 +2350,9 @@ export function appRoutes(router) {
 
   // Cancelling used to reach the generic hard DELETE, which destroyed the record
   // and left the doctor's slot marked as booked forever.
-  router.delete("/patient/appointments/:id", requireAuth, requireRole("patient"), async (req, res, next) => {
+  router.delete("/patient/appointments/:appointmentId", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]).catch(() => null);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]).catch(() => null);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (!(await patientOwnsAppointment(appointment, req.user))) {
         return res.status(403).json({ message: "This appointment belongs to another patient." });
@@ -2341,9 +2379,9 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/patient/appointments/:id/reschedule", requireAuth, requireRole("patient"), async (req, res, next) => {
+  router.post("/patient/appointments/:appointmentId/reschedule", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]).catch(() => null);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]).catch(() => null);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (!(await patientOwnsAppointment(appointment, req.user))) {
         return res.status(403).json({ message: "This appointment belongs to another patient." });
@@ -2454,8 +2492,15 @@ export function appRoutes(router) {
         : 0;
       const pendingPayments = await count(`SELECT COUNT(*) AS total FROM payments WHERE ${paymentAlive} AND status = 'pending'`);
       const certificateAlive = await alive("fitness_certificates");
-      const certificatesPending = await count(`SELECT COUNT(*) AS total FROM fitness_certificates WHERE ${certificateAlive} AND status IN ('pending','submitted','review')`);
+      const certificatesPending = await count(`SELECT COUNT(*) AS total FROM fitness_certificates WHERE ${certificateAlive} AND status IN ('pending','in_review','submitted','review')`);
       const certificatesApproved = await count(`SELECT COUNT(*) AS total FROM fitness_certificates WHERE ${certificateAlive} AND status IN ('approved','issued','signed','completed')`);
+      const certificatesAwaitingPayment = await count(`SELECT COUNT(*) AS total FROM fitness_certificates WHERE ${certificateAlive} AND status = 'awaiting_payment'`);
+      const certificatesRevenue = amountColumn && (await hasColumn("payments", "payable_type"))
+        ? await sum(
+          `SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM payments
+           WHERE ${paymentAlive} AND ${paid} AND payable_type LIKE '%fitness%'`,
+        )
+        : 0;
       const activeConsultations = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('in_progress','active','ongoing')`);
 
       res.json({
@@ -2469,7 +2514,12 @@ export function appRoutes(router) {
             pending_count: pendingPayments,
             currency: "RWF",
           },
-          certificates: { pending: certificatesPending, approved: certificatesApproved },
+          certificates: {
+            pending: certificatesPending,
+            approved: certificatesApproved,
+            awaiting_payment: certificatesAwaitingPayment,
+            paid_revenue: String(certificatesRevenue),
+          },
           quick_consultations: { active: activeConsultations },
         },
         filters_applied: {
@@ -3047,6 +3097,7 @@ export function appRoutes(router) {
 
   router.get("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
+      if (isDedicatedResource(req.params.resource)) return next();
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
       if (req.params.scope !== "admin" && req.user.active_role !== req.params.scope) {
@@ -3069,6 +3120,7 @@ export function appRoutes(router) {
         const row = await one(`SELECT * FROM \`${table}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [req.user.id]);
         return res.json({ data: await presentRow(table, row), ...(await presentRow(table, row)) });
       }
+      if (isDedicatedResource(req.params.resource)) return next();
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
       const raw = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
@@ -3114,6 +3166,7 @@ export function appRoutes(router) {
 
   router.post("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
+      if (isDedicatedResource(req.params.resource)) return next();
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
       const owned = await ownedFilter(req, table, req.params.scope);
@@ -3133,6 +3186,7 @@ export function appRoutes(router) {
 
   router.delete("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
+      if (isDedicatedResource(req.params.resource)) return next();
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
       const current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
@@ -3421,6 +3475,14 @@ export function appRoutes(router) {
         );
         earnedParams.push("appointment", "App\\Models\\Appointment");
       }
+      if (await tableExists("fitness_certificates")) {
+        earnedParts.push(
+          `SELECT c.doctor_id AS doctor_id, p.amount AS amount, p.paid_at AS paid_at
+           FROM payments p
+           JOIN fitness_certificates c ON c.id = p.payable_id
+           WHERE p.status = 'paid' AND p.payable_type LIKE '%fitness%'`,
+        );
+      }
       const earnedSql = earnedParts.length
         ? `LEFT JOIN (
             SELECT doctor_id, SUM(amount) AS earned, MAX(paid_at) AS last_paid
@@ -3533,6 +3595,7 @@ export function appRoutes(router) {
 
 async function updateResource(req, res, next) {
   try {
+    if (isDedicatedResource(req.params.resource)) return next();
     const table = await resolveResourceTable(req.params.scope, req.params.resource);
     if (!table) return next();
     const current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);

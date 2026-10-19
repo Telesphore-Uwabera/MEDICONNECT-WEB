@@ -48,7 +48,7 @@ export function useGetDepartments(filters?: DepartmentFilters) {
   return useQuery({
     queryKey: deptKeys.list(filters),
     queryFn: () =>
-      apiFetch<{ departments: Department[] }>(url).then((r) => r.departments),
+      apiFetch<unknown>(url).then((r) => listFrom<Department>(r, "departments")),
   });
 }
 
@@ -117,9 +117,9 @@ export function useGetServicesByDepartment(departmentId: number | null) {
   return useQuery({
     queryKey: svcKeys.byDept(departmentId!),
     queryFn: () =>
-      apiFetch<{ services: Service[] }>(
+      apiFetch<unknown>(
         `${SVC_BASE}?department_id=${departmentId}`,
-      ).then((r) => r.services),
+      ).then((r) => listFrom<Service>(r, "services")),
     enabled: departmentId !== null,
   });
 }

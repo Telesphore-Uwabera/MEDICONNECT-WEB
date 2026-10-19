@@ -118,6 +118,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           label: t("sidebar.certificationDoctor"),
           icon: ShieldCheck,
         },
+        {
+          to: "/admin/fitness-certificates",
+          label: t("sidebar.fitnessCertificates"),
+          icon: Award,
+        },
         // {
         //   to: "/admin/manage-instant-doctors",
         //   label: t("sidebar.instantDoctors"),
@@ -204,6 +209,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           icon: CheckCircle,
         },
         { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
+        { to: "/doctor/care-orders", label: t("sidebar.carePackets", "Care packets"), icon: FlaskConical },
         { to: "/doctor/patients", label: t("sidebar.patients"), icon: Users },
         { to: "/doctor/follow-ups", label: t("sidebar.followUps"), icon: History },
       ],
@@ -257,12 +263,22 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           label: t("sidebar.insurances"),
           icon: Shield,
         },
+        {
+          to: "/hospital/referrals",
+          label: t("sidebar.referrals", "Referrals"),
+          icon: Send,
+        },
+        {
+          to: "/hospital/care-orders",
+          label: t("sidebar.careOrders", "Clinical orders"),
+          icon: FlaskConical,
+        },
       ],
     },
     {
       heading: t("sidebar.group.activity"),
       items: [
-        // { to: "/hospital/service-bookings", label: t("sidebar.serviceBookings"), icon: Calendar },
+        { to: "/hospital/service-bookings", label: t("sidebar.serviceBookings", "Facility visits"), icon: Calendar },
         {
           to: "/hospital/prescriptions",
           label: t("sidebar.prescriptions"),
@@ -325,7 +341,22 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           to: "/patient/appointments",
           label: t("sidebar.myAppointments"),
           icon: Calendar,
-        }
+        },
+        {
+          to: "/patient/referrals",
+          label: t("sidebar.careFromDoctor", "Care from doctor"),
+          icon: Send,
+        },
+        {
+          to: "/patient/service-bookings",
+          label: t("sidebar.facilityVisits", "Facility visits"),
+          icon: Building2,
+        },
+        {
+          to: "/patient/care-orders",
+          label: t("sidebar.careOrders", "Labs & care orders"),
+          icon: FlaskConical,
+        },
       ],
     },
     {
@@ -423,6 +454,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           to: "/pharmacy/prescriptions",
           label: t("sidebar.prescriptions"),
           icon: Image,
+        },
+        {
+          to: "/pharmacy/care-orders",
+          label: t("sidebar.medicinePackets", "Medicine packets"),
+          icon: FlaskConical,
         },
         // { to: "/pharmacy/dispensed", label: t("sidebar.dispensed"), icon: CheckCircle },
       ],

@@ -64,6 +64,26 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
   const submitMutation = useSubmitCertificate();
 
   useEffect(() => {
+    const current = requestData?.certificate;
+    if (!current || requestPhase === "payment" || pendingPayment) return;
+    if (current.status !== "awaiting_payment") return;
+    let cancelled = false;
+    submitMutation.mutateAsync().then((res) => {
+      if (cancelled) return;
+      if (isSubmitPaymentRequired(res)) {
+        setPendingPayment(res);
+        setRequestPhase("payment");
+      } else {
+        setRequestPhase("submitted");
+        setTimeout(() => onDone(), 1200);
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // Restore the payment step if the patient left after creating the 5,000 FRW invoice.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestData?.certificate?.id, requestData?.certificate?.status]);
+
+  useEffect(() => {
     if (serverCurrentStep > 0) {
       const newVisited = new Set<number>();
       FORM_STEPS.forEach((s, i) => {
@@ -241,6 +261,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
               purpose: stepData?.purpose,
               purpose_other: stepData?.purpose_other ?? undefined,
               job_type: stepData?.job_type,
+              doctor_id: stepData?.doctor_id ?? requestData?.certificate?.doctor_id ?? undefined,
             }}
             onSaved={handleStepSaved}
           />
@@ -383,6 +404,11 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
               </div>
             )}
           {stepContent()}
+          {isLast && (
+            <p className="text-[11px] text-muted-foreground rounded-[6px] border border-border bg-muted/30 px-3 py-2">
+              {t("fitness.fee_note")}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between px-4 sm:px-5 py-4 bg-muted/30 border-t border-border/40">
@@ -405,7 +431,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             {(isSaving || submitMutation.isPending) && (
               <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
             )}
-            {isLast ? t("fitness.submit_request") : t("fitness.save_and_next")}
+            {isLast ? t("fitness.submit_and_pay") : t("fitness.save_and_next")}
           </Button>
         </div>
       </div>
@@ -423,7 +449,9 @@ function SentCertificates() {
   const withdrawMutation = useWithdrawCertificate();
 
   const certs = data?.certificates ?? []; 
-  const hasDraftOrPending = certs.some((c) => c.status === "draft" || c.status === "pending");
+  const hasDraftOrPending = certs.some((c) =>
+    ["draft", "awaiting_payment", "pending", "in_review"].includes(c.status),
+  );
 
   const handleWithdraw = () => {
     if (!confirm(t("fitness.withdraw_confirm"))) return;

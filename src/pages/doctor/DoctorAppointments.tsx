@@ -54,8 +54,8 @@ const DoctorAppointmentsPage = () => {
     <DashboardLayout role="doctor">
       <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
-        title={t("pages.doctor.overview_title")}
-        subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
+        title={t("pages.doctor.appointments_title")}
+        subtitle={t("pages.doctor.appointments_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
       />
 
       {/* Tab bar — horizontally scrollable so the three tabs never overflow */}

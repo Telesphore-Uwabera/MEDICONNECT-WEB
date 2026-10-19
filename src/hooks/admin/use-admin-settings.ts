@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { clearAuthToken } from "@/lib/auth-session";
 
 const BASE = "/settings";
 
@@ -204,7 +205,7 @@ export function useDeleteAccount() {
     mutationFn: (payload: DeleteAccountPayload) =>
       apiFetch<{ message: string }>(`${BASE}/account`, { method: "DELETE", body: payload }),
     onSuccess: () => {
-      localStorage.removeItem("auth_token");
+      clearAuthToken();
       window.location.href = "/auth";
     },
   });

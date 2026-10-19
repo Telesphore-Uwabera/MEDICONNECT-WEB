@@ -23,8 +23,12 @@ const Auth = () => {
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
   // Show idle-timeout banner when redirected here automatically
-  const idleMessage = (location.state as { reason?: string; message?: string } | null)?.reason === "idle_timeout"
-    ? ((location.state as { message?: string }).message ?? "You were logged out after 1 hour of inactivity.")
+  const sessionReason = (location.state as { reason?: string; message?: string } | null)?.reason;
+  const idleMessage = sessionReason === "idle_timeout" || sessionReason === "session_replaced"
+    ? ((location.state as { message?: string }).message
+      ?? (sessionReason === "session_replaced"
+        ? "You were signed out because this account signed in on another tab or device."
+        : "You were logged out after 1 hour of inactivity."))
     : null;
   useEffect(() => {
   setTab(params.get("mode") === "signup" ? "signup" : "signin");

@@ -426,15 +426,26 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-1 mt-2">
+                              {userRole && userRole !== "patient" && userRole !== "admin" && (
+                                <span className="w-full text-[10px] text-muted-foreground">
+                                  Provider approval is done by MediConnect admin (Approvals).
+                                </span>
+                              )}
                               {user?.is_verified && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                                <span
+                                  title="A MediConnect admin reviewed and approved this provider profile."
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
+                                >
                                   <BadgeCheck className="h-2.5 w-2.5" />
                                   Verified
                                 </span>
                               )}
 
                               {user?.status === "active" && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold">
+                                <span
+                                  title="This login is enabled. Admin can suspend it from Approvals or Users."
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold"
+                                >
                                   <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
                                   Active
                                 </span>

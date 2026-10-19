@@ -175,9 +175,9 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
     }
   });
 
-  router.post("/patient/appointments/:id/pay", requireAuth, requireRole("patient"), async (req, res, next) => {
+  router.post("/patient/appointments/:appointmentId/pay", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       const ownerProfile = await loadOwnedId(req.user.id, "patients");
       const ownerIds = new Set([Number(req.user.id), Number(ownerProfile || 0)]);
@@ -240,10 +240,10 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
     }
   });
 
-  router.post("/doctor/appointments/:id/confirm", requireAuth, requireRole("doctor"), async (req, res, next) => {
+  router.post("/doctor/appointments/:appointmentId/confirm", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
-      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
+      const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       if (Number(appointment.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This appointment belongs to another doctor." });

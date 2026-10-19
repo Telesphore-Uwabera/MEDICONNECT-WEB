@@ -10,6 +10,7 @@ const BASE = "/doctor/certificates";
 
 export type CertStatus =
   | "draft"
+  | "awaiting_payment"
   | "pending"
   | "in_review"
   | "issued"
@@ -18,6 +19,13 @@ export type CertStatus =
   | "revoked";
 
 export type CertPurpose =
+  | "workplace"
+  | "school"
+  | "sports"
+  | "transport"
+  | "food"
+  | "travel"
+  | "construction"
   | "general_fitness"
   | "school_work"
   | "return_to_work"
@@ -26,6 +34,7 @@ export type CertPurpose =
 
 export type CertDecision =
   | "fit"
+  | "fit_with_restrictions"
   | "temporarily_unfit"
   | "needs_physical_exam"
   | "referred";
@@ -89,6 +98,13 @@ export interface Certificate {
   actual_fee_paid: number;
   qr_code: string | null;
   pdf_url: string | null;
+  answers?: Array<{
+    question_key?: string;
+    field?: string;
+    answer?: string;
+    value?: string;
+    boolean_answer?: boolean;
+  }>;
 }
 
 export interface ChecklistAnswer {
@@ -159,6 +175,7 @@ export function useGetCertificates(status?: CertStatus) {
       const res = await apiFetch(url);
       return unwrapList(res);
     },
+    refetchInterval: 10_000,
   });
 }
 
@@ -201,7 +218,7 @@ export function useCreateCertificate() {
 
   return useMutation<Certificate, Error, CreateCertPayload>({
     mutationFn: (payload) =>
-      apiFetch(BASE, { method: "POST", body: JSON.stringify(payload) }),
+      apiFetch(BASE, { method: "POST", body: payload }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: certKeys.list() });
     },
@@ -247,7 +264,7 @@ export function useUpdateCertificate(id: number) {
     mutationFn: async (payload) => {
       const res = await apiFetch(`${BASE}/${id}`, {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: payload,
       });
       const raw = res as CertActionResponse;
       const certificate = unwrapSingle(res);
@@ -276,7 +293,7 @@ export function useSubmitChecklist(id: number) {
     mutationFn: async (answers) => {
       const res = await apiFetch(`${BASE}/${id}/checklist`, {
         method: "POST",
-        body: JSON.stringify({ answers }),
+        body: { answers },
       });
       return unwrapSingle(res);
     },
@@ -352,7 +369,7 @@ export function useRejectCertificate(id: number) {
     mutationFn: async (payload) => {
       const res = await apiFetch(`${BASE}/${id}/reject`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: payload,
       });
       return unwrapSingle(res);
     },
@@ -374,7 +391,7 @@ export function useRevokeCertificate(id: number) {
     mutationFn: async (payload) => {
       const res = await apiFetch(`${BASE}/${id}/revoke`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: payload,
       });
       return unwrapSingle(res);
     },
@@ -458,8 +475,9 @@ export function useToggleAvailability() {
 /** Map API decision value → human-readable label */
 export const DECISION_LABELS: Record<CertDecision, string> = {
   fit: "Fit",
-  temporarily_unfit: "Temporarily unfit",
-  needs_physical_exam: "Needs physical examination",
+  fit_with_restrictions: "Fit with restrictions",
+  temporarily_unfit: "Not fit",
+  needs_physical_exam: "Further assessment required",
   referred: "Referred to nearest facility",
 };
 
@@ -473,6 +491,11 @@ export const STATUS_DISPLAY: Record<
     colorClass: "bg-slate-500/15 text-slate-600 border-slate-400/30",
     dotClass: "bg-slate-500",
   },
+  awaiting_payment: {
+    label: "Awaiting payment",
+    colorClass: "bg-amber-500/15 text-amber-600 border-amber-400/30",
+    dotClass: "bg-amber-500",
+  },
   pending: {
     label: "Pending",
     colorClass: "bg-amber-500/15 text-amber-600 border-amber-400/30",
@@ -485,6 +508,11 @@ export const STATUS_DISPLAY: Record<
   },
   issued: {
     label: "Issued",
+    colorClass: "bg-emerald-500/15 text-emerald-600 border-emerald-400/30",
+    dotClass: "bg-emerald-500",
+  },
+  approved: {
+    label: "Approved",
     colorClass: "bg-emerald-500/15 text-emerald-600 border-emerald-400/30",
     dotClass: "bg-emerald-500",
   },
@@ -554,11 +582,14 @@ export function canMakeDecision(cert: Certificate): boolean {
 
 /** Whether the certificate can be signed (all server prerequisites met) */
 export function canSign(cert: Certificate): boolean {
+  const issuable =
+    cert.decision === "fit" || cert.decision === "fit_with_restrictions";
+  const unrestrictedBlocked =
+    cert.decision === "fit" && (cert.has_red_flags || cert.requires_inperson);
   return (
-    (cert.status === "draft" || cert.status === "in_review") &&
+    (cert.status === "draft" || cert.status === "in_review" || cert.status === "pending") &&
     cert.identity_verified_via_video &&
-    !cert.has_red_flags &&
-    !cert.requires_inperson &&
-    cert.decision === "fit"
+    issuable &&
+    !unrestrictedBlocked
   );
 }

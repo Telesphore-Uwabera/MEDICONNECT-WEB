@@ -27,6 +27,18 @@ export interface ReferralDoctor {
   image?: string | null;
 }
 
+export type ReferralTargetType = "doctor" | "hospital" | "pharmacy";
+
+export interface ReferralOrg {
+  id: number;
+  name: string;
+  slug?: string | null;
+  city?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  image?: string | null;
+}
+
 export interface Referral {
   id: number;
   status: ReferralStatus;
@@ -38,7 +50,22 @@ export interface Referral {
   patient: ReferralPatient;
   referring_doctor?: ReferralDoctor;
   referred_to_doctor?: ReferralDoctor;
+  hospital?: ReferralOrg | null;
+  pharmacy?: ReferralOrg | null;
+  target_type?: ReferralTargetType | "unknown";
   appointment_id?: number | null;
+}
+
+export interface CreateReferralPayload {
+  patient_id: number;
+  appointment_id?: number;
+  instant_consultation_id?: number;
+  referred_to_doctor_id?: number;
+  hospital_id?: number;
+  pharmacy_id?: number;
+  reason: string;
+  notes?: string;
+  urgency?: string;
 }
 
 export interface ReferralsListResponse {
@@ -66,7 +93,15 @@ export function useGetDoctorReferrals(status?: ReferralStatus | "all") {
   const params = status && status !== "all" ? `?status=${status}` : "";
   return useQuery<ReferralsListResponse>({
     queryKey: referralKeys.list(status),
-    queryFn: () => apiFetch(`${BASE}${params}`),
+    queryFn: async () => {
+      const res = await apiFetch<ReferralsListResponse & { data?: Referral[] }>(`${BASE}${params}`);
+      const referrals = Array.isArray(res.referrals)
+        ? res.referrals
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+      return { referrals, total: res.total ?? referrals.length };
+    },
     staleTime: 30_000,
   });
 }
@@ -90,6 +125,20 @@ export function useCancelReferral() {
     mutationFn: (id: number) => apiFetch(`${BASE}/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       // Invalidate all referral list queries regardless of status filter
+      qc.invalidateQueries({ queryKey: referralKeys.all });
+    },
+  });
+}
+
+export function useCreateReferral() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateReferralPayload) =>
+      apiFetch<{ message: string; referral: Referral }>(BASE, {
+        method: "POST",
+        body: payload,
+      }),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: referralKeys.all });
     },
   });

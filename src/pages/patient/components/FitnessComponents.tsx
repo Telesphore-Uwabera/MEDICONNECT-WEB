@@ -29,6 +29,7 @@ import {
   useSaveStep,
   useDownloadCertificate,
   useGetPatientCertificates,
+  useGetAvailableDoctors,
   type CertStatus,
   type Step1Payload,
   type StepAnswersPayload,
@@ -239,6 +240,7 @@ interface Step1Fields {
   purpose: string;
   purpose_other?: string;
   job_type: string;
+  doctor_id?: number;
 }
 
 export function StepPurpose({
@@ -252,23 +254,28 @@ export function StepPurpose({
   const PURPOSES = getPurposes(t);
   const JOB_TYPES = getJobTypes(t);
   const saveStep = useSaveStep();
+  const { data: doctorsData, isLoading: doctorsLoading } = useGetAvailableDoctors();
+  const doctors = doctorsData?.doctors ?? [];
   const { register, handleSubmit, setValue, watch, formState: { errors } } =
     useForm<Step1Fields>({
       defaultValues: {
         purpose: initialData?.purpose ?? "",
         purpose_other: initialData?.purpose_other ?? "",
         job_type: initialData?.job_type ?? "",
+        doctor_id: initialData?.doctor_id,
       },
     });
 
   useEffect(() => {
     register("purpose", { required: t("fitness.purpose_required") });
     register("job_type", { required: t("fitness.job_type_required") });
+    register("doctor_id", { required: t("fitness.doctor_required") });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [register]);
 
   const watchedPurpose = watch("purpose");
   const watchedJobType = watch("job_type");
+  const watchedDoctorId = watch("doctor_id");
   const highRiskJob = watchedJobType && watchedJobType !== JOB_TYPE_NONE;
 
   const onSubmit = (data: Step1Fields) => {
@@ -276,6 +283,7 @@ export function StepPurpose({
       purpose: data.purpose,
       purpose_other: data.purpose === "other" ? (data.purpose_other ?? null) : null,
       job_type: data.job_type,
+      doctor_id: Number(data.doctor_id),
     };
     saveStep.mutate(
       { step: 1, payload },
@@ -310,6 +318,40 @@ export function StepPurpose({
           />
         </FormField>
       )}
+
+      <FormField label={t("fitness.choose_doctor_label")} error={errors.doctor_id?.message}>
+        {doctorsLoading ? (
+          <p className="text-[11px] text-muted-foreground">{t("fitness.choose_doctor_loading")}</p>
+        ) : doctors.length === 0 ? (
+          <p className="text-[11px] text-amber-700 dark:text-amber-400">{t("fitness.choose_doctor_empty")}</p>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {doctors.map((doctor) => {
+              const selected = Number(watchedDoctorId) === Number(doctor.id);
+              return (
+                <button
+                  key={doctor.id}
+                  type="button"
+                  onClick={() => setValue("doctor_id", doctor.id, { shouldValidate: true })}
+                  className={cn(
+                    "text-left rounded-[6px] border px-3 py-2.5 transition-colors",
+                    selected
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/40 hover:bg-secondary/30",
+                  )}
+                >
+                  <p className="text-[12px] font-semibold text-foreground">{doctor.name}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {doctor.pending_load
+                      ? t("fitness.choose_doctor_queue", { count: doctor.pending_load })
+                      : t("fitness.choose_doctor_available")}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </FormField>
 
       <FormField label={t("fitness.job_type_label")} error={errors.job_type?.message}>
         <Select defaultValue={initialData?.job_type} onValueChange={(v) => setValue("job_type", v, { shouldValidate: true })}>

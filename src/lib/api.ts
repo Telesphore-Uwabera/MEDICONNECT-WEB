@@ -1,4 +1,5 @@
 import { getAccessErrorMessage, notifyAccessPrompt } from "@/lib/access-events";
+import { clearAuthToken, emitSessionEnded, getAuthToken } from "@/lib/auth-session";
 import { sanitizePayloadUrls } from "@/lib/image-url";
 import { formDataToWebp } from "@/lib/webp-image";
 
@@ -11,17 +12,6 @@ interface ApiFetchOptions extends Omit<RequestInit, "body"> {
 export interface ApiError extends Error {
   status?: number;
   data?: unknown;
-}
-
-let isPromptingForAuth = false;
-
-function emitLoginPrompt(message: string) {
-  if (isPromptingForAuth) return;
-  isPromptingForAuth = true;
-  notifyAccessPrompt({ reason: "login", message });
-  setTimeout(() => {
-    isPromptingForAuth = false;
-  }, 3000);
 }
 
 async function readJsonSafely(res: Response) {
@@ -38,7 +28,7 @@ export async function apiFetch<T>(
   endpoint: string,
   options?: ApiFetchOptions,
 ): Promise<T> {
-  const token = localStorage.getItem("auth_token");
+  const token = getAuthToken();
   const { body, headers: extraHeaders, ...restOptions } = options ?? {};
   const payload = body instanceof FormData ? await formDataToWebp(body) : body;
   const isFormData = payload instanceof FormData;
@@ -78,15 +68,15 @@ export async function apiFetch<T>(
   if (res.status === 401) {
     const hadToken = !!token;
     const data = await readJsonSafely(res);
-    localStorage.removeItem("auth_token");
 
-    // Only show the global modal when a real session expired.
     // Anonymous 401s (no token) happen naturally on public pages
     // when a component calls an authenticated endpoint — don't
     // interrupt guests with a login prompt for that.
     if (hadToken) {
-      emitLoginPrompt("Your session expired. Sign in again to continue.");
-      const error: ApiError = new Error("Your session expired. Sign in again to continue.");
+      clearAuthToken();
+      const message = "You were signed out because this account signed in on another tab or device.";
+      emitSessionEnded(message);
+      const error: ApiError = new Error(message);
       error.status = 401;
       error.data = data;
       throw error;

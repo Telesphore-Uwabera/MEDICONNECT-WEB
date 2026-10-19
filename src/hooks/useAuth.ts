@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/auth-session";
 import type {
   RegisterPayload, RegisterResponse,
   SendOtpPayload, SendOtpResponse,
@@ -12,8 +13,7 @@ import type {
 
 const AUTH_KEY = ["auth", "me"];
 
-const saveToken = (token: string) => localStorage.setItem("auth_token", token);
-const clearToken = () => localStorage.removeItem("auth_token");
+const saveToken = (token: string) => setAuthToken(token);
 
 function persistSession(
   qc: QueryClient,
@@ -30,7 +30,7 @@ export const useMe = () =>
   useQuery({
     queryKey: AUTH_KEY,
     queryFn: () => apiFetch<MeResponse>("/auth/me"),
-    enabled: !!localStorage.getItem("auth_token"),
+    enabled: !!getAuthToken(),
     select: (data) => data.user,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
@@ -104,9 +104,7 @@ export const useLogout = () => {
     mutationFn: () =>
       apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
     onSettled: () => {
-      // Only remove auth-specific keys — do not wipe unrelated localStorage data
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("guest_token");
+      clearAuthToken();
       qc.clear();
     },
   });

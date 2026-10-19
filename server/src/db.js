@@ -88,14 +88,30 @@ export function present(row, cols) {
   return out;
 }
 
+export function paymentServiceFields(row) {
+  const raw = `${row?.payable_type || ""} ${row?.type || ""} ${row?.payment_type || ""} ${row?.description || ""}`.toLowerCase();
+  if (raw.includes("fitness")) return { service: "Fitness certificate", service_key: "fitness_certificate" };
+  if (raw.includes("instant")) return { service: "Instant consultation", service_key: "instant_consultation" };
+  if (raw.includes("appointment")) return { service: "Appointment", service_key: "appointment" };
+  if (raw.includes("pharmacy") || raw.includes("order")) return { service: "Pharmacy order", service_key: "pharmacy_order" };
+  if (raw.includes("service")) return { service: "Facility service", service_key: "service_booking" };
+  return { service: row?.description || "Payment", service_key: "other" };
+}
+
 export async function presentRow(table, row) {
   if (!row) return null;
-  return present(row, await columns(table));
+  const out = present(row, await columns(table));
+  if (table === "payments") Object.assign(out, paymentServiceFields(out));
+  return out;
 }
 
 export async function presentRows(table, rows) {
   const cols = await columns(table);
-  return rows.map((row) => present(row, cols));
+  return rows.map((row) => {
+    const out = present(row, cols);
+    if (table === "payments") Object.assign(out, paymentServiceFields(out));
+    return out;
+  });
 }
 
 export function pageArgs(req, fallback = 10) {

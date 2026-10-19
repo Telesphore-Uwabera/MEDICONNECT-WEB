@@ -6,6 +6,7 @@ import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } 
 import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
 import { callToken, relayDiagnostics, roomFromToken } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
+import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { releaseSlot } from "./visit-rules.js";
 
@@ -295,6 +296,9 @@ async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
     if (appointment && String(appointment.payment_status || "").toLowerCase() !== "paid") {
       await update("appointments", appointment.id, { payment_status: "paid" });
     }
+  }
+  if (payableId && payableType.toLowerCase().includes("fitness")) {
+    await markFitnessCertificatePaid(payableId, payment.amount).catch(() => null);
   }
   const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
   if (notify && String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
@@ -745,6 +749,20 @@ async function doctorStats(whereSql, params) {
 }
 
 export function publicRoutes(router) {
+  router.get("/public/verify/:certificateNumber", async (req, res, next) => {
+    try {
+      if (!(await handlePublicFitness(req, res))) next();
+    } catch (error) {
+      next(error);
+    }
+  });
+  router.get("/public/certificates/file/:token", async (req, res, next) => {
+    try {
+      if (!(await handlePublicFitness(req, res))) next();
+    } catch (error) {
+      next(error);
+    }
+  });
   router.get("/public/doctors/available-doctors", async (req, res, next) => {
     try {
       await autoDisableInstantOutsideSchedule().catch(() => null);

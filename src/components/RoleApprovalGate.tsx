@@ -307,9 +307,10 @@ export function RoleApprovalGate({
 
     enabled: shouldCheckProfile,
     retry: false,
-    staleTime: 0,
-    gcTime: 1000 * 60 * 5,
-    refetchOnMount: "always",
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    placeholderData: (previous) => previous,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
   });
 
@@ -339,7 +340,7 @@ export function RoleApprovalGate({
       isLoadingUser ||
       switchingRole ||
       !roleContextReady ||
-      (shouldCheckProfile && accessQuery.isPending)
+      (shouldCheckProfile && accessQuery.isPending && !accessQuery.data)
     );
 
   const roleLabel = guardedRole

@@ -34,8 +34,10 @@ import { formatDateOnly } from "@/lib/date";
 import {
   useDownloadCertificate,
   useJoinConfirmationSession,
+  useSubmitCertificate,
   isDownloadPaymentRequired,
   isDownloadReady,
+  isSubmitPaymentRequired,
   type Certificate,
   type DownloadPaymentRequired,
   type CertificateAnswer,
@@ -57,6 +59,12 @@ function getStatusConfig(t: TFunction): Record<
       badgeCls: "bg-muted/60 text-muted-foreground border-border",
       icon: Clock,
       dotCls: "bg-muted-foreground",
+    },
+    awaiting_payment: {
+      label: t("fitness.status_awaiting_payment"),
+      badgeCls: "bg-amber-500/10 text-amber-600 border-amber-500/25",
+      icon: Clock,
+      dotCls: "bg-amber-500",
     },
     pending: {
       label: t("fitness.status_pending_review"),
@@ -456,7 +464,9 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
   const [isRefreshingDownloadInvoice, setIsRefreshingDownloadInvoice] = useState(false);
 
   const downloadMutation = useDownloadCertificate();
+  const payMutation = useSubmitCertificate();
   const isApproved = cert.status === "issued";
+  const needsPay = cert.status === "awaiting_payment";
 
   //   Video identity verification (join the doctor's session)  
   const { startCall } = useCallContext();
@@ -668,8 +678,34 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
             <div className="flex-1" />
 
-            {/* Join verification call  while a review is pending identity check */}
-            {/* {canVerify && (
+            {needsPay && downloadPhase === "idle" && (
+              <Button
+                size="sm"
+                onClick={async () => {
+                  setDownloadPhase("loading");
+                  try {
+                    const res = await payMutation.mutateAsync();
+                    if (isSubmitPaymentRequired(res)) {
+                      setDownloadPayment(res as DownloadPaymentRequired);
+                      setDownloadPhase("payment");
+                    } else {
+                      toast.success(t("fitness.submitted_title"));
+                      setDownloadPhase("idle");
+                    }
+                  } catch (err) {
+                    toast.error((err as Error)?.message || t("fitness.submission_failed"));
+                    setDownloadPhase("idle");
+                  }
+                }}
+                disabled={payMutation.isPending}
+                className="h-8 text-xs font-bold gap-1.5 rounded-[6px] bg-primary text-primary-foreground"
+              >
+                {payMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {t("fitness.submit_and_pay")}
+              </Button>
+            )}
+
+            {canVerify && (
               <Button
                 size="sm"
                 onClick={handleJoinVerification}
@@ -681,9 +717,9 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                 ) : (
                   <Video className="h-4 w-4" />
                 )}
-                Join verification call
+                {t("fitness.join_verification_call")}
               </Button>
-            )} */}
+            )}
 
             {/* Download  only for approved */}
             {isApproved && downloadPhase === "idle" && (

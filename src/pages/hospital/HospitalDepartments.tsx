@@ -783,7 +783,7 @@ const HospitalDepartments = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.hospital.departments_title")}
-          subtitle={t("pages.hospital.departments_sub")}
+          subtitle={t("pages.hospital.departments_sub", { count: filtered.length })}
         />
 
 

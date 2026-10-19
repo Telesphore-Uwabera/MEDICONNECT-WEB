@@ -7,6 +7,10 @@ import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { DOCTOR_WORK_STATUSES, VISIT_TABLES, releaseSlot, visitAwaitsPayment, visitBodyGuard, visitOpenTo } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
+import { handleCareReferrals } from "./care-referrals.js";
+import { handleCareOrders } from "./care-orders.js";
+import { handleFitnessCertificates } from "./fitness-certificates.js";
+import { isDedicatedResource } from "./dedicated-ids.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -44,7 +48,7 @@ function segments(req) {
 }
 
 function tableFor(name, RESOURCES) {
-  if (!name) return null;
+  if (!name || isDedicatedResource(name)) return null;
   return RESOURCES[name] || name.replace(/-/g, "_");
 }
 
@@ -326,6 +330,9 @@ async function ownedExtra(scope, userId, table) {
 
 async function fillGap(req, res, parts) {
   if (!parts.length || parts[0] === "public") return false;
+  if (await handleCareReferrals(req, res, parts)) return true;
+  if (await handleCareOrders(req, res, parts)) return true;
+  if (await handleFitnessCertificates(req, res, parts)) return true;
 
   if (req.method === "GET" && parts.length === 2 && parts[1] === "dashboard") {
     if (parts[0] === "pharmacy") {
@@ -386,10 +393,6 @@ async function fillGap(req, res, parts) {
     return true;
   }
 
-  if (req.method === "GET" && parts[0] === "patient" && parts[1] === "certificates" && parts[2] === "request") {
-    res.json({ certificate: null });
-    return true;
-  }
 
   if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2] === "public") {
     res.json({ settings: {} });
@@ -671,6 +674,9 @@ export function registerActions(router, RESOURCES) {
     try {
       const parts = segments(req);
       if (!req.user) return res.status(401).json({ message: "Unauthenticated." });
+      if (await handleCareOrders(req, res, parts)) return;
+      if (await handleCareReferrals(req, res, parts)) return;
+      if (await handleFitnessCertificates(req, res, parts)) return;
       if (parts[0] === "patient" && parts[1] === "pharmacy-orders") {
         return handlePharmacyOrders(req, res, parts);
       }

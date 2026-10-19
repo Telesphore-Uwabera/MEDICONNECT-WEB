@@ -25,6 +25,8 @@ export interface AdminDashboardData {
   certificates: {
     pending: number;
     approved: number;
+    awaiting_payment?: number;
+    paid_revenue?: string;
   };
   quick_consultations: {
     active: number;

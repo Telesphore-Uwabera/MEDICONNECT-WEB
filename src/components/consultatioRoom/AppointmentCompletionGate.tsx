@@ -20,7 +20,11 @@ import {
 import { ConsultationSummaryModal } from "@/pages/doctor/appointments/shared/ConsultationSummaryModal";
 import { QuickPrescriptionModal } from "@/pages/doctor/appointments/shared/QuickPrescriptionModal";
 import { BookPhysicalModal } from "@/pages/doctor/appointments/shared/BookPhysicalModal";
-import { TransferPatientPrompt } from "@/pages/doctor/appointments/shared/TransferPatientPrompt";
+import { CareContinuePanel, orderTypeFromChoice, referralKindFromChoice } from "@/pages/doctor/appointments/shared/CareContinuePanel";
+import { ReferralCreateModal } from "@/pages/doctor/appointments/shared/ReferralCreateModal";
+import { ClinicalOrderModal } from "@/pages/doctor/appointments/shared/ClinicalOrderModal";
+import type { ReferralTargetType } from "@/hooks/doctor/use-doctor-referrals";
+import type { CareOrderType } from "@/hooks/doctor/use-care-orders";
 import { getErrMsg } from "@/pages/doctor/appointments/shared/helpers";
 
 export function AppointmentCompletionGate() {
@@ -45,7 +49,10 @@ function CompletionFlow({
 }) {
   const { data, isLoading } = useGetAppointment(appointmentId);
   const complete = useCompleteAppointment();
-  const [step, setStep] = useState<"record" | "prescription" | "transfer" | "booking">("record");
+  const [step, setStep] = useState<"record" | "prescription" | "continue" | "booking" | "refer" | "order">("record");
+  const [referKind, setReferKind] = useState<ReferralTargetType>("hospital");
+  const [orderKind, setOrderKind] = useState<CareOrderType>("lab");
+  const backToContinue = () => setStep("continue");
 
   const appt = data?.appointment;
   const patientId = appt?.patient?.id ?? null;
@@ -105,34 +112,84 @@ function CompletionFlow({
         patientName={patientName}
         defaultDiagnosis={defaultDiagnosis}
         defaultNotes={defaultNotes}
-        onSkip={() => setStep("transfer")}
-        onDone={() => setStep("transfer")}
+        onSkip={() => setStep("continue")}
+        onDone={() => setStep("continue")}
       />
     );
   }
 
-  // Step 3 - ask whether to transfer the patient before opening booking.
-  if (step === "transfer") {
+  if (step === "continue") {
     return (
-      <TransferPatientPrompt
+      <CareContinuePanel
         patientName={patientName}
-        onConfirm={() => setStep("booking")}
-        onDecline={finalize}
+        onChoose={(choice) => {
+          if (choice === "done") {
+            finalize();
+            return;
+          }
+          if (choice === "facility-book") {
+            setStep("booking");
+            return;
+          }
+          const referral = referralKindFromChoice(choice);
+          if (referral) {
+            setReferKind(referral);
+            setStep("refer");
+            return;
+          }
+          const orderType = orderTypeFromChoice(choice);
+          if (orderType) {
+            setOrderKind(orderType);
+            setStep("order");
+          }
+        }}
       />
     );
   }
 
-  // Step 4 - optional: book a physical hospital visit, then complete.
+  if (step === "refer") {
+    return (
+      <ReferralCreateModal
+        open
+        kind={referKind}
+        patientId={patientId}
+        patientName={patientName}
+        appointmentId={appointmentId}
+        defaultReason={defaultNotes}
+        onClose={backToContinue}
+        onSkip={backToContinue}
+        onCreated={backToContinue}
+      />
+    );
+  }
+
+  if (step === "order") {
+    return (
+      <ClinicalOrderModal
+        open
+        kind={orderKind}
+        patientId={patientId}
+        patientName={patientName}
+        appointmentId={appointmentId}
+        defaultNotes={defaultNotes}
+        defaultDiagnosis={defaultDiagnosis}
+        onClose={backToContinue}
+        onSkip={backToContinue}
+        onCreated={backToContinue}
+      />
+    );
+  }
+
   return (
     <BookPhysicalModal
       open
-      onClose={onDone}
+      onClose={backToContinue}
       patientId={patientId}
       patientName={patientName}
       patientPhone={patientPhone}
       defaultNotes={defaultNotes}
-      onSkip={finalize}
-      onBooked={finalize}
+      onSkip={backToContinue}
+      onBooked={backToContinue}
     />
   );
 }
