@@ -10,6 +10,7 @@ import echo from "@/lib/echo";
 import { ChatPanel } from "@/components/consultatioRoom/ChatPanel";
 import { IllnessProofPanel } from "@/components/consultatioRoom/IllnessProofPanel";
 import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSidebar";
+import { useGetAppointment } from "@/hooks/doctor/use-doctor-appointment";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -73,6 +74,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedSinceRef = useRef<number | null>(null);
   const durationWarningShownRef = useRef(false);
+  const durationHideTimerRef = useRef<number | null>(null);
   const seenSignalIds = useRef(new Set<number>());
   // Deduplication for offer/answer by SDP fingerprint (prevents processing the
   // same SDP twice when it arrives via both WebSocket and HTTP poll).
@@ -111,6 +113,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   roomTokenRef.current = roomToken;
 
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [mutedByDoctor, setMutedByDoctor] = useState(false);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [connState, setConnState] = useState<ConnectionState>("connecting");
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -248,6 +251,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const { isTalking: remoteTalking } = useAudioVolume(remoteStream);
 
   const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [peerDisplayName, setPeerDisplayName] = useState<string | null>(null);
 
   // Consultation id the peer told us about (see consultation-meta signal below).
   // Used when our own token didn't carry one — e.g. a patient whose token was
@@ -298,6 +302,44 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // Scheduled appointments tag the token so chat uses the appointment endpoints.
   const chatMode: "instant" | "appointment" =
     (token as any)?.chat_mode === "appointment" ? "appointment" : "instant";
+  const { data: notesAppointment } = useGetAppointment(
+    isOwner && chatMode === "appointment" ? (effectiveConsultationId ?? 0) : 0,
+  );
+  const notesPatientId = useMemo(() => {
+    const t = token as any;
+    const candidates = [
+      notesAppointment?.appointment?.patient?.id,
+      t?.patient_id,
+      t?.patientId,
+      t?.patient?.id,
+      t?.user_id,
+    ];
+    for (const candidate of candidates) {
+      const id = Number(candidate);
+      if (Number.isFinite(id) && id > 0) return id;
+    }
+    return null;
+  }, [notesAppointment, token]);
+  const notesPatientName =
+    notesAppointment?.appointment?.patient?.name ||
+    (token as any)?.patient_name ||
+    (token as any)?.patient?.name ||
+    (token as any)?.guest_name ||
+    "";
+  const notesPatientPhone =
+    notesAppointment?.appointment?.patient?.phone ||
+    (token as any)?.patient_phone ||
+    (token as any)?.patient?.phone ||
+    (token as any)?.guest_phone ||
+    "";
+  const isGenericCallName = (value?: string | null) =>
+    !value || /^(doctor|patient|you)$/i.test(value.trim());
+  const remoteDisplayName = isOwner
+    ? (notesPatientName.trim() ||
+        (!isGenericCallName(peerDisplayName) ? peerDisplayName : "") ||
+        t("consult.call.patient", { defaultValue: "Patient" }))
+    : (!isGenericCallName(peerDisplayName) ? peerDisplayName : "") ||
+      t("consult.call.doctor", { defaultValue: "Doctor" });
   const proofAppointmentId = chatMode === "appointment" ? effectiveConsultationId : null;
   const proofInstantConsultationId = chatMode === "instant" ? effectiveConsultationId : null;
   const isInstantRoom = chatMode === "instant" && /instant/i.test(roomName ?? "");
@@ -654,6 +696,15 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     }
     if (payload.from === selfId) return;
 
+    const fromName = String(payload.from ?? "").split("#")[0]?.trim();
+    if (fromName) {
+      setPeerDisplayName((prev) => {
+        const generic = (value?: string | null) => !value || /^(doctor|patient|you)$/i.test(value.trim());
+        if (!generic(prev) && prev) return prev;
+        return fromName;
+      });
+    }
+
     // SDP-based deduplication for offer/answer — the same SDP can arrive via
     // both WebSocket and HTTP poll. Use first 120 chars as a stable fingerprint.
     if (payload.type === "offer" || payload.type === "answer") {
@@ -780,6 +831,17 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           // ICE still completes on the valid ones — keep it quiet at debug level.
           console.debug("[WebRTC] Skipped an ICE candidate that couldn't be added", err);
         }
+      }
+      else if (payload.type === "force-audio") {
+        if (isOwner) return;
+        const enabled = Boolean((payload.data as { enabled?: boolean })?.enabled);
+        setMutedByDoctor(!enabled);
+        localStreamRef.current?.getAudioTracks().forEach((t) => {
+          t.enabled = enabled;
+        });
+        setAudioEnabled(enabled);
+        sendSignal("media-status", { audio: enabled, video: videoEnabled });
+        toast.info(enabled ? t("consult.call.doctor_unmuted_you") : t("consult.call.doctor_muted_you"));
       }
       else if (payload.type === "media-status") {
         const { audio, video } = payload.data as { audio: boolean, video: boolean };
@@ -981,6 +1043,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       cancelled = true;
       if (signalTimer) clearTimeout(signalTimer);
       if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+      sendSignalRef.current?.("bye");
       if (channelRef.current) {
         channelRef.current.stopListening(".webrtc.signal");
         echo.leaveChannel(`consultation.${roomName}`);
@@ -995,10 +1058,21 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const toggleAudio = () => {
+    if (!isOwner && mutedByDoctor) {
+      toast.info(t("consult.call.muted_by_doctor"));
+      return;
+    }
     const nextAudio = !audioEnabled;
     localStreamRef.current?.getAudioTracks().forEach((t) => (t.enabled = nextAudio));
     setAudioEnabled(nextAudio);
     sendSignal("media-status", { audio: nextAudio, video: videoEnabled });
+  };
+
+  const togglePatientAudio = () => {
+    if (!isOwner) return;
+    const next = !remoteAudioEnabled;
+    setRemoteAudioEnabled(next);
+    sendSignal("force-audio", { enabled: next });
   };
 
   const toggleVideo = () => {
@@ -1029,9 +1103,12 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   useEffect(() => {
     durationWarningShownRef.current = false;
+    if (durationHideTimerRef.current) window.clearTimeout(durationHideTimerRef.current);
+    durationHideTimerRef.current = null;
     setDurationWarningVisible(false);
     setRelayIssue(null);
     setRelayIssueVisible(false);
+    setPeerDisplayName(null);
   }, [roomName]);
 
   const durationWarningTitle =
@@ -1070,7 +1147,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     durationWarningShownRef.current = true;
     setDurationWarningVisible(true);
 
-    toast.warning(durationWarningMessage, { description: durationWarningTitle, duration: 10_000 });
+    toast.warning(durationWarningMessage, { description: durationWarningTitle, duration: 60_000 });
+    if (durationHideTimerRef.current) window.clearTimeout(durationHideTimerRef.current);
+    durationHideTimerRef.current = window.setTimeout(() => setDurationWarningVisible(false), 60_000);
 
     const audio = new Audio(ALERT_AUDIO_SRC);
     audio.volume = 0.75;
@@ -1407,9 +1486,24 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           )}
           {/* ── Notes panel ─────────────────────────────────────────────────── */}
           {!isMinimized && isOwner && (
-            <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
-              <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full bg-[#0c0c0c] border-l border-white/10 shadow-2xl">
-                <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} mode={chatMode} />
+            <div
+              className={cn(
+                "z-30 overflow-hidden transition-all duration-300 ease-in-out",
+                notesOpen
+                  ? "absolute inset-x-0 bottom-0 h-[min(52vh,30rem)] pointer-events-auto sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-[20.5rem] md:w-[22rem]"
+                  : "absolute inset-x-0 bottom-0 h-0 pointer-events-none sm:inset-y-0 sm:left-auto sm:right-0 sm:h-full sm:w-0",
+              )}
+            >
+              <div className="relative h-full w-full bg-[#0c0c0c]/95 backdrop-blur-md border-t sm:border-t-0 sm:border-l border-white/10 shadow-2xl">
+                <InstantNotesSidebar
+                  onClose={() => setNotesOpen(false)}
+                  consultationId={effectiveConsultationId}
+                  patientId={notesPatientId}
+                  patientName={notesPatientName}
+                  patientPhone={notesPatientPhone}
+                  mode={chatMode}
+                  variant="call"
+                />
               </div>
             </div>
           )}
@@ -1422,6 +1516,11 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             <button onClick={toggleAudio} title={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-label={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-400 text-white", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
               {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
             </button>
+            {isOwner && (
+              <button onClick={togglePatientAudio} title={remoteAudioEnabled ? t("consult.call.mute_patient") : t("consult.call.unmute_patient")} aria-label={remoteAudioEnabled ? t("consult.call.mute_patient") : t("consult.call.unmute_patient")} aria-pressed={!remoteAudioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", remoteAudioEnabled ? "bg-amber-500/80 hover:bg-amber-400 text-white" : "bg-red-500 hover:bg-red-400 text-white")}>
+                {remoteAudioEnabled ? <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+              </button>
+            )}
 
             <button onClick={toggleVideo} title={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-label={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-400 text-white")}>
               {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
@@ -1551,10 +1650,23 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                       </div>
                       {remoteTalking && remoteAudioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
                     </div>
-                    <span className="text-[12px] text-white max-w-[90px] truncate">{token.username}</span>
+                    <span className="text-[12px] text-white max-w-[140px] truncate">{remoteDisplayName}</span>
                   </div>
                   <div className="flex items-center gap-2 text-white/40">
-                    {remoteAudioEnabled ? <Mic className={cn("w-3.5 h-3.5", remoteTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                    {isOwner ? (
+                      <button
+                        type="button"
+                        onClick={togglePatientAudio}
+                        title={remoteAudioEnabled ? t("consult.call.mute_patient") : t("consult.call.unmute_patient")}
+                        className="hover:text-white"
+                      >
+                        {remoteAudioEnabled ? <Mic className={cn("w-3.5 h-3.5", remoteTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                      </button>
+                    ) : remoteAudioEnabled ? (
+                      <Mic className={cn("w-3.5 h-3.5", remoteTalking && "text-emerald-400")} />
+                    ) : (
+                      <MicOff className="w-3.5 h-3.5 text-red-400" />
+                    )}
                     {remoteVideoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
                   </div>
                 </div>

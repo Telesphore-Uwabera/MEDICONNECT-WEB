@@ -92,12 +92,18 @@
   "activeRole": "Uruhare rukora",
   "instantDoctors": "Abaganga bo ako kanya",
   "wallet": "Amakofa",
-  "consultationSummaries": "Incamake z'inama",
+  "consultationSummaries": "Consultations",
   "medicalRecords": "Inyandiko z'ubuvuzi",
   "hideSidebar": "Hisha urutonde",
   "showSidebar": "Erekana urutonde",
   "schedule": "Ingengabihe",
   "certificationDoctor": "Umuganga w'Impamyabushobozi",
   "helpCenterLinks": "Imiyoboro y'Ubufasha",
-  "refunds": "Gusubizwa"
+  "refunds": "Gusubizwa",
+  "documents": "Inyandiko",
+  "family": "Umuryango",
+  "billing": "Amafaranga n'inyemezabuguzi",
+  "earnings": "Amafaranga yinjiye",
+  "followUps": "Gukurikirana",
+  "inbox": "Ubutumwa"
 }

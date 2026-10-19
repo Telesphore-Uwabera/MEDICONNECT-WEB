@@ -45,6 +45,10 @@ import {
   PanelLeftOpen,
   ArrowRightLeft,
   Bell,
+  Wallet,
+  Inbox,
+  CreditCard,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -200,6 +204,15 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           icon: CheckCircle,
         },
         { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
+        { to: "/doctor/patients", label: t("sidebar.patients"), icon: Users },
+        { to: "/doctor/follow-ups", label: t("sidebar.followUps"), icon: History },
+      ],
+    },
+    {
+      heading: t("sidebar.group.finance"),
+      items: [
+        { to: "/doctor/earnings", label: t("sidebar.earnings"), icon: Wallet },
+        { to: "/doctor/inbox", label: t("sidebar.inbox"), icon: Inbox },
       ],
     },
     {
@@ -319,6 +332,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.records"),
       items: [
         {
+          to: "/patient/documents",
+          label: t("sidebar.documents"),
+          icon: FolderOpen,
+        },
+        {
           to: "/patient/medical-records",
           label: t("sidebar.medicalRecords"),
           icon: FileText,
@@ -338,6 +356,16 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           to: "/patient/my-reviews",
           label: t("sidebar.myReviews"),
           icon: Star,
+        },
+        {
+          to: "/patient/family",
+          label: t("sidebar.family"),
+          icon: Users,
+        },
+        {
+          to: "/patient/billing",
+          label: t("sidebar.billing"),
+          icon: CreditCard,
         },
       ],
     },

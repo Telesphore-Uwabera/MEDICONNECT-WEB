@@ -98,7 +98,7 @@ export async function presentRows(table, rows) {
   return rows.map((row) => present(row, cols));
 }
 
-export function pageArgs(req, fallback = 15) {
+export function pageArgs(req, fallback = 10) {
   const page = Math.max(1, Number(req.query.page) || 1);
   const perPage = Math.min(100, Math.max(1, Number(req.query.per_page) || fallback));
   return { page, perPage, offset: (page - 1) * perPage };

@@ -8,6 +8,7 @@ import {
   summaryRedFlagList,
   type ConsultationSummary,
 } from "@/hooks/doctor/use-consultation-summaries";
+import { parseIdentityFromHtml, stripIdentityFromAttachments } from "@/lib/call-note-form";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { richDocumentCss, richDocumentHtml } from "@/lib/document-rich-text";
 
@@ -221,7 +222,9 @@ export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBran
   const womensHistory = summaryFieldText(s.womens_health_history);
   const pediatricHistory = summaryFieldText(s.pediatric_history);
   const physicalExam = summaryFieldText(s.physical_examination);
-  const attachments = summaryFieldText(s.attachments);
+  const attachmentsRaw = summaryFieldText(s.attachments);
+  const identity = parseIdentityFromHtml(attachmentsRaw);
+  const attachments = stripIdentityFromAttachments(attachmentsRaw);
   const clinicalAssessment = summaryFieldText(s.clinical_assessment, "primary_diagnosis");
   const managementPlan = summaryFieldText(s.management_plan, "followup_plan");
   const flags = summaryRedFlagList(s.red_flag_screening);
@@ -262,7 +265,16 @@ export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBran
     ${contactBlock(brand)}
     ${alert ? `<div class="alert">Alert: Urgent in-person evaluation required if positive.</div>` : ""}
 
-    ${section("Patient Information", row("Patient Name", esc(patientName(s))) + row("Patient ID", esc(s.patient_id)))}
+    ${section(
+      "Patient Information",
+      row("Patient Name", esc(identity.full_name || patientName(s))) +
+        row("Patient ID", esc(identity.patient_id || s.patient_id)) +
+        (identity.phone ? row("Phone", esc(identity.phone)) : "") +
+        (identity.date_of_birth ? row("Date of birth", esc(identity.date_of_birth)) : "") +
+        (identity.gender ? row("Gender", esc(identity.gender)) : "") +
+        (identity.national_id ? row("National ID", esc(identity.national_id)) : "") +
+        (identity.address ? row("Address", esc(identity.address)) : ""),
+    )}
     ${section("Attending Doctor Information", row("Doctor Name", esc(dn || "-")))}
     ${section("Document Information", row("Summary ID", esc(s.id)) + row("Consultation Type", isInstant ? "Instant" : "Appointment") + row("Generated On", esc(fmtDate(new Date().toISOString()))))}
     ${section("Clinical Story", row("Chief Complaint", `<div class="rich-cell">${richDocumentHtml(chiefComplaint)}</div>`) + row("History of Present Illness", `<div class="rich-cell">${richDocumentHtml(hpi)}</div>`) + row("Review of Systems", `<div class="rich-cell">${richDocumentHtml(review)}</div>`) + row("Physical Examination", `<div class="rich-cell">${richDocumentHtml(physicalExam)}</div>`))}

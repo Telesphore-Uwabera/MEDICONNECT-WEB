@@ -18,6 +18,7 @@ import PatientStats from "./components/PatientStats";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActions";
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
+import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
 import { format, parseISO } from "date-fns";
 import moment from "moment";
 import "moment/locale/fr";
@@ -131,8 +132,9 @@ const PatientOverview = () => {
   };
 
   // ── Appointments (real API) ──────────────────────────────────────────────
+  const { data: dash } = useGetPatientStats({ period: "all" });
   const { data: appointmentsData, isLoading: appointmentsLoading } =
-    useGetPatientAppointments();
+    useGetPatientAppointments({ per_page: 50 });
 
   const upcomingAppointments = (appointmentsData?.data ?? [])
     .filter((a) =>
@@ -140,13 +142,18 @@ const PatientOverview = () => {
         a.status as (typeof UPCOMING_STATUSES)[number],
       ),
     )
-    // sort soonest first by appointment_date
     .sort(
       (a, b) =>
         new Date(a.appointment_date).getTime() -
         new Date(b.appointment_date).getTime(),
     )
-    .slice(0, 3); // show at most 5 in the overview
+    .slice(0, 3);
+  const dashToday = (dash as { today?: { confirmed?: number; instant_active?: number } } | undefined)?.today;
+  const dashInstant = (dash as { instant?: { active_now?: number; total?: number } } | undefined)?.instant;
+  const dashRx = (dash as { prescriptions?: { total?: number; active?: number } } | undefined)?.prescriptions;
+  const upcomingCount = dashToday?.confirmed ?? upcomingAppointments.length;
+  const instantCount = dashInstant?.active_now ?? dashToday?.instant_active ?? 0;
+  const rxCount = dashRx?.active ?? dashRx?.total ?? 0;
 
   // ── Available now (instant consultation doctors) ─────────────────────────
   // /patient/search/doctors?instant=true&page=2&per_page=10
@@ -180,14 +187,14 @@ const PatientOverview = () => {
                 },
                 {
                   label: t("pages.patient.quick_appointments_label"),
-                  hint: t("pages.patient.quick_appointments_hint", { count: upcomingAppointments.length }),
+                  hint: t("pages.patient.quick_appointments_hint", { count: upcomingCount }),
                   to: "/patient/appointments",
                   icon: Calendar,
                   tone: "text-sky-500 bg-sky-500/10",
                 },
                 {
                   label: t("pages.patient.quick_instant_label"),
-                  hint: t("pages.patient.quick_instant_hint", { count: availableNow.length }),
+                  hint: t("pages.patient.quick_instant_hint", { count: instantCount || availableNow.length }),
                   to: "/patient/instant",
                   icon: Activity,
                   tone: "text-violet-500 bg-violet-500/10",

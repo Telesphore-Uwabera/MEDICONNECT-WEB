@@ -269,12 +269,12 @@ function AdminOurTeam() {
 
   const { data, isLoading, isError } = useGetAdminTeam({
     page: filters.page,
-    per_page: 20,
+    per_page: 10,
   });
 
   const members = data?.data ?? [];
   const total = data?.total ?? 0;
-  const perPage = 20;
+  const perPage = 10;
   const totalPages = Math.ceil(total / perPage);
 
   const activeCount = useMemo(() => members.filter((m) => m.is_active).length, [members]);

@@ -87,11 +87,17 @@
   "wallet": "Wallets",
   "system_settings": "System Settings",
   "system_communication": "System Communication",
-  "consultationSummaries": "Consultation Summaries",
+  "consultationSummaries": "Consultations",
   "medicalRecords": "Medical Records",
   "hideSidebar": "Hide sidebar",
   "showSidebar": "Show sidebar",
   "certificationDoctor": "Certification Doctor",
   "helpCenterLinks": "Help Center Links",
-  "refunds": "Refunds"
+  "refunds": "Refunds",
+  "documents": "Documents",
+  "family": "Family",
+  "billing": "Bills & receipts",
+  "earnings": "Earnings",
+  "followUps": "Follow-ups",
+  "inbox": "Inbox"
 }

@@ -612,8 +612,13 @@ const DoctorAvailability = () => {
     isFetching: slotsFetching,
   } = useGetSlots(
     generatedRange
-      ? { from: generatedRange.from, to: generatedRange.to }
-      : undefined,
+      ? {
+          from: generatedRange.from > moment().format("YYYY-MM-DD")
+            ? generatedRange.from
+            : moment().format("YYYY-MM-DD"),
+          to: generatedRange.to,
+        }
+      : { from: moment().format("YYYY-MM-DD") },
   );
 
   const updateSlotMutation = useUpdateSlot();
@@ -648,7 +653,9 @@ const DoctorAvailability = () => {
   /* ── Build day list from slots response ── */
   const days = useMemo(() => {
     if (!slotsData?.slots) return [];
+    const start = moment().format("YYYY-MM-DD");
     return Object.entries(slotsData.slots)
+      .filter(([date]) => date >= start)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, slots]) => ({ date, slots }));
   }, [slotsData]);

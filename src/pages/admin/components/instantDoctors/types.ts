@@ -19,7 +19,7 @@ export interface FilterState {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const PAGE_SIZE = 20;
+export const PAGE_SIZE = 10;
 
 export const INITIAL_FILTERS: FilterState = {
   search: "", status: "all", override: "all", instant: "all", sort: "name", page: 1,

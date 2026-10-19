@@ -6,6 +6,7 @@ import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { DOCTOR_WORK_STATUSES, VISIT_TABLES, releaseSlot, visitAwaitsPayment, visitBodyGuard, visitOpenTo } from "./visit-rules.js";
+import { notifyAppointmentRescheduled } from "./visit-notify.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -570,6 +571,9 @@ async function fillGap(req, res, parts) {
   if (action === "reschedule" && id) {
     await update(table, id, req.body ?? {});
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    if (table === "appointments" || VISIT_TABLES.has(table)) {
+      notifyAppointmentRescheduled(row ?? current).catch(() => null);
+    }
     res.json({ message: "Rescheduled.", data: row, ...(row ?? {}) });
     return true;
   }

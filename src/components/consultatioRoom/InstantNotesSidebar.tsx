@@ -1,240 +1,426 @@
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileText, X, Check, Loader2 } from "lucide-react";
-import {
-  prepareRichTextForSave,
-  RichTextarea,
-  richTextToPlainText,
-} from "@/components/ui/rich-textarea";
+import { ChevronDown, ChevronUp, FileText, X, Check, Loader2, User } from "lucide-react";
 import {
   useSaveInstantNotes,
   useAddNotes,
   useUpdateNotes,
   useGetAppointment,
 } from "@/hooks/doctor/use-doctor-appointment";
+import {
+  summaryFieldText,
+  useConsultationSummaries,
+  useCreateConsultationSummary,
+  useUpdateConsultationSummary,
+  type ConsultationSummary,
+} from "@/hooks/doctor/use-consultation-summaries";
+import { usePatientMedicalRecord } from "@/hooks/doctor/use-doctor-patient-record";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { ApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import {
+  chartHasClinicalContent,
+  chartToAppointmentNotes,
+  chartToInstantNotesText,
+  chartToSummaryFields,
+  emptyCallChart,
+  parseCallChart,
+  parseIdentityFromHtml,
+  parseProofsFromHtml,
+  parseVitalsFromExamination,
+  readCallChart,
+  resolvedPatientId,
+  writeCallChart,
+  type CallChart,
+  type PatientIdentity,
+} from "@/lib/call-note-form";
 
 interface Props {
   onClose: () => void;
   consultationId?: number;
+  patientId?: number | null;
   patientName?: string;
-  /** "instant" (default) saves to the instant-consultation notes endpoint;
-   *  "appointment" persists to /doctor/appointments/:id/notes (additional_notes). */
+  patientPhone?: string;
   mode?: "instant" | "appointment";
+  variant?: "call" | "page";
 }
 
-const TEMPLATE_KEYS = [
-  "tpl_chief_complaint",
-  "tpl_current_medications",
-  "tpl_allergies",
-  "tpl_assessment",
-  "tpl_plan",
-];
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 2,
+  dark,
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+  rows?: number;
+  dark?: boolean;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className={cn("text-[10px] font-semibold uppercase tracking-wide", dark ? "text-white/55" : "text-muted-foreground")}>
+        {label}
+      </span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className={cn(
+          "w-full resize-y rounded-[6px] border px-2.5 py-1.5 text-[12px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary/40",
+          dark
+            ? "border-white/15 bg-white/[0.07] text-white placeholder:text-white/35"
+            : "border-border bg-background text-foreground placeholder:text-muted-foreground/50",
+        )}
+      />
+    </label>
+  );
+}
 
-// Notes are mirrored per-consultation in localStorage so they survive a page
-// refresh and never bleed between different consultations. Instant consults have
-// no GET endpoint, so this local copy is what we re-open with; scheduled
-// appointments seed from the server (their notes object) instead.
-const notesKey = (id?: number, mode?: "instant" | "appointment") =>
-  id != null ? `${mode === "appointment" ? "appointment" : "instant"}_notes:${id}` : null;
+function MiniInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  dark,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+  dark?: boolean;
+  type?: string;
+}) {
+  return (
+    <label className="block space-y-1 min-w-0">
+      <span className={cn("text-[9px]", dark ? "text-white/50" : "text-muted-foreground")}>{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={cn(
+          "w-full rounded-[6px] border px-2 py-1.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary/40",
+          dark
+            ? "border-white/15 bg-white/[0.07] text-white placeholder:text-white/35"
+            : "border-border bg-background text-foreground placeholder:text-muted-foreground/50",
+        )}
+      />
+    </label>
+  );
+}
 
-function readLocalNotes(id?: number, mode?: "instant" | "appointment"): string {
-  const key = notesKey(id, mode);
-  if (!key) return "";
-  try {
-    return localStorage.getItem(key) ?? "";
-  } catch {
-    return "";
+function summaryRows(payload: unknown): ConsultationSummary[] {
+  const data = (payload as { data?: unknown })?.data;
+  if (Array.isArray(data) && data.every((item) => Array.isArray((item as { summaries?: unknown }).summaries))) {
+    return (data as Array<{ summaries?: ConsultationSummary[] }>).flatMap((item) => item.summaries ?? []);
   }
+  if (Array.isArray(data)) return data as ConsultationSummary[];
+  return [];
 }
 
-export function InstantNotesSidebar({ onClose, consultationId, patientName, mode = "instant" }: Props) {
+export function InstantNotesSidebar({
+  onClose,
+  consultationId,
+  patientId,
+  patientName,
+  patientPhone,
+  mode = "instant",
+  variant = "call",
+}: Props) {
   const { t } = useTranslation();
-  const textRef = useRef<HTMLDivElement>(null);
+  const dark = variant === "call";
   const isAppointment = mode === "appointment";
 
   const saveInstant = useSaveInstantNotes();
   const addApptNotes = useAddNotes();
   const updateApptNotes = useUpdateNotes();
-  // Only fetch the appointment (to seed notes) in appointment mode; id 0 disables.
+  const createSummary = useCreateConsultationSummary();
+  const updateSummary = useUpdateConsultationSummary();
   const { data: apptData } = useGetAppointment(isAppointment ? (consultationId ?? 0) : 0);
+  const { data: existingList } = useConsultationSummaries(
+    isAppointment
+      ? { appointment_id: consultationId }
+      : { instant_consultation_id: consultationId },
+    { enabled: consultationId != null },
+  );
 
+  const [chart, setChart] = useState<CallChart>(() => readCallChart(consultationId, mode));
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [identityOpen, setIdentityOpen] = useState(() => {
+    const initial = readCallChart(consultationId, mode);
+    return !initial.identity.full_name.trim() || !initial.identity.phone.trim();
+  });
 
-  // Local, consultation-scoped notes (seeded from localStorage).
-  const [notes, setNotes] = useState<string>(() => readLocalNotes(consultationId, mode));
-  const plainNotes = richTextToPlainText(notes);
-
-  // Tracks whether server-side appointment notes already exist (POST vs PUT).
   const notesExistRef = useRef(false);
-  // Track whether the user has actually edited, so the seeded value is never
-  // auto-saved (which previously could wipe server-side notes with an empty PUT).
+  const summaryIdRef = useRef<number | null>(null);
+  const creatingSummaryRef = useRef(false);
   const dirtyRef = useRef(false);
 
-  // Re-seed when switching to a different consultation.
+  const effectivePatientId = resolvedPatientId(chart, patientId ?? apptData?.appointment?.patient?.id ?? null);
+  const { data: medicalRecord } = usePatientMedicalRecord(effectivePatientId);
+
   useEffect(() => {
-    setNotes(readLocalNotes(consultationId, mode));
+    setChart(readCallChart(consultationId, mode));
     setSaveStatus("idle");
     notesExistRef.current = false;
+    summaryIdRef.current = null;
+    creatingSummaryRef.current = false;
     dirtyRef.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultationId, mode]);
 
-  // In appointment mode, seed from the server's saved notes (additional_notes)
-  // once the appointment loads — unless the doctor has already started editing.
   useEffect(() => {
-    if (!isAppointment) return;
-    const serverNotes = apptData?.appointment?.notes;
-    if (serverNotes) notesExistRef.current = true;
-    if (!dirtyRef.current && serverNotes?.additional_notes) {
-      setNotes(serverNotes.additional_notes);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apptData, isAppointment]);
+    const match = summaryRows(existingList).find((row) =>
+      isAppointment ? row.appointment_id === consultationId : row.instant_consultation_id === consultationId,
+    );
+    if (match?.id) summaryIdRef.current = match.id;
+  }, [existingList, consultationId, isAppointment]);
 
-  const debouncedNotes = useDebounce(notes, 1500);
+  useEffect(() => {
+    if (dirtyRef.current) return;
+    const appt = apptData?.appointment;
+    const match = summaryRows(existingList).find((row) =>
+      isAppointment ? row.appointment_id === consultationId : row.instant_consultation_id === consultationId,
+    );
+    setChart((prev) => {
+      const next = { ...prev, identity: { ...prev.identity }, proofs: prev.proofs ?? [] };
+      const fill = (key: keyof PatientIdentity, value?: string | number | null) => {
+        if (!String(next.identity[key] ?? "").trim() && value != null && String(value).trim()) {
+          next.identity[key] = String(value);
+        }
+      };
+      fill("patient_id", patientId ?? appt?.patient?.id);
+      fill("full_name", patientName || appt?.patient?.name || match?.patient?.name);
+      fill("phone", patientPhone || appt?.patient?.phone);
+      fill("national_id", (appt?.patient as { national_id?: string } | undefined)?.national_id);
+      if (match) {
+        if (!next.chief_complaint.trim()) next.chief_complaint = summaryFieldText(match.chief_complaint, "main_complaint");
+        if (!next.medication_history.trim()) next.medication_history = summaryFieldText(match.medication_history);
+        if (!next.allergy_history.trim()) next.allergy_history = summaryFieldText(match.allergy_history);
+        if (!next.clinical_assessment.trim()) next.clinical_assessment = summaryFieldText(match.clinical_assessment, "primary_diagnosis");
+        if (!next.management_plan.trim()) next.management_plan = summaryFieldText(match.management_plan, "followup_plan");
+        if (!next.blood_pressure.trim() && !next.temperature.trim() && !next.pulse_rate.trim()) {
+          Object.assign(next, parseVitalsFromExamination(summaryFieldText(match.physical_examination)));
+        }
+        const fromAttach = parseIdentityFromHtml(summaryFieldText(match.attachments));
+        (Object.keys(fromAttach) as Array<keyof PatientIdentity>).forEach((key) => fill(key, fromAttach[key]));
+        if (!next.proofs?.length) next.proofs = parseProofsFromHtml(summaryFieldText(match.attachments));
+      }
+      if (appt?.notes) {
+        if (!next.chief_complaint.trim()) next.chief_complaint = appt.notes.chief_complaint ?? "";
+        if (!next.clinical_assessment.trim()) next.clinical_assessment = appt.notes.diagnosis ?? "";
+        if (!next.management_plan.trim()) next.management_plan = appt.notes.treatment_plan ?? "";
+        if (!next.blood_pressure.trim()) next.blood_pressure = appt.notes.blood_pressure ?? "";
+        if (!next.temperature.trim()) next.temperature = appt.notes.temperature ?? "";
+        if (!next.pulse_rate.trim()) next.pulse_rate = appt.notes.pulse_rate ?? "";
+        if (appt.notes) notesExistRef.current = true;
+      }
+      if (medicalRecord) {
+        if (!next.allergy_history.trim()) next.allergy_history = medicalRecord.known_allergies ?? "";
+        if (!next.medication_history.trim()) next.medication_history = medicalRecord.current_medications ?? "";
+      }
+      return next;
+    });
+  }, [apptData, existingList, isAppointment, consultationId, patientId, patientName, patientPhone, medicalRecord]);
+
+  const snapshot = JSON.stringify(chart);
+  const debouncedSnapshot = useDebounce(snapshot, 1500);
+  const missingOfficialId = resolvedPatientId(parseCallChart(debouncedSnapshot), effectivePatientId) == null;
 
   useEffect(() => {
     if (!dirtyRef.current) return;
     if (consultationId == null) return;
-
-    // Mirror locally first so a refresh restores the latest text immediately.
-    const key = notesKey(consultationId, mode);
-    if (key) {
-      try {
-        localStorage.setItem(key, debouncedNotes);
-      } catch {
-        /* storage unavailable — saving to the server still proceeds */
-      }
-    }
-
+    const next = parseCallChart(debouncedSnapshot);
+    const stored = readCallChart(consultationId, mode);
+    if (stored.proofs?.length) next.proofs = stored.proofs;
+    writeCallChart(consultationId, mode, next);
     setSaveStatus("saving");
 
-    const cleanedNotes = prepareRichTextForSave(debouncedNotes) ?? "";
+    const fields = chartToSummaryFields(next);
+    const pid = resolvedPatientId(next, patientId ?? apptData?.appointment?.patient?.id ?? null);
 
     if (isAppointment) {
-      const payload = { additional_notes: cleanedNotes };
+      const payload = chartToAppointmentNotes(next);
       const doPut = () =>
         updateApptNotes.mutate(
           { id: consultationId, payload },
-          { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
+          { onError: () => setSaveStatus("error") },
         );
-
-      if (notesExistRef.current) {
-        doPut();
-      } else {
+      if (notesExistRef.current) doPut();
+      else {
         addApptNotes.mutate(
           { id: consultationId, payload },
           {
             onSuccess: () => {
               notesExistRef.current = true;
-              setSaveStatus("saved");
             },
             onError: (err) => {
-              // 409 → notes already exist, switch to PUT.
               if ((err as ApiError)?.status === 409) {
                 notesExistRef.current = true;
                 doPut();
-              } else {
-                setSaveStatus("error");
-              }
+              } else setSaveStatus("error");
             },
           },
         );
       }
     } else {
-      saveInstant.mutate(
-        { id: consultationId, notes: cleanedNotes },
-        { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
-      );
+      saveInstant.mutate({ id: consultationId, notes: chartToInstantNotesText(next) });
+    }
+
+    if (pid != null && chartHasClinicalContent(next)) {
+      if (summaryIdRef.current != null) {
+        updateSummary.mutate(
+          { id: summaryIdRef.current, payload: fields },
+          { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
+        );
+      } else if (!creatingSummaryRef.current) {
+        creatingSummaryRef.current = true;
+        createSummary.mutate(
+          {
+            ...(isAppointment ? { appointment_id: consultationId } : { instant_consultation_id: consultationId }),
+            patient_id: pid,
+            ...fields,
+          },
+          {
+            onSuccess: (res) => {
+              summaryIdRef.current = res.summary?.id ?? null;
+              creatingSummaryRef.current = false;
+              setSaveStatus("saved");
+            },
+            onError: () => {
+              creatingSummaryRef.current = false;
+              setSaveStatus("error");
+            },
+          },
+        );
+      }
+    } else {
+      setSaveStatus("saved");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedNotes, consultationId]);
+  }, [debouncedSnapshot, consultationId]);
 
-  useEffect(() => {
-    textRef.current?.focus();
-  }, []);
-
-  const updateNotes = (next: string) => {
+  const patch = (partial: Partial<CallChart>) => {
     dirtyRef.current = true;
-    setNotes(next);
+    setChart((prev) => ({ ...prev, ...partial }));
+  };
+  const patchIdentity = (partial: Partial<PatientIdentity>) => {
+    dirtyRef.current = true;
+    setChart((prev) => ({ ...prev, identity: { ...prev.identity, ...partial } }));
   };
 
-  const insertTemplate = (tpl: string) => {
-    const nextBlock = `<p><strong>${tpl}:</strong></p>`;
-    const next = notes ? `${notes}${nextBlock}` : nextBlock;
-    updateNotes(next);
-    setTimeout(() => textRef.current?.focus(), 0);
-  };
+  const identityHint = useMemo(() => {
+    const name = chart.identity.full_name.trim() || patientName || t("consult.notes.patient");
+    const bits = [name];
+    if (chart.identity.phone.trim()) bits.push(chart.identity.phone.trim());
+    if (chart.identity.national_id.trim()) bits.push(chart.identity.national_id.trim());
+    return bits.join(" · ");
+  }, [chart.identity, patientName, t]);
 
   return (
-    <div className="flex flex-col h-full bg-card">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+    <div className={cn("flex h-full flex-col", dark ? "bg-transparent text-white" : "bg-card text-foreground")}>
+      <div className={cn("flex items-center justify-between px-3 py-2.5 shrink-0 border-b", dark ? "border-white/10" : "border-border")}>
         <div className="flex items-center gap-2 min-w-0">
-          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+          <FileText className={cn("h-3.5 w-3.5 shrink-0", dark ? "text-emerald-300" : "text-primary")} />
           <span className="text-[12px] font-semibold">{t("consult.notes.title")}</span>
-          {patientName && (
-            <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
-              — {patientName}
-            </span>
-          )}
         </div>
         <button
           onClick={onClose}
           aria-label="Close notes"
-          className="h-6 w-6 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+          className={cn(
+            "h-6 w-6 rounded-[6px] flex items-center justify-center shrink-0",
+            dark ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
         >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {/* Quick insert templates */}
-      <div className="px-3 py-2.5 border-b border-border/60 shrink-0">
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
-          {t("consult.notes.quick_insert")}
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {TEMPLATE_KEYS.map((key) => {
-            const label = t(`consult.notes.${key}`);
-            return (
-              <button
-                key={key}
-                onClick={() => insertTemplate(label)}
-                className="text-[10px] px-2 py-1 rounded-[6px] border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
-              >
-                {label}
-              </button>
-            );
-          })}
+      <p className={cn("px-3 pt-2 text-[10px] leading-snug shrink-0", dark ? "text-white/50" : "text-muted-foreground")}>
+        {t("consult.notes.form_hint")}
+      </p>
+
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2.5 space-y-3">
+        <div className={cn("rounded-[8px] border", dark ? "border-white/10 bg-white/[0.04]" : "border-border bg-muted/30")}>
+          <button
+            type="button"
+            onClick={() => setIdentityOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-2.5 py-2"
+          >
+            <span className="flex items-center gap-1.5 min-w-0">
+              <User className={cn("h-3.5 w-3.5 shrink-0", dark ? "text-white/70" : "text-primary")} />
+              <span className="text-[11px] font-semibold truncate">{identityHint}</span>
+            </span>
+            {identityOpen ? <ChevronUp className="h-3.5 w-3.5 opacity-60" /> : <ChevronDown className="h-3.5 w-3.5 opacity-60" />}
+          </button>
+          {identityOpen && (
+            <div className="px-2.5 pb-2.5 grid grid-cols-2 gap-1.5">
+              <div className="col-span-2">
+                <MiniInput dark={dark} label={t("consult.notes.full_name")} value={chart.identity.full_name} onChange={(full_name) => patchIdentity({ full_name })} placeholder={t("consult.notes.ph_full_name")} />
+              </div>
+              <MiniInput dark={dark} label={t("consult.notes.phone")} value={chart.identity.phone} onChange={(phone) => patchIdentity({ phone })} placeholder={t("consult.notes.ph_phone")} />
+              <MiniInput dark={dark} label={t("consult.notes.national_id")} value={chart.identity.national_id} onChange={(national_id) => patchIdentity({ national_id })} placeholder={t("consult.notes.ph_national_id")} />
+              <MiniInput dark={dark} type="date" label={t("consult.notes.dob")} value={chart.identity.date_of_birth} onChange={(date_of_birth) => patchIdentity({ date_of_birth })} />
+              <MiniInput dark={dark} label={t("consult.notes.gender")} value={chart.identity.gender} onChange={(gender) => patchIdentity({ gender })} placeholder={t("consult.notes.ph_gender")} />
+              <div className="col-span-2">
+                <MiniInput dark={dark} label={t("consult.notes.address")} value={chart.identity.address} onChange={(address) => patchIdentity({ address })} placeholder={t("consult.notes.ph_address")} />
+              </div>
+              <div className="col-span-2">
+                <MiniInput dark={dark} label={t("consult.notes.patient_id")} value={chart.identity.patient_id} onChange={(patient_id) => patchIdentity({ patient_id })} placeholder={t("consult.notes.ph_patient_id")} />
+              </div>
+              {missingOfficialId && (
+                <p className={cn("col-span-2 text-[10px] leading-snug", dark ? "text-amber-200/90" : "text-amber-700")}>
+                  {t("consult.notes.patient_id_needed")}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Field dark={dark} label={t("consult.notes.tpl_chief_complaint")} value={chart.chief_complaint} onChange={(chief_complaint) => patch({ chief_complaint })} placeholder={t("consult.notes.ph_chief_complaint")} rows={2} />
+        <Field dark={dark} label={t("consult.notes.tpl_current_medications")} value={chart.medication_history} onChange={(medication_history) => patch({ medication_history })} placeholder={t("consult.notes.ph_medications")} rows={2} />
+        <Field dark={dark} label={t("consult.notes.tpl_allergies")} value={chart.allergy_history} onChange={(allergy_history) => patch({ allergy_history })} placeholder={t("consult.notes.ph_allergies")} rows={2} />
+        <Field dark={dark} label={t("consult.notes.tpl_assessment")} value={chart.clinical_assessment} onChange={(clinical_assessment) => patch({ clinical_assessment })} placeholder={t("consult.notes.ph_assessment")} rows={2} />
+        <Field dark={dark} label={t("consult.notes.tpl_plan")} value={chart.management_plan} onChange={(management_plan) => patch({ management_plan })} placeholder={t("consult.notes.ph_plan")} rows={2} />
+
+        <div className="space-y-1">
+          <span className={cn("text-[10px] font-semibold uppercase tracking-wide", dark ? "text-white/55" : "text-muted-foreground")}>
+            {t("consult.notes.vitals")}
+          </span>
+          <div className="grid grid-cols-3 gap-1.5">
+            <MiniInput dark={dark} label={t("consult.notes.bp")} value={chart.blood_pressure} onChange={(blood_pressure) => patch({ blood_pressure })} placeholder={t("consult.notes.ph_bp")} />
+            <MiniInput dark={dark} label={t("consult.notes.temp")} value={chart.temperature} onChange={(temperature) => patch({ temperature })} placeholder={t("consult.notes.ph_temp")} />
+            <MiniInput dark={dark} label={t("consult.notes.pulse")} value={chart.pulse_rate} onChange={(pulse_rate) => patch({ pulse_rate })} placeholder={t("consult.notes.ph_pulse")} />
+          </div>
         </div>
       </div>
 
-      {/* Rich notes editor */}
-      <RichTextarea
-        ref={textRef}
-        value={notes}
-        onChange={updateNotes}
-        placeholder={t("consult.notes.placeholder")}
-        className="flex-1 min-h-0 border-0 rounded-none focus-within:ring-0 focus-within:ring-offset-0"
-        editorClassName="h-full text-[12px] leading-relaxed"
-        minHeight={280}
-      />
-
-      {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-border/60 shrink-0 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/50">
-          <span>{t("consult.notes.chars", { count: plainNotes.length })}</span>
-          <span>·</span>
-          {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> {t("consult.notes.saving")}</>}
-          {saveStatus === "saved" && <><Check className="w-3 h-3 text-emerald-500" /> {t("consult.notes.saved")}</>}
+      <div className={cn("px-3 py-2 border-t shrink-0 flex items-center justify-between", dark ? "border-white/10" : "border-border/60")}>
+        <div className={cn("flex items-center gap-1.5 text-[9px]", dark ? "text-white/45" : "text-muted-foreground/50")}>
+          {saveStatus === "saving" && (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" /> {t("consult.notes.saving")}
+            </>
+          )}
+          {saveStatus === "saved" && (
+            <>
+              <Check className={cn("w-3 h-3", dark ? "text-emerald-400" : "text-emerald-500")} /> {t("consult.notes.saved")}
+            </>
+          )}
           {saveStatus === "error" && <span className="text-red-400">{t("consult.notes.save_failed")}</span>}
           {saveStatus === "idle" && <span>{t("consult.notes.autosaved")}</span>}
         </div>
         <button
-          onClick={() => updateNotes("")}
-          className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors"
+          onClick={() => {
+            dirtyRef.current = true;
+            setChart(emptyCallChart());
+          }}
+          className={cn("text-[10px] transition-colors", dark ? "text-white/50 hover:text-red-300" : "text-muted-foreground hover:text-red-500")}
         >
           {t("consult.notes.clear")}
         </button>
@@ -242,3 +428,5 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
     </div>
   );
 }
+
+export { readCallChart as readCallNoteForm } from "@/lib/call-note-form";

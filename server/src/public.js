@@ -310,7 +310,8 @@ async function confirmPaidInvoiceAndNotify(payment, remote, account = null) {
 }
 
 const UNPAID_PAYMENT = ["pending", "initiated", "new", "unpaid", "processing"];
-const CLOSED_VISIT = new Set(["accepted", "in_progress", "completed", "done", "declined", "cancelled", "canceled", "expired", "rejected"]);
+const CLOSED_VISIT = new Set(["accepted", "in_progress", "completed", "done", "declined", "cancelled", "canceled", "expired", "payment_expired", "rejected"]);
+const UNPAID_VISIT_MINUTES = 15;
 
 async function paymentIsDue(payment) {
   if (!payment?.id || !payment?.expires_at) return false;
@@ -362,12 +363,16 @@ async function expireLinkedVisit(payment) {
       : "instant_consultations";
     if (!(await tableExists(table))) return;
     await ensureEnumValue(table, "status", "expired").catch(() => null);
+    await ensureEnumValue(table, "status", "payment_expired").catch(() => null);
     await ensureEnumValue(table, "payment_status", "expired").catch(() => null);
     const paidCol = await hasColumn(table, "payment_status");
     const row = await one(`SELECT id, status${paidCol ? ", payment_status" : ""} FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
     if (!row || CLOSED_VISIT.has(String(row.status || "").toLowerCase())) return;
     if (String(row.payment_status || "").toLowerCase() === "paid") return;
-    await update(table, row.id, { status: "expired", payment_status: "expired" });
+    const expiredStatus = await ensureEnumValue(table, "status", "payment_expired").catch(() => false)
+      ? "payment_expired"
+      : "expired";
+    await update(table, row.id, { status: expiredStatus, payment_status: "expired" });
     return;
   }
   if (payableType.includes("appointment") && await tableExists("appointments")) {
@@ -407,28 +412,23 @@ async function expireStaleUnpaidVisits() {
     : ((await tableExists("instant_consultations")) ? "instant_consultations" : null);
   if (!table || !(await hasColumn(table, "created_at"))) return;
   await ensureEnumValue(table, "status", "expired").catch(() => null);
+  await ensureEnumValue(table, "status", "payment_expired").catch(() => null);
   // Same reason as the doctor queue: selecting a payment_status column the table
   // does not have fails the query, and the expired sweep would silently never run.
   const paidCol = await hasColumn(table, "payment_status");
+  const expiredStatus = await ensureEnumValue(table, "status", "payment_expired").catch(() => false)
+    ? "payment_expired"
+    : "expired";
   const rows = await q(
     `SELECT id, status${paidCol ? ", payment_status" : ""} FROM \`${table}\`
      WHERE status IN ('pending','queued','waiting','payment_pending')
        ${paidCol ? "AND (payment_status IS NULL OR LOWER(payment_status) IN ('pending','unpaid','initiated','new'))" : ""}
-       AND created_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+       AND created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
      ORDER BY id ASC LIMIT 100`,
   ).catch(() => []);
   for (const row of rows) {
     if (await payableAlreadyPaid(row.id)) continue;
-    const openPay = await one(
-      `SELECT id FROM payments
-       WHERE payable_id = ? AND payable_type LIKE '%instant%'
-         AND expires_at IS NOT NULL AND expires_at >= UTC_TIMESTAMP()
-         AND LOWER(status) IN ('pending','initiated','new','unpaid','processing')
-       LIMIT 1`,
-      [row.id],
-    ).catch(() => null);
-    if (openPay) continue;
-    await update(table, row.id, { status: "expired", payment_status: "expired" }).catch(() => null);
+    await update(table, row.id, { status: expiredStatus, payment_status: "expired" }).catch(() => null);
   }
 }
 
@@ -1472,6 +1472,7 @@ export function publicRoutes(router) {
 
   router.get("/public/instant-consultations/:token/status", async (req, res, next) => {
     try {
+      await expireUnpaidPayments().catch(() => null);
       const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
       // Token only. `OR id = ?` let anyone walk the numeric ids and read — and
       // then write, via the status field below — other patients' consultations.
@@ -1566,7 +1567,7 @@ export function publicRoutes(router) {
       if (!(amount > 0)) {
         return res.status(422).json({ message: "This consultation has no payable fee." });
       }
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+      const expiresAt = new Date(Date.now() + UNPAID_VISIT_MINUTES * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
       const customer = {
         name: row.guest_name || row.patient_name || "Patient",
         phone: row.guest_phone || row.phone || "",

@@ -44,6 +44,9 @@ import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
 import MyReviews from "./pages/patient/MyReviews.tsx";
 import PatientSettings from "./pages/patient/PatientSettings.tsx";
 import Orders from "./pages/patient/Orders.tsx";
+import PatientDocuments from "./pages/patient/PatientDocuments.tsx";
+import PatientFamily from "./pages/patient/PatientFamily.tsx";
+import PatientBills from "./pages/patient/PatientBills.tsx";
 
 /* ── Doctor ── */
 import DoctorOverview from "./pages/doctor/DoctorOverview";
@@ -56,6 +59,9 @@ import DoctorProfile from "./pages/doctor/DoctorProfile.tsx";
 import DoctorFitnessCertificates from "./pages/doctor/FitnessCertificates.tsx";
 import MyReferrals from "./pages/doctor/MyReferrals.tsx";
 import DoctorSettings from "./pages/doctor/DoctorSettings.tsx";
+import DoctorEarnings from "./pages/doctor/DoctorEarnings.tsx";
+import DoctorFollowUps from "./pages/doctor/DoctorFollowUps.tsx";
+import DoctorInbox from "./pages/doctor/DoctorInbox.tsx";
 
 /* ── Hospital ── */
 import HospitalAnalytics from "./pages/hospital/HospitalAnalytics";
@@ -424,6 +430,30 @@ const App = () => (
               }
             />
             <Route
+              path="/patient/documents"
+              element={
+                <RequireAuth>
+                  <PatientDocuments />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/family"
+              element={
+                <RequireAuth>
+                  <PatientFamily />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/billing"
+              element={
+                <RequireAuth>
+                  <PatientBills />
+                </RequireAuth>
+              }
+            />
+            <Route
               path="/patient/pharmacy/orders"
               element={
                 <RequireAuth>
@@ -462,6 +492,30 @@ const App = () => (
               element={
                 <RequireAuth>
                   <DoctorPatients />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/earnings"
+              element={
+                <RequireAuth>
+                  <DoctorEarnings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/follow-ups"
+              element={
+                <RequireAuth>
+                  <DoctorFollowUps />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/inbox"
+              element={
+                <RequireAuth>
+                  <DoctorInbox />
                 </RequireAuth>
               }
             />

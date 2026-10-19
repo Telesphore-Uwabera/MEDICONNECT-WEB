@@ -923,7 +923,7 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
   const items =
     paginatedObj?.data ?? (Array.isArray(paginatedObj) ? paginatedObj : []);
   const total = paginatedObj?.total ?? items.length;
-  const perPage = paginatedObj?.per_page ?? 15;
+  const perPage = paginatedObj?.per_page ?? 10;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   return (

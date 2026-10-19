@@ -356,6 +356,33 @@ export async function notifyAppointmentConfirmed(row) {
   }
 }
 
+export async function notifyAppointmentRescheduled(row) {
+  const doctor = await doctorContact(row?.doctor_id);
+  const patient = await patientContact(row);
+  const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" at ") || "the new scheduled time";
+
+  if (patient.email || patient.userId) {
+    const subject = "Your appointment has been rescheduled";
+    const text = `${doctor?.name ? `Dr. ${doctor.name}` : "Your doctor"} rescheduled your appointment to ${when}.`;
+    const html = buildEmailHtml({
+      title: "Appointment rescheduled",
+      preheader: text,
+      accentHex: "#0ea5e9",
+      body: `
+        ${emailP(greeting(patient.name))}
+        ${emailHtml(`<strong>${doctor?.name ? `Dr. ${doctor.name}` : "Your doctor"}</strong> has moved your appointment to <strong>${when}</strong>.`)}
+        ${emailInfoBox([
+          doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
+          ["New date & time", when],
+        ].filter(Boolean), "#0ea5e9")}
+        ${emailP("Please be on time. If you cannot attend, sign in to cancel or request another time.")}
+        ${emailBtn("View My Appointments", "https://mediconnect.rw/patient/appointments", "#0ea5e9")}
+      `,
+    });
+    await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.rescheduled" });
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyVisitCompleted
 // ─────────────────────────────────────────────────────────────────────────────

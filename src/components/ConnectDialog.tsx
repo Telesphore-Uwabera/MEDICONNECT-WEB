@@ -595,7 +595,7 @@ export const ConnectDialogContent = ({
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
       setDoctorBusy(false);
       session.clear();
-    } else if (statusData.status === "expired") {
+    } else if (statusData.status === "expired" || statusData.status === "payment_expired") {
       setErrorMsg(statusData.message || t("consult.connect.payment_expired", {
         defaultValue: "This payment expired because it was not completed. Start a new request.",
       }));

@@ -13,12 +13,14 @@ export interface FilterState {
   today:    boolean;
   upcoming: boolean;
   sort:     SortOption;
+  page:     number;
 }
 
 export const INITIAL_FILTERS: FilterState = {
   search: "", status: "All", type: "All",
   date: "", today: false, upcoming: false,
   sort: "date-desc",
+  page: 1,
 };
 
 export const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [

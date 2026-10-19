@@ -83,7 +83,12 @@ const STATUS_BADGE: Record<string, { label: string; dotCls: string; cls: string 
     cls: "bg-muted text-muted-foreground border-border",
   },
   expired: {
-    label: "Expired",
+    label: "Payment expired",
+    dotCls: "bg-muted-foreground/40",
+    cls: "bg-muted text-muted-foreground border-border",
+  },
+  payment_expired: {
+    label: "Payment expired",
     dotCls: "bg-muted-foreground/40",
     cls: "bg-muted text-muted-foreground border-border",
   },
@@ -236,7 +241,7 @@ export function IncomingCard({
 
   const isBusy = isAccepting || isDeclining || isJoining || isCompleting;
   const badge = STATUS_BADGE[item.status] ?? STATUS_BADGE.pending;
-  const isInactive = ["declined", "withdrawn", "expired", "completed"].includes(item.status);
+  const isInactive = ["declined", "withdrawn", "expired", "payment_expired", "completed"].includes(item.status);
 
   // Left accent bar — 3px colour strip keyed to status
   const accentBar = {

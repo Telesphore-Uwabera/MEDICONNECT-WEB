@@ -42,6 +42,7 @@ import {
 } from "./shared/helpers";
 import { SkeletonRow } from "./shared/Skeletonrow";
 import { DateField } from "@/components/ui/date-field";
+import { TABLE_PAGE_SIZE, TablePager, tablePageCount } from "@/components/TablePager";
 
  
 const MOCK_DOCTOR = {
@@ -50,16 +51,11 @@ const MOCK_DOCTOR = {
   experience: 10, instantAvailable: true, fee: 0,
 };
 
-const STATUS_ORDER: Record<string, number> = {
-  in_progress: 0,
-  confirmed: 1,
-  pending: 2,
-  completed: 3,
-};
-
- 
 function filtersToParams(filters: FilterState): GetAppointmentsParams {
-  const params: GetAppointmentsParams = {};
+  const params: GetAppointmentsParams = {
+    page: filters.page,
+    per_page: TABLE_PAGE_SIZE,
+  };
   if (filters.status !== "All") params.status = filters.status;
   if (filters.type !== "All") params.type = filters.type;
   if (filters.today) params.today = true;
@@ -98,7 +94,7 @@ function appointmentDurationMinutes(appt: Appointment): number | null {
 export function AppointmentsTab() {
   const { t, i18n } = useTranslation();
   const call = useCallStore();
-  const { startCall, activeCall } = useCallContext();
+  const { startCall, activeCall, endCall: hangUpCall } = useCallContext();
   const qc = useQueryClient();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -110,7 +106,7 @@ export function AppointmentsTab() {
   const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
 
   const hasActiveFilters = useMemo(
-    () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS), [filters]
+    () => JSON.stringify({ ...filters, page: 1 }) !== JSON.stringify({ ...INITIAL_FILTERS, page: 1 }), [filters]
   );
   const clearAllFilters = useCallback(() => setFilters(INITIAL_FILTERS), []);
 
@@ -180,22 +176,16 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         );
       })
       .sort((a, b) => {
-        const statusOrder =
-          (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
-        if (statusOrder !== 0) return statusOrder;
-
-        if (filters.sort === "date-desc") {
-          return `${b.appointment_date}${b.appointment_time}`.localeCompare(
-            `${a.appointment_date}${a.appointment_time}`
-          );
-        }
         if (filters.sort === "name") {
           return (a.patient?.name ?? "").localeCompare(b.patient?.name ?? "");
         }
-        // default: date-desc (newest/most recent first)
-        return `${b.appointment_date}${b.appointment_time}`.localeCompare(
-          `${a.appointment_date}${a.appointment_time}`
+        const byWhen = `${b.appointment_date}${b.appointment_time}`.localeCompare(
+          `${a.appointment_date}${a.appointment_time}`,
         );
+        if (byWhen !== 0) {
+          return filters.sort === "date-asc" ? -byWhen : byWhen;
+        }
+        return b.id - a.id;
       });
   }, [appointments, filters.search, filters.sort]);
 
@@ -260,10 +250,14 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
 
   const handleCompleteAppointment = useCallback((appt: Appointment) => {
     completeAppointment.mutate(appt.id, {
-      onSuccess: () => toast.success(t("consult.bookings.session_completed")),
+      onSuccess: () => {
+        hangUpCall();
+        call.endCall();
+        toast.success(t("consult.bookings.session_completed"));
+      },
       onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_complete"))),
     });
-  }, [completeAppointment, t]);
+  }, [completeAppointment, hangUpCall, call, t]);
 
   const handleStart = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);
   const handleRejoin = useCallback((appt: Appointment) => startOrRejoin(appt, true), [startOrRejoin]);
@@ -311,7 +305,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         { value: "in_progress", label: t("pages.doctor.status_in_progress") },
         { value: "completed", label: t("pages.doctor.status_completed") },
       ],
-      onChange: (v: string) => setFilters((f) => ({ ...f, status: v as any }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, status: v as any, page: 1 }))
     },
     {
       type: "select" as const,
@@ -323,7 +317,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         { value: "online", label: t("pages.doctor.video_consult") },
         { value: "in_person", label: t("pages.doctor.in_person_visit") },
       ],
-      onChange: (v: string) => setFilters((f) => ({ ...f, type: v as any }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, type: v as any, page: 1 }))
     },
     {
       type: "custom" as const,
@@ -341,7 +335,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
               ].map((opt) => (
                 <button
                   key={opt.val}
-                  onClick={() => setFilters((f) => ({ ...f, today: opt.today, upcoming: opt.upcoming, date: "" }))}
+                  onClick={() => setFilters((f) => ({ ...f, today: opt.today, upcoming: opt.upcoming, date: "", page: 1 }))}
                   className={cn(
                     "py-1.5 text-[11px] rounded-[4px] border transition-colors text-center font-medium",
                     activePreset === opt.val
@@ -358,7 +352,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
               <div className="relative">
                 <DateField
                   value={filters.date}
-                  onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value, today: false, upcoming: false }))}
+                  onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value, today: false, upcoming: false, page: 1 }))}
                   className="w-full px-2.5 py-1 text-[11px] bg-background border border-border/60 rounded-[4px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer h-7"
                 />
                 {filters.date && (
@@ -381,7 +375,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       label: t("pages.doctor.search"),
       value: filters.search,
       placeholder: t("pages.doctor.search_patient"),
-      onChange: (v: string) => setFilters((f) => ({ ...f, search: v }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, search: v, page: 1 }))
     }
   ], [filters, setFilters, t]);
 
@@ -807,6 +801,12 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                 ))}
             </div>
           )}
+          <TablePager
+            page={filters.page}
+            lastPage={data?.last_page ?? tablePageCount(data?.total ?? filtered.length, data?.per_page ?? TABLE_PAGE_SIZE)}
+            total={data?.total}
+            onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
+          />
         </div>
       </main>
     </div>

@@ -34,6 +34,7 @@ export interface DashboardData {
     pending: number;
     confirmed: number;
     cancelled: number;
+    waiting?: number;
     instant_queue: number;
   };
   period_stats: {

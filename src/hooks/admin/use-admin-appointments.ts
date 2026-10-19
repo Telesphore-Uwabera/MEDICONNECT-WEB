@@ -128,6 +128,7 @@ export interface GetAdminAppointmentsParams {
   date?: string;
   doctor_id?: number;
   page?: number;
+  per_page?: number;
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -140,6 +141,7 @@ export function useGetAdminAppointments(params: GetAdminAppointmentsParams = {})
   if (params.date)         query.set("date", params.date);
   if (params.doctor_id)    query.set("doctor_id", String(params.doctor_id));
   if (params.page && params.page > 1) query.set("page", String(params.page));
+  if (params.per_page) query.set("per_page", String(params.per_page));
 
   const qs = query.toString();
 

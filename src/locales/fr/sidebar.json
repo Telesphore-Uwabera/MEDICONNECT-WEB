@@ -92,12 +92,18 @@
   "activeRole": "Rôle actif",
   "instantDoctors": "Médecins instantanés",
   "wallet": "Portefeuilles",
-  "consultationSummaries": "Résumés de consultation",
+  "consultationSummaries": "Consultations",
   "medicalRecords": "Dossiers médicaux",
   "hideSidebar": "Masquer la barre latérale",
   "showSidebar": "Afficher la barre latérale",
   "schedule": "Planning",
   "certificationDoctor": "Médecin certificateur",
   "helpCenterLinks": "Liens du centre d'aide",
-  "refunds": "Remboursements"
+  "refunds": "Remboursements",
+  "documents": "Documents",
+  "family": "Famille",
+  "billing": "Factures et reçus",
+  "earnings": "Revenus",
+  "followUps": "Suivis",
+  "inbox": "Boîte de réception"
 }

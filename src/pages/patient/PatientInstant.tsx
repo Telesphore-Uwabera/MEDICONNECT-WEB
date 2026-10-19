@@ -40,6 +40,7 @@ import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient
 import { DoctorActionModals, useDoctorActions } from "@/components/useDoctorActions";
 import { resolveMediaUrl } from "@/lib/image-url";
 import { DateField } from "@/components/ui/date-field";
+import { TablePager } from "@/components/TablePager";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -509,6 +510,7 @@ const PatientInstant = () => {
     date_from: filters.date_from || undefined,
     date_to: filters.date_to || undefined,
     page: filters.page,
+    per_page: 10,
   }), [filters]);
 
   const { data, isLoading } = useGetPatientQuickAppointments(apiParams);
@@ -519,7 +521,7 @@ const PatientInstant = () => {
   const sorted = useMemo(() => {
     return [...appointments].sort((a, b) => {
       switch (filters.sort) {
-        case "date-desc": return String(b.appointment_date).localeCompare(String(a.appointment_date));
+        case "date-desc": return String(b.appointment_date).localeCompare(String(a.appointment_date)) || b.id - a.id;
         case "doctor": return getDoctorName(a).localeCompare(getDoctorName(b));
         default: return String(a.appointment_date).localeCompare(String(b.appointment_date));
       }
@@ -1019,55 +1021,14 @@ const PatientInstant = () => {
               </div>
             )}
 
-            {/* Pagination */}
-            {!isLoading && totalPages > 1 && (
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-muted-foreground">
-                  Page <span className="font-semibold text-foreground">{filters.page}</span> of{" "}
-                  <span className="font-semibold text-foreground">{totalPages}</span>
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={filters.page <= 1}
-                    onClick={() => set("page", filters.page - 1)}
-                    className="h-7 px-2.5 text-xs rounded-[6px]"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - filters.page) <= 1)
-                    .reduce<(number | "…")[]>((acc, p, i, arr) => {
-                      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((p, i) =>
-                      p === "…" ? (
-                        <span key={`ellipsis-${i}`} className="text-xs text-muted-foreground px-1">…</span>
-                      ) : (
-                        <Button
-                          key={p}
-                          size="sm"
-                          variant={filters.page === p ? "default" : "outline"}
-                          onClick={() => set("page", p as number)}
-                          className={cn("h-7 min-w-[28px] px-2 text-xs rounded-[6px]", filters.page === p && "bg-primary text-primary-foreground")}
-                        >
-                          {p}
-                        </Button>
-                      )
-                    )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={filters.page >= totalPages}
-                    onClick={() => set("page", filters.page + 1)}
-                    className="h-7 px-2.5 text-xs rounded-[6px]"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+            {!isLoading && (
+              <div className="px-4 sm:px-5">
+                <TablePager
+                  page={filters.page}
+                  lastPage={totalPages}
+                  total={data?.total}
+                  onPageChange={(page) => set("page", page)}
+                />
               </div>
             )}
           </div>

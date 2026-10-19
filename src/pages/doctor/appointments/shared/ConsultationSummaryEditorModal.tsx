@@ -32,6 +32,7 @@ import {
   type UpdateSummaryPayload,
 } from "@/hooks/doctor/use-consultation-summaries";
 import { getErrMsg } from "./helpers";
+import { readCallChart } from "@/lib/call-note-form";
 
 type SummaryTextKey =
   | "chief_complaint"
@@ -180,6 +181,7 @@ export function ConsultationSummaryEditorModal({
 }: Props) {
   const { t } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);
+  const [showAllFields, setShowAllFields] = useState(false);
   const [form, setForm] = useState<FormState>(() => ({
     ...emptyForm(),
     chief_complaint: defaultComplaint ?? "",
@@ -218,10 +220,22 @@ export function ConsultationSummaryEditorModal({
     ? "summary:" + sourceSummary.id
     : "new:" + (appointmentId ?? "") + ":" + (instantConsultationId ?? "") + ":" + (patientId ?? "");
   const isResolvingExisting = lookupEnabled && (isLookingUp || (existingSummaryId != null && isLoadingDetail && !sourceSummary));
-  const currentStep = STEPS[stepIndex];
+  const alwaysVisible = useMemo(
+    () => new Set<SummaryTextKey>(["chief_complaint", "clinical_assessment", "management_plan"]),
+    [],
+  );
+  const fieldVisible = (key: SummaryTextKey) => showAllFields || alwaysVisible.has(key) || hasRichTextContent(form[key]);
+  const visibleSteps = useMemo(
+    () => STEPS.filter((step) => step.fields.some((key) => fieldVisible(key)) || (step.id === "assessment" && (showAllFields || redFlags.length > 0))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form, showAllFields, redFlags],
+  );
+  const safeSteps = visibleSteps.length ? visibleSteps : STEPS;
+  const currentStep = safeSteps[Math.min(stepIndex, safeSteps.length - 1)];
   const CurrentStepIcon = currentStep.icon;
   const selectedRedFlagCount = redFlags.length;
   const canSave = patientId != null && hasRichTextContent(form.chief_complaint) && !saving && !isResolvingExisting;
+  const hiddenCount = TEXT_FIELDS.filter((field) => !fieldVisible(field.key)).length;
 
   useEffect(() => {
     if (prefilledKey === sourceKey) return;
@@ -249,10 +263,22 @@ export function ConsultationSummaryEditorModal({
       return;
     }
 
-    setForm({ ...emptyForm(), chief_complaint: defaultComplaint ?? "", clinical_assessment: defaultDiagnosis ?? "" });
+    const local = readCallChart(
+      appointmentId ?? instantConsultationId ?? undefined,
+      appointmentId != null ? "appointment" : "instant",
+    );
+    setForm({
+      ...emptyForm(),
+      chief_complaint: defaultComplaint || local.chief_complaint,
+      clinical_assessment: defaultDiagnosis || local.clinical_assessment,
+      medication_history: local.medication_history,
+      allergy_history: local.allergy_history,
+      management_plan: local.management_plan,
+      physical_examination: [local.blood_pressure && `BP ${local.blood_pressure}`, local.temperature && `Temp ${local.temperature}`, local.pulse_rate && `Pulse ${local.pulse_rate}`].filter(Boolean).join(" · "),
+    });
     setRedFlags([]);
     setPrefilledKey(sourceKey);
-  }, [defaultComplaint, defaultDiagnosis, prefilledKey, sourceKey, sourceSummary]);
+  }, [appointmentId, defaultComplaint, defaultDiagnosis, instantConsultationId, prefilledKey, sourceKey, sourceSummary]);
 
   const setField = (key: SummaryTextKey, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
   const toggleRedFlag = (value: string) => setRedFlags((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
@@ -351,7 +377,7 @@ export function ConsultationSummaryEditorModal({
 
         <div className="border-b border-border bg-background px-5 py-3">
           <div className="grid gap-2 sm:grid-cols-3">
-            {STEPS.map((step, index) => {
+            {safeSteps.map((step, index) => {
               const Icon = step.icon;
               const active = index === stepIndex;
               const complete = index < stepIndex;
@@ -363,7 +389,7 @@ export function ConsultationSummaryEditorModal({
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-semibold">{t(step.titleKey, step.fallback)}</span>
                     <span className="block text-[10px] text-muted-foreground">
-                      {t("pages.doctor.summary.step_count", { defaultValue: "Step {{current}} of {{total}}", current: index + 1, total: STEPS.length })}
+                      {t("pages.doctor.summary.step_count", { defaultValue: "Step {{current}} of {{total}}", current: index + 1, total: safeSteps.length })}
                     </span>
                   </span>
                 </button>
@@ -392,7 +418,7 @@ export function ConsultationSummaryEditorModal({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {currentStep.fields.map((key) => {
+              {currentStep.fields.filter(fieldVisible).map((key) => {
                 const field = TEXT_FIELDS.find((item) => item.key === key)!;
                 const wide = field.minHeight && field.minHeight >= 120;
                 return (
@@ -406,6 +432,15 @@ export function ConsultationSummaryEditorModal({
                 );
               })}
             </div>
+            {hiddenCount > 0 && !showAllFields && (
+              <button
+                type="button"
+                onClick={() => setShowAllFields(true)}
+                className="text-[11px] font-medium text-primary hover:underline"
+              >
+                {t("pages.doctor.summary.show_all_fields", { defaultValue: "Show remaining history fields ({{count}})", count: hiddenCount })}
+              </button>
+            )}
 
             {currentStep.id === "assessment" && (
               <section className="space-y-3 rounded-[6px] border border-border bg-background/60 p-3">
@@ -445,13 +480,13 @@ export function ConsultationSummaryEditorModal({
           </button>
 
           <div className="hidden items-center gap-1 sm:flex">
-            {STEPS.map((step, index) => (
+            {safeSteps.map((step, index) => (
               <span key={step.id} className={cn("h-1.5 rounded-full transition-all", index === stepIndex ? "w-6 bg-primary" : "w-2 bg-muted-foreground/20")} />
             ))}
           </div>
 
-          {stepIndex < STEPS.length - 1 ? (
-            <button type="button" onClick={() => setStepIndex((value) => Math.min(STEPS.length - 1, value + 1))} disabled={saving} className="flex h-9 items-center gap-2 rounded-[5px] bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
+          {stepIndex < safeSteps.length - 1 ? (
+            <button type="button" onClick={() => setStepIndex((value) => Math.min(safeSteps.length - 1, value + 1))} disabled={saving} className="flex h-9 items-center gap-2 rounded-[5px] bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50">
               {t("pages.doctor.summary.next", "Next")}
               <ArrowRight className="h-3.5 w-3.5" />
             </button>

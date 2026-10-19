@@ -45,7 +45,7 @@ export function useManagePatients() {
 
   const patients = data?.data ?? [];
   const total = data?.total ?? 0;
-  const perPage = data?.per_page ?? 20;
+  const perPage = data?.per_page ?? 10;
   const totalPages = Math.ceil(total / perPage);
 
   const statusCounts = useMemo(() => buildStatusCounts(patients), [patients]);

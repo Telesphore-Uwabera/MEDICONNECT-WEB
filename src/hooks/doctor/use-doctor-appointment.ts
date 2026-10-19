@@ -25,6 +25,7 @@ export interface GetAppointmentsParams {
     today?: boolean;
     upcoming?: boolean;
     page?: number;
+    per_page?: number;
 }
 
 export interface AppointmentPatient {
@@ -88,6 +89,7 @@ export interface Appointment {
 export interface AppointmentsResponse {
     data: Appointment[];
     current_page: number;
+    last_page?: number;
     per_page: number;
     total: number;
     stats?: {
@@ -211,6 +213,7 @@ function buildQuery(params: GetAppointmentsParams): string {
     if (params.today) q.set("today", "true");
     if (params.upcoming) q.set("upcoming", "true");
     if (params.page && params.page > 1) q.set("page", String(params.page));
+    if (params.per_page) q.set("per_page", String(params.per_page));
     const qs = q.toString();
     return qs ? `?${qs}` : "";
 }
@@ -227,6 +230,7 @@ function normalizeAppointmentsResponse(
         return {
             data: nested.data,
             current_page: nested.current_page ?? 1,
+            last_page: nested.last_page,
             per_page: nested.per_page ?? nested.data.length,
             total: nested.total ?? nested.data.length,
             stats: (response as { stats?: AppointmentsResponse["stats"] }).stats,
@@ -429,7 +433,7 @@ export interface InstantConsultQueueItem {
     guest_name?: string | null;
     guest_phone: string;
     description: string | null;
-    status: "pending" | "confirmed" | "accepted" | "in_progress" | "declined" | "withdrawn" | "expired" | "completed";
+    status: "pending" | "confirmed" | "accepted" | "in_progress" | "declined" | "withdrawn" | "expired" | "payment_expired" | "completed";
     payment_status?: string | null;
     queue_position: number;
     waiting_seconds: number;

@@ -310,10 +310,16 @@ const DoctorOverview = () => {
   const inPersonPct =
     combinedRev > 0 ? Math.round((inPersonRevTotal / combinedRev) * 100) : 39;
   const walletCurrency = "RWF";
-  const walletBalance = wallet?.balance ?? 0;
-  const todayPending = (today?.pending ?? 0) + (today?.confirmed ?? 0);
+  const walletBalance =
+    Number(wallet?.balance ?? 0) ||
+    Number((earnings as { summary?: { total_earned?: unknown } } | undefined)?.summary?.total_earned ?? 0) ||
+    Number(revenue?.total ?? 0);
+  const todayPending =
+    Number((today as { waiting?: number } | undefined)?.waiting ?? 0) ||
+    ((today?.pending ?? 0) + (today?.confirmed ?? 0)) ||
+    Number(instantStats?.current_queue ?? 0);
   const todayCompleted = today?.completed ?? 0;
-  const instantQueue = instantStats?.current_queue ?? 0;
+  const instantQueue = instantStats?.current_queue ?? today?.instant_queue ?? 0;
 
   
   const payoutRequests = uniquePayoutRequests([
@@ -528,7 +534,7 @@ const DoctorOverview = () => {
                 },
                 {
                   label: t("pages.doctor.stat_rx"),
-                  value: String(prescriptions?.draft ?? 0),
+                  value: String(prescriptions?.total ?? prescriptions?.issued ?? 0),
                   sub: t("pages.doctor.issued_count", { count: prescriptions?.issued ?? 0 }),
                   icon: FileText,
                   tone: "text-sky-500 bg-sky-500/10 border-sky-500/20",
@@ -1319,6 +1325,14 @@ const DoctorOverview = () => {
 
             {activeTab === "financial" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex justify-end">
+                  <Link
+                    to="/doctor/earnings"
+                    className="inline-flex h-8 items-center rounded-[6px] border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    {t("pages.doctor.earnings_page_title")}
+                  </Link>
+                </div>
                 <div className="grid lg:grid-cols-3 gap-4">
                   {/* Wallet balance */}
                   <div className="rounded-[6px] border border-border/70 bg-card  shadow-soft  p-5 shadow-soft flex flex-col gap-4">

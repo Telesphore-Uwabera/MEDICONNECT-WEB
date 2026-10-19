@@ -42,6 +42,7 @@ import PrescriptionDetailDrawer from "./PrescriptionDetailDrawer";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DateField } from "@/components/ui/date-field";
+import { TABLE_PAGE_SIZE, TablePager, tablePageCount } from "@/components/TablePager";
 
  
 type ViewMode = "table" | "cards";
@@ -57,6 +58,7 @@ interface FilterState {
   date_to: string;
   sort_by: SortBy;
   sort_order: SortOrder;
+  page: number;
 }
 
 const INITIAL_FILTERS: FilterState = {
@@ -68,6 +70,7 @@ const INITIAL_FILTERS: FilterState = {
   date_to: "",
   sort_by: "created_at",
   sort_order: "desc",
+  page: 1,
 };
  
 const STATUS_STYLES: Partial<Record<PrescriptionStatus, string>> = {
@@ -327,6 +330,8 @@ const DoctorPrescriptions = () => {
     const p: PrescriptionListParams = {
       sort_by: filters.sort_by,
       sort_order: filters.sort_order,
+      page: filters.page,
+      per_page: TABLE_PAGE_SIZE,
     };
     if (debouncedSearch) p.q = debouncedSearch;
     if (filters.status !== "All") p.status = filters.status;
@@ -383,7 +388,7 @@ const DoctorPrescriptions = () => {
   
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
+      setFilters((prev) => ({ ...prev, [key]: value, ...(key === "page" ? {} : { page: 1 }) }));
     },
     [],
   );
@@ -391,7 +396,7 @@ const DoctorPrescriptions = () => {
   const clearAll = useCallback(() => setFilters(INITIAL_FILTERS), []);
 
   const hasActiveFilters = useMemo(
-    () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS),
+    () => JSON.stringify({ ...filters, page: 1 }) !== JSON.stringify({ ...INITIAL_FILTERS, page: 1 }),
     [filters],
   );
 
@@ -934,6 +939,12 @@ const DoctorPrescriptions = () => {
                     ))}
                 </div>
               )}
+              <TablePager
+                page={filters.page}
+                lastPage={data?.last_page ?? tablePageCount(data?.total ?? allList.length, data?.per_page ?? TABLE_PAGE_SIZE)}
+                total={data?.total}
+                onPageChange={(page) => set("page", page)}
+              />
             </div>
           </main>
         </div>

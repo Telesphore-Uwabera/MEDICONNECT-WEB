@@ -774,7 +774,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
       },
       {
         label: t("pages.patient.prescriptions_label"),
-        value: prescriptions?.active ?? 0,
+        value: prescriptions?.active ?? prescriptions?.total ?? 0,
         hint: t("pages.patient.prescriptions_hint"),
         icon: Pill,
         tone: "text-emerald-500 bg-emerald-500/10",

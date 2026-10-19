@@ -26,18 +26,56 @@ import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summar
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
 import { IncomingCard } from "./shared/IncomingCard";
-import { InstantNotesSidebar } from "./shared/InstantNotesSidebar";
+import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSidebar";
+import { readCallChart } from "@/lib/call-note-form";
 import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
 import { TransferPatientPrompt } from "./shared/TransferPatientPrompt";
 import { ConsultationSummaryModal } from "./shared/ConsultationSummaryModal";
 import { QuickPrescriptionModal } from "./shared/QuickPrescriptionModal";
 import { t } from "i18next";
+import { TABLE_PAGE_SIZE, TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 
 type ItemAction = {
   id: number;
   action: "accepting" | "declining" | "joining" | "completing";
 } | null;
+
+function attachPatientToCallToken(
+  token: any,
+  item?: InstantConsultQueueItem | null,
+  live?: LiveSessionResponse | null,
+) {
+  if (!token || typeof token !== "object") return token;
+  const liveAny = (live ?? {}) as Record<string, unknown>;
+  const name =
+    item?.guest_name ||
+    (typeof liveAny.guest_name === "string" ? liveAny.guest_name : "") ||
+    (typeof liveAny.patient_name === "string" ? liveAny.patient_name : "") ||
+    token.guest_name ||
+    token.patient_name;
+  const phone =
+    item?.guest_phone ||
+    (typeof liveAny.guest_phone === "string" ? liveAny.guest_phone : "") ||
+    token.guest_phone ||
+    token.patient_phone;
+  const pid = Number(
+    (item as { user_id?: number; patient_id?: number } | null)?.user_id ??
+      (item as { patient_id?: number } | null)?.patient_id ??
+      liveAny.patient_id ??
+      liveAny.user_id,
+  );
+  if (name) {
+    token.guest_name = name;
+    token.patient_name = name;
+  }
+  if (phone) {
+    token.guest_phone = phone;
+    token.patient_phone = phone;
+  }
+  if (Number.isFinite(pid) && pid > 0) token.patient_id = pid;
+  return token;
+}
 
 // ─── Section label ─────────────────────────────────────────────────────────────
 
@@ -111,6 +149,7 @@ export function InstantConsultTab() {
   const { data: publicSettings } = usePublicSettings();
   const [notesOpen, setNotesOpen] = useState(true);
   const [queueTab, setQueueTab] = useState<"active" | "completed">("active");
+  const [queuePage, setQueuePage] = useState(1);
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
   const [transferPromptItem, setTransferPromptItem] = useState<InstantConsultQueueItem | null>(null);
@@ -129,7 +168,7 @@ export function InstantConsultTab() {
   const declineInstant = useDeclineInstant();
   const joinInstant = useJoinInstant();
   const completeInstant = useCompleteInstant();
-  const { startCall, activeCall } = useCallContext();
+  const { startCall, activeCall, endCall: hangUpCall } = useCallContext();
 
   // In-progress session the doctor can rejoin after navigating away. Suppressed
   // while a call overlay is already open.
@@ -141,7 +180,7 @@ export function InstantConsultTab() {
     (liveSession as LiveSessionResponse | null)?.status ?? "",
   ).toLowerCase();
   const liveIsTerminal = [
-    "completed", "resolved", "cancelled", "declined", "expired", "withdrawn",
+    "completed", "resolved", "cancelled", "declined", "expired", "payment_expired", "withdrawn",
   ].includes(liveStatus);
   const liveTarget = useMemo(
     () => (liveSession && !liveIsTerminal ? sessionToRejoinTarget(liveSession, "doctor") : null),
@@ -149,7 +188,12 @@ export function InstantConsultTab() {
   );
 
   const handleRejoinLive = () => {
-    if (liveTarget) startCall(liveTarget.roomName, liveTarget.token);
+    if (!liveTarget) return;
+    const match = queue.find((item) => {
+      const liveId = Number((liveSession as LiveSessionResponse | null)?.instant_consultation_request_id ?? (liveSession as LiveSessionResponse | null)?.id);
+      return item.id === liveId;
+    }) ?? joined[0] ?? null;
+    startCall(liveTarget.roomName, attachPatientToCallToken(liveTarget.token, match, liveSession));
   };
 
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
@@ -158,17 +202,20 @@ export function InstantConsultTab() {
   const isPaid = (item: InstantConsultQueueItem) =>
     item.payment_status === "paid" || item.status === "confirmed";
 
-  const visibleQueue = queue.filter((i) => i.status !== "expired");
-  const completed = visibleQueue.filter((i) => i.status === "completed");
-  const activeItems = visibleQueue.filter((i) => i.status !== "completed");
-  const waiting = activeItems.filter((i) =>
+  const newestFirst = (items: InstantConsultQueueItem[]) =>
+    [...items].sort((a, b) => b.id - a.id);
+  const visibleQueue = queue.filter((i) => i.status !== "declined" && i.status !== "withdrawn");
+  const finishedStatuses = ["completed", "expired", "payment_expired"];
+  const completed = newestFirst(visibleQueue.filter((i) => finishedStatuses.includes(i.status)));
+  const activeItems = newestFirst(visibleQueue.filter((i) => !finishedStatuses.includes(i.status)));
+  const waiting = newestFirst(activeItems.filter((i) =>
     ["pending", "queued", "waiting"].includes(i.status) && !isPaid(i),
-  );
-  const confirmed = activeItems.filter((i) =>
+  ));
+  const confirmed = newestFirst(activeItems.filter((i) =>
     isPaid(i) && !["accepted", "in_progress", "completed", "declined", "withdrawn"].includes(i.status),
-  );
-  const accepted = activeItems.filter((i) => i.status === "accepted");
-  const joined = activeItems.filter((i) => i.status === "in_progress");
+  ));
+  const accepted = newestFirst(activeItems.filter((i) => i.status === "accepted"));
+  const joined = newestFirst(activeItems.filter((i) => i.status === "in_progress"));
   const others = activeItems.filter((i) =>
     ["declined", "withdrawn"].includes(i.status),
   );
@@ -230,7 +277,7 @@ export function InstantConsultTab() {
 
         if (decodedToken) {
           // If you are using startCall directly:
-          startCall(roomName, decodedToken);
+          startCall(roomName, attachPatientToCallToken(decodedToken, item));
           // If you are navigating to the page instead:
           // window.location.href = `/consultation/${roomName}?t=${enrichedToken}`;
         } else {
@@ -247,7 +294,11 @@ export function InstantConsultTab() {
   const completeConsult = (item: InstantConsultQueueItem) => {
     setActiveAction({ id: item.id, action: "completing" });
     completeInstant.mutate(item.id, {
-      onSuccess: () => toast.success(t("consult.bookings.session_completed")),
+      onSuccess: () => {
+        hangUpCall();
+        call.endCall();
+        toast.success(t("consult.bookings.session_completed"));
+      },
       onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_complete"))),
       onSettled: () => setActiveAction(null),
     });
@@ -304,16 +355,15 @@ export function InstantConsultTab() {
   const recordPatientId = patientIdOf(recordItem);
   const bookingPatientId = patientIdOf(bookingItem);
 
-  // Carry the consultation notes (saved by InstantNotesSidebar under
-  // instant_notes:{consultationId}) into the booking's notes field.
-  const bookingDefaultNotes = (() => {
-    if (bookingItem == null) return "";
-    try {
-      return localStorage.getItem(`instant_notes:${bookingItem.id}`) ?? "";
-    } catch {
-      return "";
-    }
-  })();
+  // Carry in-call form notes into the facility booking and the SOAP summary.
+  const bookingNoteForm = bookingItem ? readCallChart(bookingItem.id, "instant") : null;
+  const bookingDefaultNotes = bookingNoteForm
+    ? [bookingNoteForm.chief_complaint, bookingNoteForm.clinical_assessment, bookingNoteForm.management_plan]
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join("\n\n")
+    : "";
+  const recordNoteForm = recordItem ? readCallChart(recordItem.id, "instant") : null;
 
   // ── Active call view ───────────────────────────────────────────────────────
   if (isInCall) {
@@ -364,7 +414,15 @@ export function InstantConsultTab() {
 
         {notesOpen && (
           <div className="w-72 flex-shrink-0 border-l border-border overflow-hidden flex flex-col bg-muted/20">
-            <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={joined[0]?.id} patientName={joined[0]?.guest_phone} />
+            <InstantNotesSidebar
+              onClose={() => setNotesOpen(false)}
+              consultationId={joined[0]?.id}
+              patientId={patientIdOf(joined[0] ?? null)}
+              patientName={joined[0]?.guest_name || joined[0]?.guest_phone}
+              patientPhone={joined[0]?.guest_phone}
+              mode="instant"
+              variant="page"
+            />
           </div>
         )}
       </div>
@@ -459,7 +517,10 @@ export function InstantConsultTab() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setQueueTab(tab.id)}
+                  onClick={() => {
+                    setQueueTab(tab.id);
+                    setQueuePage(1);
+                  }}
                   className={cn(
                     "flex items-center gap-1.5 rounded-[5px] px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
                     active
@@ -558,7 +619,7 @@ export function InstantConsultTab() {
                                 try {
                                   const decoded = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
                                   decoded.consultation_id = item.id;
-                                  startCall(roomName, decoded);
+                                  startCall(roomName, attachPatientToCallToken(decoded, item));
                                 } catch { /* fallback */ }
                               },
                               onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_accept"))),
@@ -653,12 +714,17 @@ export function InstantConsultTab() {
                   label={t("consult.bookings.completed", { defaultValue: "Completed" })}
                   count={completed.length}
                 />
-                {completed.map((item) => ( 
+                {paginateRows(completed, queuePage).map((item) => (
                   <div key={item.id} className="space-y-1.5">
                     <IncomingCard item={item} />
-                 
                   </div>
                 ))}
+                <TablePager
+                  page={queuePage}
+                  lastPage={tablePageCount(completed.length, TABLE_PAGE_SIZE)}
+                  total={completed.length}
+                  onPageChange={setQueuePage}
+                />
               </section>
             )}
           </div>
@@ -711,7 +777,9 @@ export function InstantConsultTab() {
         <ConsultationSummaryModal
           instantConsultationId={resolveInstantConsultId(recordItem)}
           patientId={recordPatientId}
-          patientName={recordItem.guest_phone}
+          patientName={recordNoteForm?.identity.full_name || recordItem.guest_name || recordItem.guest_phone}
+          defaultComplaint={recordNoteForm?.chief_complaint}
+          defaultDiagnosis={recordNoteForm?.clinical_assessment}
           onClose={() => setRecordItem(null)}
           onSaved={() => {
             const item = recordItem;

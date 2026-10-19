@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ExternalLink, FileText, Loader2, Paperclip, Send, Trash2, Upload, X } from "lucide-react";
+import { ExternalLink, Eye, FileText, Loader2, Paperclip, Send, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import echo from "@/lib/echo";
@@ -16,6 +16,19 @@ import {
   type IllnessProof,
   type IllnessProofFile,
 } from "@/hooks/use-illness-proofs";
+import {
+  appendProofToCallChart,
+  chartToSummaryFields,
+  proofFileKind,
+  resolvedPatientId,
+  type CallProof,
+} from "@/lib/call-note-form";
+import {
+  useConsultationSummaries,
+  useCreateConsultationSummary,
+  useUpdateConsultationSummary,
+  type ConsultationSummary,
+} from "@/hooks/doctor/use-consultation-summaries";
 
 interface Props {
   open: boolean;
@@ -55,8 +68,32 @@ const proofFromEvent = (payload: unknown): IllnessProof | null => {
 
 const isImageFile = (file: IllnessProofFile) => {
   const value = `${file.url ?? ""} ${file.file_path ?? ""}`.toLowerCase();
-  return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/.test(value) || value.startsWith("data:image/");
+  return proofFileKind(value) === "image";
 };
+
+const isPdfFile = (file: IllnessProofFile) => proofFileKind(`${file.url ?? ""} ${file.file_path ?? ""}`) === "pdf";
+
+function toCallProof(proof: IllnessProof): CallProof {
+  return {
+    id: proof.id,
+    text: proof.text ?? "",
+    created_at: proof.created_at,
+    files: (proof.files ?? []).map((file) => {
+      const url = resolveProofFileUrl(file) ?? "";
+      const name = file.file_path || file.url || `File #${file.id}`;
+      return { id: file.id, name, url, kind: proofFileKind(`${name} ${url}`) };
+    }),
+  };
+}
+
+function lookupSummaryRows(payload: unknown): ConsultationSummary[] {
+  const data = (payload as { data?: unknown })?.data;
+  if (Array.isArray(data) && data.every((item) => Array.isArray((item as { summaries?: unknown }).summaries))) {
+    return (data as Array<{ summaries?: ConsultationSummary[] }>).flatMap((item) => item.summaries ?? []);
+  }
+  if (Array.isArray(data)) return data as ConsultationSummary[];
+  return [];
+}
 
 export function IllnessProofPanel({
   open,
@@ -83,7 +120,17 @@ export function IllnessProofPanel({
   const deleteProof = useDeleteIllnessProof();
   const fetchDoctorProof = useDoctorIllnessProof();
   const fetchPatientProof = usePatientIllnessProofDetail();
+  const createSummary = useCreateConsultationSummary();
+  const updateSummary = useUpdateConsultationSummary();
+  const { data: existingSummaries } = useConsultationSummaries(
+    appointmentId != null
+      ? { appointment_id: appointmentId }
+      : { instant_consultation_id: instantConsultationId ?? undefined },
+    { enabled: isOwner && (appointmentId != null || instantConsultationId != null) },
+  );
+  const summaryIdRef = useRef<number | null>(null);
   const { data: me } = useMe();
+  const [preview, setPreview] = useState<{ url: string; name: string; kind: "image" | "pdf" } | null>(null);
 
   const doctorChannelIds = useMemo(() => {
     if (!isOwner) return [];
@@ -122,6 +169,35 @@ export function IllnessProofPanel({
     setPatientProofDetails((prev) => ({ ...prev, [id]: proof }));
   }, []);
 
+  const persistProofOnRecord = useCallback(
+    (proof: IllnessProof) => {
+      const consultationId = appointmentId ?? instantConsultationId ?? undefined;
+      const mode = appointmentId != null ? "appointment" : "instant";
+      const chart = appendProofToCallChart(consultationId, mode, toCallProof(proof));
+      const fields = chartToSummaryFields(chart);
+      const patientId = Number(proof.patient_id) || resolvedPatientId(chart, null);
+      if (consultationId == null || patientId == null) return;
+      const match = lookupSummaryRows(existingSummaries).find((row) =>
+        appointmentId != null ? row.appointment_id === appointmentId : row.instant_consultation_id === instantConsultationId,
+      );
+      const existingId = summaryIdRef.current ?? match?.id ?? null;
+      if (existingId != null) {
+        updateSummary.mutate({ id: existingId, payload: { attachments: fields.attachments } });
+        return;
+      }
+      createSummary.mutate(
+        {
+          ...(appointmentId != null ? { appointment_id: appointmentId } : { instant_consultation_id: instantConsultationId }),
+          patient_id: patientId,
+          chief_complaint: chart.chief_complaint || proof.text || "Illness proofs attached during the call",
+          attachments: fields.attachments,
+        },
+        { onSuccess: (res) => { summaryIdRef.current = res.summary?.id ?? null; } },
+      );
+    },
+    [appointmentId, createSummary, existingSummaries, instantConsultationId, updateSummary],
+  );
+
   const upsertDoctorProof = useCallback((proof: IllnessProof, notify = true) => {
     if (!proofBelongsToTarget(proof, target)) return;
     let isNew = false;
@@ -130,6 +206,7 @@ export function IllnessProofPanel({
       const without = prev.filter((item) => item.id !== proof.id);
       return [proof, ...without];
     });
+    persistProofOnRecord(proof);
     if (isNew && !open) {
       setUnread((count) => {
         const next = count + 1;
@@ -138,7 +215,7 @@ export function IllnessProofPanel({
       });
     }
     if (isNew && notify) toast.info(t("consult.proofs.doctor_new", "Patient submitted illness proof."));
-  }, [onUnreadChange, open, t, target]);
+  }, [onUnreadChange, open, persistProofOnRecord, t, target]);
 
   useEffect(() => {
     if (!open) return;
@@ -362,6 +439,7 @@ export function IllnessProofPanel({
             proof={proof}
             isOwner={isOwner}
             deleting={deleteProof.isPending && deleteProof.variables === proof.id}
+            onPreview={setPreview}
             onDelete={() => deleteProof.mutate(proof.id, {
               onSuccess: () => toast.success(t("consult.proofs.deleted", "Illness proof deleted.")),
               onError: (err) => toast.error(err.message || t("consult.proofs.delete_failed", "Could not delete proof.")),
@@ -369,6 +447,35 @@ export function IllnessProofPanel({
           />
         ))}
       </div>
+
+      {preview && (
+        <div className="absolute inset-0 z-30 flex flex-col bg-black/90" onClick={() => setPreview(null)}>
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+            <p className="truncate text-[11px] text-white/70">{preview.name}</p>
+            <div className="flex items-center gap-1">
+              <a
+                href={preview.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-[5px] px-2 py-1 text-[10px] text-white/70 hover:bg-white/10"
+              >
+                {t("consult.proofs.open_tab", "Open")}
+              </a>
+              <button type="button" onClick={() => setPreview(null)} className="rounded-[5px] p-1 text-white/70 hover:bg-white/10">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 p-2" onClick={(e) => e.stopPropagation()}>
+            {preview.kind === "image" ? (
+              <img src={preview.url} alt={preview.name} className="h-full w-full object-contain" />
+            ) : (
+              <iframe title={preview.name} src={preview.url} className="h-full w-full rounded-[6px] bg-white" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -378,11 +485,13 @@ function ProofCard({
   isOwner,
   deleting,
   onDelete,
+  onPreview,
 }: {
   proof: IllnessProof;
   isOwner: boolean;
   deleting: boolean;
   onDelete: () => void;
+  onPreview: (file: { url: string; name: string; kind: "image" | "pdf" }) => void;
 }) {
   const { t } = useTranslation();
   const files = proof.files ?? [];
@@ -412,26 +521,44 @@ function ProofCard({
             const url = resolveProofFileUrl(file);
             const label = file.file_path || file.url || `File #${file.id}`;
             const image = isImageFile(file);
+            const pdf = isPdfFile(file);
             return (
               <div key={file.id} className="space-y-1.5">
                 {url && image && (
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-[6px] border border-white/10 bg-black/25">
+                  <button type="button" onClick={() => onPreview({ url, name: label, kind: "image" })} className="block w-full overflow-hidden rounded-[6px] border border-white/10 bg-black/25">
                     <img src={url} alt="" className="max-h-44 w-full object-contain" />
-                  </a>
+                  </button>
                 )}
-                <a
-                  href={url ?? undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    "flex items-center gap-2 rounded-[5px] border border-white/10 bg-black/20 px-2 py-2 text-[10px] text-white/60 transition-colors",
-                    url ? "hover:border-primary/40 hover:text-white/85" : "pointer-events-none opacity-50",
+                {url && pdf && (
+                  <button type="button" onClick={() => onPreview({ url, name: label, kind: "pdf" })} className="block w-full overflow-hidden rounded-[6px] border border-white/10 bg-white">
+                    <iframe title={label} src={url} className="h-48 w-full pointer-events-none" />
+                  </button>
+                )}
+                <div className="flex items-center gap-2">
+                  <a
+                    href={url ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-2 rounded-[5px] border border-white/10 bg-black/20 px-2 py-2 text-[10px] text-white/60 transition-colors",
+                      url ? "hover:border-primary/40 hover:text-white/85" : "pointer-events-none opacity-50",
+                    )}
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1 truncate">{label}</span>
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                  </a>
+                  {url && (image || pdf) && (
+                    <button
+                      type="button"
+                      onClick={() => onPreview({ url, name: label, kind: image ? "image" : "pdf" })}
+                      className="rounded-[5px] border border-white/10 bg-black/20 p-2 text-white/60 hover:text-white"
+                      title={t("consult.proofs.preview", "Preview")}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
                   )}
-                >
-                  <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1 truncate">{label}</span>
-                  <ExternalLink className="h-3 w-3 shrink-0" />
-                </a>
+                </div>
               </div>
             );
           })}

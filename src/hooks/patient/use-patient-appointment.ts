@@ -73,6 +73,7 @@ export interface AppointmentFilterParams {
   date_to?: string;
   date?: string;
   page?: number;
+  per_page?: number;
 }
 
 export function useGetPatientAppointments(
@@ -90,6 +91,7 @@ export function useGetPatientAppointments(
   if (params.date) searchParams.set("date", params.date);
   if (params.page && params.page > 1)
     searchParams.set("page", String(params.page));
+  if (params.per_page) searchParams.set("per_page", String(params.per_page));
 
   const qs = searchParams.toString();
   const url = qs ? `${BASE}?${qs}` : BASE;
@@ -126,6 +128,7 @@ export function useGetPatientQuickAppointments(
   if (params.date) searchParams.set("date", params.date);
   if (params.page && params.page > 1)
     searchParams.set("page", String(params.page));
+  if (params.per_page) searchParams.set("per_page", String(params.per_page));
 
   const qs = searchParams.toString();
   const url = qs ? `/patient/quick?${qs}` : "/patient/quick";
