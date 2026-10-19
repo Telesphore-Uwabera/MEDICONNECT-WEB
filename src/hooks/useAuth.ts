@@ -19,18 +19,19 @@ function persistSession(
   qc: QueryClient,
   user: MeResponse["user"],
 ) {
-  qc.setQueryData(AUTH_KEY, { user });
+  qc.setQueryData([...AUTH_KEY, "in"], { user });
   qc.removeQueries({
     predicate: (query) => query.queryKey[0] !== "auth",
   });
 }
 
 
-export const useMe = () =>
-  useQuery({
-    queryKey: AUTH_KEY,
+export const useMe = () => {
+  const token = getAuthToken();
+  return useQuery({
+    queryKey: [...AUTH_KEY, token ? "in" : "out"],
     queryFn: () => apiFetch<MeResponse>("/auth/me"),
-    enabled: !!getAuthToken(),
+    enabled: Boolean(token),
     select: (data) => data.user,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
@@ -38,6 +39,7 @@ export const useMe = () =>
     refetchOnMount: false,
     retry: false,
   });
+};
 
 export const useRegister = () =>
   useMutation({

@@ -146,10 +146,12 @@ export function PatientCallAlertListener() {
   const { startCall, activeCall } = useCallContext();
   const isAuthenticated = !!localStorage.getItem("auth_token");
 
-  const { data: certificateData } = useGetPatientCertificates(undefined, { refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false });
+  const { data: certificateData } = useGetPatientCertificates(undefined, {
+    refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false,
+  });
   const { data: appointmentData } = useGetPatientAppointments(
     { status: "in_progress", type: "online" },
-    { refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false },
+    { enabled: isAuthenticated, refetchInterval: isAuthenticated ? POLL_INTERVAL_MS : false },
   );
   const { data: readyInstantData } = useQuery({
     queryKey: ["patient-instant-ready"],

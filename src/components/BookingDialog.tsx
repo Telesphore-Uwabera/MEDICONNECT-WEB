@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { goToSignIn } from "@/lib/auth-session";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import "moment/locale/fr";
@@ -513,7 +514,7 @@ export const BookingDialog = ({
           description: t("booking.doctorAppointment.sessionExpiredDesc"),
         });
         onOpenChange(false);
-        navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+        goToSignIn(window.location.pathname + window.location.search);
         return;
       }
 

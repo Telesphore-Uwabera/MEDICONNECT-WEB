@@ -67,3 +67,32 @@ export function subscribeToRemoteSession(handler: (change: SessionChange) => voi
 export function emitSessionEnded(message: string) {
   window.dispatchEvent(new CustomEvent(SESSION_ENDED_EVENT, { detail: { message } }));
 }
+
+function safeReturnPath(from?: string | { pathname?: string; search?: string } | null) {
+  const raw =
+    typeof from === "string"
+      ? from
+      : from?.pathname
+        ? `${from.pathname}${from.search || ""}`
+        : "";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/auth")) return "";
+  return raw;
+}
+
+export function loginReturnPath() {
+  if (typeof window === "undefined") return "";
+  return safeReturnPath(new URLSearchParams(window.location.search).get("next"));
+}
+
+/** Open the sign-in page and drop any stale in-memory session. */
+export function goToSignIn(
+  from?: string | { pathname?: string; search?: string } | null,
+  options?: { reason?: string },
+) {
+  const params = new URLSearchParams();
+  const next = safeReturnPath(from);
+  if (next) params.set("next", next);
+  if (options?.reason) params.set("reason", options.reason);
+  const qs = params.toString();
+  window.location.assign(qs ? `/auth?${qs}` : "/auth");
+}

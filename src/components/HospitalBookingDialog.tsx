@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { goToSignIn } from "@/lib/auth-session";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -83,7 +83,6 @@ export const HospitalBookingDialog = ({
   );
 
   const createBooking = useCreateBooking();
-  const navigate = useNavigate();
   const { data: me } = useMe();
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -182,7 +181,7 @@ export const HospitalBookingDialog = ({
         description: t("booking.hospitalAppointment.signInDesc"),
       });
       onOpenChange(false);
-      navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+      goToSignIn(window.location.pathname + window.location.search);
       return;
     }
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
@@ -231,7 +230,7 @@ export const HospitalBookingDialog = ({
             description: t("booking.doctorAppointment.sessionExpiredDesc"),
           });
           onOpenChange(false);
-          navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+          goToSignIn(window.location.pathname + window.location.search);
           return;
         }
 

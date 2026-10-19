@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useMe } from "@/hooks/useAuth";
+import { getAuthToken } from "@/lib/auth-session";
 import { listFrom } from "@/lib/list-payload";
 import type {
   Department,
@@ -32,6 +34,11 @@ export const svcKeys = {
 // ─── Departments ──────────────────────────────────────────────────────────────
 
 export function useGetDepartments(filters?: DepartmentFilters) {
+  const { data: me } = useMe();
+  const canReadHospital =
+    Boolean(getAuthToken()) &&
+    ((me?.active_role ?? me?.role) === "hospital" ||
+      (Array.isArray(me?.available_roles) && me.available_roles.includes("hospital")));
   const params = new URLSearchParams();
   if (filters?.search) params.set("search", filters.search);
   if (filters?.is_emergency !== undefined)
@@ -49,6 +56,9 @@ export function useGetDepartments(filters?: DepartmentFilters) {
     queryKey: deptKeys.list(filters),
     queryFn: () =>
       apiFetch<unknown>(url).then((r) => listFrom<Department>(r, "departments")),
+    enabled: canReadHospital,
+    retry: (count, error) =>
+      (error as { status?: number })?.status === 403 ? false : count < 2,
   });
 }
 

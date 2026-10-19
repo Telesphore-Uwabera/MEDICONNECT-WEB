@@ -113,7 +113,15 @@ export function requireAuth(req, res, next) {
 export function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ message: "Unauthenticated." });
-    if (!roles.includes(req.user.active_role)) {
+    const current = req.user.active_role || req.user.role;
+    const available = Array.isArray(req.user.available_roles) ? req.user.available_roles : [];
+    const allowed = roles.some((role) => {
+      if (current === role) return true;
+      if (available.includes(role)) return true;
+      if (role === "admin" && req.user.can_be_admin) return true;
+      return false;
+    });
+    if (!allowed) {
       return res.status(403).json({ message: "You do not have access to this area." });
     }
     next();

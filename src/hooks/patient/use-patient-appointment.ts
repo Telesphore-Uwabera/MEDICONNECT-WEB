@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { useMe } from "@/hooks/useAuth";
+import { getAuthToken } from "@/lib/auth-session";
 
 const BASE = "/patient/appointments";
 
@@ -101,7 +102,7 @@ export function useGetPatientAppointments(
     queryKey: ["patient-appointments", me?.id ?? null, params],
     queryFn: () => apiFetch(url),
     staleTime: 30_000,
-    enabled: options.enabled ?? true,
+    enabled: (options.enabled ?? true) && Boolean(getAuthToken()),
     refetchInterval: options.refetchInterval,
   });
 }

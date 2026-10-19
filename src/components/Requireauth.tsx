@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LogIn, X, ShieldAlert } from "lucide-react";
+import { goToSignIn } from "@/lib/auth-session";
 
 /**
  * RequireAuth
@@ -26,7 +27,7 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   if (dismissed) return null;
 
   const handleSignIn = () => {
-    navigate("/auth", { state: { from: location }, replace: true });
+    goToSignIn(location);
   };
 
   const handleStay = () => {
@@ -77,6 +78,7 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
           {/* Actions */}
           <div className="px-5 pb-5 flex flex-col sm:flex-row gap-2">
             <button
+              type="button"
               onClick={handleSignIn}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors"
             >

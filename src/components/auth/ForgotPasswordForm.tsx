@@ -269,6 +269,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                 onChange: setPassword,
                 show: showPassword,
                 setShow: setShowPassword,
+                autoComplete: "new-password",
               },
               {
                 label: t("auth.confirm_password", "Confirm password"),
@@ -276,6 +277,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                 onChange: setPasswordConfirmation,
                 show: showConfirm,
                 setShow: setShowConfirm,
+                autoComplete: "new-password",
               },
             ].map((field) => (
               <div key={field.label} className="space-y-1">
@@ -286,6 +288,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                   <Lock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type={field.show ? "text" : "password"}
+                    autoComplete={field.autoComplete}
                     value={field.value}
                     onChange={(e) => field.onChange(e.target.value)}
                     className={`${inputCls} pr-9`}

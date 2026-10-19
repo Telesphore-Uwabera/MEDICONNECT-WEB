@@ -257,6 +257,7 @@ if (form.password !== form.confirm)
             <Input
               type="text"
               inputMode="email"
+              autoComplete="email"
               value={form.email}
               onChange={set("email")}
               onBlur={() => setEmailTouched(true)}
@@ -360,6 +361,7 @@ if (form.password !== form.confirm)
               <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
                 type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 value={form.password}
                 onChange={set("password")}
                 className={`${inputCls} pr-9`}
@@ -383,6 +385,7 @@ if (form.password !== form.confirm)
               <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
                 type={showConfirm ? "text" : "password"}
+                autoComplete="new-password"
                 value={form.confirm}
                 onChange={set("confirm")}
                 className={`${inputCls} pr-9`}

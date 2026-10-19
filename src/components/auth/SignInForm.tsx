@@ -16,6 +16,7 @@ import {
   useLogin,
 } from "@/hooks/useAuth";
 import { dashboardPath } from "@/lib/auth-store";
+import { loginReturnPath } from "@/lib/auth-session";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
@@ -58,7 +59,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
         {
           onSuccess: (data) => {
             onSuccess();
-            navigate(dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
+            navigate(loginReturnPath() || dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
           },
           onError: (err: any) => {
             const msg = err?.message ?? t("auth.errors.unknown");
@@ -86,7 +87,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
       {
         onSuccess: (data) => {
           onSuccess();
-          navigate(dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
+          navigate(loginReturnPath() || dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
         },
         onError: (err: any) => {
           const msg = err?.message ?? t("auth.errors.unknown");
@@ -173,6 +174,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                     <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input
                       type="email"
+                      autoComplete="username"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onBlur={() => setEmailTouched(true)}
@@ -228,6 +230,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                   <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className={`${inputCls} pr-9`}

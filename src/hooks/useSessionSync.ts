@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
 import {
   SESSION_ENDED_EVENT,
   getAuthToken,
+  goToSignIn,
   subscribeToRemoteSession,
 } from "@/lib/auth-session";
 
@@ -18,7 +19,6 @@ const TAKEOVER_MESSAGE =
  */
 export function useSessionSync() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -28,10 +28,7 @@ export function useSessionSync() {
       applying = true;
       qc.clear();
       if (location.pathname === "/auth") return;
-      navigate("/auth", {
-        replace: true,
-        state: { reason: "session_replaced", message },
-      });
+      goToSignIn(location);
     };
 
     const unsub = subscribeToRemoteSession((change) => {
@@ -70,5 +67,5 @@ export function useSessionSync() {
       window.removeEventListener("focus", verify);
       window.clearInterval(interval);
     };
-  }, [qc, navigate, location.pathname]);
+  }, [qc, location]);
 }

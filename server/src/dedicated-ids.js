@@ -441,7 +441,24 @@ async function extraFilters(req, table, spec) {
       cols.forEach(() => params.push(`%${term}%`));
     }
   }
+  if ((req.query.active_only === "true" || req.query.active_only === "1") && (await hasColumn(table, "is_active"))) {
+    filters.push("`is_active` = 1");
+  }
+  if (req.query.is_emergency === "true" && (await hasColumn(table, "is_emergency"))) {
+    filters.push("`is_emergency` = 1");
+  }
+  if (req.query.is_emergency === "false" && (await hasColumn(table, "is_emergency"))) {
+    filters.push("`is_emergency` = 0");
+  }
   return { filters, params };
+}
+
+function sortClause(req, fallback = "`id` DESC") {
+  const allowed = new Set(["id", "sort_order", "name_en", "name", "created_at", "updated_at", "capacity"]);
+  const column = String(req.query.sort_by || "").trim();
+  if (!allowed.has(column)) return fallback;
+  const dir = String(req.query.sort_dir || "asc").toLowerCase() === "desc" ? "DESC" : "ASC";
+  return `\`${column}\` ${dir}, \`id\` DESC`;
 }
 
 async function loadOwnedRow(scope, spec, user, recordId) {
@@ -477,9 +494,10 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
   for (const spec of Object.values(DEDICATED)) {
     for (const scope of spec.scopes) {
       const guard = [requireAuth, adminRoles(requireRole, scope)];
+      const listGuard = scope === "admin" ? guard : [requireAuth];
       const base = mountBase(scope, spec);
 
-      router.get(base, ...guard, async (req, res, next) => {
+      router.get(base, ...listGuard, async (req, res, next) => {
         try {
           const table = await firstTable(tablesFor(spec, scope));
           if (!table) return next();
@@ -491,7 +509,10 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           const total = await countWhere(table, where, params);
           let data = await presentRows(
             table,
-            await q(`SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]),
+            await q(
+              `SELECT * FROM \`${table}\` ${where} ORDER BY ${sortClause(req)} LIMIT ? OFFSET ?`,
+              [...params, perPage, offset],
+            ),
           );
           if (table === "appointments") data = await decorateAppointments(data);
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
@@ -510,7 +531,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
         }
       });
 
-      router.get(`${base}/:${spec.param}`, ...guard, async (req, res, next) => {
+      router.get(`${base}/:${spec.param}`, ...listGuard, async (req, res, next) => {
         try {
           const recordId = req.params[spec.param];
           if (!/^\d+$/.test(String(recordId))) return next();

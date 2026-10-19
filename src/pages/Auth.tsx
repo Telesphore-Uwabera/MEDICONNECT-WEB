@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { dashboardPath } from "@/lib/auth-store";
+import { getAuthToken, loginReturnPath } from "@/lib/auth-session";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
@@ -23,10 +24,12 @@ const Auth = () => {
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
   // Show idle-timeout banner when redirected here automatically
-  const sessionReason = (location.state as { reason?: string; message?: string } | null)?.reason;
+  const sessionReason =
+    (location.state as { reason?: string; message?: string } | null)?.reason ||
+    params.get("reason");
   const idleMessage = sessionReason === "idle_timeout" || sessionReason === "session_replaced"
-    ? ((location.state as { message?: string }).message
-      ?? (sessionReason === "session_replaced"
+    ? ((location.state as { message?: string } | null)?.message
+    ?? (sessionReason === "session_replaced"
         ? "You were signed out because this account signed in on another tab or device."
         : "You were logged out after 1 hour of inactivity."))
     : null;
@@ -41,10 +44,9 @@ const Auth = () => {
   const { data: user } = useMe();
 
   useEffect(() => {
-    if (user && !hasRedirected.current) {
-      hasRedirected.current = true;
-      navigate(dashboardPath(user.active_role ?? user.role), { replace: true });
-    }
+    if (!getAuthToken() || !user || hasRedirected.current) return;
+    hasRedirected.current = true;
+    navigate(loginReturnPath() || dashboardPath(user.active_role ?? user.role), { replace: true });
   }, [user, navigate]);
 
   // Called by SignInForm/SignUpForm after successful auth.

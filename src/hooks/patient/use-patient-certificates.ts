@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { getAuthToken } from "@/lib/auth-session";
 
 const BASE = "/patient/certificates";
 
@@ -301,10 +302,12 @@ export function useGetPatientCertificates(
   status?: string,
   options?: { refetchInterval?: number | false },
 ) {
+  const signedIn = Boolean(getAuthToken());
   return useQuery<CertificatesListResponse>({
     queryKey: certKeys.list(status),
     queryFn: () => apiFetch(status ? `${BASE}?status=${status}` : BASE),
-    refetchInterval: options?.refetchInterval ?? 8_000,
+    enabled: signedIn,
+    refetchInterval: signedIn ? (options?.refetchInterval ?? 8_000) : false,
   });
 }
 

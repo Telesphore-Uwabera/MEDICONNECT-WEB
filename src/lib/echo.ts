@@ -9,14 +9,23 @@ declare global {
 
 window.Pusher = Pusher;
 
+function reverbHost() {
+    const host = String(import.meta.env.VITE_REVERB_HOST || "").trim();
+    if (!host || host.includes("trycloudflare")) {
+        return "ws.mediconnect.rw";
+    }
+    return host;
+}
+
 const echo = new Echo({
     broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT,
-    wssPort: import.meta.env.VITE_REVERB_PORT,
-    forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'wss',
+    key: import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-staging-key",
+    wsHost: reverbHost(),
+    wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
+    wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "wss") !== "ws",
     enabledTransports: ['ws', 'wss'],
+    disableStats: true,
     authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
     authorizer: (channel: any, options: any) => {
         return {
@@ -53,5 +62,21 @@ const echo = new Echo({
         };
     },
 });
+
+const connection = echo?.connector?.pusher?.connection;
+if (connection) {
+    let stopped = false;
+    const stopRetrying = () => {
+        if (stopped) return;
+        stopped = true;
+        try {
+            echo.disconnect();
+        } catch {
+            /* ignore */
+        }
+    };
+    connection.bind("failed", stopRetrying);
+    connection.bind("unavailable", stopRetrying);
+}
 
 export default echo;
