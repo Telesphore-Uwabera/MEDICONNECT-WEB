@@ -5,7 +5,7 @@ const BASE = "/pharmacy/dashboard";
 
 // ─── Filter params ────────────────────────────────────────────────────────────
 
-export type DashboardPeriod = "today" | "week" | "month" | "year" | "custom";
+export type DashboardPeriod = "all" | "today" | "week" | "month" | "year" | "custom";
 export type ChartGroup = "day" | "week" | "month";
 
 export interface DashboardParams {
@@ -156,6 +156,7 @@ export interface StockAlerts {
 export interface AwaitingPrescription {
   id: number;
   patient_name: string;
+  doctor_name?: string;
   status: string;
   submitted: string;
 }
@@ -204,6 +205,13 @@ export interface ExternalSync {
   next_sync_due: string;
 }
 
+export interface PharmacyCareLinks {
+  doctor_prescriptions: number;
+  patient_orders: number;
+  unique_patients: number;
+  awaiting_rx: number;
+}
+
 export interface PharmacyDashboardData {
   filters_applied: FiltersApplied;
   inventory_mode: string;
@@ -217,6 +225,7 @@ export interface PharmacyDashboardData {
   stock_requests: StockRequestsSummary;
   top_medicines: TopMedicine[];
   external_sync: ExternalSync;
+  care_links?: PharmacyCareLinks;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -226,14 +235,16 @@ export function useGetPharmacyDashboard(params: DashboardParams = {}) {
     queryKey: ["pharmacy-dashboard", params],
     queryFn: async (): Promise<PharmacyDashboardData> => {
       const qs = new URLSearchParams();
-      const period = params.period ?? "month";
+      const period = params.period ?? "all";
       qs.set("period", period);
       if (period === "custom") {
         if (params.start_date) qs.set("start_date", params.start_date);
         if (params.end_date)   qs.set("end_date",   params.end_date);
       }
       if (params.chart_group) qs.set("chart_group", params.chart_group);
-      return apiFetch<PharmacyDashboardData>(`${BASE}?${qs}`);
+      const payload = await apiFetch<PharmacyDashboardData & { data?: PharmacyDashboardData }>(`${BASE}?${qs}`);
+      if (payload?.today || payload?.period_stats || payload?.care_links) return payload;
+      return (payload?.data ?? payload) as PharmacyDashboardData;
     },
     staleTime: 60_000,
   });

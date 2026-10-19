@@ -13,7 +13,12 @@ import { formatDateOnly } from "@/lib/date";
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
+  Building2,
+  Stethoscope,
+  Share2,
+  Pill,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useGetDepartments } from "@/hooks/hospital/use-hospital-departments";
 import {
   useGetHospitalDashboard,
@@ -26,7 +31,7 @@ import {
   type UpcomingAppointment,
   type Department,
 } from '@/hooks/hospital/use-hospital-dashboard';
-import { FilterBar, FilterToggleButton, type FilterFieldDef } from "@/components/FilterBar";
+import { FilterBar, type FilterFieldDef } from "@/components/FilterBar";
 import {
   BarChart,
   Bar,
@@ -169,7 +174,7 @@ const HospitalAnalytics = () => {
   const defaultCustomRange = getDefaultCustomRange();
   const initialFilters = useMemo<HospitalDashboardParams>(
     () => ({
-      period: "month",
+      period: "all",
       chart_group: "day",
       status: "all",
       start_date: defaultCustomRange.start_date,
@@ -178,7 +183,7 @@ const HospitalAnalytics = () => {
     [defaultCustomRange.end_date, defaultCustomRange.start_date],
   );
   const [filters, setFilters] = useState<HospitalDashboardParams>({
-    period: "month",
+    period: "all",
     chart_group: "day",
     status: "all",
     start_date: defaultCustomRange.start_date,
@@ -225,8 +230,9 @@ const HospitalAnalytics = () => {
         type: "select",
         key: "period",
         label: t("pages.hospital.filter_period"),
-        value: filters.period ?? "month",
+        value: filters.period ?? "all",
         options: [
+          { value: "all", label: t("pages.hospital.period_all", { defaultValue: "All time" }) },
           { value: "today", label: t("pages.hospital.period_today") },
           { value: "week", label: t("pages.hospital.period_week") },
           { value: "month", label: t("pages.hospital.period_month") },
@@ -407,14 +413,10 @@ const HospitalAnalytics = () => {
                       {t("pages.hospital.updating")}
                     </span>
                   )}
-                  <FilterToggleButton
-                    open={filtersOpen}
-                    onToggle={() => setFiltersOpen((open) => !open)}
-                    hasActiveFilters={hasActiveFilters}
-                  />
                 </div>
               </div>
               <FilterBar
+                alwaysOpen
                 open={filtersOpen}
                 onToggle={() => setFiltersOpen((open) => !open)}
                 fields={filterFields}
@@ -541,6 +543,31 @@ const HospitalAnalytics = () => {
             {/* OVERVIEW TAB */}
             {activeTab === "overview" && (
               <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
+                    {t("pages.hospital.care_loop", { defaultValue: "Care loop" })}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("pages.hospital.care_loop_sub", { defaultValue: "Patient bookings, affiliated doctor visits, referrals, and prescriptions from the same care network." })}
+                  </p>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3">
+                    {[
+                      { label: t("pages.hospital.patient_bookings", { defaultValue: "Patient bookings" }), value: data?.care_links?.patient_bookings ?? periodSB?.total ?? 0, to: "/hospital/appointments", icon: Building2 },
+                      { label: t("pages.hospital.doctor_visits", { defaultValue: "Doctor visits" }), value: data?.care_links?.doctor_visits ?? periodAppts?.total ?? 0, to: "/hospital/appointments", icon: Stethoscope },
+                      { label: t("pages.hospital.referrals_in", { defaultValue: "Referrals" }), value: data?.care_links?.referrals ?? 0, to: "/hospital/appointments", icon: Share2 },
+                      { label: t("pages.hospital.linked_rx", { defaultValue: "Doctor prescriptions" }), value: data?.care_links?.prescriptions ?? 0, to: "/hospital/prescriptions", icon: Pill },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link key={item.label} to={item.to} className="rounded-[6px] border border-border/60 bg-secondary/20 p-3 hover:border-primary/40 transition-colors">
+                          <Icon className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-bold text-foreground mt-2">{isLoading ? "..." : item.value.toLocaleString()}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{item.label}</p>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
                 {/*  TOP STAT STRIP   */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {isLoading ? (
@@ -551,7 +578,7 @@ const HospitalAnalytics = () => {
                     <>
                       <StatCard
                         label={t("pages.hospital.stat_patients")}
-                        value={(periodSB?.unique_patients ?? 0).toLocaleString()}
+                        value={(data?.care_links?.unique_patients ?? periodAppts?.unique_patients ?? periodSB?.unique_patients ?? 0).toLocaleString()}
                         icon={Users}
                         accent="primary"
                       />

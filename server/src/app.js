@@ -209,7 +209,7 @@ function emptyDashboard(filters) {
     period_stats: {
       unique_doctors: 0, unique_hospitals: 0, total_appointments: 0, completed: 0, cancelled: 0,
       pending: 0, online_count: 0, in_person_count: 0, avg_duration_minutes: 0, instant_total: 0,
-      instant_completed: 0, prescriptions_received: 0, service_bookings_total: 0, certificates_issued: 0,
+      instant_completed: 0, prescriptions_received: 0, service_bookings_total: 0, pharmacy_orders_total: 0, certificates_issued: 0,
     },
     spending: {
       total: 0, previous_period_total: 0, change_percent: null, total_insurance_saved: 0,
@@ -815,6 +815,20 @@ export function appRoutes(router) {
         dashboard.service_bookings.accepted = bookingTally.byStatus.accepted ?? 0;
         dashboard.service_bookings.cancelled = bookingTally.byStatus.cancelled ?? 0;
         dashboard.period_stats.service_bookings_total = bookingTally.total;
+        dashboard.period_stats.unique_hospitals = Number((await one(
+          `SELECT COUNT(DISTINCT hospital_id) AS total FROM service_bookings WHERE patient_id IN (${marks}) AND hospital_id IS NOT NULL`,
+          ids,
+        ).catch(() => ({ total: 0 })))?.total ?? 0);
+      }
+      if (ids.length && await tableExists("pharmacy_orders")) {
+        const orderOwner = await hasColumn("pharmacy_orders", "user_id")
+          ? `(patient_id IN (${marks}) OR user_id = ?)`
+          : `patient_id IN (${marks})`;
+        const orderParams = await hasColumn("pharmacy_orders", "user_id") ? [...ids, userId] : ids;
+        dashboard.period_stats.pharmacy_orders_total = Number((await one(
+          `SELECT COUNT(*) AS total FROM pharmacy_orders WHERE ${orderOwner} AND (status IS NULL OR status <> 'draft')`,
+          orderParams,
+        ).catch(() => ({ total: 0 })))?.total ?? 0);
       }
       if (ids.length && await tableExists("reviews")) {
         const reviewRow = await one(

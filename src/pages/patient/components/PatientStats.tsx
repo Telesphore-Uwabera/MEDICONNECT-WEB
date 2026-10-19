@@ -99,6 +99,7 @@ interface PatientDashboardResponse {
     instant_completed: number;
     prescriptions_received: number;
     service_bookings_total: number;
+    pharmacy_orders_total: number;
     certificates_issued: number;
   };
   spending: {
@@ -763,6 +764,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
       instant_completed: 0,
       prescriptions_received: 0,
       service_bookings_total: 0,
+      pharmacy_orders_total: 0,
       certificates_issued: 0,
       ...dashboard?.period_stats,
       total_appointments:
@@ -1011,6 +1013,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               {[
                 { label: t("pages.patient.certificates_issued"), value: certificates?.issued ?? 0, to: "/patient/fitness-certificates" },
                 { label: t("pages.patient.service_bookings"), value: ps?.service_bookings_total ?? 0, to: "/patient/service-bookings" },
+                { label: t("pages.patient.pharmacy_orders", { defaultValue: "Pharmacy orders" }), value: ps?.pharmacy_orders_total ?? 0, to: "/patient/pharmacy/orders" },
               ].map((item) => (
                 <Link
                   key={item.label}

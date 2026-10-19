@@ -82,6 +82,7 @@ function SkeletonRow() {
 // ─── Period selector ──────────────────────────────────────────────────────────
 
 const PERIODS: { value: DashboardPeriod; labelKey: string }[] = [
+  { value: "all", labelKey: "pages.pharmacy.period_all" },
   { value: "today", labelKey: "pages.pharmacy.period_today" },
   { value: "week", labelKey: "pages.pharmacy.period_week" },
   { value: "month", labelKey: "pages.pharmacy.period_month" },
@@ -430,7 +431,7 @@ function TopMedicines({ medicines, loading }: {
 // ─── {t("pages.pharmacy.prescriptions")} ────────────────────────────────────────────────────────────
 
 function Awaiting({ items, counts, loading }: {
-  items: { id: number; patient_name: string; status: string; submitted: string }[];
+  items: { id: number; patient_name: string; doctor_name?: string; status: string; submitted: string }[];
   counts: { pending: number; reviewing: number };
   loading: boolean;
 }) {
@@ -465,7 +466,9 @@ function Awaiting({ items, counts, loading }: {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-foreground truncate">{rx.patient_name}</p>
-                  <p className="text-[10px] text-muted-foreground">{rx.submitted}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {rx.doctor_name ? `${rx.doctor_name} · ` : ""}{rx.submitted}
+                  </p>
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900 capitalize">
                   {rx.status}
@@ -695,7 +698,7 @@ function QuickActions() {
 function PharmacyDashboard() {
   const { t, i18n } = useTranslation();
 
-  const [period, setPeriod] = useState<DashboardPeriod>("month");
+  const [period, setPeriod] = useState<DashboardPeriod>("all");
   const [chartGroup, setChartGroup] = useState<ChartGroup>("day");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
@@ -837,6 +840,31 @@ function PharmacyDashboard() {
               {/* OVERVIEW TAB */}
               {activeTab === "overview" && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
+                      {t("pages.pharmacy.care_loop", { defaultValue: "Care loop" })}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t("pages.pharmacy.care_loop_sub", { defaultValue: "Doctors send prescriptions here. Patients place orders from those prescriptions or from the marketplace." })}
+                    </p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3">
+                      {[
+                        { label: t("pages.pharmacy.doctor_rx", { defaultValue: "Doctor prescriptions" }), value: data?.care_links?.doctor_prescriptions ?? data?.prescriptions?.total ?? 0, to: "/pharmacy/prescriptions", icon: Pill },
+                        { label: t("pages.pharmacy.awaiting_rx", { defaultValue: "Awaiting action" }), value: data?.care_links?.awaiting_rx ?? ((data?.prescriptions?.pending ?? 0) + (data?.prescriptions?.reviewing ?? 0)), to: "/pharmacy/prescriptions", icon: ClipboardList },
+                        { label: t("pages.pharmacy.patient_orders", { defaultValue: "Patient orders" }), value: data?.care_links?.patient_orders ?? data?.period_stats?.orders?.total ?? 0, to: "/pharmacy/orders", icon: ShoppingBag },
+                        { label: t("pages.pharmacy.customers"), value: data?.care_links?.unique_patients ?? data?.period_stats?.orders?.unique_customers ?? 0, to: "/pharmacy/orders", icon: Users },
+                      ].map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link key={item.label} to={item.to} className="rounded-[6px] border border-border/60 bg-secondary/20 p-3 hover:border-primary/40 transition-colors">
+                            <Icon className="h-4 w-4 text-primary" />
+                            <p className="text-sm font-bold text-foreground mt-2">{isLoading ? "..." : fmtNum(item.value)}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">{item.label}</p>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   {/* KPI cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

@@ -5,7 +5,7 @@ const BASE = "/hospital/dashboard";
 
 // ─── Filter params ────────────────────────────────────────────────────────────
 
-export type DashboardPeriod = "today" | "week" | "month" | "year" | "custom";
+export type DashboardPeriod = "all" | "today" | "week" | "month" | "year" | "custom";
 export type ChartGroup = "day" | "week" | "month";
 export type BookingStatus =
   | "pending"
@@ -150,6 +150,15 @@ export interface ReviewsStats {
   recent: RecentReview[];
 }
 
+export interface HospitalCareLinks {
+  patient_bookings: number;
+  doctor_visits: number;
+  affiliated_doctors: number;
+  unique_patients: number;
+  referrals: number;
+  prescriptions: number;
+}
+
 export interface HospitalDashboardData {
   today?: TodaySnapshot;
   period_stats?: {
@@ -166,6 +175,7 @@ export interface HospitalDashboardData {
   services?: ServicesStats;
   doctors?: DoctorsStats;
   reviews?: ReviewsStats;
+  care_links?: HospitalCareLinks;
 }
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -186,7 +196,11 @@ export function useGetHospitalDashboard(params: HospitalDashboardParams = {}) {
 
   return useQuery<HospitalDashboardData>({
     queryKey: ["hospital-dashboard", params],
-    queryFn: () => apiFetch<HospitalDashboardData>(url),
+    queryFn: async () => {
+      const payload = await apiFetch<HospitalDashboardData & { data?: HospitalDashboardData }>(url);
+      if (payload?.today || payload?.period_stats || payload?.care_links) return payload;
+      return (payload?.data ?? payload) as HospitalDashboardData;
+    },
     staleTime: 60_000,
   });
 }

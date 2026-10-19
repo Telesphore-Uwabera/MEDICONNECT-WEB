@@ -675,7 +675,7 @@ export function registerActions(router, RESOURCES) {
         return handlePharmacyOrders(req, res, parts);
       }
       if (req.method === "GET" && parts[0] === "pharmacy" && parts[1] === "dashboard") {
-        return res.json(emptyDashboard(req.query));
+        return res.json(await pharmacyDashboard(req));
       }
       if (parts[0] === "notifications" && parts[1] === "unread-count") {
         const total = await one(

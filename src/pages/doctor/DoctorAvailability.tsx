@@ -288,17 +288,17 @@ function DayCard({
     <button
       onClick={() => onSelect(index)}
       className={cn(
-        "shrink-0 w-20 flex flex-col items-center rounded-[6px] border p-3 transition-all duration-200 relative",
+        "shrink-0 w-[5.5rem] flex flex-col items-center rounded-[6px] border p-3 transition-all duration-200 relative",
         isSelected
-          ? "bg-primary border-primary scale-[1.03] z-10"
-          : "bg-card border-border/70 hover:border-primary/30 hover:scale-[1.02]",
+          ? "bg-primary border-primary z-10 shadow-sm"
+          : "bg-card border-border/70 hover:border-primary/30",
         isToday && !isSelected && "ring-1 ring-primary/30",
       )}
     >
       {isToday && (
         <span
           className={cn(
-            "absolute -top-1.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap",
+            "absolute -top-2.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap",
             isSelected
               ? "bg-primary-foreground text-primary"
               : "bg-primary text-primary-foreground",
@@ -308,7 +308,7 @@ function DayCard({
         </span>
       )}
 
-      <div className="flex flex-row justify-around items-center w-full">
+      <div className="flex flex-row justify-center items-center w-full gap-2">
         <span
           className={cn(
             "text-xs font-semibold uppercase tracking-wider",
@@ -432,7 +432,7 @@ function MonthSection({
   }, [selectedDay]);
 
   return (
-    <div className="min-w-0 space-y-1.5">
+    <div className="min-w-0 space-y-3">
       {/* Month header */}
       <div className="flex items-center gap-2.5 px-1">
         <div className="w-2 h-2 rounded-full bg-primary/60" />
@@ -446,10 +446,10 @@ function MonthSection({
       </div>
 
       {/* Days row */}
-      <div className="relative min-w-0 max-w-full overflow-hidden">
+      <div className="relative min-w-0 max-w-full">
         <div
           ref={scrollRef}
-          className="flex max-w-full gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent m-2 px-1"
+          className="flex max-w-full gap-3 overflow-x-auto pt-3 pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent px-1"
         >
           {days.map(({ day, index }) => (
             <DayCard

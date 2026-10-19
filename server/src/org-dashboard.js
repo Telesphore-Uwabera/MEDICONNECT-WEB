@@ -2,9 +2,15 @@ import { hasColumn, one, q, tableExists } from "./db.js";
 import { loadOwnedId } from "./auth.js";
 
 function ranges(query) {
-  const period = String(query?.period || "month");
+  const period = String(query?.period || "all");
   const start = String(query?.start_date || "").slice(0, 10);
   const end = String(query?.end_date || "").slice(0, 10);
+  if (period === "all") {
+    return {
+      current: { sql: "1=1", params: [] },
+      previous: { sql: "1=0", params: [] },
+    };
+  }
   if (period === "today" || period === "day") {
     return {
       current: { sql: "DATE({col}) = CURDATE()", params: [] },
@@ -68,6 +74,34 @@ async function userNames(ids) {
     clean,
   ).catch(() => []);
   return new Map(rows.map((row) => [Number(row.id), row.name]));
+}
+
+async function hospitalDoctorIds(hospitalId) {
+  const ids = new Set();
+  if (await tableExists("hospital_doctors")) {
+    const rows = await q("SELECT doctor_id FROM hospital_doctors WHERE hospital_id = ?", [hospitalId]).catch(() => []);
+    for (const row of rows) ids.add(Number(row.doctor_id));
+  }
+  if (await tableExists("doctors") && await hasColumn("doctors", "hospital_id")) {
+    const rows = await q("SELECT id FROM doctors WHERE hospital_id = ?", [hospitalId]).catch(() => []);
+    for (const row of rows) ids.add(Number(row.id));
+  }
+  return [...ids].filter((id) => id > 0);
+}
+
+async function appointmentScope(hospitalId, doctorIds) {
+  const parts = [];
+  const params = [];
+  if (await hasColumn("appointments", "hospital_id")) {
+    parts.push("hospital_id = ?");
+    params.push(hospitalId);
+  }
+  if (doctorIds.length) {
+    parts.push(`doctor_id IN (${doctorIds.map(() => "?").join(",")})`);
+    params.push(...doctorIds);
+  }
+  if (!parts.length) return null;
+  return { sql: `(${parts.join(" OR ")})`, params };
 }
 
 export async function pharmacyDashboard(req) {
@@ -237,6 +271,20 @@ export async function pharmacyDashboard(req) {
     ).catch(() => []);
     const patientIds = waiting.map((row) => row.patient_id);
     const patientNames = await userNames(patientIds);
+    const doctorIds = waiting.map((row) => Number(row.doctor_id)).filter((id) => id > 0);
+    const doctorNames = new Map();
+    if (doctorIds.length && await tableExists("doctors") && await tableExists("users")) {
+      const doctorRows = await q(
+        `SELECT d.id, u.name FROM doctors d JOIN users u ON u.id = d.user_id WHERE d.id IN (${doctorIds.map(() => "?").join(",")})`,
+        doctorIds,
+      ).catch(() => []);
+      for (const row of doctorRows) doctorNames.set(Number(row.id), row.name);
+    }
+    if (await tableExists("prescriptions") && rxTable !== "prescriptions" && await hasColumn("prescriptions", "pharmacy_id")) {
+      const extra = tally(await grouped("prescriptions", "pharmacy_id = ?", [pharmacyId]));
+      rx.total += extra.total;
+      for (const [status, total] of Object.entries(extra.by)) rx.by[status] = (rx.by[status] || 0) + total;
+    }
     base.prescriptions = {
       total: rx.total,
       pending: pick(rx.by, ["pending"]),
@@ -247,6 +295,7 @@ export async function pharmacyDashboard(req) {
       awaiting_action: waiting.map((row) => ({
         id: row.id,
         patient_name: row.patient_name || patientNames.get(Number(row.patient_id)) || "Patient",
+        doctor_name: row.doctor_name || doctorNames.get(Number(row.doctor_id)) || "",
         status: row.status || "pending",
         submitted: String(row.created_at || "").slice(0, 16).replace("T", " "),
       })),
@@ -306,7 +355,13 @@ export async function pharmacyDashboard(req) {
     items_failed: 0,
     next_sync_due: "",
   };
-  return base;
+  base.care_links = {
+    doctor_prescriptions: base.prescriptions.total,
+    patient_orders: base.period_stats.orders.total,
+    unique_patients: base.period_stats.orders.unique_customers,
+    awaiting_rx: base.prescriptions.pending + base.prescriptions.reviewing,
+  };
+  return { status: true, data: base, ...base };
 }
 
 export async function hospitalDashboard(req) {
@@ -315,10 +370,8 @@ export async function hospitalDashboard(req) {
   const empty = emptyHospital();
   if (!hospitalId) return empty;
 
-  const doctorIds = (await q(
-    "SELECT doctor_id FROM hospital_doctors WHERE hospital_id = ?",
-    [hospitalId],
-  ).catch(() => [])).map((row) => Number(row.doctor_id)).filter((id) => id > 0);
+  const doctorIds = await hospitalDoctorIds(hospitalId);
+  const apptScope = await appointmentScope(hospitalId, doctorIds);
 
   let bookings = { by: {}, total: 0 };
   let todayBookings = { by: {}, total: 0 };
@@ -375,38 +428,45 @@ export async function hospitalDashboard(req) {
 
   let appointments = { by: {}, total: 0 };
   let todayAppointments = { by: {}, total: 0 };
-  if (doctorIds.length && await tableExists("appointments")) {
-    const marks = doctorIds.map(() => "?").join(",");
+  let uniquePatients = 0;
+  if (apptScope && await tableExists("appointments")) {
     const dateColumn = (await hasColumn("appointments", "appointment_date")) ? "appointment_date" : "created_at";
     const current = dated(window.current, dateColumn);
     const today = dated({ sql: "DATE({col}) = CURDATE()", params: [] }, dateColumn);
-    appointments = tally(await grouped("appointments", `doctor_id IN (${marks}) AND ${current.sql}`, [...doctorIds, ...current.params]));
-    todayAppointments = tally(await grouped("appointments", `doctor_id IN (${marks}) AND ${today.sql}`, [...doctorIds, ...today.params]));
+    appointments = tally(await grouped("appointments", `${apptScope.sql} AND ${current.sql}`, [...apptScope.params, ...current.params]));
+    todayAppointments = tally(await grouped("appointments", `${apptScope.sql} AND ${today.sql}`, [...apptScope.params, ...today.params]));
+    if (await hasColumn("appointments", "patient_id")) {
+      uniquePatients = Number((await one(
+        `SELECT COUNT(DISTINCT patient_id) AS total FROM appointments WHERE ${apptScope.sql} AND ${current.sql}`,
+        [...apptScope.params, ...current.params],
+      ).catch(() => ({ total: 0 })))?.total || 0);
+    }
     const upcoming = await q(
       `SELECT a.id, a.patient_id, a.doctor_id, a.appointment_date, a.appointment_time, a.type
        FROM appointments a
-       WHERE a.doctor_id IN (${marks})
-         AND a.appointment_date >= CURDATE()
+       WHERE ${apptScope.sql}
+         AND (a.appointment_date >= CURDATE() OR a.appointment_date IS NULL)
          AND a.status IN ('pending','confirmed','accepted')
        ORDER BY a.appointment_date, a.appointment_time
        LIMIT 8`,
-      doctorIds,
+      apptScope.params,
     ).catch(() => []);
-    const people = await userNames([
-      ...upcoming.map((row) => row.patient_id),
-    ]);
-    const doctorUsers = await q(
-      `SELECT d.id, u.name FROM doctors d JOIN users u ON u.id = d.user_id WHERE d.id IN (${marks})`,
-      doctorIds,
-    ).catch(() => []);
+    const people = await userNames(upcoming.map((row) => row.patient_id));
+    const doctorMarks = doctorIds.length ? doctorIds.map(() => "?").join(",") : "0";
+    const doctorUsers = doctorIds.length
+      ? await q(
+        `SELECT d.id, u.name FROM doctors d JOIN users u ON u.id = d.user_id WHERE d.id IN (${doctorMarks})`,
+        doctorIds,
+      ).catch(() => [])
+      : [];
     const doctorNames = new Map(doctorUsers.map((row) => [Number(row.id), row.name]));
     empty.appointments = {
       daily_breakdown: (await q(
         `SELECT DATE(\`${dateColumn}\`) AS date, COUNT(*) AS total,
                 SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-         FROM appointments WHERE doctor_id IN (${marks}) AND ${current.sql}
+         FROM appointments WHERE ${apptScope.sql} AND ${current.sql}
          GROUP BY DATE(\`${dateColumn}\`) ORDER BY date`,
-        [...doctorIds, ...current.params],
+        [...apptScope.params, ...current.params],
       ).catch(() => [])).map((row) => ({
         date: String(row.date).slice(0, 10),
         total: Number(row.total || 0),
@@ -442,9 +502,82 @@ export async function hospitalDashboard(req) {
       pending: pick(appointments.by, ["pending"]),
       cancelled: pick(appointments.by, ["cancelled", "canceled"]),
       unique_doctors: doctorIds.length,
-      unique_patients: 0,
+      unique_patients: uniquePatients,
     },
   };
+  if (await tableExists("service_bookings") && await hasColumn("service_bookings", "hospital_id") && await hasColumn("service_bookings", "patient_id")) {
+    const bookingPatients = Number((await one(
+      "SELECT COUNT(DISTINCT patient_id) AS total FROM service_bookings WHERE hospital_id = ?",
+      [hospitalId],
+    ).catch(() => ({ total: 0 })))?.total || 0);
+    empty.period_stats.service_bookings.unique_patients = bookingPatients;
+    if (!uniquePatients) uniquePatients = bookingPatients;
+    empty.period_stats.appointments.unique_patients = uniquePatients;
+  }
+
+  let referrals = 0;
+  if (await tableExists("referrals")) {
+    const clauses = [];
+    const params = [];
+    if (await hasColumn("referrals", "hospital_id")) {
+      clauses.push("hospital_id = ?");
+      params.push(hospitalId);
+    }
+    if (await hasColumn("referrals", "referred_hospital_id")) {
+      clauses.push("referred_hospital_id = ?");
+      params.push(hospitalId);
+    }
+    if (doctorIds.length && await hasColumn("referrals", "referred_to_doctor_id")) {
+      clauses.push(`referred_to_doctor_id IN (${doctorIds.map(() => "?").join(",")})`);
+      params.push(...doctorIds);
+    }
+    if (clauses.length) {
+      referrals = Number((await one(
+        `SELECT COUNT(*) AS total FROM referrals WHERE ${clauses.join(" OR ")}`,
+        params,
+      ).catch(() => ({ total: 0 })))?.total || 0);
+    }
+  }
+
+  let prescriptions = 0;
+  if (doctorIds.length && await tableExists("prescriptions") && await hasColumn("prescriptions", "doctor_id")) {
+    prescriptions = Number((await one(
+      `SELECT COUNT(*) AS total FROM prescriptions WHERE doctor_id IN (${doctorIds.map(() => "?").join(",")})`,
+      doctorIds,
+    ).catch(() => ({ total: 0 })))?.total || 0);
+  }
+
+  if (await tableExists("reviews")) {
+    let reviewWhere = "";
+    const reviewParams = [];
+    if (await hasColumn("reviews", "hospital_id")) {
+      reviewWhere = "hospital_id = ?";
+      reviewParams.push(hospitalId);
+    } else if (await hasColumn("reviews", "facility_id")) {
+      reviewWhere = "facility_id = ?";
+      reviewParams.push(hospitalId);
+    }
+    if (reviewWhere) {
+      const summary = await one(
+        `SELECT COUNT(*) AS total, AVG(rating) AS avg_rating,
+                SUM(CASE WHEN rating >= 4.5 THEN 1 ELSE 0 END) AS five_star,
+                SUM(CASE WHEN rating >= 3.5 AND rating < 4.5 THEN 1 ELSE 0 END) AS four_star,
+                SUM(CASE WHEN rating >= 2.5 AND rating < 3.5 THEN 1 ELSE 0 END) AS three_star,
+                SUM(CASE WHEN rating < 2.5 THEN 1 ELSE 0 END) AS low_star
+         FROM reviews WHERE ${reviewWhere}`,
+        reviewParams,
+      ).catch(() => null);
+      empty.reviews = {
+        ...empty.reviews,
+        total: Number(summary?.total || 0),
+        avg_rating: summary?.avg_rating == null ? null : Math.round(Number(summary.avg_rating) * 10) / 10,
+        five_star: Number(summary?.five_star || 0),
+        four_star: Number(summary?.four_star || 0),
+        three_star: Number(summary?.three_star || 0),
+        low_star: Number(summary?.low_star || 0),
+      };
+    }
+  }
 
   if (await tableExists("hospital_departments")) {
     empty.departments = (await q(
@@ -482,7 +615,15 @@ export async function hospitalDashboard(req) {
       return list;
     }, []).slice(0, 5),
   };
-  return empty;
+  empty.care_links = {
+    patient_bookings: empty.period_stats.service_bookings.total,
+    doctor_visits: empty.period_stats.appointments.total,
+    affiliated_doctors: doctorIds.length,
+    unique_patients: uniquePatients,
+    referrals,
+    prescriptions,
+  };
+  return { status: true, data: empty, ...empty };
 }
 
 function emptyPharmacy(query = {}) {
@@ -513,6 +654,7 @@ function emptyPharmacy(query = {}) {
     stock_requests: { total: 0, pending: 0, approved: 0, received: 0, rejected: 0, pending_list: [] },
     top_medicines: [],
     external_sync: { applicable: false, provider_name: "MediConnect", last_sync_at: "", last_sync_status: "success", items_synced: 0, items_failed: 0, next_sync_due: "" },
+    care_links: { doctor_prescriptions: 0, patient_orders: 0, unique_patients: 0, awaiting_rx: 0 },
   };
 }
 
@@ -529,5 +671,6 @@ function emptyHospital() {
     services: { total: 0, active: 0, inactive: 0, available: 0, insurance_covered: 0, requires_appointment: 0, requires_referral: 0, top_services: [] },
     doctors: { total: 0, active: 0, inactive: 0, top_doctors: [] },
     reviews: { avg_rating: null, total: 0, approved: 0, pending: 0, rejected: 0, five_star: 0, four_star: 0, three_star: 0, low_star: 0, recent: [] },
+    care_links: { patient_bookings: 0, doctor_visits: 0, affiliated_doctors: 0, unique_patients: 0, referrals: 0, prescriptions: 0 },
   };
 }

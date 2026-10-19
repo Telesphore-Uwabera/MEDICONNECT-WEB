@@ -25,6 +25,9 @@ import { formatDateOnly } from "@/lib/date";
   ChevronLeft,
   ChevronRight,
   Wallet,
+  Building2,
+  Pill,
+  Send,
 
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -717,6 +720,24 @@ const DoctorOverview = () => {
                                 <p className="text-[11px] text-muted-foreground mt-0.5">
                                   {item.hint}
                                 </p>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                        <div className="grid sm:grid-cols-3 gap-2 mt-4">
+                          {[
+                            { label: t("pages.doctor.facility_visits", { defaultValue: "Facility visits" }), hint: t("pages.doctor.facility_visits_hint", { defaultValue: "In-person bookings at health facilities" }), to: "/doctor/appointments", icon: Building2 },
+                            { label: t("pages.doctor.referrals"), hint: t("pages.doctor.referrals_hint", { defaultValue: "Send patients to another doctor or facility" }), to: "/doctor/referrals", icon: Send },
+                            { label: t("pages.doctor.pharmacy_rx", { defaultValue: "Pharmacy Rx" }), hint: t("pages.doctor.pharmacy_rx_hint", { defaultValue: "Prescriptions patients can send to a pharmacy" }), to: "/doctor/prescriptions", icon: Pill },
+                          ].map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Link key={item.label} to={item.to} className="rounded-[6px] border border-border/60 bg-background/60 px-3 py-2 hover:border-primary/40">
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-3.5 w-3.5 text-primary" />
+                                  <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                                </div>
+                                <p className="text-[11px] text-muted-foreground mt-1">{item.hint}</p>
                               </Link>
                             );
                           })}
