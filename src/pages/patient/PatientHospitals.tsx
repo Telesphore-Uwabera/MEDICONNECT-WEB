@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
-import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { FilterBar } from "@/components/FilterBar";
 import {
   SlidersHorizontal,
   X,
@@ -417,7 +417,6 @@ const PatientHospitals = () => {
   const [filters, setFilters] = useState<FilterState>({ ...INITIAL_FILTERS, q: queryFromUrl });
   const [debouncedQ, setDebouncedQ] = useState(queryFromUrl);
   const [view, setView] = useState<ViewMode>("grid");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -469,12 +468,6 @@ const PatientHospitals = () => {
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS),
     [filters],
   );
-
-  useEffect(() => {
-    if (filterOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
-  }, [filterOpen]);
 
   const cityCount = useMemo(
     () => [...new Set(hospitals.map((h) => h.city).filter(Boolean))].length,
@@ -557,12 +550,6 @@ const PatientHospitals = () => {
                   className="hidden sm:block w-[160px]"
                 />
 
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen((p) => !p)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-
                 {/* View toggle */}
                 <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                   {(["grid", "list"] as const).map((v, i) => (
@@ -598,8 +585,7 @@ const PatientHospitals = () => {
 
  {/* ── FilterBar ── */}
           <FilterBar
-            open={filterOpen}
-            onToggle={() => setFilterOpen((p) => !p)}
+            alwaysOpen
             hasActiveFilters={hasActiveFilters}
             onClearAll={clearAll}
             fields={[

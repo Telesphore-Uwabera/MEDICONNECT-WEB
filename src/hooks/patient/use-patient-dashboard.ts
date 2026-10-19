@@ -5,7 +5,7 @@ import { useMe } from "@/hooks/useAuth";
 const BASE = "/patient/dashboard";
 
 export interface PatientStatsFilters {
-  period?: "today" | "week" | "month" | "year" | "custom";
+  period?: "today" | "week" | "month" | "year" | "custom" | "all";
   start_date?: string;
   end_date?: string;
   appointment_type?: "all" | "online" | "in_person";
@@ -51,9 +51,16 @@ export function useGetPatientStats(filters: PatientStatsFilters = {}) {
   return useQuery({
     queryKey: ["patient-stats", me?.id ?? null, filters],
     queryFn: () =>
-      apiFetch(url).then((stats) => {
-        console.log("Patient stats fetched:", stats);
-        return stats;
-      }),
+      apiFetch(url).then((stats) => unwrapPatientDashboard(stats)),
   });
+}
+
+export function unwrapPatientDashboard(payload: unknown) {
+  if (!payload || typeof payload !== "object") return payload;
+  const body = payload as Record<string, unknown>;
+  const nested = body.data;
+  if (nested && typeof nested === "object" && !Array.isArray(nested) && "period_stats" in nested) {
+    return nested;
+  }
+  return body;
 }

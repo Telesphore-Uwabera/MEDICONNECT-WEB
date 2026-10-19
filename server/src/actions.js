@@ -336,12 +336,7 @@ async function fillGap(req, res, parts) {
       res.json(await hospitalDashboard(req));
       return true;
     }
-    res.json({
-      stats: { total: 0, pending: 0, completed: 0, cancelled: 0 },
-      appointments: [],
-      data: [],
-    });
-    return true;
+    return false;
   }
 
   if (req.method === "GET" && parts[0] === "settings" && !parts[1]) {

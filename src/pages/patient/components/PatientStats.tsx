@@ -45,6 +45,10 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
+import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
+import { useGetPatientPrescriptions } from "@/hooks/patient/use-patient-prescriptions";
+import { useMyMedicalRecord } from "@/hooks/patient/use-patient-medical-record";
+import { listFrom } from "@/lib/list-payload";
 import { usePatientPaymentStatus, useVerifyPatientPayment, type PaymentLookupParams } from "@/hooks/patient/use-patient-payments";
 import { getRefundsFromResponse, useCreatePatientRefund, usePatientRefunds } from "@/hooks/patient/use-patient-refunds";
 import { Link } from "react-router-dom";
@@ -180,7 +184,7 @@ interface PatientDashboardResponse {
 
 // ─── Filter Types ─────────────────────────────────────────────────────────────
 
-type Period = "today" | "week" | "month" | "year" | "custom";
+type Period = "today" | "week" | "month" | "year" | "custom" | "all";
 type AppointmentType = "all" | "online" | "in_person";
 type StatusFilter = "all" | "completed" | "pending" | "cancelled";
 type ChartGroup = "day" | "week" | "month";
@@ -198,7 +202,7 @@ interface Filters {
 // ─── Label Maps ───────────────────────────────────────────────────────────────
 
 const DEFAULT_FILTERS: Filters = {
-  period: "month",
+  period: "all",
   appointment_type: "all",
   status: "all",
   chart_group: "day",
@@ -678,6 +682,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
   const { t } = useTranslation();
 
   const PERIOD_LABELS: Record<Period, string> = {
+    all: t("pages.patient.period_all", "All time"),
     today: t("pages.patient.period_today"),
     week: t("pages.patient.period_week"),
     month: t("pages.patient.period_month"),
@@ -710,7 +715,88 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
 
   // Pass filters to hook — query reruns whenever filters change
   const { data: rawData, isLoading, isFetching } = useGetPatientStats(filters);
-  const data = rawData as PatientDashboardResponse | undefined;
+  const appointmentsQuery = useGetPatientAppointments({ per_page: 50 });
+  const prescriptionsQuery = useGetPatientPrescriptions();
+  const medicalQuery = useMyMedicalRecord();
+  const dashboard = rawData as PatientDashboardResponse | undefined;
+  const appointmentRows = listFrom(appointmentsQuery.data);
+  const prescriptionRows = listFrom(prescriptionsQuery.data, "prescriptions");
+  const listCount = (value: unknown) => {
+    if (Array.isArray(value)) return value.length;
+    if (typeof value === "string" && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed.length : 1;
+      } catch {
+        return 1;
+      }
+    }
+    return 0;
+  };
+  const record = medicalQuery.data;
+  const openVisitCount = appointmentRows.filter((row) =>
+    ["pending", "confirmed", "accepted", "in_progress"].includes(
+      String((row as { status?: string }).status || "").toLowerCase(),
+    ),
+  ).length;
+  const data: PatientDashboardResponse | undefined = {
+    ...(dashboard ?? ({} as PatientDashboardResponse)),
+    today: {
+      total: 0,
+      completed: 0,
+      pending: 0,
+      cancelled: 0,
+      instant_active: 0,
+      ...dashboard?.today,
+      confirmed: dashboard?.today?.confirmed || openVisitCount,
+    },
+    period_stats: {
+      unique_doctors: 0,
+      unique_hospitals: 0,
+      completed: 0,
+      cancelled: 0,
+      pending: 0,
+      online_count: 0,
+      in_person_count: 0,
+      avg_duration_minutes: 0,
+      instant_total: 0,
+      instant_completed: 0,
+      prescriptions_received: 0,
+      service_bookings_total: 0,
+      certificates_issued: 0,
+      ...dashboard?.period_stats,
+      total_appointments:
+        dashboard?.period_stats?.total_appointments ||
+        appointmentsQuery.data?.total ||
+        appointmentRows.length,
+    },
+    prescriptions: {
+      issued: 0,
+      draft: 0,
+      signed: 0,
+      expiring_soon: 0,
+      recent: [],
+      ...dashboard?.prescriptions,
+      total: dashboard?.prescriptions?.total || prescriptionRows.length,
+      active:
+        dashboard?.prescriptions?.active ||
+        dashboard?.prescriptions?.total ||
+        prescriptionRows.length,
+    },
+    medical_profile: {
+      smoking_status: null,
+      ...dashboard?.medical_profile,
+      complete: dashboard?.medical_profile?.complete || Boolean(record),
+      allergies_count:
+        dashboard?.medical_profile?.allergies_count || listCount(record?.known_allergies),
+      conditions_count:
+        dashboard?.medical_profile?.conditions_count || listCount(record?.chronic_conditions),
+      medications_count:
+        dashboard?.medical_profile?.medications_count || listCount(record?.current_medications),
+      surgeries_count:
+        dashboard?.medical_profile?.surgeries_count || listCount(record?.surgical_history),
+    },
+  };
 
   const set = <K extends keyof Filters>(key: K, val: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: val }));

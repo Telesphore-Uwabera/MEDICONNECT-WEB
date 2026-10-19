@@ -297,14 +297,14 @@ export function HeroHeader({
           setFacilitySearchOpen((open) => !open);
         }}
         className={cn(
-          "flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium transition-smooth",
+          "flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-xs font-medium transition-smooth",
           facilitySearchOpen
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-secondary hover:text-foreground",
         )}
       >
-        <Search className="h-4 w-4" />
-        <span>{t("nav.search")}</span>
+        <Search className="h-4 w-4 shrink-0" />
+        <span className="hidden 2xl:inline">{t("nav.search")}</span>
       </button>
       {facilitySearchOpen && (
         <form
@@ -412,30 +412,30 @@ export function HeroHeader({
     <header
       ref={menuRef}
       className={cn(
-        "top-0 left-0 right-0 z-50 transition-all duration-300",
+        "top-0 left-0 right-0 z-50 w-full max-w-full min-w-0 transition-all duration-300",
         scrolled
           ? "fixed bg-background/90 backdrop-blur-md border-b border-border shadow-sm"
           : "relative bg-transparent",
       )}
     >
       {/* ── Navbar row ── */}
-      <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-1.5">
+      <div className="flex w-full min-w-0 max-w-full items-center justify-between gap-1.5 px-3 py-1.5 sm:px-4 xl:px-6">
 
-        {/* Logo */} 
-        <div className="flex items-center gap-2 lg:shrink-0">
-          <Link to="/#home" className="flex items-center gap-2">
-            <img src={logo} alt={appName} className="h-9 w-auto lg:h-10" />
+        {/* Logo */}
+        <div className="flex min-w-0 shrink items-center">
+          <Link to="/#home" className="flex min-w-0 items-center">
+            <img src={logo} alt={appName} className="h-8 w-auto max-w-[140px] object-contain object-left sm:h-9 sm:max-w-[160px] xl:h-10 xl:max-w-[180px]" />
           </Link>
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-1 text-xs font-medium shrink-0">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden text-[11px] font-medium xl:flex 2xl:gap-1 2xl:text-xs">
           {navLinks.slice(0, 2).map((l) => {
             const active =
               l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
             const key = l.kind === "anchor" ? l.href : l.to;
             const className = cn(
-              "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
+              "relative rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
               active
                 ? "text-foreground bg-accent"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -466,7 +466,7 @@ export function HeroHeader({
               onClick={() => setQuickAccessOpen((prev) => !prev)}
               aria-expanded={quickAccessOpen}
               className={cn(
-                "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap flex items-center gap-1",
+                "relative flex items-center gap-1 rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
                 quickAccessOpen
                   ? "text-foreground bg-accent"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -533,7 +533,7 @@ export function HeroHeader({
               l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
             const key = l.kind === "anchor" ? l.href : l.to;
             const className = cn(
-              "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
+              "relative rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
               active
                 ? "text-foreground bg-accent"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -575,35 +575,40 @@ export function HeroHeader({
         </div> */}
 
         {/* Desktop right actions */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <ThemeToggle />
-          <LanguageSwitcher />
+        <div className="hidden shrink-0 items-center gap-0.5 xl:flex 2xl:gap-2">
+          <ThemeToggle className="h-8 w-8" />
+          <div className="2xl:hidden">
+            <LanguageSwitcher compact />
+          </div>
+          <div className="hidden 2xl:block">
+            <LanguageSwitcher />
+          </div>
 
           {user ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5 2xl:gap-2">
               <Link to={dashboardPath(user.active_role ?? user.role)}>
-                <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  {t("common.dashboard", "Dashboard")}
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs">
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  <span className="hidden 2xl:inline">{t("common.dashboard", "Dashboard")}</span>
                 </Button>
               </Link>
 
               <Link
                 to={dashboardPath(user.active_role ?? user.role)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-accent transition-colors"
+                className="flex items-center gap-2 rounded-[6px] px-1.5 py-1.5 hover:bg-accent transition-colors 2xl:px-2.5"
               >
                 {user.avatar ? (
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-7 h-7 rounded-full object-cover border border-border"
+                    className="h-7 w-7 rounded-full border border-border object-cover"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {getInitials(user.name)}
                   </div>
                 )}
-                <span className="text-xs font-medium text-foreground max-w-[100px] truncate">
+                <span className="hidden max-w-[100px] truncate text-xs font-medium text-foreground 2xl:inline">
                   {user.name.split(" ")[0]}
                 </span>
               </Link>
@@ -613,21 +618,22 @@ export function HeroHeader({
                 size="sm"
                 onClick={handleLogout}
                 disabled={logout.isPending}
-                className="gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+                title={t("common.signOut", "Sign out")}
+                className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-destructive"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                {t("common.signOut", "Sign out")}
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden 2xl:inline">{t("common.signOut", "Sign out")}</span>
               </Button>
             </div>
           ) : (
             <>
               <Link to="/auth">
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs 2xl:px-3">
                   {t("common.signIn")}
                 </Button>
               </Link>
               <Link to="/auth?mode=signup">
-                <Button size="sm" className="bg-gradient-primary hover:opacity-90">
+                <Button size="sm" className="h-8 bg-gradient-primary px-2 text-xs hover:opacity-90 2xl:px-3">
                   {t("common.SignUp")}
                 </Button>
               </Link>
@@ -636,7 +642,7 @@ export function HeroHeader({
         </div>
 
         {/* Mobile/tablet: auth actions + hamburger */}
-        <div className="flex lg:hidden items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-1 xl:hidden">
           {facilitySearch(mobileSearchRef)}
           <ThemeToggle />
           <div className="hidden sm:flex items-center gap-1">
@@ -689,7 +695,7 @@ export function HeroHeader({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
             style={{ overflow: "hidden" }}
-            className="lg:hidden border-t border-border bg-background/95 backdrop-blur-sm"
+            className="xl:hidden border-t border-border bg-background/95 backdrop-blur-sm"
           >
             <div className="max-h-[calc(100vh-56px)] overflow-y-auto">
 

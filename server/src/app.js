@@ -723,32 +723,44 @@ export function appRoutes(router) {
         const clauses = cols.map((name) => `\`${name}\` IN (${marks})`);
         return { sql: `(${clauses.join(" OR ")})`, params: cols.flatMap(() => ids) };
       };
-      const period = String(req.query.period || "month");
+      const period = String(req.query.period || "all");
       const periodStart = req.query.start_date ? String(req.query.start_date).slice(0, 10) : "";
       const periodEnd = req.query.end_date ? String(req.query.end_date).slice(0, 10) : "";
+      const dateExpr = "(COALESCE(appointment_date, DATE(created_at)))";
+      const ownerParts = [];
+      const ownerParams = [];
+      if (await hasColumn("appointments", "patient_id")) {
+        ownerParts.push(`patient_id IN (${marks})`);
+        ownerParams.push(...ids);
+      }
+      if (await hasColumn("appointments", "user_id")) {
+        ownerParts.push(`user_id IN (${marks})`);
+        ownerParams.push(...ids);
+      }
+      const apptOwner = ownerParts.length ? `(${ownerParts.join(" OR ")})` : "1=0";
       const periodFilter = period === "today" || period === "day"
-        ? { sql: "AND appointment_date = CURDATE()", params: [] }
+        ? { sql: `AND ${dateExpr} = CURDATE()`, params: [] }
         : period === "week"
-          ? { sql: "AND appointment_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)", params: [] }
+          ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] }
           : period === "year"
-            ? { sql: "AND appointment_date >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)", params: [] }
+            ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] }
             : period === "custom" && periodStart && periodEnd
-              ? { sql: "AND appointment_date BETWEEN ? AND ?", params: [periodStart, periodEnd] }
-              : period === "all"
-                ? { sql: "", params: [] }
-                : { sql: "AND appointment_date >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)", params: [] };
+              ? { sql: `AND ${dateExpr} BETWEEN ? AND ?`, params: [periodStart, periodEnd] }
+              : period === "month"
+                ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] }
+                : { sql: "", params: [] };
       const groups = ids.length
-        ? await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE patient_id IN (${marks}) ${periodFilter.sql} GROUP BY status`, [...ids, ...periodFilter.params]).catch(() => [])
+        ? await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} ${periodFilter.sql} GROUP BY status`, [...ownerParams, ...periodFilter.params]).catch(() => [])
         : [];
       const { byStatus, total } = tally(groups);
       const todayGroups = ids.length
-        ? await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE patient_id IN (${marks}) AND (appointment_date = CURDATE() OR DATE(created_at) = CURDATE()) GROUP BY status`, ids).catch(() => [])
+        ? await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND ${dateExpr} = CURDATE() GROUP BY status`, ownerParams).catch(() => [])
         : [];
       const todayTally = tally(todayGroups);
       const upcoming = ids.length
         ? Number((await one(
-          `SELECT COUNT(*) AS total FROM appointments WHERE patient_id IN (${marks}) AND (appointment_date >= CURDATE() OR status = 'in_progress') AND status IN ('pending','confirmed','accepted','in_progress')`,
-          ids,
+          `SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND (${dateExpr} >= CURDATE() OR LOWER(status) IN ('in_progress','confirmed','accepted','pending')) AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')`,
+          ownerParams,
         ).catch(() => ({ total: 0 })))?.total ?? 0)
         : 0;
       const instantTableName = (await tableExists("instant_consultation_requests"))
@@ -786,13 +798,13 @@ export function appRoutes(router) {
       dashboard.period_stats.cancelled = pick({ byStatus, total }, ["cancelled", "canceled"]);
       dashboard.period_stats.pending = pick({ byStatus, total }, ["pending", "queued", "waiting", "in_progress"]);
       dashboard.period_stats.online_count = ids.length && await hasColumn("appointments", "type")
-        ? Number((await one(`SELECT COUNT(*) AS total FROM appointments WHERE patient_id IN (${marks}) AND type = 'online'`, ids).catch(() => ({ total: 0 })))?.total ?? 0)
+        ? Number((await one(`SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND type = 'online'`, ownerParams).catch(() => ({ total: 0 })))?.total ?? 0)
         : 0;
       dashboard.period_stats.in_person_count = Math.max(0, total - dashboard.period_stats.online_count);
       dashboard.period_stats.instant_total = instant.total;
       dashboard.period_stats.instant_completed = instant.byStatus.completed ?? 0;
       dashboard.period_stats.unique_doctors = ids.length
-        ? Number((await one(`SELECT COUNT(DISTINCT doctor_id) AS total FROM appointments WHERE patient_id IN (${marks}) ${periodFilter.sql}`, [...ids, ...periodFilter.params]).catch(() => ({ total: 0 })))?.total ?? 0)
+        ? Number((await one(`SELECT COUNT(DISTINCT doctor_id) AS total FROM appointments WHERE ${apptOwner} ${periodFilter.sql}`, [...ownerParams, ...periodFilter.params]).catch(() => ({ total: 0 })))?.total ?? 0)
         : 0;
       if (ids.length && await tableExists("service_bookings")) {
         const bookings = await q(`SELECT status, COUNT(*) AS total FROM service_bookings WHERE patient_id IN (${marks}) GROUP BY status`, ids).catch(() => []);
@@ -814,17 +826,17 @@ export function appRoutes(router) {
       }
       dashboard.activity_chart = ids.length
         ? (await q(
-          `SELECT DATE(appointment_date) AS label,
+          `SELECT ${dateExpr} AS label,
                   COUNT(*) AS appointments,
                   COUNT(DISTINCT doctor_id) AS doctors_seen,
                   SUM(CASE WHEN status IN ('completed','done') THEN 1 ELSE 0 END) AS completed,
                   SUM(CASE WHEN type = 'online' THEN 1 ELSE 0 END) AS online,
                   SUM(CASE WHEN type <> 'online' OR type IS NULL THEN 1 ELSE 0 END) AS in_person
            FROM appointments
-           WHERE patient_id IN (${marks}) ${periodFilter.sql}
-           GROUP BY DATE(appointment_date)
+           WHERE ${apptOwner} ${periodFilter.sql}
+           GROUP BY ${dateExpr}
            ORDER BY label`,
-          [...ids, ...periodFilter.params],
+          [...ownerParams, ...periodFilter.params],
         ).catch(() => [])).map((row) => ({
           label: String(row.label).slice(0, 10),
           doctors_seen: Number(row.doctors_seen ?? 0),
@@ -871,8 +883,8 @@ export function appRoutes(router) {
             `SELECT COALESCE(SUM(p.amount), 0) AS total, COUNT(*) AS count
              FROM payments p
              INNER JOIN appointments a ON a.id = COALESCE(p.appointment_id, CASE WHEN p.payable_type LIKE '%appointment%' THEN p.payable_id END)
-             WHERE a.patient_id IN (${marks}) AND LOWER(p.status) IN ('paid','completed','success','successful')`,
-            ids,
+             WHERE ${apptOwner.replaceAll("patient_id", "a.patient_id").replaceAll("user_id", "a.user_id")} AND LOWER(p.status) IN ('paid','completed','success','successful')`,
+            ownerParams,
           ).catch(() => null);
           spent = Number(viaAppt?.total ?? 0);
           count = Number(viaAppt?.count ?? 0);
@@ -891,7 +903,7 @@ export function appRoutes(router) {
         dashboard.certificates.pending = pick(certs, ["pending", "submitted", "review"]);
         dashboard.period_stats.certificates_issued = dashboard.certificates.issued;
       }
-      const medicalTables = ["patient_medical_infos", "patient_medical_info", "medical_infos"];
+      const medicalTables = ["patient_medical_infos", "patient_medical_info", "medical_infos", "medical_records", "patient_medical_records"];
       let info = null;
       for (const table of medicalTables) {
         if (!(await tableExists(table))) continue;
@@ -917,14 +929,14 @@ export function appRoutes(router) {
           };
           dashboard.medical_profile = {
             complete: true,
-            allergies_count: listCount(info.allergies),
+            allergies_count: listCount(info.allergies ?? info.known_allergies),
             conditions_count: listCount(info.conditions ?? info.chronic_conditions),
-            medications_count: listCount(info.medications),
-            surgeries_count: listCount(info.surgeries),
+            medications_count: listCount(info.medications ?? info.current_medications),
+            surgeries_count: listCount(info.surgeries ?? info.surgical_history),
             smoking_status: info.smoking_status ?? null,
           };
       }
-      res.json(dashboard);
+      res.json({ status: true, data: dashboard, ...dashboard });
     } catch (error) {
       next(error);
     }

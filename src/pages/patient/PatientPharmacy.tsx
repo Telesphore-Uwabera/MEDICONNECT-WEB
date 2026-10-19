@@ -46,7 +46,7 @@ import {
 } from "@/hooks/patient/use-patient-search-pharmacy";
 import { PharmacyDrawer } from "./components/Pharmacydrawer";
 import { PharmacyCart } from "./components/PharmacyCart";
-import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { FilterBar } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -621,7 +621,6 @@ const PatientPharmacy = () => {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -728,12 +727,6 @@ const PatientPharmacy = () => {
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS) || !!nearbyCoords,
     [filters, nearbyCoords],
   );
-
-  useEffect(() => {
-    if (filterOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
-  }, [filterOpen]);
 
   const deliveryCount = pharmacies.filter((p) => p.offers_delivery).length;
   const open24hCount = pharmacies.filter((p) => p.is_open_24h).length;
@@ -880,12 +873,6 @@ const PatientPharmacy = () => {
                 className="hidden sm:block w-[160px]"
               />
 
-              <FilterToggleButton
-                open={filterOpen}
-                onToggle={() => setFilterOpen(!filterOpen)}
-                hasActiveFilters={hasActiveFilters}
-              />
-
               {/* View toggle */}
               <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm shrink-0">
                 {(["grid", "list"] as const).map((v, i) => (
@@ -921,8 +908,7 @@ const PatientPharmacy = () => {
 
           
         <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
+          alwaysOpen
           hasActiveFilters={hasActiveFilters}
           onClearAll={clearAll}
           fields={filterFields}

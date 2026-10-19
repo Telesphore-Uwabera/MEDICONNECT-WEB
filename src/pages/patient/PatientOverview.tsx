@@ -19,6 +19,7 @@ import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient
 import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActions";
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
 import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
+import { listFrom } from "@/lib/list-payload";
 import { format, parseISO } from "date-fns";
 import moment from "moment";
 import "moment/locale/fr";
@@ -136,7 +137,8 @@ const PatientOverview = () => {
   const { data: appointmentsData, isLoading: appointmentsLoading } =
     useGetPatientAppointments({ per_page: 50 });
 
-  const upcomingAppointments = (appointmentsData?.data ?? [])
+  const appointmentRows = listFrom(appointmentsData);
+  const upcomingAppointments = appointmentRows
     .filter((a) =>
       UPCOMING_STATUSES.includes(
         a.status as (typeof UPCOMING_STATUSES)[number],
@@ -151,9 +153,9 @@ const PatientOverview = () => {
   const dashToday = (dash as { today?: { confirmed?: number; instant_active?: number } } | undefined)?.today;
   const dashInstant = (dash as { instant?: { active_now?: number; total?: number } } | undefined)?.instant;
   const dashRx = (dash as { prescriptions?: { total?: number; active?: number } } | undefined)?.prescriptions;
-  const upcomingCount = dashToday?.confirmed ?? upcomingAppointments.length;
-  const instantCount = dashInstant?.active_now ?? dashToday?.instant_active ?? 0;
-  const rxCount = dashRx?.active ?? dashRx?.total ?? 0;
+  const upcomingCount = dashToday?.confirmed || upcomingAppointments.length;
+  const instantCount = dashInstant?.active_now || dashToday?.instant_active || 0;
+  const rxCount = dashRx?.active || dashRx?.total || 0;
 
   // ── Available now (instant consultation doctors) ─────────────────────────
   // /patient/search/doctors?instant=true&page=2&per_page=10

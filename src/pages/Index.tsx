@@ -426,8 +426,8 @@ const Index = () => {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh bg-background text-md">
-      <div className="sticky top-0 z-50">
+    <div className="min-h-dvh max-w-full overflow-x-hidden bg-background text-md">
+      <div className="sticky top-0 z-50 w-full min-w-0 max-w-full">
         <TopBar settings={generalSettings} />
         <HeroHeader
           mobileMenuOpen={mobileMenuOpen}

@@ -39,9 +39,11 @@ export interface FilterBarProps {
   /** Array of filter field definitions rendered in a responsive grid */
   fields: FilterFieldDef[];
   /** Whether the filter panel is currently expanded */
-  open: boolean;
+  open?: boolean;
+  /** Keep the panel visible — patients do not have to click Filters */
+  alwaysOpen?: boolean;
   /** Called when the Filters toggle button is clicked */
-  onToggle: () => void;
+  onToggle?: () => void;
   /** Whether any filter is currently active (used to highlight the button) */
   hasActiveFilters?: boolean;
   /** Called when the user clicks "Reset all" */
@@ -252,17 +254,22 @@ export function FilterToggleButton({
 export function FilterBar({
   fields,
   open,
+  alwaysOpen = false,
   onToggle: _onToggle,
   hasActiveFilters,
   onClearAll,
   extraSlot,
   cols,
 }: FilterBarProps) {
+  const visible = alwaysOpen || open;
   return (
     <div
       className={cn(
-        "transition-all duration-300 ease-in-out flex-shrink-0",
-        open ? "max-h-[700px] overflow-visible" : "max-h-0 overflow-hidden",
+        "flex-shrink-0",
+        alwaysOpen
+          ? "overflow-visible"
+          : "transition-all duration-300 ease-in-out",
+        !alwaysOpen && (visible ? "max-h-[700px] overflow-visible" : "max-h-0 overflow-hidden"),
       )}
     >
       <FilterPanel

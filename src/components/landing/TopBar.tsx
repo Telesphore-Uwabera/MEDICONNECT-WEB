@@ -45,7 +45,7 @@ const TopBar = ({ settings }: TopBarProps) => {
 
   return (
     <div className="bg-[#3a8fa3] dark:bg-[#1e5f70] text-white text-xs">
-      <div className="container flex items-center justify-between py-3 gap-2">
+      <div className="container flex min-w-0 max-w-full items-center justify-between gap-2 overflow-hidden py-3">
         {/* Socials */}
         <div className="flex items-center gap-3">
           {SOCIALS.map((s) => (
@@ -80,7 +80,7 @@ const TopBar = ({ settings }: TopBarProps) => {
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
-            <span className="hidden md:inline">{email}</span>
+            <span className="hidden max-w-[28vw] truncate md:inline">{email}</span>
           </a>
 
           <span className="text-white/30">|</span>

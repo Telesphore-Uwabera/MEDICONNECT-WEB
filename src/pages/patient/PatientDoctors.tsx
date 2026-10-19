@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { t } from "i18next";
-import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { FilterBar } from "@/components/FilterBar";
 import {
   Star,
   X,
@@ -642,7 +642,6 @@ const PatientDoctors = () => {
 
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didMountSearchRef = useRef(false);
@@ -889,12 +888,6 @@ const PatientDoctors = () => {
                   className="hidden sm:block w-[140px]"
                 />
 
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen((p) => !p)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-
                 {/* View toggle */}
                 <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                   {(["grid", "list"] as const).map((v, i) => (
@@ -944,8 +937,7 @@ const PatientDoctors = () => {
 
  {/* ── FilterBar ── */}
           <FilterBar
-            open={filterOpen}
-            onToggle={() => setFilterOpen((p) => !p)}
+            alwaysOpen
             hasActiveFilters={hasActiveFilters}
             onClearAll={clearAll}
             fields={[
