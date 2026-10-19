@@ -616,7 +616,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
   );
 
   return (
-    <div className="min-h-dvh bg-background flex">
+    <div className="min-h-dvh max-w-full overflow-x-hidden bg-background flex">
 
       {/* Desktop Sidebar */}
       <motion.aside
@@ -697,7 +697,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex flex-1 min-h-0 min-w-0 flex-col"
+          className="flex flex-1 min-h-0 min-w-0 flex-col overflow-x-hidden"
         >
           <RoleApprovalGate role={role}>{children}</RoleApprovalGate>
         </motion.main>

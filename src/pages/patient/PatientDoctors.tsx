@@ -97,7 +97,7 @@ function DoctorDateFilter({
         <button
           type="button"
           className={cn(
-            "flex h-8 w-full items-center justify-between gap-1.5 rounded-[6px] border bg-background px-2.5 text-[11px] outline-none transition-all",
+            "flex h-9 w-full items-center justify-between gap-1.5 rounded-[6px] border bg-secondary/70 px-2.5 text-[12px] font-semibold outline-none transition-all md:h-8 md:bg-background md:text-[11px] md:font-normal",
             open
               ? "border-primary ring-2 ring-primary/20"
               : "border-border/60 hover:border-primary/50",
@@ -607,7 +607,7 @@ function SearchStats({
   ];
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 p-4 pb-2">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3 sm:p-4 pb-2">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -621,7 +621,7 @@ function SearchStats({
               ) : (
                 <p className="text-sm font-black text-foreground tabular-nums leading-none">{card.value}</p>
               )}
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-tight">
                 {card.label}
               </p>
             </div>
@@ -829,8 +829,8 @@ const PatientDoctors = () => {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.overview_title")}
-          subtitle={t("pages.patient.overview_sub")}
+          title={t("pages.patient.doctors_title")}
+          subtitle={t("pages.patient.doctors_sub", { count: data?.total ?? 0 })}
         />
 
         <div className="flex flex-col flex-1 min-h-0">
@@ -940,6 +940,7 @@ const PatientDoctors = () => {
             alwaysOpen
             hasActiveFilters={hasActiveFilters}
             onClearAll={clearAll}
+            cols={{ default: 2, sm: 2, md: 3, lg: 4, xl: 5, xxl: 7 }}
             fields={[
               {
                 type: "search",
@@ -1082,7 +1083,7 @@ const PatientDoctors = () => {
                 <div
                   className={cn(
                     view === "grid"
-                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2"
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2"
                       : "flex flex-col gap-2",
                   )}
                 >
@@ -1113,7 +1114,7 @@ const PatientDoctors = () => {
                   )}
                 </div>
               ) : view === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2">
                   {visibleDoctors.map((d) => (
                     <DoctorGridCard key={d.id} doctor={d} />
                   ))}

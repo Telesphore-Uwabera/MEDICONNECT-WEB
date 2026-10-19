@@ -89,9 +89,9 @@ const { data: publicSettings } = usePublicSettings();
             w-full max-w-6xl rounded-[6px] overflow-hidden
             bg-card ring-1 ring-border
             flex flex-col
-            lg:grid lg:grid-cols-[minmax(320px,58%)_1fr]
-            xl:grid-cols-[minmax(380px,62%)_1fr]
-            lg:h-[720px] lg:max-h-[87vh]
+            lg:grid lg:grid-cols-[minmax(280px,48%)_1fr]
+            xl:grid-cols-[minmax(380px,58%)_1fr]
+            lg:max-h-[87vh] xl:h-[720px]
           "
         >
           {/* ── LEFT: Hero image panel — hidden until lg (needs room for both columns) ── */}

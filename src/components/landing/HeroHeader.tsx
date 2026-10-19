@@ -771,7 +771,7 @@ export function HeroHeader({
                   </button>
 
                   {mobileQuickAccessOpen && (
-                    <div className="ml-4 pl-3 border-l border-border/60 my-1 flex flex-col gap-1">
+                    <div className="ml-2 sm:ml-4 pl-2 sm:pl-3 border-l border-border/60 my-1 grid grid-cols-1 sm:grid-cols-2 gap-1">
                       {quickAccessItems.map((item) => {
                         const Icon = item.icon;
                         return (

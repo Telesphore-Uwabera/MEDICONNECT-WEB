@@ -54,8 +54,10 @@ export interface FilterBarProps {
   cols?: {
     default?: number;
     sm?: number;
+    md?: number;
     lg?: number;
     xl?: number;
+    xxl?: number;
   };
 }
 
@@ -82,7 +84,7 @@ function FilterField({
         compact && field.type === "search"
           ? "w-full"
           : compact
-            ? "min-w-[124px] max-w-[180px] shrink-0"
+            ? "w-full min-w-0"
             : "space-y-1.5",
       )}
     >
@@ -116,6 +118,7 @@ function FilterField({
           onChange={field.onChange}
           label={field.label}
           compact={compact}
+          className="w-full"
         />
       )}
 
@@ -139,49 +142,58 @@ function FilterPanel({
   hasActiveFilters?: boolean;
   onClearAll?: () => void;
 }) {
-  const { default: d = 1, sm = 2, lg = 3, xl } = cols;
-  const resolvedXl = xl ?? Math.min(fields.length + (extraSlot ? 1 : 0), 6);
+  const { default: d = 1, sm = 2, md = 3, lg = 4, xl, xxl } = cols;
+  const resolvedXl = xl ?? Math.min(fields.length + (extraSlot ? 1 : 0), 5);
+  const resolvedXxl = xxl ?? Math.min(fields.length + (extraSlot ? 1 : 0), 7);
   const searchFields = fields.filter((field) => field.type === "search");
   const compactFields = fields.filter((field) => field.type !== "search");
 
   const gridCls = cn(
-    "grid gap-x-5 gap-y-4",
+    "grid gap-x-3 gap-y-3 lg:gap-x-5 lg:gap-y-4",
     d === 1 && "grid-cols-1",
     d === 2 && "grid-cols-2",
     sm === 2 && "sm:grid-cols-2",
     sm === 3 && "sm:grid-cols-3",
+    md === 2 && "md:grid-cols-2",
+    md === 3 && "md:grid-cols-3",
     lg === 3 && "lg:grid-cols-3",
     lg === 4 && "lg:grid-cols-4",
     resolvedXl === 4 && "xl:grid-cols-4",
     resolvedXl === 5 && "xl:grid-cols-5",
     resolvedXl === 6 && "xl:grid-cols-6",
     resolvedXl === 7 && "xl:grid-cols-7",
+    resolvedXxl === 5 && "2xl:grid-cols-5",
+    resolvedXxl === 6 && "2xl:grid-cols-6",
+    resolvedXxl === 7 && "2xl:grid-cols-7",
   );
 
   return (
     <div className="border-b border-border/60 bg-card/60 backdrop-blur-sm px-3 py-3 sm:px-4 sm:py-4">
-      <div className="space-y-2 sm:hidden">
+      <div className="space-y-2 md:hidden">
         {searchFields.map((f) => (
           <FilterField key={f.key} field={f} compact />
         ))}
 
         {(compactFields.length > 0 || extraSlot) && (
-          <div className="-mx-3 overflow-x-auto px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max items-start  lg:items-center gap-2 flex-wrap flex-col ">
-              {compactFields.map((f) => (
-                <FilterField key={f.key} field={f} compact />
-              ))}
-              {extraSlot && <div className="min-w-[160px] shrink-0">{extraSlot}</div>}
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            {compactFields.map((f) => (
+              <div
+                key={f.key}
+                className={cn("min-w-0", f.type === "custom" && "col-span-2")}
+              >
+                <FilterField field={f} compact />
+              </div>
+            ))}
+            {extraSlot && <div className="col-span-2 min-w-0">{extraSlot}</div>}
           </div>
         )}
       </div>
 
-      <div className={cn(gridCls, "hidden sm:grid")}>
+      <div className={cn(gridCls, "hidden md:grid")}>
         {fields.map((f) => (
           <FilterField key={f.key} field={f} />
         ))}
-        {extraSlot}
+        {extraSlot && <div className="min-w-0 md:col-span-2 xl:col-span-1 2xl:col-span-1">{extraSlot}</div>}
       </div>
 
       {hasActiveFilters && onClearAll && (

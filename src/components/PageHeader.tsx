@@ -226,31 +226,34 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   return (
     <>
       <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-40 shadow-sm shadow-black/5">
-        <div className="px-6 py-3 flex items-center justify-between gap-6">
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-4 lg:px-6">
 
-          {/* ── Left: Greeting ─────────────────────────────── */}
-          <div className="min-w-0  ">
-            <div className="flex items-center gap-2.5 hidden sm:flex">
-              <div className="p-1.5 rounded-[6px] bg-primary/8 shrink-0">
+          {/* ── Left: Title / greeting ─────────────────────────────── */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="hidden sm:flex p-1.5 rounded-[6px] bg-primary/8 shrink-0">
                 <GreetingIcon className="h-3.5 w-3.5 text-primary" />
               </div>
               <div className="min-w-0">
                 {isAuth && isLoading ? (
                   <div className="space-y-1">
-                    <div className="h-3 w-36 bg-muted animate-pulse rounded" />
-                    <div className="h-2.5 w-24 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-28 sm:w-36 bg-muted animate-pulse rounded" />
+                    <div className="hidden sm:block h-2.5 w-24 bg-muted animate-pulse rounded" />
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-[12px] uppercase font-semibold text-foreground truncate leading-tight tracking-[-0.01em]">
-                      {greetingText}
-                      {/* Only show name when authenticated and resolved */}
-                      {isAuth && firstName && firstName !== "—" ? (
-                        <span className="text-primary">, {firstName}</span>
-                      ) : null}
+                    <h1 className="text-[13px] sm:text-[12px] uppercase font-semibold text-foreground truncate leading-tight tracking-[-0.01em]">
+                      {title || (
+                        <>
+                          {greetingText}
+                          {isAuth && firstName && firstName !== "—" ? (
+                            <span className="text-primary">, {firstName}</span>
+                          ) : null}
+                        </>
+                      )}
                     </h1>
                     {subtitle && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                      <p className="hidden sm:block text-[11px] text-muted-foreground mt-0.5 truncate">
                         {subtitle}
                       </p>
                     )}
@@ -258,11 +261,10 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                 )}
               </div>
             </div>
-            
           </div>
 
           {/* ── Right controls ─────────────────────────────── */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
 
             {/* Custom actions slot */}
             {actions && (
@@ -277,7 +279,9 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
             </div>
 
             <ThemeToggle />
-            <LanguageSwitcher compact />
+            <div className="hidden sm:block">
+              <LanguageSwitcher compact />
+            </div>
 
             <div className="h-5 w-px bg-border/50 mx-1" />
 
@@ -290,7 +294,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                   className="relative p-2 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200"
                   aria-label="Open notifications"
                 >
-                  <Bell className="h-[25px] w-[25px]" />
+                  <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
                   {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[8px] font-bold ring-[1.5px] ring-card leading-none">
                       {unreadCount > 99 ? "99+" : unreadCount}
@@ -307,11 +311,14 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                         to: browsingAsPatient ? "/doctor" : "/patient/search-doctors",
                       })
                     }
-                    className="shrink-0 whitespace-nowrap rounded-[6px] border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-semibold leading-tight text-primary hover:bg-primary/15 disabled:opacity-60 sm:px-2.5 sm:text-[11px]"
+                    className="shrink-0 rounded-[6px] border border-primary/30 bg-primary/10 px-1.5 py-1 text-[10px] font-semibold leading-tight text-primary hover:bg-primary/15 disabled:opacity-60 lg:px-2.5 lg:text-[11px]"
                   >
-                    {browsingAsPatient
-                      ? t("header.login_as_doctor", { defaultValue: "Log in as a doctor" })
-                      : t("header.login_as_patient", { defaultValue: "Log in as patient" })}
+                    <span className="lg:hidden">{browsingAsPatient ? t("header.doctor", { defaultValue: "Doctor" }) : t("header.patient", { defaultValue: "Patient" })}</span>
+                    <span className="hidden lg:inline">
+                      {browsingAsPatient
+                        ? t("header.login_as_doctor", { defaultValue: "Log in as a doctor" })
+                        : t("header.login_as_patient", { defaultValue: "Log in as patient" })}
+                    </span>
                   </button>
                 )}
 
@@ -367,7 +374,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
 
                   {/* ── Profile Popover ───────────────────────── */}
                   {profileOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[6px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-1.5rem))] z-50 bg-card border border-border/60 rounded-[6px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
                       {/* User info header */}
                       <div
                         className={cn(

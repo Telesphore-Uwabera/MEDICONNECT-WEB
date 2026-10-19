@@ -482,7 +482,7 @@ function SearchStats({
   ];
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 p-4 pb-2">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3 sm:p-4 pb-2">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -496,7 +496,7 @@ function SearchStats({
               ) : (
                 <p className="leading-none font-bold text-foreground text-sm tabular-nums ">{card.value}</p>
               )}
-              <p className="mt-1 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground leading-tight">
                 {card.label}
               </p>
             </div>
@@ -912,7 +912,7 @@ const PatientPharmacy = () => {
           hasActiveFilters={hasActiveFilters}
           onClearAll={clearAll}
           fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3, xl: 5 }}
+          cols={{ default: 2, sm: 2, md: 3, lg: 4, xl: 5, xxl: 6 }}
         />
 
 
@@ -921,7 +921,7 @@ const PatientPharmacy = () => {
             {isLoading ? (
               <div className={cn(
                 view === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3"
                   : "flex flex-col gap-1.5",
               )}>
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -948,7 +948,7 @@ const PatientPharmacy = () => {
                 )}
               </div>
             ) : view === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
                 {pharmacies.map((ph) => (
                   <PharmacyGridCard key={ph.id} pharmacy={ph} />
                 ))}
