@@ -219,6 +219,51 @@
   animation: whatsapp-ring 1.6s ease-out infinite;
 }
 
+/* Phone: keep doctor photos short, never use a hover overlay over the face,
+   and park WhatsApp at the bottom so the expanding ring cannot cover cards. */
+.doctor-card-photo {
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 11.5rem;
+  box-sizing: border-box;
+}
+
+.doctor-card-overlay {
+  display: none !important;
+}
+
+.doctor-card-view-mobile {
+  display: inline-flex;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .doctor-card-photo {
+    max-height: none;
+  }
+
+  .doctor-card-overlay {
+    display: flex !important;
+  }
+
+  .doctor-card-view-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .whatsapp-float {
+    top: auto !important;
+    bottom: 5.5rem;
+    right: 0.75rem;
+    transform: none !important;
+  }
+
+  .whatsapp-ring {
+    display: none;
+  }
+}
+
 /* Prevent double-overlay when IremboPay injects its own backdrop */
 /* Target Irembo's overlay iframe (usually iframe within an existing iframe) */
 html>body>iframe[src*="web-pay"],

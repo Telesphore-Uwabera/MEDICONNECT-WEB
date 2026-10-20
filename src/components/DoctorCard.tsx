@@ -828,11 +828,11 @@ export const DoctorCard = ({
         className="group box-border w-full max-w-full min-w-0 overflow-hidden rounded-xl border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer"
         onClick={openDetails}
       >
-        <div className="relative aspect-[4/3] w-full max-w-full overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40">
+        <div className="doctor-card-photo relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40">
           <div className="group/img absolute inset-2 sm:inset-3 overflow-hidden rounded-xl shadow-sm">
             <DoctorAvatar doctor={doctor} size="lg" />
 
-            <div className="absolute inset-0 hidden items-center justify-center bg-black/0 opacity-0 transition-all duration-300 md:flex group-hover:bg-black/40 group-hover:opacity-100">
+            <div className="doctor-card-overlay absolute inset-0 items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
               <span className="translate-y-2 scale-95 rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
                 {t("pages.cards.view_details", "View Profile")}
               </span>
@@ -843,7 +843,7 @@ export const DoctorCard = ({
         <div className="box-border w-full max-w-full min-w-0 p-3 sm:p-4">
           <button
             type="button"
-            className="mb-2 inline-flex md:hidden rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground"
+            className="doctor-card-view-mobile mb-2 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground"
             onClick={(e) => {
               e.stopPropagation();
               openDetails();

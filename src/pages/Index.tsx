@@ -444,7 +444,7 @@ const Index = () => {
 
       {/* ── Available Doctors Grid ── */}
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="box-border w-full min-w-0 max-w-[1920px] mx-auto px-4 pr-14 sm:px-6 sm:pr-6 lg:px-10 lg:pr-10 xl:px-16 2xl:px-24">
+        <RevealSection direction="up" delay={0} className="box-border w-full min-w-0 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div className="w-full min-w-0 max-w-full">
             <div className="mb-6">
               <p className={SECTION_EYEBROW}>
