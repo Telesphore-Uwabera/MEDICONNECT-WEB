@@ -97,7 +97,7 @@ app.get("/", (req, res) => {
     return;
   }
   res.json({
-    service: "mediconnect-api",
+    service: "mediconnect-node",
     status: true,
     health: "/api/v1/health",
   });

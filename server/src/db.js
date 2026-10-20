@@ -120,7 +120,7 @@ export function pageArgs(req, fallback = 10) {
   return { page, perPage, offset: (page - 1) * perPage };
 }
 
-export function laravelPage({ data, total, page, perPage, path }) {
+export function paginateList({ data, total, page, perPage, path }) {
   const last = Math.max(1, Math.ceil(total / perPage) || 1);
   const withPage = (n) => `${path}?page=${n}`;
   return {

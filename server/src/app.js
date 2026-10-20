@@ -44,7 +44,7 @@ import {
   forgetColumns,
   hasColumn,
   insert,
-  laravelPage,
+  paginateList,
   one,
   pageArgs,
   pool,
@@ -175,7 +175,7 @@ async function listTable(req, table, scope) {
   }
   if (table === "team_members") data = data.map(withTeamPhoto);
   const path = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
-  return laravelPage({ data, total, page, perPage, path });
+  return paginateList({ data, total, page, perPage, path });
 }
 
 async function doctorOnlineFee(doctorId) {
@@ -1035,7 +1035,7 @@ export function appRoutes(router) {
       const { page, perPage } = pageArgs(req);
       const ids = await patientOwnerIds(req);
       if (!ids.length || !(await tableExists("payments"))) {
-        return res.json(laravelPage({ data: [], total: 0, page, perPage, path: "/api/v1/patient/bills" }));
+        return res.json(paginateList({ data: [], total: 0, page, perPage, path: "/api/v1/patient/bills" }));
       }
       const owned = await ownerWhereForPatient(req, "payments");
       let rows = [];
@@ -1057,7 +1057,7 @@ export function appRoutes(router) {
       }
       const presented = await presentRows("payments", rows);
       const start = (page - 1) * perPage;
-      res.json(laravelPage({
+      res.json(paginateList({
         data: presented.slice(start, start + perPage),
         total: presented.length,
         page,
@@ -1079,7 +1079,7 @@ export function appRoutes(router) {
       );
       const presented = await presentRows("patient_dependents", rows);
       const start = (page - 1) * perPage;
-      res.json(laravelPage({
+      res.json(paginateList({
         data: presented.slice(start, start + perPage),
         total: presented.length,
         page,
@@ -1857,7 +1857,7 @@ export function appRoutes(router) {
           average_per_appointment: total > 0 ? Math.round(Number(summary.total_earned) / total) : 0,
           last_appointment_at: summary?.last_appointment_at ?? null,
         },
-        breakdown: laravelPage({
+        breakdown: paginateList({
           data: await presentRows("appointments", rows),
           total,
           page,
@@ -1882,14 +1882,14 @@ export function appRoutes(router) {
             ? "withdrawals"
             : null;
       if (!table) {
-        return res.json(laravelPage({ data: [], total: 0, page, perPage, path: "/api/v1/doctor/wallet/withdrawals" }));
+        return res.json(paginateList({ data: [], total: 0, page, perPage, path: "/api/v1/doctor/wallet/withdrawals" }));
       }
       const column = await firstColumn(table, ["doctor_id", "user_id"]);
       const where = column ? `\`${column}\` = ?` : "1=0";
       const params = column ? [column === "user_id" ? req.user.id : doctorId] : [];
       const total = Number((await one(`SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${where}`, params).catch(() => ({ total: 0 })))?.total ?? 0);
       const rows = await q(`SELECT * FROM \`${table}\` WHERE ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(() => []);
-      res.json(laravelPage({
+      res.json(paginateList({
         data: await presentRows(table, rows),
         total,
         page,
@@ -2608,7 +2608,7 @@ export function appRoutes(router) {
         const total = await countWhere("notifications", "WHERE notifiable_id = ?", [req.user.id]);
         const data = await presentRows("notifications", await q("SELECT * FROM notifications WHERE notifiable_id = ? ORDER BY id DESC LIMIT ? OFFSET ?", [req.user.id, perPage, offset]));
         const path = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
-        return res.json(laravelPage({ data, total, page: pageNo, perPage, path }));
+        return res.json(paginateList({ data, total, page: pageNo, perPage, path }));
       }
       res.json(page);
     } catch (error) {

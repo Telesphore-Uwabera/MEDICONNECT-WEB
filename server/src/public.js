@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { countWhere, hasColumn, insert, paginateList, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
@@ -937,7 +937,7 @@ export function publicRoutes(router) {
       const shaped = await presentRows("doctors", rows);
       const data = await attachDoctorRelations(shaped);
       const stats = await doctorStats(where, params);
-      res.json({ ...laravelPage({ data, total, page, perPage, path: pathOf(req) }), stats });
+      res.json({ ...paginateList({ data, total, page, perPage, path: pathOf(req) }), stats });
     } catch (error) {
       next(error);
     }
@@ -1088,7 +1088,7 @@ export function publicRoutes(router) {
           })),
         };
       }));
-      res.json(laravelPage({ data, total, page, perPage, path: pathOf(req) }));
+      res.json(paginateList({ data, total, page, perPage, path: pathOf(req) }));
     } catch (error) {
       next(error);
     }
@@ -1163,7 +1163,7 @@ export function publicRoutes(router) {
       }
       const total = await countWhere("services", where, params);
       const data = await presentRows("services", await q(`SELECT * FROM services ${where} ORDER BY \`order\` ASC, id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(async () => q(`SELECT * FROM services ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset])));
-      res.json(laravelPage({ data, total, page, perPage, path: pathOf(req) }));
+      res.json(paginateList({ data, total, page, perPage, path: pathOf(req) }));
     } catch (error) {
       next(error);
     }
@@ -1191,7 +1191,7 @@ export function publicRoutes(router) {
       }
       const total = await countWhere("team_members", where, params);
       const data = (await presentRows("team_members", await q(`SELECT * FROM team_members ${where} ORDER BY \`order\` ASC, id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(async () => q(`SELECT * FROM team_members ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset])))).map(withTeamPhoto);
-      res.json(laravelPage({ data, total, page, perPage, path: pathOf(req) }));
+      res.json(paginateList({ data, total, page, perPage, path: pathOf(req) }));
     } catch (error) {
       next(error);
     }

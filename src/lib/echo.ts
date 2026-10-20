@@ -1,82 +1,128 @@
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js';
+import Pusher from "pusher-js";
 
 declare global {
-    interface Window {
-        Pusher: typeof Pusher;
-    }
+  interface Window {
+    Pusher: typeof Pusher;
+  }
 }
 
 window.Pusher = Pusher;
 
-function reverbHost() {
-    const host = String(import.meta.env.VITE_REVERB_HOST || "").trim();
-    if (!host || host.includes("trycloudflare")) {
-        return "ws.mediconnect.rw";
-    }
-    return host;
+function socketHost() {
+  const host = String(import.meta.env.VITE_REVERB_HOST || "").trim();
+  if (!host || host.includes("trycloudflare")) {
+    return "ws.mediconnect.rw";
+  }
+  return host;
 }
 
-const echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-staging-key",
-    wsHost: reverbHost(),
-    wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
-    wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
-    forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "wss") !== "ws",
-    enabledTransports: ['ws', 'wss'],
-    disableStats: true,
-    authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
-    authorizer: (channel: any, options: any) => {
-        return {
-            authorize: (socketId: string, callback: Function) => {
-                let token = localStorage.getItem("auth_token");
-                if (!token) {
-                    try {
-                        const sessionStr = localStorage.getItem("instant_consult_session");
-                        if (sessionStr) {
-                            token = JSON.parse(sessionStr).token;
-                        }
-                    } catch { }
-                }
+type ListenFn = (data: any) => void;
 
-                fetch(options.authEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                    },
-                    body: JSON.stringify({
-                        socket_id: socketId,
-                        channel_name: channel.name
-                    })
-                })
-                    .then(response => {
-                        if (!response.ok) throw new Error('Auth failed');
-                        return response.json();
-                    })
-                    .then(data => callback(false, data))
-                    .catch(error => callback(true, error));
-            }
-        };
+function wrapChannel(channel: ReturnType<Pusher["subscribe"]>) {
+  return {
+    listen(event: string, callback: ListenFn) {
+      const name = event.startsWith(".") ? event.slice(1) : event;
+      channel.bind(name, callback);
+      if (name !== event) channel.bind(event, callback);
+      return this;
     },
+    stopListening(event: string, callback?: ListenFn) {
+      const name = event.startsWith(".") ? event.slice(1) : event;
+      if (callback) {
+        channel.unbind(name, callback);
+        if (name !== event) channel.unbind(event, callback);
+      } else {
+        channel.unbind(name);
+        if (name !== event) channel.unbind(event);
+      }
+      return this;
+    },
+  };
+}
+
+const authHeaders: Record<string, string> = {};
+
+const pusher = new Pusher(import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-staging-key", {
+  wsHost: socketHost(),
+  wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
+  wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
+  forceTLS: (import.meta.env.VITE_REVERB_SCHEME || "wss") !== "ws",
+  enabledTransports: ["ws", "wss"],
+  disableStats: true,
+  cluster: "mt1",
+  authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
+  authorizer: (channel) => ({
+    authorize: (socketId, callback) => {
+      let token = localStorage.getItem("auth_token");
+      if (!token) {
+        try {
+          const sessionStr = localStorage.getItem("instant_consult_session");
+          if (sessionStr) token = JSON.parse(sessionStr).token;
+        } catch {
+          /* ignore */
+        }
+      }
+      fetch(`${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...authHeaders,
+        },
+        body: JSON.stringify({
+          socket_id: socketId,
+          channel_name: channel.name,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Auth failed");
+          return response.json();
+        })
+        .then((data) => callback(false, data))
+        .catch((error) => callback(true, error));
+    },
+  }),
 });
 
-const connection = echo?.connector?.pusher?.connection;
+const echo = {
+  connector: {
+    pusher,
+    options: { auth: { headers: authHeaders } },
+  },
+  channel(name: string) {
+    return wrapChannel(pusher.subscribe(name));
+  },
+  private(name: string) {
+    return wrapChannel(pusher.subscribe(`private-${name}`));
+  },
+  leave(name: string) {
+    pusher.unsubscribe(name);
+    pusher.unsubscribe(`private-${name}`);
+  },
+  leaveChannel(name: string) {
+    pusher.unsubscribe(name);
+    pusher.unsubscribe(`private-${name}`);
+  },
+  disconnect() {
+    pusher.disconnect();
+  },
+};
+
+const connection = pusher.connection;
 if (connection) {
-    let stopped = false;
-    const stopRetrying = () => {
-        if (stopped) return;
-        stopped = true;
-        try {
-            echo.disconnect();
-        } catch {
-            /* ignore */
-        }
-    };
-    connection.bind("failed", stopRetrying);
-    connection.bind("unavailable", stopRetrying);
+  let stopped = false;
+  const stopRetrying = () => {
+    if (stopped) return;
+    stopped = true;
+    try {
+      echo.disconnect();
+    } catch {
+      /* ignore */
+    }
+  };
+  connection.bind("failed", stopRetrying);
+  connection.bind("unavailable", stopRetrying);
 }
 
 export default echo;

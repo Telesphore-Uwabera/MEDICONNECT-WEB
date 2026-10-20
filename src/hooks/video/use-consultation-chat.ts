@@ -132,7 +132,7 @@ export function useConsultationChat(
     const channelName = chatChannel;
     console.info(`[Chat] Subscribing to channel: ${channelName}`);
 
-    // Ensure Echo uses the freshest token (especially for guests who just auto-logged in)
+    // Ensure the socket client uses the freshest token (especially for guests who just auto-logged in)
     if (echo.connector?.options?.auth?.headers) {
       echo.connector.options.auth.headers.Authorization = `Bearer ${localStorage.getItem("auth_token")}`;
     }

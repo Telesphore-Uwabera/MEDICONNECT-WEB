@@ -2,6 +2,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 
+/** Polymorphic type already stored in MySQL token/notification rows. */
 const USER_TYPE = "App\\Models\\User";
 
 function sha256(value) {

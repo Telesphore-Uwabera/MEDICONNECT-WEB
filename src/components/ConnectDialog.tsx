@@ -307,7 +307,7 @@ const resolveRejoinTarget = async (err: any): Promise<RejoinTarget | null> => {
   return rejoinFromPersistedCall();
 };
 
-// The Echo authorizer (lib/echo.ts) authorizes the private chat channel using a
+// The socket authorizer (lib/echo.ts) authorizes the private chat channel using a
 // bearer token from localStorage["auth_token"], falling back to
 // localStorage["instant_consult_session"].token. Guests have no auth_token, so
 // mirror their consultation token here — otherwise /broadcasting/auth returns 403

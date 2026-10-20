@@ -4,7 +4,7 @@ import { verifierNames } from "./verification.js";
 import {
   countWhere,
   hasColumn,
-  laravelPage,
+  paginateList,
   one,
   pageArgs,
   presentRow,
@@ -518,7 +518,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
           if (NAMED_TABLES.has(table)) data = await verifierNames(Array.isArray(data) ? data : []);
           data = (Array.isArray(data) ? data : []).map((row) => withPk(row, spec.idName));
-          const pagePayload = laravelPage({
+          const pagePayload = paginateList({
             data,
             total,
             page,

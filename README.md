@@ -15,6 +15,7 @@
 | Access the database | [Database Access](#database) |
 | SSH into the server | [SSH / Server](#ssh--server) |
 | Test API endpoints | [API Documentation](#-api-documentation) |
+| Use the product (patient, doctor, hospital, pharmacy, admin) | [User Guide](#-user-guide) |
 | Use test accounts | [Test Credentials](#-test-credentials) |
 
 ---
@@ -27,15 +28,16 @@
 4. [Environment Variables](#-environment-variables)
 5. [Scripts Reference](#-scripts-reference)
 6. [Workspaces & Routes](#-workspaces--routes)
-7. [Infrastructure Access](#-infrastructure-access)
-8. [Git Workflow](#-git-workflow)
-9. [Frontend Deployment](#-frontend-deployment)
-10. [Backend Deployment](#-backend-deployment)
-11. [Deploy Both Together](#-deploying-frontend--backend-together)
-12. [Rollback](#-rollback)
-13. [Quick Deploy Cheatsheet](#-quick-deploy-cheatsheet)
-14. [Test Credentials](#-test-credentials)
-15. [API Documentation](#-api-documentation)
+7. [User Guide](#-user-guide)
+8. [Infrastructure Access](#-infrastructure-access)
+9. [Git Workflow](#-git-workflow)
+10. [Frontend Deployment](#-frontend-deployment)
+11. [Backend Deployment](#-backend-deployment)
+12. [Deploy Both Together](#-deploying-frontend--backend-together)
+13. [Rollback](#-rollback)
+14. [Quick Deploy Cheatsheet](#-quick-deploy-cheatsheet)
+15. [Test Credentials](#-test-credentials)
+16. [API Documentation](#-api-documentation)
 
 ---
 
@@ -43,15 +45,16 @@
 
 | Layer | Technology |
 |---|---|
-| Framework | React 18 + TypeScript |
-| Build tool | Vite |
+| Web app | React 18 + TypeScript + Vite |
+| API | Node.js (Express) in `server/` |
+| Database | MySQL |
 | Routing | React Router v6 |
 | Server state | TanStack Query v5 |
 | Styling | Tailwind CSS + shadcn/ui |
 | Forms | React Hook Form + Zod |
 | Translations | i18next (English, French, Kinyarwanda) |
-| Realtime | Laravel Echo + Pusher JS (Reverb) |
-| Video calls | WebRTC + Daily.co |
+| Realtime | Node WebSocket (`server/src/realtime.js`) + Pusher JS protocol |
+| Video calls | WebRTC + TURN/STUN |
 | Rich text editor | Tiptap |
 | Charts | Recharts |
 
@@ -60,21 +63,26 @@
 ## 📁 Project Structure
 
 ```
-src/
-├── components/        Reusable UI components (buttons, cards, modals, dialogs)
-├── pages/             Full page views — one file per route
-│   ├── patient/       Patient-specific pages
-│   ├── doctor/        Doctor-specific pages
-│   ├── hospital/      Hospital-specific pages
-│   ├── pharmacy/      Pharmacy-specific pages
-│   └── admin/         Admin-specific pages
-├── hooks/             Custom React hooks + API call wrappers
-├── lib/               API client, utilities, helper functions
-├── locales/           Translation files — en.json, fr.json, rw.json
-└── assets/            Images and icons imported in code
+src/                   React web app
+├── components/        Reusable UI (cards, dialogs, consultation room)
+├── pages/             One file per route
+│   ├── patient/
+│   ├── doctor/
+│   ├── hospital/
+│   ├── pharmacy/
+│   └── admin/
+├── hooks/             React Query hooks + API wrappers
+├── lib/               apiFetch, auth session, realtime socket
+├── locales/           en / fr / rw
+└── assets/
 
-public/
-└── images/            Static images referenced by URL (not imported)
+server/                Node.js API (Express + MySQL)
+├── src/index.js       HTTP server, static uploads, websocket attach
+├── src/app.js         Authenticated /api/v1 routes
+├── src/public.js      Public search, payments, certificates
+└── src/realtime.js    Pusher-protocol websocket channels
+
+public/images/         Static images referenced by URL
 ```
 
 ---
@@ -105,11 +113,16 @@ cp .env.example .env
 # 4. Edit .env — set your API URL (staging for local dev)
 #    VITE_APP_BASE_URL=https://staging-api.mediconnect.rw/api/v1
 
-# 5. Start the development server
+# 5. Start the web app
 npm run dev
+
+# 6. Optional: run the Node API locally (needs server/.env with MySQL)
+npm run api
 ```
 
-The app opens at **http://localhost:5173**
+The web app opens at **http://localhost:3000** (or the next free port Vite prints).
+
+To run web + API together, keep two terminals: `npm run dev` and `npm run api`. Point `VITE_APP_BASE_URL` at `/api/v1` if the Vite proxy should hit your local Node process.
 
 > **First time?** Also configure your git identity so commits show your name:
 > ```bash
@@ -131,7 +144,7 @@ VITE_APP_BASE_URL=https://staging-api.mediconnect.rw/api/v1
 # Used when VITE_APP_BASE_URL is relative (for example, /api/v1)
 VITE_DEV_API_TARGET=https://staging-api.mediconnect.rw
 
-# ── WebSockets (Laravel Reverb) ───────────────────────────────────
+# ── WebSockets (Node, Pusher protocol) ────────────────────────────
 VITE_REVERB_APP_KEY=mediconnect-staging-key
 VITE_REVERB_HOST=ws.mediconnect.rw
 VITE_REVERB_PORT=443
@@ -171,8 +184,9 @@ VITE_DEV=false
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Start local dev server with hot reload |
-| `npm run build` | Build for production → outputs to `dist/` |
+| `npm run dev` | Start the Vite web app with hot reload |
+| `npm run api` | Start the Node API (`server/`) |
+| `npm run build` | Build the web app → `dist/` |
 | `npm run build:dev` | Build with source maps (for staging) |
 | `npm run preview` | Preview the production build locally |
 | `npm test` | Run tests once |
@@ -191,6 +205,57 @@ VITE_DEV=false
 | Pharmacy | `/pharmacy` | After admin approval |
 | Admin | `/admin` | Super-admin only |
 | Public | `/`, `/search`, `/doctors` | No login needed |
+
+---
+
+## 👥 User Guide
+
+Use https://mediconnect.rw (production) or https://staging.mediconnect.rw (testing). Sign in at `/auth`. Staging accounts are listed under [Test Credentials](#-test-credentials).
+
+### Patient
+
+1. Register as **Patient** with name, email or phone, and password. Accept terms.
+2. Verify OTP if asked, then complete your profile (language, insurance, medical notes).
+3. From the home page or **Find doctors**, open a doctor card → **Book Appointment** or **Instant Consultation**.
+4. Pay with IremboPay (MoMo / Airtel / card) when the invoice is shown. Do not mark invoices paid by hand in the database.
+5. Join the video room at the booked time, or when the doctor accepts an instant consult. Chat, notes, and files stay on that visit.
+6. After the visit, open **Records**, **Prescriptions**, **Certificates**, and **Care packets** from the patient dashboard.
+7. Fitness certificates are a paid flow (currently 5,000 FRW). Track status until the PDF is ready to download.
+8. Sign out from the header. One account can only stay signed in on one device — a new login ends the previous session. After 1 hour idle you are signed out.
+
+### Doctor
+
+1. Register as **Doctor**. Admin must approve the profile and license before patients can book you.
+2. Complete profile, photo, specializations, and **Availability** (recurring hours + slots).
+3. Toggle **Instant consultation** when you are ready to take queue patients. Pause bookings when you are off duty.
+4. Accept or join visits from **Appointments** / **Instant queue**. Write notes, issue prescriptions, and complete the visit.
+5. Use **Care packets** to close with notes only, send the patient to a registered hospital (ID + notes + protocol + message), or send medicines to a registered pharmacy. The hospital can reply; you can then send the patient to pharmacy on the same packet.
+6. Check **Wallet** for earnings and withdrawals (admin completes payouts).
+
+### Hospital
+
+1. Register as **Hospital**. Wait for admin approval.
+2. Fill profile, working hours, departments, and services. Departments power bookings and the public hospital pages.
+3. Open **Incoming care** / referrals to receive doctor packets, add result notes, and return them to the doctor.
+4. Manage **Appointments** and **Analytics** for the facility. Only registered, approved facilities appear as care destinations.
+
+### Pharmacy
+
+1. Register as **Pharmacy**. Wait for admin approval.
+2. Keep inventory (categories, stock) up to date.
+3. Accept **prescription orders** and **care packets** from doctors. Fulfill or reject with a reason.
+4. Patients see order status on their pharmacy-orders page.
+
+### Admin
+
+1. Sign in with an admin account (`can_be_admin`).
+2. Approve or reject doctors, hospitals, and pharmacies. Set license expiry.
+3. Manage users, specializations, service pricing, insurance, help center, legal pages, and system settings.
+4. Review payments, refunds, wallets, and fitness-certificate traffic. Do not approve pending doctors or refund live consults unless that is the intended support action.
+
+### Switching roles
+
+Some users have more than one role (patient + hospital). Use the role switcher in the header. The API checks both the active role and available roles for reads; writes still require the matching workspace.
 
 ---
 
@@ -312,7 +377,7 @@ Vite dev server proxy
     ↓  forwards to VITE_DEV_API_TARGET
 https://api.mediconnect.rw/api/v1/...
     ↓
-Laravel API → MySQL database
+Node.js API (Express) → MySQL
 ```
 
 No VPN needed for this — the production API is publicly accessible over HTTPS.
@@ -618,9 +683,13 @@ server {
 
 ## ⚙️ Backend Deployment
 
-The backend is a **Laravel PHP API** at `/var/www/mediconnect-api` on the server.
+The backend is the **Node.js Express API** in `server/`, typically running as `mediconnect-node` (systemd) from `/opt/mediconnect-node`.
+
+Some MySQL columns (`tokenable_type`, `notifiable_type`, and similar) still store the historical type strings already in production (`App\Models\User`, `App\Models\Appointment`, …). The Node API keeps writing those same values so existing rows continue to match. Do not rename them without a data migration.
 
 > **Requires SSH access.** Connect VPN first, then `ssh root@$API_HOST`.
+
+Pushes to `main` can also hit `POST /api/v1/deploy` (needs `DEPLOY_SECRET` in `server/.env`), which runs `/opt/mediconnect-node/deploy.sh`.
 
 ---
 
@@ -628,32 +697,25 @@ The backend is a **Laravel PHP API** at `/var/www/mediconnect-api` on the server
 
 ```bash
 # 1. Go to the API directory
-cd /var/www/mediconnect-api
+cd /opt/mediconnect-node
 
 # 2. Pull latest code
 git pull origin main
 
-# 3. Install / update PHP dependencies
-composer install --no-dev --optimize-autoloader
+# 3. Install Node dependencies
+npm install --omit=dev --prefix server
 
-# 4. Run database migrations
-php artisan migrate --force
+# 4. Confirm server/.env (MySQL, TURN, DEPLOY_SECRET, PAYMENT_*, CALL_TOKEN_SECRET)
 
-# 5. Clear and rebuild all Laravel caches  ← critical step
-php artisan optimize:clear && php artisan optimize
+# 5. Restart the Node process
+systemctl restart mediconnect-node
 
-# 6. Fix file permissions (needed for uploads, logs, sessions)
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R 775 storage bootstrap/cache
-
-# 7. Restart PHP-FPM (clears OPcache — loads new code)
-systemctl restart php8.2-fpm
-
-# 8. Reload Nginx
+# 6. Reload Nginx if you changed the reverse-proxy config
 nginx -t && systemctl reload nginx
 
-# 9. Verify the API is responding
+# 7. Verify the API is responding
 curl -s https://api.mediconnect.rw/api/v1/public/instant-consultations/doctors
+curl -s https://api.mediconnect.rw/api/v1/public/consultations/relay-health
 ```
 
 ---
@@ -662,39 +724,34 @@ curl -s https://api.mediconnect.rw/api/v1/public/instant-consultations/doctors
 
 | Step | Why it matters |
 |---|---|
-| `git pull` | Gets the latest code onto the server |
-| `composer install` | Installs/updates PHP packages |
-| `php artisan migrate` | Applies any new database schema changes |
-| `optimize:clear && optimize` | Rebuilds config, route, and view caches — without this Laravel serves stale data |
-| `chown + chmod` | Lets PHP write to storage (uploads, logs will break without this) |
-| `restart php8.2-fpm` | Clears PHP OPcache so new code is actually loaded |
-| `nginx -t && reload` | Applies any Nginx config changes safely |
+| `git pull` | Gets the latest `server/` code onto the box |
+| `npm install --omit=dev --prefix server` | Installs Express, mysql2, ws, and other API packages |
+| `systemctl restart mediconnect-node` | Loads the new Node process |
+| `nginx -t && reload` | Applies reverse-proxy changes safely |
 
 ---
 
 ### Checking logs when something breaks
 
 ```bash
-# Laravel application errors
-tail -50 /var/www/mediconnect-api/storage/logs/laravel.log
+# Node API (systemd)
+journalctl -u mediconnect-node -n 80 --no-pager
 
 # Nginx errors
 tail -50 /var/log/nginx/error.log
-
-# PHP-FPM errors
-tail -50 /var/log/php8.2-fpm.log
 ```
 
 ---
 
-### Seeding the database (reference data only)
+### Local / seed data
+
+There is no Artisan seeder. Load reference rows with SQL in phpMyAdmin or:
 
 ```bash
-# Only run if you know what the seeder does
-php artisan db:seed --force
+mysql -u root mediconnect < your-seed.sql
 ```
 
-> ⚠️ Some seeders wipe and re-insert data. Never run on production without checking first.
+> Never run a wipe-and-replace script on production without checking it first.
 
 ---
 
@@ -741,18 +798,13 @@ netlify deploy --dir=dist --prod
 
 ```bash
 # On the server
-cd /var/www/mediconnect-api
+cd /opt/mediconnect-node
 git log --oneline -10         # find last working commit
 git checkout <commit-hash>    # go back to it
-
-# Re-run post-deploy steps
-composer install --no-dev --optimize-autoloader
-php artisan optimize:clear && php artisan optimize
-systemctl restart php8.2-fpm
+npm install --omit=dev --prefix server
+systemctl restart mediconnect-node
 nginx -t && systemctl reload nginx
 ```
-
-> If migrations ran, you may also need `php artisan migrate:rollback` before reverting code.
 
 ---
 
@@ -770,13 +822,10 @@ netlify deploy --dir=dist --prod
 ### Backend — production deploy (run on server)
 
 ```bash
-cd /var/www/mediconnect-api
+cd /opt/mediconnect-node
 git pull origin main
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan optimize:clear && php artisan optimize
-chown -R www-data:www-data storage bootstrap/cache
-systemctl restart php8.2-fpm
+npm install --omit=dev --prefix server
+systemctl restart mediconnect-node
 nginx -t && systemctl reload nginx
 ```
 
@@ -814,16 +863,16 @@ All `<img>` tags in the app already use `loading="lazy"` (added by default in ne
 
 ### Backend — convert existing images to WebP
 
-SSH into the server (VPN required), then run this in the Laravel API directory:
+SSH into the server (VPN required), then run this against the Node upload directory:
 
 ```bash
-cd /var/www/mediconnect-api
+cd /opt/mediconnect-node
 
 # Install cwebp if not available
 apt-get install -y webp
 
-# Convert all uploaded images in storage to WebP
-find storage/app/public -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) | while read f; do
+# Convert uploaded images (path may be server/storage or UPLOAD_DIR)
+find server/storage -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) | while read f; do
   output="${f%.*}.webp"
   cwebp -q 82 "$f" -o "$output" && echo "✅ $output"
 done
@@ -849,48 +898,9 @@ UPDATE hospitals  SET logo   = REPLACE(logo,   '.png', '.webp')    WHERE logo   
 
 ---
 
-### Backend — auto-convert on upload (Laravel)
+### Backend — auto-convert on upload (Node)
 
-Add this to your image upload handler in the Laravel API. It converts any uploaded file to WebP before storing it.
-
-Install the Intervention Image package if not already present:
-
-```bash
-composer require intervention/image
-```
-
-Then in your upload controller/service:
-
-```php
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
-
-public function uploadImage(Request $request, string $field = 'image'): string
-{
-    $request->validate([
-        $field => 'required|image|mimes:jpeg,png,jpg,webp|max:4096',
-    ]);
-
-    $manager = new ImageManager(new Driver());
-    $image   = $manager->read($request->file($field));
-
-    // Resize if too large (optional — keeps file sizes small)
-    if ($image->width() > 1200) {
-        $image->scale(width: 1200);
-    }
-
-    // Encode to WebP at quality 82
-    $encoded  = $image->toWebp(quality: 82);
-    $filename = uniqid() . '.webp';
-    $path     = "uploads/{$filename}";
-
-    Storage::disk('public')->put($path, $encoded);
-
-    return Storage::disk('public')->url($path);
-}
-```
-
-This means **every image uploaded going forward** — avatars, doctor photos, hospital logos, pharmacy logos — is automatically stored as WebP. No manual conversion needed.
+Uploads go through Express/multer in `server/`. Convert to WebP in the upload handler (sharp or `cwebp`) before writing under `UPLOAD_DIR`, then return the `.webp` public URL. New avatars, doctor photos, and logos should be stored as WebP only.
 
 ---
 
@@ -899,7 +909,7 @@ This means **every image uploaded going forward** — avatars, doctor photos, ho
 | Step | Who | What |
 |---|---|---|
 | Convert existing DB images | Backend dev | Run `cwebp` script on server + SQL UPDATE |
-| Auto-convert new uploads | Backend dev | Add Intervention Image to upload handlers |
+| Auto-convert new uploads | Backend dev | Convert in the Node upload handler |
 | Frontend lazy loading | Already done | `loading="lazy"` on all below-fold images |
 
 ---
@@ -1457,10 +1467,10 @@ All routes 🔒 Protected
 | `POST` | `/chat/{appointmentId}` | Send: `{ "message": "..." }` |
 | `POST` | `/chat/{appointmentId}/read` | Mark as read |
 
-WebSocket:
+WebSocket (Pusher protocol, see `src/lib/echo.ts`):
 ```javascript
-Echo.private(`appointment.${appointmentId}.chat`)
-  .listen('.message.sent', (data) => console.log(data));
+echo.private(`appointment.${appointmentId}.chat`)
+  .listen(".message.sent", (data) => console.log(data));
 ```
 
 ---
