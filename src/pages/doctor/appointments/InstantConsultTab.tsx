@@ -217,7 +217,7 @@ export function InstantConsultTab() {
   const completed = newestFirst(visibleQueue.filter((i) => finishedStatuses.includes(i.status)));
   const activeItems = newestFirst(visibleQueue.filter((i) => !finishedStatuses.includes(i.status)));
   const waiting = newestFirst(activeItems.filter((i) =>
-    ["pending", "queued", "waiting"].includes(i.status) && !isPaid(i),
+    ["pending", "queued", "waiting", "payment_pending"].includes(i.status) && !isPaid(i),
   ));
   const confirmed = newestFirst(activeItems.filter((i) =>
     isPaid(i) && !["accepted", "in_progress", "completed", "declined", "withdrawn"].includes(i.status),
@@ -577,20 +577,24 @@ export function InstantConsultTab() {
         {!queueLoading && queueTab === "active" && (
           <div className="space-y-5">
 
-            {waiting.length > 0 && (
+            {/* In session first — the live consult the doctor is in */}
+            {joined.length > 0 && (
               <section className="space-y-2">
                 <SectionLabel
-                  dotCls="bg-[hsl(var(--warning))]"
-                  label={t("consult.bookings.awaiting_payment", { defaultValue: "Awaiting payment" })}
-                  count={waiting.length}
+                  dotCls="bg-[hsl(var(--info))]"
+                  label={t('consult.bookings.in_session')}
+                  count={joined.length}
                 />
-                <p className="text-xs text-muted-foreground px-0.5">
-                  {t("consult.bookings.awaiting_payment_hint", {
-                    defaultValue: "These patients requested a consult but have not finished payment yet. Accept becomes available after payment.",
-                  })}
-                </p>
-                {waiting.map((item) => (
-                  <IncomingCard key={item.id} item={item} />
+                {joined.map((item) => (
+                  <IncomingCard
+                    key={item.id}
+                    item={item}
+                    onComplete={() => completeConsult(item)}
+                    onOpenFile={() => handleComplete(item)}
+                    onJoin={() => handleJoin(item)}
+                    isCompleting={activeAction?.id === item.id && activeAction.action === "completing"}
+                    isJoining={activeAction?.id === item.id && activeAction.action === "joining"}
+                  />
                 ))}
               </section>
             )}
@@ -660,24 +664,20 @@ export function InstantConsultTab() {
               </section>
             )}
 
-            {/* In session — info */}
-            {joined.length > 0 && (
+            {waiting.length > 0 && (
               <section className="space-y-2">
                 <SectionLabel
-                  dotCls="bg-[hsl(var(--info))]"
-                  label={t('consult.bookings.in_session')}
-                  count={joined.length}
+                  dotCls="bg-[hsl(var(--warning))]"
+                  label={t("consult.bookings.awaiting_payment", { defaultValue: "Awaiting payment" })}
+                  count={waiting.length}
                 />
-                {joined.map((item) => (
-                  <IncomingCard
-                    key={item.id}
-                    item={item}
-                    onComplete={() => completeConsult(item)}
-                    onOpenFile={() => handleComplete(item)}
-                    onJoin={() => handleJoin(item)}
-                    isCompleting={activeAction?.id === item.id && activeAction.action === "completing"}
-                    isJoining={activeAction?.id === item.id && activeAction.action === "joining"}
-                  />
+                <p className="text-xs text-muted-foreground px-0.5">
+                  {t("consult.bookings.awaiting_payment_hint", {
+                    defaultValue: "These patients requested a consult but have not finished payment yet. Unpaid requests expire after 15 minutes.",
+                  })}
+                </p>
+                {waiting.map((item) => (
+                  <IncomingCard key={item.id} item={item} />
                 ))}
               </section>
             )}

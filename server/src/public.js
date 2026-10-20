@@ -318,9 +318,19 @@ const CLOSED_VISIT = new Set(["accepted", "in_progress", "completed", "done", "d
 const UNPAID_VISIT_MINUTES = 15;
 
 async function paymentIsDue(payment) {
-  if (!payment?.id || !payment?.expires_at) return false;
+  if (!payment?.id) return false;
   const due = await one(
-    "SELECT expires_at < UTC_TIMESTAMP() AS due FROM payments WHERE id = ?",
+    `SELECT
+       (
+         (expires_at IS NOT NULL AND (expires_at < UTC_TIMESTAMP() OR expires_at < NOW()))
+         OR (
+           created_at IS NOT NULL AND (
+             created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
+             OR created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
+           )
+         )
+       ) AS due
+     FROM payments WHERE id = ?`,
     [payment.id],
   ).catch(() => null);
   return Boolean(Number(due?.due));
@@ -417,22 +427,28 @@ async function expireStaleUnpaidVisits() {
   if (!table || !(await hasColumn(table, "created_at"))) return;
   await ensureEnumValue(table, "status", "expired").catch(() => null);
   await ensureEnumValue(table, "status", "payment_expired").catch(() => null);
-  // Same reason as the doctor queue: selecting a payment_status column the table
-  // does not have fails the query, and the expired sweep would silently never run.
   const paidCol = await hasColumn(table, "payment_status");
+  if (paidCol) await ensureEnumValue(table, "payment_status", "expired").catch(() => null);
   const expiredStatus = await ensureEnumValue(table, "status", "payment_expired").catch(() => false)
     ? "payment_expired"
     : "expired";
+  const unpaidStatus = "status IN ('pending','queued','waiting','payment_pending')";
+  const notPaid = paidCol
+    ? "AND (payment_status IS NULL OR LOWER(payment_status) NOT IN ('paid','completed','success','successful'))"
+    : "";
+  const staleClock = `(created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE) OR created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE))`;
   const rows = await q(
     `SELECT id, status${paidCol ? ", payment_status" : ""} FROM \`${table}\`
-     WHERE status IN ('pending','queued','waiting','payment_pending')
-       ${paidCol ? "AND (payment_status IS NULL OR LOWER(payment_status) IN ('pending','unpaid','initiated','new'))" : ""}
-       AND created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
-     ORDER BY id ASC LIMIT 100`,
+     WHERE ${unpaidStatus}
+       ${notPaid}
+       AND ${staleClock}
+     ORDER BY id ASC LIMIT 200`,
   ).catch(() => []);
   for (const row of rows) {
     if (await payableAlreadyPaid(row.id)) continue;
-    await update(table, row.id, { status: expiredStatus, payment_status: "expired" }).catch(() => null);
+    const patch = paidCol ? { status: expiredStatus, payment_status: "expired" } : { status: expiredStatus };
+    const saved = await update(table, row.id, patch).catch(() => null);
+    if (!saved && paidCol) await update(table, row.id, { status: expiredStatus }).catch(() => null);
   }
 }
 
@@ -441,12 +457,18 @@ export async function expireUnpaidPayments() {
     await expireStaleUnpaidVisits().catch(() => null);
     return { expired: 0 };
   }
+  const unpaidHolders = UNPAID_PAYMENT.map(() => "?").join(",");
   const rows = await q(
     `SELECT * FROM payments
-     WHERE expires_at IS NOT NULL
-       AND expires_at < UTC_TIMESTAMP()
-       AND LOWER(status) IN (${UNPAID_PAYMENT.map(() => "?").join(",")})
-     ORDER BY id ASC LIMIT 100`,
+     WHERE LOWER(status) IN (${unpaidHolders})
+       AND (
+         (expires_at IS NOT NULL AND (expires_at < UTC_TIMESTAMP() OR expires_at < NOW()))
+         OR (expires_at IS NULL AND created_at IS NOT NULL AND (
+           created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
+           OR created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
+         ))
+       )
+     ORDER BY id ASC LIMIT 200`,
     UNPAID_PAYMENT,
   ).catch(() => []);
   let expired = 0;
