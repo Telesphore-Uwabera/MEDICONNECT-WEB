@@ -444,14 +444,14 @@ const Index = () => {
 
       {/* ── Available Doctors Grid ── */}
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
-          <div>
+        <RevealSection direction="up" delay={0} className="box-border w-full min-w-0 max-w-[1920px] mx-auto px-4 pr-14 sm:px-6 sm:pr-6 lg:px-10 lg:pr-10 xl:px-16 2xl:px-24">
+          <div className="w-full min-w-0 max-w-full">
             <div className="mb-6">
               <p className={SECTION_EYEBROW}>
                 {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
               </p>
               <div className="mt-1 flex items-center justify-between gap-2">
-                <h2 className="min-w-0 flex-1 whitespace-nowrap font-display text-[13px] font-bold leading-tight tracking-tight text-foreground min-[380px]:text-sm sm:text-2xl md:text-3xl">
+                <h2 className="min-w-0 flex-1 whitespace-normal font-display text-[13px] font-bold leading-tight tracking-tight text-foreground min-[380px]:text-sm sm:whitespace-nowrap sm:text-2xl md:text-3xl">
                   {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
                 </h2>
                 <Link to="/patient/search-doctors" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-primary hover:underline sm:text-sm">
@@ -462,18 +462,18 @@ const Index = () => {
             </div>
 
             <div
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              className="grid w-full min-w-0 max-w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
               onMouseEnter={() => setDoctorRotationPaused(true)}
               onMouseLeave={() => setDoctorRotationPaused(false)}
             >
               {doctorsLoading
                 ? Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
+                    <div key={index} className="h-[320px] w-full min-w-0 max-w-full animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
                 : visibleDoctors.map((doctor, index) => (
                     <div
                       key={`${doctor.id}-${doctorOffset}`}
-                      className="landing-card-in"
+                      className="landing-card-in box-border w-full min-w-0 max-w-full"
                       style={{ animationDelay: `${index * 70}ms` }}
                     >
                       <DoctorCard doctor={doctor} />

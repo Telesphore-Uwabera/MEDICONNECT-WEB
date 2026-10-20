@@ -109,7 +109,7 @@ function DoctorAvatar({
     <img
       src={imageSrc}
       alt={doctor.user.name}
-      className="h-full w-full object-cover object-top sm:object-center rounded-[inherit] transition-transform duration-500 group-hover/img:scale-105"
+      className="h-full w-full object-cover object-top md:object-center rounded-[inherit] transition-transform duration-500 group-hover/img:scale-105"
       onError={() => setImgError(true)}
     />
   );
@@ -825,48 +825,52 @@ export const DoctorCard = ({
     <>
       {/* ── Card ── */}
       <Card
-        className="group rounded-xl overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer"
+        className="group box-border w-full max-w-full min-w-0 overflow-hidden rounded-xl border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer"
         onClick={openDetails}
       >
-        {/* Full-width photo banner — image fills the frame completely */}
-        <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40 p-3"
-             style={{ aspectRatio: "4/3" }}>
-          {/* Image with padding — sits inside the card with rounded corners */}
-          <div className="group/img relative h-full w-full overflow-hidden rounded-xl shadow-sm">
+        <div className="relative aspect-[4/3] w-full max-w-full overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40">
+          <div className="group/img absolute inset-2 sm:inset-3 overflow-hidden rounded-xl shadow-sm">
             <DoctorAvatar doctor={doctor} size="lg" />
 
-            {/* Hover overlay — inside the rounded image */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
+            <div className="absolute inset-0 hidden items-center justify-center bg-black/0 opacity-0 transition-all duration-300 md:flex group-hover:bg-black/40 group-hover:opacity-100">
               <span className="translate-y-2 scale-95 rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-900 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
                 {t("pages.cards.view_details", "View Profile")}
               </span>
             </div>
           </div>
-
         </div>
 
-        {/* Card body */}
-        <div className="p-4">
-          {/* Name + specialization */}
-          <div className="mb-3">
-            <h3 className="text-base font-bold text-foreground leading-tight truncate">
+        <div className="box-border w-full max-w-full min-w-0 p-3 sm:p-4">
+          <button
+            type="button"
+            className="mb-2 inline-flex md:hidden rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-semibold text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetails();
+            }}
+          >
+            {t("pages.cards.view_details", "View details")}
+          </button>
+          <div className="mb-3 min-w-0">
+            <h3 className="text-base font-bold leading-tight break-words text-foreground sm:truncate">
               {doctor.user.name}
             </h3>
-            <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-primary">
-              <BriefcaseMedical className="h-3.5 w-3.5 shrink-0" />
-              {doctorSpecialtyLabel(doctor) || t("pages.landing.general_practitioner", "General Practitioner")}
+            <p className="mt-0.5 flex min-w-0 items-start gap-1 text-xs font-medium text-primary sm:items-center sm:truncate">
+              <BriefcaseMedical className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:mt-0" />
+              <span className="min-w-0 whitespace-normal break-words sm:truncate">
+                {doctorSpecialtyLabel(doctor) || t("pages.landing.general_practitioner", "General Practitioner")}
+              </span>
             </p>
             {locationLabel && (
-              <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-                <MapPin className="h-3 w-3 shrink-0" />
-                {locationLabel}
+              <p className="mt-0.5 flex min-w-0 items-start gap-1 text-[11px] text-muted-foreground sm:items-center sm:truncate">
+                <MapPin className="mt-0.5 h-3 w-3 shrink-0 sm:mt-0" />
+                <span className="min-w-0 whitespace-normal break-words sm:truncate">{locationLabel}</span>
               </p>
             )}
           </div>
 
-          {/* One row: Instant Consultation first when instant is on, otherwise only Book Appointment */}
           <div
-            className="flex flex-row items-stretch gap-2"
+            className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row"
             onClick={(e) => e.stopPropagation()}
           >
             {canConnect && (
@@ -878,7 +882,7 @@ export const DoctorCard = ({
                   else if (isCallInProgress || isConnected) { setInitialMode("connect"); setModalOpen(true); }
                   else openConnect();
                 }}
-                className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal rounded-lg bg-primary px-2 py-2 text-center text-[11px] font-bold leading-tight text-primary-foreground hover:bg-primary/90"
+                className="h-auto min-h-9 min-w-0 w-full flex-1 whitespace-normal rounded-lg bg-primary px-2 py-2 text-center text-[11px] font-bold leading-tight text-primary-foreground hover:bg-primary/90"
               >
                 <Wifi className="shrink-0" />
                 {hasSavedSession || isCallInProgress || isConnected
@@ -891,7 +895,7 @@ export const DoctorCard = ({
               size="sm"
               onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
               className={cn(
-                "h-auto min-h-9 min-w-0 flex-1 whitespace-normal rounded-lg px-2 py-2 text-center text-[11px] font-semibold leading-tight",
+                "h-auto min-h-9 min-w-0 w-full flex-1 whitespace-normal rounded-lg px-2 py-2 text-center text-[11px] font-semibold leading-tight",
                 canConnect
                   ? "border border-primary/40 text-primary hover:bg-primary/5 bg-transparent"
                   : "bg-primary text-primary-foreground font-bold hover:bg-primary/90"
