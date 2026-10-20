@@ -47,6 +47,7 @@ import {
 } from "@/hooks/patient/use-patient-search-pharmacy";
 import { PharmacyDrawer } from "./components/Pharmacydrawer";
 import { PharmacyCart } from "./components/PharmacyCart";
+import { useUploadExternalPrescription } from "@/hooks/patient/use-external-prescriptions";
 import { FilterBar } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -151,6 +152,32 @@ function PillGroup<T extends string>({
         );
       })}
     </div>
+  );
+}
+
+function PaperRxUpload() {
+  const upload = useUploadExternalPrescription();
+  return (
+    <label className="inline-flex h-8 cursor-pointer items-center rounded-[6px] border border-border px-3 text-[11px] font-semibold text-foreground hover:bg-muted">
+      {upload.isPending ? "Uploading…" : "Upload paper Rx"}
+      <input
+        type="file"
+        accept="image/*,.pdf"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          upload.mutate(
+            { file },
+            {
+              onSuccess: () => toast.success("Paper prescription queued. This is not a MediConnect consult."),
+              onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Upload failed."),
+            },
+          );
+          event.target.value = "";
+        }}
+      />
+    </label>
   );
 }
 
@@ -824,7 +851,12 @@ const PatientPharmacy = () => {
         <PageHeader
           title={t("pages.patient.pharmacy_title", "Pharmacy Marketplace")}
           subtitle={t("pages.patient.pharmacy_sub", "Order medicines and healthcare products from registered pharmacies")}
-          actions={<PharmacyCart variant="trigger" />}
+          actions={
+            <div className="flex items-center gap-2">
+              <PaperRxUpload />
+              <PharmacyCart variant="trigger" />
+            </div>
+          }
         />
 
         {/* ── Results ── */}

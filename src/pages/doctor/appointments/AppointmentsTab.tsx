@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toLocalDateInputValue } from "@/lib/date";
 import{ Video, MapPin, Calendar, Clock, SlidersHorizontal, X,
@@ -101,6 +102,7 @@ export function AppointmentsTab() {
   const [view, setView] = useState<ViewMode>("table");
   const [filterOpen, setFilterOpen] = useState(false);
   const [scheduledCallActive, setScheduledCallActive] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [runningLateAppt, setRunningLateAppt] = useState<Appointment | null>(null);
   const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
@@ -143,6 +145,31 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const confirmAppointment = useConfirmAppointment();
 
   const appointments: Appointment[] = data?.data ?? [];
+
+  const openAppointment = useCallback((a: Appointment) => {
+    setDetailAppt(a);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("id", String(a.id));
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const closeAppointment = useCallback(() => {
+    setDetailAppt(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("id");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    const id = Number(searchParams.get("id") || "");
+    if (!Number.isFinite(id) || id <= 0 || appointments.length === 0) return;
+    const match = appointments.find((a) => a.id === id);
+    if (match) setDetailAppt(match);
+  }, [appointments, searchParams]);
 
   const appointmentStats = useMemo(() => {
     const todayKey = toLocalDateInputValue();
@@ -388,12 +415,12 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       {detailAppt && (
         <AppointmentDetailDrawer
           appt={detailAppt}
-          onClose={() => setDetailAppt(null)}
-          onStart={(a) => { handleStart(a); setDetailAppt(null); }}
-          onRejoin={(a) => { handleRejoin(a); setDetailAppt(null); }}
-          onRunningLate={(a) => { setRunningLateAppt(a); setDetailAppt(null); }}
+          onClose={closeAppointment}
+          onStart={(a) => { handleStart(a); closeAppointment(); }}
+          onRejoin={(a) => { handleRejoin(a); closeAppointment(); }}
+          onRunningLate={(a) => { setRunningLateAppt(a); closeAppointment(); }}
           onReadyNext={(a) => handleReadyNext(a)}
-          onReschedule={(a) => { setRescheduleAppt(a); setDetailAppt(null); }}
+          onReschedule={(a) => { setRescheduleAppt(a); closeAppointment(); }}
           isReadyNextPending={readyNext.isPending}
           isJoining={isJoining}
         />
@@ -414,15 +441,15 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       <main className="flex-1 overflow-y-auto flex flex-col">
         <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 p-5 pb-0">
           {[
-            { label: t("pages.doctor.total_bookings"), value: appointmentStats.total, sub: t("pages.doctor.all_scheduled"), icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60" },
-            { label: t("pages.doctor.status_confirmed"), value: appointmentStats.confirmed, sub: t("pages.doctor.ready_to_join"), icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
-            { label: t("pages.doctor.status_in_progress"), value: appointmentStats.in_progress, sub: t("pages.doctor.live_now"), icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
-            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_confirmation"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
-            { label: t("pages.doctor.today"), value: appointmentStats.today, sub: t("pages.doctor.on_schedule"), icon: Clock, tone: "text-primary bg-primary/10 border-primary/20" },
+            { label: t("pages.doctor.total_bookings"), value: appointmentStats.total, sub: t("pages.doctor.all_scheduled"), icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60", apply: () => setFilters({ ...INITIAL_FILTERS, sort: filters.sort }) },
+            { label: t("pages.doctor.status_confirmed"), value: appointmentStats.confirmed, sub: t("pages.doctor.ready_to_join"), icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20", apply: () => setFilters((f) => ({ ...f, status: "confirmed", today: false, upcoming: false, date: "", page: 1 })) },
+            { label: t("pages.doctor.status_in_progress"), value: appointmentStats.in_progress, sub: t("pages.doctor.live_now"), icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20", apply: () => setFilters((f) => ({ ...f, status: "in_progress", today: false, upcoming: false, date: "", page: 1 })) },
+            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_confirmation"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20", apply: () => setFilters((f) => ({ ...f, status: "pending", today: false, upcoming: false, date: "", page: 1 })) },
+            { label: t("pages.doctor.today"), value: appointmentStats.today, sub: t("pages.doctor.on_schedule"), icon: Clock, tone: "text-primary bg-primary/10 border-primary/20", apply: () => setFilters((f) => ({ ...f, today: true, upcoming: false, date: "", status: "All", page: 1 })) },
           ].map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="rounded-[6px] border border-border/70 bg-card p-3 min-w-0">
+              <button key={item.label} type="button" onClick={item.apply} className="rounded-[6px] border border-border/70 bg-card p-3 min-w-0 text-left hover:border-primary/30 hover:shadow-sm transition-all">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 truncate">
@@ -439,7 +466,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div> 
@@ -591,7 +618,8 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                       return (
                         <tr
                           key={a.id}
-                          className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
+                          onClick={() => openAppointment(a)}
+                          className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
                         >
                           {/* Patient */}
                           <td className="px-5 py-4">
@@ -647,10 +675,10 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
 
                           {/* Actions */}
                           <td className="px-5 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                               {/* Details */}
                               <button
-                                onClick={() => setDetailAppt(a)}
+                                onClick={() => openAppointment(a)}
                                 className="h-9 px-3 rounded-[6px] border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors flex items-center gap-1.5"
                                 title={t("pages.doctor.view_details")}
                               >
@@ -769,6 +797,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                                 <Button
                                   size="sm"
                                   variant="ghost"
+                                  onClick={() => openAppointment(a)}
                                   className="h-9 px-4 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px]"
                                 >
                                   {t("pages.doctor.notes")}
@@ -795,7 +824,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                     appt={a}
                     onStart={handleStart}
                     onRejoin={handleRejoin}
-                    onView={setDetailAppt}
+                    onView={openAppointment}
                     hasNotes={!!a.notes}
                   />
                 ))}

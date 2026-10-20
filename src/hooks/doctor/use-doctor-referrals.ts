@@ -130,6 +130,13 @@ export function useCancelReferral() {
   });
 }
 
+export function useReferralLetter(scope: "doctor" | "patient" = "doctor") {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<{ html: string }>(`/${scope}/referrals/${id}/letter`),
+  });
+}
+
 export function useCreateReferral() {
   const qc = useQueryClient();
   return useMutation({

@@ -533,18 +533,20 @@ function PharmacyStep({
     const source = (useFallback
       ? fallbackQuery.data?.data ?? []
       : matchingQuery.data?.data ?? []) as PharmacyChoice[];
+    const alternatives = (!useFallback ? matchingQuery.data?.alternatives ?? [] : []) as PharmacyChoice[];
+    const combined = source.length ? source : alternatives;
 
     if (useFallback) return source;
 
     const q = debounced.trim().toLowerCase();
-    if (!q) return source;
+    if (!q) return combined;
 
-    return source.filter((p) =>
+    return combined.filter((p) =>
       [p.name, p.city, p.province, p.address]
         .filter(Boolean)
         .some((part) => String(part).toLowerCase().includes(q)),
     );
-  }, [debounced, fallbackQuery.data?.data, matchingQuery.data?.data, useFallback]);
+  }, [debounced, fallbackQuery.data?.data, matchingQuery.data?.alternatives, matchingQuery.data?.data, useFallback]);
 
   const isFetching = useFallback ? fallbackQuery.isFetching : matchingQuery.isFetching;
 
@@ -558,7 +560,9 @@ function PharmacyStep({
 
   const matchLabel = (p: PharmacyChoice) => {
     if (useFallback || typeof p.match_count !== "number") return null;
-    return totalMedicines > 0 ? `${p.match_count}/${totalMedicines}` : String(p.match_count);
+    const coverage = typeof p.coverage_percentage === "number" ? `${Math.round(p.coverage_percentage)}%` : null;
+    const ratio = totalMedicines > 0 ? `${p.match_count}/${totalMedicines}` : String(p.match_count);
+    return coverage ? `${ratio} · ${coverage}` : ratio;
   };
 
   const send = () => {
@@ -591,6 +595,14 @@ function PharmacyStep({
       <p className="text-[11px] text-muted-foreground">
         {t("pages.doctor.quick_rx.send_hint")}
       </p>
+      {!useFallback && matchingQuery.data?.message && (
+        <p className="text-[11px] text-amber-700 dark:text-amber-400">{matchingQuery.data.message}</p>
+      )}
+      {!useFallback && matchingQuery.data?.coverage_threshold != null && (
+        <p className="text-[11px] text-muted-foreground">
+          A pharmacy is listed as a match only with confirmed stock for at least {matchingQuery.data.coverage_threshold}% of distinct prescribed items. Unconfirmed inventory is not treated as available. Prescriptions are not split across pharmacies.
+        </p>
+      )}
 
       {!pharmacy ? (
         <div className="space-y-2">
@@ -625,6 +637,9 @@ function PharmacyStep({
                     <span className="block text-[12px] font-medium text-foreground truncate">{p.name}</span>
                     <span className="block text-[10px] text-muted-foreground truncate">
                       {pharmacyLocation(p) || "-"}
+                      {p.eligible === false && p.missing_items?.length
+                        ? ` · missing ${p.missing_items.slice(0, 3).join(", ")}`
+                        : ""}
                     </span>
                   </span>
                   {matches && (
@@ -632,9 +647,9 @@ function PharmacyStep({
                       title="Matching medicines"
                       className={cn(
                         "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-                        (p.match_count ?? 0) > 0
+                        p.eligible !== false && (p.match_count ?? 0) > 0
                           ? "border-primary/30 bg-primary/10 text-primary"
-                          : "border-border bg-secondary text-muted-foreground",
+                          : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
                       )}
                     >
                       {matches}

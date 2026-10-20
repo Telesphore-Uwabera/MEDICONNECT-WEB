@@ -9,9 +9,12 @@ import { formatDateOnly } from "@/lib/date";
 import{useGetDoctorReferrals,
   useGetReferral,
   useCancelReferral,
+  useReferralLetter,
   type Referral,
   type ReferralStatus,
 } from "@/hooks/doctor/use-doctor-referrals";
+import { openHtmlDocument } from "@/lib/print-html";
+import { toast } from "sonner";
 import {
   AlertCircle,
   ArrowUpRight,
@@ -29,6 +32,7 @@ import {
   XCircle,
   AlertTriangle,
   Ban,
+  FileText,
 } from "lucide-react";
 
  
@@ -242,6 +246,7 @@ function ReferralDetailDrawer({
 }) {
   const { t } = useTranslation();
   const { data, isLoading, isError } = useGetReferral(referralId);
+  const letter = useReferralLetter("doctor");
   const referral = data?.referral;
 
   const canCancel =
@@ -357,9 +362,25 @@ function ReferralDetailDrawer({
           )}
         </div>
 
-        {/* Footer */}
-        {canCancel && (
-          <div className="shrink-0 px-5 py-4 border-t border-border bg-card/80 backdrop-blur">
+        <div className="shrink-0 space-y-2 px-5 py-4 border-t border-border bg-card/80 backdrop-blur">
+          {referral && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                letter.mutate(referral.id, {
+                  onSuccess: (res) => {
+                    if (!openHtmlDocument(res.html)) toast.error("Allow pop-ups to print the referral letter.");
+                  },
+                  onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not open the letter."),
+                })
+              }
+              className="w-full text-xs gap-1.5"
+            >
+              {letter.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+              Referral letter
+            </Button>
+          )}
+          {canCancel && (
             <Button
               variant="outline"
               onClick={() => onCancelRequest(referral!)}
@@ -368,8 +389,8 @@ function ReferralDetailDrawer({
               <Trash2 className="h-3.5 w-3.5" />
               {t("pages.doctor.cancel_this_referral")}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </>
   );

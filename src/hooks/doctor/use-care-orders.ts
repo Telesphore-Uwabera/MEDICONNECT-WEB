@@ -32,6 +32,14 @@ export interface CareOrder {
   patient_id?: number;
   parent_order_id?: number | null;
   created_at?: string;
+  episode_id?: number | null;
+  review_status?: string | null;
+  reviewed_at?: string | null;
+  doctor_interpretation?: string | null;
+  management_decision?: string | null;
+  handover_status?: string | null;
+  result_file_url?: string | null;
+  result_files?: Array<{ url: string; name?: string }>;
 }
 
 export interface CreateCareOrderPayload {
@@ -76,26 +84,79 @@ export function useCareOrderAction(scope: "hospital" | "pharmacy" | "doctor") {
       patient_code,
       action,
       result_notes,
+      handover_status,
+      files,
     }: {
       id?: number;
       care_order_id?: number | string;
       patient_code?: string | null;
       action: "accept" | "complete" | "reject";
       result_notes?: string;
+      handover_status?: string;
+      files?: File[];
     }) => {
       const careOrderId = care_order_id ?? id ?? patient_code;
       if (careOrderId == null || careOrderId === "") {
         return Promise.reject(new Error("This care packet has no ID."));
       }
-      return apiFetch(`/${scope}/care-orders/${encodeURIComponent(String(careOrderId))}/${action}`, {
+      const url = `/${scope}/care-orders/${encodeURIComponent(String(careOrderId))}/${action}`;
+      if (files?.length) {
+        const body = new FormData();
+        if (result_notes) body.append("result_notes", result_notes);
+        if (handover_status) body.append("handover_status", handover_status);
+        files.forEach((file) => body.append("files", file));
+        return apiFetch(url, { method: "POST", body });
+      }
+      return apiFetch(url, {
         method: "POST",
-        body: { result_notes },
+        body: { result_notes, handover_status },
       });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: careOrderKeys.all(scope) });
       qc.invalidateQueries({ queryKey: careOrderKeys.all("doctor") });
       qc.invalidateQueries({ queryKey: careOrderKeys.all("patient") });
+    },
+  });
+}
+
+export function useReviewCareOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      interpretation,
+      management_decision,
+    }: {
+      id: number | string;
+      interpretation: string;
+      management_decision: string;
+    }) =>
+      apiFetch(`/${"doctor"}/care-orders/${encodeURIComponent(String(id))}/review`, {
+        method: "POST",
+        body: { interpretation, management_decision },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: careOrderKeys.all("doctor") });
+      qc.invalidateQueries({ queryKey: careOrderKeys.all("patient") });
+      qc.invalidateQueries({ queryKey: ["doctor-episodes"] });
+    },
+  });
+}
+
+export function useHandoverCareOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, handover_status }: { id: number | string; handover_status: string }) =>
+      apiFetch(`/doctor/care-orders/${encodeURIComponent(String(id))}/handover`, {
+        method: "POST",
+        body: { handover_status },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: careOrderKeys.all("doctor") });
+      qc.invalidateQueries({ queryKey: careOrderKeys.all("hospital") });
+      qc.invalidateQueries({ queryKey: careOrderKeys.all("patient") });
+      qc.invalidateQueries({ queryKey: ["doctor-episodes"] });
     },
   });
 }

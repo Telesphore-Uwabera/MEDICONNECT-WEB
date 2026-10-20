@@ -120,6 +120,12 @@ export interface PrescriptionRequest {
   is_active?: boolean;
   rejection_reason?: string | null;
   reviewed_at?: string | null;
+  fulfillment_status?: string | null;
+  fulfillment_method?: string | null;
+  served_at?: string | null;
+  picked_up_at?: string | null;
+  delivered_at?: string | null;
+  partial_notes?: string | null;
   created_at: string;
   updated_at?: string;
   deleted_at?: string | null;
@@ -251,13 +257,27 @@ export function useRejectPrescription() {
 
 export function useFulfillPrescription() {
   const qc = useQueryClient();
-  return useMutation<PrescriptionActionResponse, Error, number>({
-    mutationFn: (id) =>
-      apiFetch<PrescriptionActionResponse>(
-        `/pharmacy/prescription-requests/${id}/fulfill`,
-        { method: "POST" },
-      ),
-    onSuccess: (_data, id) => {
+  return useMutation<
+    PrescriptionActionResponse,
+    Error,
+    { id: number; fulfillment_status?: "SERVED" | "PARTIALLY_FULFILLED"; fulfillment_method?: "pickup" | "delivery"; partial_notes?: string } | number
+  >({
+    mutationFn: (input) => {
+      const payload = typeof input === "number" ? { id: input } : input;
+      return apiFetch<PrescriptionActionResponse>(
+        `/pharmacy/prescription-requests/${payload.id}/fulfill`,
+        {
+          method: "POST",
+          body: {
+            fulfillment_status: payload.fulfillment_status || "SERVED",
+            fulfillment_method: payload.fulfillment_method,
+            partial_notes: payload.partial_notes,
+          },
+        },
+      );
+    },
+    onSuccess: (_data, input) => {
+      const id = typeof input === "number" ? input : input.id;
       qc.invalidateQueries({ queryKey: prescriptionKeys.lists() });
       qc.invalidateQueries({ queryKey: prescriptionKeys.detail(id) });
     },

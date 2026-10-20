@@ -39,7 +39,13 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
   const patientPhone = appt.patient?.phone?.trim();
 
   return (
-    <div className="bg-card border border-border/70 rounded-[6px] p-4 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onView(appt)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onView(appt); }}
+      className="bg-card border border-border/70 rounded-[6px] p-4 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer"
+    >
       <div className="w-10 h-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
         {appt.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
       </div>
@@ -93,7 +99,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
         </div>
       </div>
 
-      <div className="flex items-center gap-4 flex-shrink-0">
+      <div className="flex items-center gap-4 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <div className="text-right hidden sm:block">
           <p className="text-sm font-medium text-foreground flex items-center justify-end gap-1.5">
             <Calendar className="h-4 w-4 text-muted-foreground/50" />
@@ -162,6 +168,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           <Button
             size="sm"
             variant="ghost"
+            onClick={() => onView(appt)}
             className="h-9 px-4 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px]"
           >
             {t("consult.booking.notes")}

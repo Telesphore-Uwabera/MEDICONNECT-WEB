@@ -16,10 +16,19 @@ interface Props {
   onJoin?: () => void;
   onComplete?: () => void;
   onOpenFile?: () => void;
+  onOpen?: () => void;
   isAccepting?: boolean;
   isDeclining?: boolean;
   isJoining?: boolean;
   isCompleting?: boolean;
+}
+
+function ageFromCreatedAt(item: InstantConsultQueueItem) {
+  if (item.created_at) {
+    const t = new Date(item.created_at).getTime();
+    if (Number.isFinite(t)) return Math.max(0, Math.floor((Date.now() - t) / 1000));
+  }
+  return Math.max(0, Number(item.waiting_seconds) || 0);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -225,23 +234,25 @@ export function IncomingCard({
   onJoin,
   onComplete,
   onOpenFile,
+  onOpen,
   isAccepting,
   isDeclining,
   isJoining,
   isCompleting,
 }: Props) {
-  const [elapsed, setElapsed] = useState(item.waiting_seconds);
+  const [elapsed, setElapsed] = useState(() => ageFromCreatedAt(item));
   const [preCallOpen, setPreCallOpen] = useState(false);
+  const isInactive = ["declined", "withdrawn", "expired", "payment_expired", "completed"].includes(item.status);
 
   useEffect(() => {
-    setElapsed(item.waiting_seconds);
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    setElapsed(ageFromCreatedAt(item));
+    if (isInactive) return;
+    const t = setInterval(() => setElapsed(ageFromCreatedAt(item)), 1000);
     return () => clearInterval(t);
-  }, [item.waiting_seconds]);
+  }, [item.waiting_seconds, item.created_at, item.id, isInactive]);
 
   const isBusy = isAccepting || isDeclining || isJoining || isCompleting;
   const badge = STATUS_BADGE[item.status] ?? STATUS_BADGE.pending;
-  const isInactive = ["declined", "withdrawn", "expired", "payment_expired", "completed"].includes(item.status);
 
   // Left accent bar — 3px colour strip keyed to status
   const accentBar = {
@@ -265,11 +276,16 @@ export function IncomingCard({
   return (
     <>
       <div
+        role={onOpen ? "button" : undefined}
+        tabIndex={onOpen ? 0 : undefined}
+        onClick={onOpen}
+        onKeyDown={onOpen ? (e) => { if (e.key === "Enter" || e.key === " ") onOpen(); } : undefined}
         className={cn(
           "relative rounded-[5px] border bg-card transition-all duration-200",
           "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-full",
           accentBar,
           cardBorder,
+          onOpen && "cursor-pointer",
         )}
       >
         <div className="flex items-center gap-3 px-4 py-3 pl-5">
@@ -320,16 +336,18 @@ export function IncomingCard({
             <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
               {item.description ?? "No description"}
             </p>
+            {!isInactive && (
             <div className="flex items-center gap-1 mt-1">
               <Clock3 className="h-2.5 w-2.5 text-muted-foreground/50" />
               <span className="text-[9px] text-muted-foreground tabular-nums">
                 {t('consult.bookings.waiting_timer', { time: fmtSeconds(elapsed) })}
               </span>
             </div>
+            )}
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
 
             {/* CONFIRMED → Decline + Accept */}
             {item.status === "confirmed" && (

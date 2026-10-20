@@ -42,6 +42,7 @@ import PatientProfile from "./pages/patient/PatientProfile.tsx";
 import PatientFitnessCertificates from "./pages/patient/FitnessCertificates.tsx";
 import PatientReferrals from "./pages/patient/PatientReferrals.tsx";
 import PatientCareOrders from "./pages/patient/PatientCareOrders.tsx";
+import PatientEpisodes from "./pages/patient/PatientEpisodes.tsx";
 import MedicalInfo from "./pages/patient/MedicalInfo.tsx";
 import PatientInsurence from "./pages/patient/PatientInsurence.tsx";
 import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
@@ -437,6 +438,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <PatientCareOrders />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/episodes"
+              element={
+                <RequireAuth>
+                  <PatientEpisodes />
                 </RequireAuth>
               }
             />

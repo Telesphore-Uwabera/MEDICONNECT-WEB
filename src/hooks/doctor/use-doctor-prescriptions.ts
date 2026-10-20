@@ -139,13 +139,20 @@ export interface MatchingPharmacy {
   province?: string | null;
   address?: string | null;
   match_count?: number;
+  coverage_percentage?: number;
+  eligible?: boolean;
+  missing_items?: string[];
+  confirmed?: boolean;
 }
 
 export interface MatchingPharmaciesResponse {
   status?: boolean;
   prescription_id: number;
   total_medicines: number;
+  coverage_threshold?: number;
   data: MatchingPharmacy[];
+  alternatives?: MatchingPharmacy[];
+  message?: string | null;
 }
 
 /* ─────────────────────────────────────────────

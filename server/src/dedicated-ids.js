@@ -14,6 +14,7 @@ import {
   update,
 } from "./db.js";
 import { visitBodyGuard } from "./visit-rules.js";
+import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
 
@@ -575,6 +576,11 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
             const { table, row } = await loadOwnedRow(scope, spec, req.user, req.params[spec.param]);
             if (!table) return next();
             if (!row) return res.status(404).json({ message: "Record not found." });
+            if (action === "fulfill" && ["pharmacy_prescription_requests", "prescription_requests"].includes(table)) {
+              const fulfilled = await applyPharmacyFulfillment(table, row, req.body || {});
+              const tagged = await presentDedicated(table, fulfilled, spec);
+              return res.json({ message: "Updated.", data: tagged, booking: tagged, order: tagged, ...tagged });
+            }
             const patch = { status: nextStatus };
             if (action === "reject" && req.body?.rejection_reason && (await hasColumn(table, "rejection_reason"))) {
               patch.rejection_reason = req.body.rejection_reason;
@@ -604,7 +610,9 @@ async function updateDedicated(req, res, next, scope, spec) {
     delete body.id;
     delete body[spec.idName];
     await update(table, row.id, body);
-    const tagged = await presentDedicated(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]), spec);
+    let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
+    stored = await afterResourceSaved(table, stored, req);
+    const tagged = await presentDedicated(table, stored, spec);
     res.json({ message: "Updated.", data: tagged, ...tagged });
   } catch (error) {
     next(error);

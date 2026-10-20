@@ -55,7 +55,47 @@ import {
   type PrescriptionItem,
   type ListPrescriptionParams,
 } from "@/hooks/pharmacy/use-prescription-requests";
+import { usePharmacyExternalAction, usePharmacyExternalPrescriptions } from "@/hooks/patient/use-external-prescriptions";
 import { formatDateOnly } from "@/lib/date";
+
+function ExternalPaperInbox() {
+  const { data, isLoading } = usePharmacyExternalPrescriptions();
+  const action = usePharmacyExternalAction();
+  const rows = data ?? [];
+  if (isLoading || rows.length === 0) return null;
+  return (
+    <section className="mx-4 mt-4 rounded-[6px] border border-amber-500/30 bg-amber-500/5 p-4">
+      <h2 className="text-sm font-semibold text-foreground">Paper prescriptions (not a consult)</h2>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        Patients uploaded these outside a MediConnect visit. Claiming does not attach a clinical episode.
+      </p>
+      <div className="mt-3 space-y-2">
+        {rows.map((row) => (
+          <div key={row.id} className="flex flex-wrap items-center gap-2 rounded-[6px] border border-border bg-card px-3 py-2">
+            <a href={row.file_url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary hover:underline">
+              Paper Rx #{row.id}
+            </a>
+            <span className="text-[11px] text-muted-foreground">{row.status}</span>
+            {row.status === "pending" && (
+              <Button size="sm" className="h-7 px-2 text-[10px]" onClick={() => action.mutate({ id: row.id, action: "claim" })}>
+                Claim
+              </Button>
+            )}
+            {row.status === "claimed" && (
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[10px] bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => action.mutate({ id: row.id, action: "fulfill", fulfillment_status: "SERVED", fulfillment_method: "pickup" })}
+              >
+                Serve
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
  
 type SortOption = "date-desc" | "date-asc" | "patient" | "status";
@@ -544,6 +584,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
   const approve = useApprovePrescription();
   const reject = useRejectPrescription();
   const fulfill = useFulfillPrescription();
+  const [method, setMethod] = useState<"pickup" | "delivery">(rx.delivery_type === "delivery" ? "delivery" : "pickup");
 
   const busy = review.isPending || approve.isPending || reject.isPending || fulfill.isPending;
   const patientName = rx.prescription?.patient?.name ?? "Patient";
@@ -607,20 +648,45 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
 
   if (rx.status === "approved") {
     return (
-      <Button
-        size="sm"
-        disabled={busy}
-        onClick={() =>
-          fulfill.mutate(rx.id, {
-            onSuccess: () => sonnerToast.success(t("pages.pharmacy.prescription_fulfilled")),
-          })
-        }
-        className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
-      >
-        {fulfill.isPending
-          ? <Loader2 className="w-3 h-3 animate-spin" />
-          : <><PackageCheck className="w-3 h-3 mr-1" />{t("pages.pharmacy.fulfill")}</>}
-      </Button>
+      <div className="flex items-center gap-1.5">
+        <select
+          value={method}
+          onChange={(e) => setMethod(e.target.value as "pickup" | "delivery")}
+          className="h-7 rounded-[6px] border border-border bg-background px-1.5 text-[10px]"
+        >
+          <option value="pickup">Pickup</option>
+          <option value="delivery">Delivery</option>
+        </select>
+        <Button
+          size="sm"
+          disabled={busy}
+          onClick={() =>
+            fulfill.mutate(
+              { id: rx.id, fulfillment_status: "PARTIALLY_FULFILLED", fulfillment_method: method },
+              { onSuccess: () => sonnerToast.success("Marked as partially fulfilled") },
+            )
+          }
+          variant="outline"
+          className="h-7 px-3 text-[10px] rounded-[6px]"
+        >
+          Partial
+        </Button>
+        <Button
+          size="sm"
+          disabled={busy}
+          onClick={() =>
+            fulfill.mutate(
+              { id: rx.id, fulfillment_status: "SERVED", fulfillment_method: method },
+              { onSuccess: () => sonnerToast.success(t("pages.pharmacy.prescription_fulfilled")) },
+            )
+          }
+          className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
+        >
+          {fulfill.isPending
+            ? <Loader2 className="w-3 h-3 animate-spin" />
+            : <><PackageCheck className="w-3 h-3 mr-1" />{t("pages.pharmacy.serve")}</>}
+        </Button>
+      </div>
     );
   }
 
@@ -912,6 +978,7 @@ const PharmacyPrescriptions = () => {
           title={t("pages.pharmacy.rx_title", "Prescription Requests")}
           subtitle={t("pages.pharmacy.rx_sub", "Review and fulfill incoming prescriptions")}
         />
+        <ExternalPaperInbox />
 
 
         <main className="flex-1 overflow-y-auto flex flex-col">

@@ -438,6 +438,7 @@ export interface InstantConsultQueueItem {
     queue_position: number;
     waiting_seconds: number;
     waiting_label: string;
+    created_at?: string | null;
 }
 
 export interface InstantConsultStats {

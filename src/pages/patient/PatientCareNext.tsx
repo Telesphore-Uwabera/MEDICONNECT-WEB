@@ -5,6 +5,7 @@ import { useGetPatientReferrals } from "@/hooks/patient/use-patient-referrals";
 import { useGetPatientServiceBookings } from "@/hooks/patient/use-patient-service";
 import { useGetPatientPrescriptions } from "@/hooks/patient/use-patient-prescriptions";
 import { useGetCareOrders } from "@/hooks/doctor/use-care-orders";
+import { usePatientEpisodes } from "@/hooks/doctor/use-clinical-episodes";
 
 export function PatientCareNext() {
   const { t } = useTranslation();
@@ -12,6 +13,7 @@ export function PatientCareNext() {
   const { data: bookingData } = useGetPatientServiceBookings();
   const { data: rxData } = useGetPatientPrescriptions();
   const { data: careOrders } = useGetCareOrders("patient");
+  const { data: episodes } = usePatientEpisodes();
 
   const referrals = (referralData?.referrals ?? []).filter((row) =>
     ["pending", "accepted"].includes(String(row.status)),
@@ -24,8 +26,9 @@ export function PatientCareNext() {
   );
 
   const orders = (careOrders ?? []).filter((row) => ["pending", "accepted"].includes(String(row.status)));
+  const reviewing = (episodes ?? []).filter((row) => row.episode_status === "AWAITING_RESULTS_REVIEW");
 
-  if (!referrals.length && !bookings.length && !prescriptions.length && !orders.length) return null;
+  if (!referrals.length && !bookings.length && !prescriptions.length && !orders.length && !reviewing.length) return null;
 
   return (
     <section className="rounded-[6px] border border-primary/20 bg-primary/5 p-4">
@@ -38,7 +41,7 @@ export function PatientCareNext() {
             {t("pages.patient.care_from_doctor_hint", "Stay on MediConnect for the next visit, specialist, or pharmacy.")}
           </p>
         </div>
-        <Link to="/patient/care-orders" className="text-[11px] font-semibold text-primary hover:underline">
+        <Link to="/patient/episodes" className="text-[11px] font-semibold text-primary hover:underline">
           {t("common.view_all", "View all")}
         </Link>
       </div>
@@ -91,6 +94,19 @@ export function PatientCareNext() {
               <span className="block text-xs font-semibold text-foreground">{row.title || row.order_type}</span>
               <span className="mt-0.5 block text-[11px] text-muted-foreground line-clamp-2">
                 {(row.items || []).slice(0, 3).join(", ") || row.clinical_notes}
+              </span>
+            </span>
+          </Link>
+        ))}
+        {reviewing.slice(0, 2).map((row) => (
+          <Link key={`e-${row.id}`} to="/patient/care-orders" className="flex items-start gap-2 rounded-[6px] border border-border bg-card p-3 hover:border-primary/40">
+            <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold text-foreground">
+                {t("pages.patient.doctor_reviewing_results", "Your doctor is reviewing results")}
+              </span>
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                {t("pages.patient.results_not_final", "Uploaded tests are not a final plan until the doctor records a decision.")}
               </span>
             </span>
           </Link>

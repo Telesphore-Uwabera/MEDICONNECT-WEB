@@ -1,13 +1,17 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Building2, Pill, Stethoscope } from "lucide-react";
+import { Building2, FileText, Pill, Stethoscope } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { useGetPatientReferrals } from "@/hooks/patient/use-patient-referrals";
+import { useReferralLetter } from "@/hooks/doctor/use-doctor-referrals";
+import { openHtmlDocument } from "@/lib/print-html";
+import { toast } from "sonner";
 
 export default function PatientReferrals() {
   const { t } = useTranslation();
   const { data, isLoading } = useGetPatientReferrals();
+  const letter = useReferralLetter("patient");
   const referrals = data?.referrals ?? [];
 
   return (
@@ -44,8 +48,26 @@ export default function PatientReferrals() {
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-foreground">{target}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">{row.reason}</span>
-                  <span className="mt-2 inline-flex text-[10px] font-semibold uppercase tracking-wide text-primary">
-                    {row.status} · {t("pages.patient.continue_in_app", "Continue in MediConnect")}
+                  <span className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex text-[10px] font-semibold uppercase tracking-wide text-primary">
+                      {row.status} · {t("pages.patient.continue_in_app", "Continue in MediConnect")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        letter.mutate(row.id, {
+                          onSuccess: (res) => {
+                            if (!openHtmlDocument(res.html)) toast.error("Allow pop-ups to print the referral letter.");
+                          },
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      <FileText className="h-3 w-3" />
+                      Letter
+                    </button>
                   </span>
                 </span>
               </Link>

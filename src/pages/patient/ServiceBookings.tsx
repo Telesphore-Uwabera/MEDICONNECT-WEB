@@ -522,6 +522,13 @@ function BookingDetailDrawer({
                   value={formatPrice(booking.price ?? booking.service.price, booking.currency ?? "RWF")}
                   accent="font-semibold"
                 />
+                {booking.booking_fee != null && booking.booking_fee !== "" && (
+                  <DetailRow
+                    icon={Receipt}
+                    label="Platform booking fee"
+                    value={formatPrice(booking.booking_fee, booking.booking_fee_currency ?? "RWF")}
+                  />
+                )}
                 {booking.insurance_covered && parseFloat(booking.insurance_covered) > 0 && (
                   <DetailRow icon={ShieldCheck} label={t("pages.patient.insurance_covered")} value={formatPrice(booking.insurance_covered, booking.currency ?? "RWF")} />
                 )}

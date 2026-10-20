@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Building2, Stethoscope, CalendarClock, User, Phone, Loader2, CalendarX2, X, FileText,
@@ -113,6 +114,7 @@ const DRAWER_TABS: Array<{ id: DrawerTab; labelKey: string; icon: ReactNode }> =
 
 export function ServiceBookingsTab() {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState<ServiceBookingStatus | "all">("all");
   const [selected, setSelected] = useState<ServiceBooking | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -136,10 +138,36 @@ export function ServiceBookingsTab() {
 
   const cancelBooking = useCancelServiceBooking();
 
+  const openBooking = useCallback((b: ServiceBooking) => {
+    setSelected(b);
+    setConfirming(false);
+    setDrawerTab("details");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("id", String(b.id));
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   const closeDrawer = () => {
     setSelected(null);
     setConfirming(false);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("id");
+      return next;
+    }, { replace: true });
   };
+
+  useEffect(() => {
+    const id = Number(searchParams.get("id") || "");
+    if (!Number.isFinite(id) || id <= 0 || bookings.length === 0) return;
+    const match = bookings.find((b) => b.id === id);
+    if (match) {
+      setSelected(match);
+      setDrawerTab("details");
+    }
+  }, [bookings, searchParams]);
 
   const handleCancel = (id: number) => {
     cancelBooking.mutate(id, {
@@ -210,17 +238,16 @@ export function ServiceBookingsTab() {
         bookings.map((b) => (
           <button
             key={b.id}
-            onClick={() => {
-              setSelected(b);
-              setConfirming(false);
-              setDrawerTab("details");
-            }}
+            onClick={() => openBooking(b)}
             className="w-full text-left rounded-[6px] border border-border bg-card p-4 hover:bg-muted/40 hover:border-primary/30 transition-colors flex items-center gap-4"
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-primary shrink-0" />
                 {hospitalName(b)}
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-muted/60 border border-border/50 text-[10px] font-mono font-semibold text-muted-foreground">
+                  #{b.id}
+                </span>
                 <span className="text-muted-foreground font-normal truncate">· {serviceName(b)}</span>
               </p>
               <p className="text-xs text-muted-foreground flex items-center gap-x-3 gap-y-0.5 flex-wrap mt-1">

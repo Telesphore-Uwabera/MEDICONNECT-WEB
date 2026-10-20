@@ -1,138 +1,318 @@
-# MediConnect — Web
+# MediConnect
 
-> Telemedicine platform for Rwanda. One React app for patients, doctors, hospitals, pharmacies, and admins — connecting to the MediConnect API for bookings, instant video consults, prescriptions, and pharmacy orders.
+Telemedicine and care-coordination platform for Rwanda. Patients find doctors and facilities, pay in Rwandan Francs (RWF), join video or in-person visits, and continue into prescriptions, pharmacy fulfillment, referrals, laboratory or imaging packets, and facility bookings.
+
+This repository is the **web application and Node.js API**. Android and iOS clients (when present) use the same API. Currency everywhere is **RWF**. Payments go through **IremboPay** (MoMo, Airtel, card).
+
+| Live site | Staging | API | WebSocket |
+|---|---|---|---|
+| [mediconnect.rw](https://mediconnect.rw) | [staging.mediconnect.rw](https://staging.mediconnect.rw) | [api.mediconnect.rw](https://api.mediconnect.rw) | `wss://ws.mediconnect.rw` |
+
+Sign in at `/auth`. Public browsing (home, doctor search, hospital pages) does not require an account.
 
 ---
 
-## Quick Navigation
+## Read this first
+
+MediConnect is **one React app** with five workspaces (patient, doctor, hospital, pharmacy, admin) talking to **one Express API** (`server/`) and **MySQL**. Ending a video call is **not** the end of care. After a visit the doctor finalizes a clinical note (SOAP summary), may issue a prescription, and may open a **care packet** (lab, imaging, pharmacy, facility visit, admission). Those follow-up objects stay open on their own timelines even when the consult is marked complete.
+
+If you only remember one product rule: **consultation documented ≠ pharmacy served ≠ investigation reviewed**. Track each separately.
+
+---
+
+## Quick navigation
 
 | I want to… | Go to |
 |---|---|
-| Run the app locally | [Local Setup](#-local-setup) |
-| Make a code change and push it | [Git Workflow](#-git-workflow) |
-| Deploy frontend to production | [Frontend Deployment](#-frontend-deployment) |
-| Deploy backend to production | [Backend Deployment](#-backend-deployment) |
-| Access the database | [Database Access](#database) |
-| SSH into the server | [SSH / Server](#ssh--server) |
-| Test API endpoints | [API Documentation](#-api-documentation) |
-| Use the product (patient, doctor, hospital, pharmacy, admin) | [User Guide](#-user-guide) |
-| Use test accounts | [Test Credentials](#-test-credentials) |
+| Understand what the product does | [What MediConnect does](#what-mediconnect-does) |
+| Understand a patient journey | [Patient journeys](#patient-journeys) |
+| See how the code is arranged | [Architecture](#architecture) · [Repository map](#repository-map) |
+| Run locally | [Local setup](#local-setup) |
+| Use the product as a role | [User guide](#user-guide) |
+| Push and deploy | [Git workflow](#git-workflow) · [Frontend deploy](#frontend-deployment) · [Backend deploy](#backend-deployment) |
+| Call the API | [API documentation](#api-documentation) |
+| Use staging accounts | [Test credentials](#test-credentials) |
 
 ---
 
-## 📋 Table of Contents
+## Table of contents
 
-1. [Tech Stack](#-tech-stack)
-2. [Project Structure](#-project-structure)
-3. [Local Setup](#-local-setup)
-4. [Environment Variables](#-environment-variables)
-5. [Scripts Reference](#-scripts-reference)
-6. [Workspaces & Routes](#-workspaces--routes)
-7. [User Guide](#-user-guide)
-8. [Infrastructure Access](#-infrastructure-access)
-9. [Git Workflow](#-git-workflow)
-10. [Frontend Deployment](#-frontend-deployment)
-11. [Backend Deployment](#-backend-deployment)
-12. [Deploy Both Together](#-deploying-frontend--backend-together)
-13. [Rollback](#-rollback)
-14. [Quick Deploy Cheatsheet](#-quick-deploy-cheatsheet)
-15. [Test Credentials](#-test-credentials)
-16. [API Documentation](#-api-documentation)
+1. [What MediConnect does](#what-mediconnect-does)
+2. [Who uses it](#who-uses-it)
+3. [Patient journeys](#patient-journeys)
+4. [After the call — clinical follow-through](#after-the-call--clinical-follow-through)
+5. [Architecture](#architecture)
+6. [Repository map](#repository-map)
+7. [Tech stack](#tech-stack)
+8. [Local setup](#local-setup)
+9. [Environment variables](#environment-variables)
+10. [Scripts](#scripts)
+11. [Workspaces and routes](#workspaces-and-routes)
+12. [User guide](#user-guide)
+13. [Key domain objects](#key-domain-objects)
+14. [Auth, sessions, and roles](#auth-sessions-and-roles)
+15. [Realtime and video](#realtime-and-video)
+16. [Payments](#payments)
+17. [Infrastructure](#infrastructure)
+18. [Git workflow](#git-workflow)
+19. [Frontend deployment](#frontend-deployment)
+20. [Backend deployment](#backend-deployment)
+21. [Deploy both](#deploying-frontend--backend-together)
+22. [Rollback](#rollback)
+23. [Quick deploy cheatsheet](#quick-deploy-cheatsheet)
+24. [Images (WebP)](#webp-image-strategy)
+25. [Test credentials](#test-credentials)
+26. [API documentation](#api-documentation)
+27. [Conventions for developers](#conventions-for-developers)
 
 ---
 
-## 🛠 Tech Stack
+## What MediConnect does
+
+MediConnect LTD connects people in Rwanda to licensed clinicians and partner facilities without replacing those facilities. The platform:
+
+- Lets anyone browse doctors and hospitals, then register as a **patient**.
+- Lets clinicians and organisations register as **doctor**, **hospital**, or **pharmacy** (admin approval required before they appear publicly).
+- Runs **scheduled appointments** (video or in-person) and **instant consultations** (queue + payment, then live video).
+- Collects fees through **IremboPay**. Unpaid instant requests expire after **15 minutes**.
+- Hosts the **consultation room** (WebRTC video, chat, files, in-call notes).
+- Stores a **consultation summary** (SOAP-style clinical note) that the doctor must finalize.
+- Issues **e-prescriptions** and can send them to a **registered pharmacy**.
+- Sends **care packets** to a hospital or pharmacy (lab, imaging, procedure, admission, pharmacy dispense, facility protocol).
+- Creates **referrals** and **facility service bookings** (dated visits at a partner clinic/hospital).
+- Issues paid **fitness certificates** (FitMed).
+- Pays doctors through a **wallet**; admin completes withdrawals.
+
+The product language is **English, French, and Kinyarwanda** (`src/locales/`).
+
+---
+
+## Who uses it
+
+| Role | Needs admin approval? | Typical job |
+|---|---|---|
+| **Patient** | No (OTP / profile) | Book, pay, join visits, see records, prescriptions, care next steps |
+| **Doctor** | Yes (license / profile) | Availability, queue, consult, SOAP, Rx, referrals, care packets, wallet |
+| **Hospital** | Yes | Departments, services, incoming bookings, care packets, results |
+| **Pharmacy** | Yes | Inventory, prescription requests, care packets, marketplace orders |
+| **Admin** | Super-admin flag | Approvals, users, fees, insurance, wallets, settings, moderation |
+| **Guest** | No | Instant consult with phone; optional account creation on pay |
+
+One login can hold several roles (for example patient + hospital). The header **role switcher** sets `active_role`. The API accepts reads if that role is in `available_roles`; writes still need the matching workspace.
+
+---
+
+## Patient journeys
+
+A person usually enters **one** of these paths. They are independent. Completing a video call does not auto-complete pharmacy, labs, or referrals.
+
+```
+Patient books or starts a consult
+        │
+        ▼
+Doctor consult (video / phone / in-person)
+        │
+        ▼
+Doctor documents the patient file (SOAP summary)
+        │
+        ▼
+Clinical decision (one or more, not a single forced chain)
+        │
+        ├── Advice only ──────────────► finalize consult
+        ├── Medication ───────────────► e-prescription ► pharmacy match ► fulfill
+        ├── In-person specialist ─────► book facility slot  and/or  referral letter
+        ├── Laboratory / imaging ─────► care packet ► facility ► results ► doctor reviews
+        └── Urgent / inpatient ───────► admission packet / handover (do not wait on ordinary payment)
+```
+
+### Scheduled appointment
+
+1. Patient picks a doctor and a slot (`/patient/appointments` or public doctor card).
+2. Pays when an invoice is due (IremboPay). Do **not** mark invoices paid by editing the database.
+3. At the time, doctor and patient join `/consultation/:roomName`.
+4. Doctor writes notes during the call (autosave / draft). Completing the call opens the **completion gate**: summary required, then optional prescription, then care-continue choices.
+5. Patient later opens records, prescriptions, bills, and “care next” items.
+
+### Instant consultation
+
+1. Patient (or guest) requests a doctor or “any available” doctor.
+2. Status: unpaid (`pending` / `queued` / `waiting` / `payment_pending`) → **paid** (`confirmed`) → doctor **accepted** → **in_progress** → **completed**. Unpaid requests expire as `expired` / `payment_expired` after 15 minutes.
+3. Doctor queue (`/doctor/appointments?tab=instant`) shows **in session first**, then paid waiting, then awaiting payment.
+4. Same post-call documentation as a scheduled visit. Clicking a completed card opens that consult’s record (summaries page, `?instant=` id).
+
+### Facility service booking (no prior MediConnect doctor required)
+
+Patient or doctor books a hospital **department/service/slot**. Hospital accepts, patient attends, facility completes. Facility consult fees are the hospital’s prices, separate from any MediConnect booking fee policy.
+
+### Fitness certificate
+
+Paid FitMed flow. Patient steps, doctor review, PDF download, public verify URL.
+
+---
+
+## After the call — clinical follow-through
+
+Implemented today as **documents + packets + bookings**, not a separate `clinical_episodes` table.
+
+| Step | Where | What “done” means |
+|---|---|---|
+| Call ended | appointment / instant status `completed` | Peers left the room |
+| Note finalized | `consultation_summaries` | Doctor saved SOAP (complaint, HPI, exam, assessment, plan) |
+| Prescription | `prescriptions` + pharmacy requests | Issued / sent / dispensed — **pharmacy can still be packing after the consult is complete** |
+| Care packet | `care_orders` | Hospital or pharmacy accepted and completed (result notes) |
+| Referral | `referrals` | Partner received the patient; attendance is a separate booking |
+| Facility visit | `service_bookings` | Slot reserved, facility confirmed, attended |
+
+**Doctor UI after a call** (`CareContinuePanel` and completion gates):
+
+1. Required: consultation summary.
+2. Optional: quick prescription (issue + send to pharmacy).
+3. Next care: pharmacy packet, lab, imaging, procedure, admission, book a dated visit, facility protocol packet, or **done**.
+
+**Hospital / pharmacy:** Incoming care inbox — accept, complete with result notes, or reject. Doctor can send a pharmacy packet after hospital results on the same chain (`parent_order_id`).
+
+**Patient:** `/patient/care-orders`, referrals, service bookings, prescriptions, and a “next care” strip that lists open follow-ups.
+
+What is **not** built yet (product intent, not current code): a parent **clinical episode** with explicit statuses such as `AWAITING_RESULTS_REVIEW`; an 80% confirmed-stock pharmacy matching rule; line-level partial fulfillment; patient-uploaded **external** paper prescriptions; DICOM viewers; a customer-support booking desk. Extend the objects above rather than adding a second parallel API.
+
+---
+
+## Architecture
+
+```
+Browser (React + Vite)                 Phone / future apps
+        │                                      │
+        │  HTTPS  /api/v1                      │
+        ▼                                      ▼
+┌─────────────────────────────────────────────────┐
+│  Node.js Express  (server/)                     │
+│  Auth, appointments, instant queue, SOAP, Rx,   │
+│  care orders, referrals, payments, uploads      │
+└────────────┬────────────────────┬───────────────┘
+             │                    │
+             ▼                    ▼
+         MySQL              WebSocket (ws)
+      mediconnect         Pusher protocol
+                          src/lib/echo.ts
+             │
+             ▼
+      IremboPay · SMTP · TURN/STUN (coTURN) · object storage
+```
+
+**Frontend** is usually hosted on **Netlify** (`mediconnect.rw`). **API** runs as systemd `mediconnect-node` under `/opt/mediconnect-node`, reverse-proxied by **Nginx** on `api.mediconnect.rw`. GitHub Actions on push to `main` calls `POST /api/v1/deploy` (needs `DEPLOY_SECRET`) which runs `/opt/mediconnect-node/deploy.sh`.
+
+Some MySQL type columns still store historical strings such as `App\Models\User`. The Node API **keeps writing those values** so old rows match. Do not rename them without a data migration.
+
+---
+
+## Repository map
+
+```
+MEDICONNECT-WEB/
+├── src/                         React web app
+│   ├── App.tsx                  Routes and role gates
+│   ├── pages/                   One screen per route
+│   │   ├── patient/             Dashboard, bookings, Rx, records, care
+│   │   ├── doctor/              Appointments (3 tabs), SOAP, Rx, care, wallet
+│   │   │   └── appointments/    AppointmentsTab, InstantConsultTab, ServiceBookingsTab
+│   │   ├── hospital/            Facility ops + incoming care
+│   │   ├── pharmacy/            Inventory, orders, Rx requests, care
+│   │   ├── admin/               Approvals, users, fees, settings
+│   │   ├── care/                Shared incoming care inbox
+│   │   ├── Auth.tsx, Index.tsx, ConsultationRoom.tsx, Help.tsx
+│   ├── components/              UI, consultation room, landing, dialogs
+│   ├── hooks/                   TanStack Query + API wrappers (by role)
+│   ├── lib/                     apiFetch, auth-session, echo (realtime), WebRTC helpers
+│   ├── context/                 Call store / call overlay
+│   ├── locales/                 en / fr / rw JSON
+│   └── assets/
+├── server/                      Node.js API
+│   ├── src/index.js             HTTP server, uploads, websocket attach
+│   ├── src/app.js               Authenticated /api/v1
+│   ├── src/public.js            Public search, instant, payments, certificates
+│   ├── src/auth.js              Register, login, OTP, sessions
+│   ├── src/appointments.js      Scheduled visits
+│   ├── src/care-orders.js       Care packets (creates `care_orders`)
+│   ├── src/care-referrals.js    Referrals
+│   ├── src/chat.js              Visit chat
+│   ├── src/realtime.js          Pusher-protocol channels
+│   ├── src/call-token.js        Room tokens + TURN credentials
+│   └── src/db.js                MySQL helpers
+├── public/                      Static files
+├── .github/workflows/deploy.yml Trigger API pull/restart on main
+└── README.md                    This file
+```
+
+Hooks in `src/hooks/<role>/` are the usual place to add an API call. Pages should not scatter raw `fetch` if a hook already exists.
+
+---
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
 | Web app | React 18 + TypeScript + Vite |
 | API | Node.js (Express) in `server/` |
-| Database | MySQL |
+| Database | MySQL (`mediconnect`) |
 | Routing | React Router v6 |
 | Server state | TanStack Query v5 |
 | Styling | Tailwind CSS + shadcn/ui |
 | Forms | React Hook Form + Zod |
-| Translations | i18next (English, French, Kinyarwanda) |
-| Realtime | Node WebSocket (`server/src/realtime.js`) + Pusher JS protocol |
-| Video calls | WebRTC + TURN/STUN |
-| Rich text editor | Tiptap |
+| Translations | i18next (en, fr, rw) |
+| Realtime | `server/src/realtime.js` + `pusher-js` (`src/lib/echo.ts`) |
+| Video | WebRTC + TURN/STUN (coTURN) |
+| Rich text | Tiptap |
 | Charts | Recharts |
+| Payments | IremboPay |
 
 ---
 
-## 📁 Project Structure
-
-```
-src/                   React web app
-├── components/        Reusable UI (cards, dialogs, consultation room)
-├── pages/             One file per route
-│   ├── patient/
-│   ├── doctor/
-│   ├── hospital/
-│   ├── pharmacy/
-│   └── admin/
-├── hooks/             React Query hooks + API wrappers
-├── lib/               apiFetch, auth session, realtime socket
-├── locales/           en / fr / rw
-└── assets/
-
-server/                Node.js API (Express + MySQL)
-├── src/index.js       HTTP server, static uploads, websocket attach
-├── src/app.js         Authenticated /api/v1 routes
-├── src/public.js      Public search, payments, certificates
-└── src/realtime.js    Pusher-protocol websocket channels
-
-public/images/         Static images referenced by URL
-```
-
----
-
-## 🚀 Local Setup
-
-Follow these steps exactly — in order.
+## Local setup
 
 ### Prerequisites
 
-- Node.js 18+ installed
-- npm 9+ installed
-- Git installed
+- Node.js 18+
+- npm 9+
+- Git
+- Optional: MySQL if you run the API locally
 
 ### Steps
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/Telesphore-Uwabera/MEDICONNECT-WEB.git
 cd MEDICONNECT-WEB
-
-# 2. Install dependencies
 npm install
-
-# 3. Create your local environment file
 cp .env.example .env
+```
 
-# 4. Edit .env — set your API URL (staging for local dev)
-#    VITE_APP_BASE_URL=https://staging-api.mediconnect.rw/api/v1
+Edit `.env`. For day-to-day UI work against staging:
 
-# 5. Start the web app
+```env
+VITE_APP_BASE_URL=https://staging-api.mediconnect.rw/api/v1
+VITE_DEV_API_TARGET=https://staging-api.mediconnect.rw
+VITE_DEV=true
+```
+
+```bash
 npm run dev
+```
 
-# 6. Optional: run the Node API locally (needs server/.env with MySQL)
+The web app is **http://localhost:3000** (or the next free port Vite prints). `npm run dev` proxies `/api/v1` to `VITE_DEV_API_TARGET`, so localhost can use **staging or production data** without VPN.
+
+To run the API on your machine as well:
+
+```bash
+# needs server/.env with MySQL, then:
 npm run api
 ```
 
-The web app opens at **http://localhost:3000** (or the next free port Vite prints).
+Point `VITE_APP_BASE_URL` at `/api/v1` if the Vite proxy should hit local Node.
 
-To run web + API together, keep two terminals: `npm run dev` and `npm run api`. Point `VITE_APP_BASE_URL` at `/api/v1` if the Vite proxy should hit your local Node process.
-
-> **First time?** Also configure your git identity so commits show your name:
-> ```bash
-> git config --global user.name "Your Name"
-> git config --global user.email "you@mediconnect.rw"
-> ```
+> Configure git identity locally (`user.name` / `user.email`) so commits show who you are. Do not commit `.env`.
 
 ---
 
-## ⚙️ Environment Variables
+## Environment variables
 
 All `VITE_` variables are baked into the JS bundle at build time.  
 **Never put secrets or passwords in `VITE_` variables** — they become visible in the browser.
@@ -168,6 +348,11 @@ CALL_TOKEN_SECRET=<random 32+ bytes hex>
 # answers 503 and pushes to main do not restart the API.
 DEPLOY_SECRET=<same value as the repository's DEPLOY_SECRET secret>
 
+# ── IremboPay (API server only) ───────────────────────────────────
+PAYMENT_PUBLIC_KEY=
+PAYMENT_SECRET_KEY=
+PAYMENT_PRODUCT_CODE=
+
 # ── Mode ──────────────────────────────────────────────────────────
 VITE_DEV=true   # set to false for production builds
 ```
@@ -180,86 +365,146 @@ VITE_DEV=false
 
 ---
 
-## 📜 Scripts Reference
+## Scripts
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Start the Vite web app with hot reload |
-| `npm run api` | Start the Node API (`server/`) |
-| `npm run build` | Build the web app → `dist/` |
-| `npm run build:dev` | Build with source maps (for staging) |
-| `npm run preview` | Preview the production build locally |
-| `npm test` | Run tests once |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run lint` | Run ESLint checks |
+| `npm run dev` | Vite web app with hot reload |
+| `npm run api` | Node API (`server/`) |
+| `npm run build` | Production web bundle → `dist/` |
+| `npm run build:dev` | Build with source maps |
+| `npm run preview` | Preview `dist/` locally |
+| `npm test` | Vitest once |
+| `npm run test:watch` | Vitest watch |
+| `npm run lint` | ESLint |
 
 ---
 
-## 🗺 Workspaces & Routes
+## Workspaces and routes
 
 | Role | Base path | Access |
 |---|---|---|
-| Patient | `/patient` | After phone verification |
+| Patient | `/patient` | After verification |
 | Doctor | `/doctor` | After admin approval |
 | Hospital | `/hospital` | After admin approval |
 | Pharmacy | `/pharmacy` | After admin approval |
-| Admin | `/admin` | Super-admin only |
-| Public | `/`, `/search`, `/doctors` | No login needed |
+| Admin | `/admin` | Super-admin |
+| Public | `/`, `/auth`, `/help`, `/search` | No login |
+| Call | `/consultation/:roomName` | Valid room token (or redirect to summary by `cid`) |
+
+Doctor **Appointments** (`/doctor/appointments`) has three tabs:
+
+| Tab | Query | Content |
+|---|---|---|
+| Appointments | default | Scheduled visits — row/card opens that appointment id |
+| Instant | `?tab=instant` | Queue + completed instants — card opens that consult id |
+| Service bookings | `?tab=bookings` | Facility visits the doctor booked — row opens that booking id |
+
+Deep link: `/doctor/appointments?tab=instant&id=80`.
 
 ---
 
-## 👥 User Guide
+## User guide
 
-Use https://mediconnect.rw (production) or https://staging.mediconnect.rw (testing). Sign in at `/auth`. Staging accounts are listed under [Test Credentials](#-test-credentials).
+Use [mediconnect.rw](https://mediconnect.rw) or [staging.mediconnect.rw](https://staging.mediconnect.rw). Staging accounts: [Test credentials](#test-credentials).
 
 ### Patient
 
-1. Register as **Patient** with name, email or phone, and password. Accept terms.
-2. Verify OTP if asked, then complete your profile (language, insurance, medical notes).
-3. From the home page or **Find doctors**, open a doctor card → **Book Appointment** or **Instant Consultation**.
-4. Pay with IremboPay (MoMo / Airtel / card) when the invoice is shown. Do not mark invoices paid by hand in the database.
-5. Join the video room at the booked time, or when the doctor accepts an instant consult. Chat, notes, and files stay on that visit.
-6. After the visit, open **Records**, **Prescriptions**, **Certificates**, and **Care packets** from the patient dashboard.
-7. Fitness certificates are a paid flow (currently 5,000 FRW). Track status until the PDF is ready to download.
-8. Sign out from the header. One account can only stay signed in on one device — a new login ends the previous session. After 1 hour idle you are signed out.
+1. Register as **Patient**. Verify OTP if asked. Complete profile (language, insurance, medical notes, family).
+2. **Find doctors** or **Find facilities**. Open a card → **Book appointment** or **Instant consultation**.
+3. Pay the IremboPay invoice. Do not mark invoices paid in MySQL.
+4. Join the room at the booked time, or when the doctor accepts an instant request.
+5. After the visit: **Records**, **Prescriptions**, **Certificates**, **Care packets**, **Referrals**, **Bills**.
+6. Fitness certificates are a paid flow (currently 5,000 FRW) until the PDF is ready.
+7. One account, one active session. A new login ends the previous device. About **1 hour idle** signs you out.
 
 ### Doctor
 
-1. Register as **Doctor**. Admin must approve the profile and license before patients can book you.
-2. Complete profile, photo, specializations, and **Availability** (recurring hours + slots).
-3. Toggle **Instant consultation** when you are ready to take queue patients. Pause bookings when you are off duty.
-4. Accept or join visits from **Appointments** / **Instant queue**. Write notes, issue prescriptions, and complete the visit.
-5. Use **Care packets** to close with notes only, send the patient to a registered hospital (ID + notes + protocol + message), or send medicines to a registered pharmacy. The hospital can reply; you can then send the patient to pharmacy on the same packet.
-6. Check **Wallet** for earnings and withdrawals (admin completes payouts).
+1. Register as **Doctor**. Wait for admin approval of profile and license.
+2. Complete profile, photo, specializations, **Availability**.
+3. Toggle **instant consultation** when you can take the queue. Pause bookings when off duty.
+4. **Appointments**: scheduled, instant, and service bookings. Click a row to open that id (patient, how the visit was conducted, notes, payment).
+5. During/after the call: SOAP summary, prescription, then care packet or facility booking as needed.
+6. **Wallet** for earnings; admin pays withdrawals.
 
 ### Hospital
 
-1. Register as **Hospital**. Wait for admin approval.
-2. Fill profile, working hours, departments, and services. Departments power bookings and the public hospital pages.
-3. Open **Incoming care** / referrals to receive doctor packets, add result notes, and return them to the doctor.
-4. Manage **Appointments** and **Analytics** for the facility. Only registered, approved facilities appear as care destinations.
+1. Register, wait for approval.
+2. Profile, working hours, **departments** and **services** (these power public booking).
+3. **Incoming care** / referrals: receive packets, add result notes, return to the doctor.
+4. Accept or complete **service bookings**. Only approved facilities appear as care destinations.
 
 ### Pharmacy
 
-1. Register as **Pharmacy**. Wait for admin approval.
-2. Keep inventory (categories, stock) up to date.
-3. Accept **prescription orders** and **care packets** from doctors. Fulfill or reject with a reason.
-4. Patients see order status on their pharmacy-orders page.
+1. Register, wait for approval.
+2. Keep inventory current (internal stock or synced external provider).
+3. Accept **prescription requests** and **care packets**. Fulfill or reject with a reason.
+4. Patients see status on pharmacy orders.
 
 ### Admin
 
-1. Sign in with an admin account (`can_be_admin`).
-2. Approve or reject doctors, hospitals, and pharmacies. Set license expiry.
-3. Manage users, specializations, service pricing, insurance, help center, legal pages, and system settings.
-4. Review payments, refunds, wallets, and fitness-certificate traffic. Do not approve pending doctors or refund live consults unless that is the intended support action.
-
-### Switching roles
-
-Some users have more than one role (patient + hospital). Use the role switcher in the header. The API checks both the active role and available roles for reads; writes still require the matching workspace.
+1. Sign in with an account that `can_be_admin`.
+2. Approve or reject doctors, hospitals, pharmacies; set license expiry.
+3. Users, specializations, fees, insurance, help/legal, system settings.
+4. Payments, refunds, wallets, fitness-certificate traffic. Do not approve or refund live cases unless that is the intended support action.
 
 ---
 
-## 🌐 Infrastructure Access
+## Key domain objects
+
+| Object | Typical table | Meaning |
+|---|---|---|
+| User | `users` | Login; one or more roles |
+| Appointment | `appointments` | Scheduled video or in-person visit |
+| Instant consultation | `instant_consultations` (+ request/queue) | On-demand visit |
+| Consultation summary | `consultation_summaries` | SOAP note; belongs to appointment **or** instant |
+| Prescription | `prescriptions` + items | E-Rx from a MediConnect doctor |
+| Pharmacy request | `pharmacy_prescription_requests` | Pharmacy accept / reject / fulfill |
+| Pharmacy order | `pharmacy_orders` | Marketplace / OTC cart (not a paper Rx upload) |
+| Care order (packet) | `care_orders` | Lab, imaging, procedure, admission, pharmacy_packet, facility_packet, … |
+| Referral | `referrals` | Soft handoff to hospital, pharmacy, or doctor |
+| Service booking | `service_bookings` | Dated facility visit |
+| Fitness certificate | certificate tables | Paid FitMed PDF |
+| Wallet | doctor wallets | Earnings and withdrawals |
+| Notification | `notifications` | In-app; `notifiable_type` still uses historical morph strings |
+
+IDs in URLs for care packets and referrals are **dedicated** (not a generic CRUD id). Follow existing `server/src/dedicated-ids.js` patterns when adding similar resources.
+
+---
+
+## Auth, sessions, and roles
+
+- Register / login / OTP / refresh: `/auth/*`.
+- Bearer token in `Authorization`. `GET /auth/me` is the session source for the SPA.
+- **Single session:** a new login invalidates the previous token.
+- **Idle logout:** client signs out after inactivity and sends the user to `/auth?next=…`.
+- Guards: `Requireauth`, `RoleApprovalGate`. Unapproved doctors/hospitals/pharmacies cannot use the full workspace.
+- Role switcher updates active role without a second password.
+
+---
+
+## Realtime and video
+
+- Socket speaks the **Pusher protocol** (`src/lib/echo.ts`). There is no Laravel Echo client.
+- Channels include appointment chat, instant chat, queue refresh, payment alerts.
+- Video is **WebRTC**. Same Wi-Fi often works with host candidates; **cross-network calls need TURN**.
+- Health check (no secrets): `GET /api/v1/public/consultations/relay-health`.
+- Compare API vs coTURN credentials without printing them: `bash server/verify-turn.sh`.
+- In-room pill shows **Direct** vs **Relay**. A red banner explains missing relay, bad credentials, or ICE failure.
+
+---
+
+## Payments
+
+- Provider: **IremboPay**. Product codes live on the **API** env, not in `VITE_`.
+- Instant consults stay unpaid until the callback succeeds; they **expire after 15 minutes** if not paid.
+- Never invent a paid status in the database for a live invoice.
+- Fitness certificates and some bookings have their own amounts/product codes.
+- Doctor earnings settle to the wallet after completed paid visits (admin payouts).
+
+---
+
+## Infrastructure
 
 ### Live URLs
 
@@ -272,53 +517,33 @@ Some users have more than one role (patient + hospital). Use the role switcher i
 | WebSocket | wss://ws.mediconnect.rw |
 | Database admin | https://db.mediconnect.rw |
 
----
-
 ### VPN
 
-> ⚠️ **Connect VPN first** before using SSH, DB tunnels, or any internal IP.
+Connect VPN before SSH, DB tunnels, or internal IPs.
 
 | Field | Value |
 |---|---|
 | URL | `vpn.aos.rw` |
-| Username | `<your VPN user — kept out of this public repo>` |
+| Username | kept out of this public repo |
 | Group | `MEDICONNECT-LTD` |
 
-Use Cisco AnyConnect or any OpenConnect client.
+Cisco AnyConnect or OpenConnect.
 
----
-
-### SSH / Server
-
-Once VPN is connected:
+### SSH / server
 
 ```bash
-# The address and login are not published here: this repository is public, and
-# naming root@<internal address> hands an attacker half of the credential pair.
-# They live in your local repo-root .env, which git no longer tracks.
-export API_HOST=<internal API address>
+export API_HOST=<internal API address from your private .env>
 ssh root@$API_HOST
 ```
 
-The server runs **Ubuntu** with **Nginx** as the web server.
+Ubuntu + Nginx. Config: `/etc/nginx/sites-available/`.
 
 ```bash
-# Check Nginx status
 systemctl status nginx
-
-# Test config before applying changes — always do this first
 nginx -t
-
-# Reload Nginx (safe — no dropped connections)
 systemctl reload nginx
-
-# Watch logs live
 tail -f /var/log/nginx/error.log
 ```
-
-Config files live in `/etc/nginx/sites-available/`.
-
----
 
 ### Database
 
@@ -352,13 +577,9 @@ ssh root@$API_HOST
 mysql -u root mediconnect
 ```
 
----
+### Local dev — access live data
 
-### Local Dev — Access Live Data
-
-When running `npm run dev`, the Vite proxy forwards all `/api/v1/*` requests to the production API so localhost uses real live data.
-
-This is controlled by `VITE_DEV_API_TARGET` in your `.env`:
+When running `npm run dev`, the Vite proxy forwards all `/api/v1/*` requests to the API in `VITE_DEV_API_TARGET` so localhost can use real data.
 
 ```env
 # Points to production — localhost gets live data
@@ -381,8 +602,6 @@ Node.js API (Express) → MySQL
 ```
 
 No VPN needed for this — the production API is publicly accessible over HTTPS.
-
----
 
 ### Video call relay (cross-network calls)
 
@@ -419,9 +638,7 @@ candidate pair. If a relay cannot be used, a red banner names the fault: no
 relay in the token, relay without credentials, credentials refused, or relay not
 answering — with the candidate types it saw as evidence.
 
----
-
-### DNS & Nameservers
+### DNS & nameservers
 
 Domains are `.rw` — registered through **RICTA** (Rwanda's registrar).
 
@@ -435,9 +652,9 @@ systemctl restart named
 
 ---
 
-## 🌿 Git Workflow
+## Git workflow
 
-### Branch Rules
+### Branch rules
 
 ```
 main        ← production (what users see)
@@ -449,9 +666,7 @@ hotfix/*    ← urgent production fixes (branches off main)
 
 > Never commit directly to `main` or `staging`. Every change starts on its own branch.
 
----
-
-### Normal Change Flow
+### Normal change flow
 
 **Step 1 — Start from latest staging**
 
@@ -505,9 +720,7 @@ Then on GitHub:
 3. Describe what changed and why
 4. Request a review → merge
 
----
-
-### Hotfix Flow (urgent production bug)
+### Hotfix flow (urgent production bug)
 
 ```bash
 # Branch off main — not staging
@@ -531,15 +744,13 @@ git push origin staging
 
 ---
 
-## 🖥 Frontend Deployment
+## Frontend deployment
 
-### Full Flow at a Glance
+### Full flow at a glance
 
 ```
 feature branch → staging → test → main → build → Netlify → live
 ```
-
----
 
 ### Step 1 — Merge to staging, test
 
@@ -554,8 +765,6 @@ Test checklist before going to production:
 - [ ] Mobile layout looks right
 - [ ] Browser DevTools Console shows zero errors
 
----
-
 ### Step 2 — Merge staging → main
 
 ```bash
@@ -567,8 +776,6 @@ git push origin main
 
 Or open a PR from `staging → main` on GitHub.
 
----
-
 ### Step 3 — Build for production
 
 ```bash
@@ -579,8 +786,6 @@ Or open a PR from `staging → main` on GitHub.
 npm run build
 # Output: dist/
 ```
-
----
 
 ### Step 4 — Deploy to Netlify
 
@@ -610,8 +815,6 @@ scp -r dist/* root@$API_HOST:/var/www/mediconnect/
 ssh root@$API_HOST "nginx -t && systemctl reload nginx"
 ```
 
----
-
 ### Step 5 — Verify
 
 ```
@@ -622,9 +825,7 @@ https://mediconnect.rw
 - Test your change on the live site
 - Check DevTools → Network — API calls should return `200`
 
----
-
-### Netlify Environment Variables
+### Netlify environment variables
 
 Set these once in Netlify so every deploy uses the right values:
 
@@ -641,9 +842,7 @@ Set these once in Netlify so every deploy uses the right values:
 
 After adding variables, trigger a new deploy for them to apply.
 
----
-
-### Nginx Config for Frontend (server-side)
+### Nginx config for frontend (server-side)
 
 The critical rule is `try_files` — without it, refreshing any page other than `/` returns a 404.
 
@@ -662,7 +861,7 @@ server {
         try_files $uri $uri/ /index.html;  # critical for React Router
     }
 
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|webp)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
@@ -681,7 +880,7 @@ server {
 
 ---
 
-## ⚙️ Backend Deployment
+## Backend deployment
 
 The backend is the **Node.js Express API** in `server/`, typically running as `mediconnect-node` (systemd) from `/opt/mediconnect-node`.
 
@@ -690,8 +889,6 @@ Some MySQL columns (`tokenable_type`, `notifiable_type`, and similar) still stor
 > **Requires SSH access.** Connect VPN first, then `ssh root@$API_HOST`.
 
 Pushes to `main` can also hit `POST /api/v1/deploy` (needs `DEPLOY_SECRET` in `server/.env`), which runs `/opt/mediconnect-node/deploy.sh`.
-
----
 
 ### All steps — run on the server
 
@@ -718,8 +915,6 @@ curl -s https://api.mediconnect.rw/api/v1/public/instant-consultations/doctors
 curl -s https://api.mediconnect.rw/api/v1/public/consultations/relay-health
 ```
 
----
-
 ### What each step does
 
 | Step | Why it matters |
@@ -728,8 +923,6 @@ curl -s https://api.mediconnect.rw/api/v1/public/consultations/relay-health
 | `npm install --omit=dev --prefix server` | Installs Express, mysql2, ws, and other API packages |
 | `systemctl restart mediconnect-node` | Loads the new Node process |
 | `nginx -t && reload` | Applies reverse-proxy changes safely |
-
----
 
 ### Checking logs when something breaks
 
@@ -740,8 +933,6 @@ journalctl -u mediconnect-node -n 80 --no-pager
 # Nginx errors
 tail -50 /var/log/nginx/error.log
 ```
-
----
 
 ### Local / seed data
 
@@ -755,7 +946,7 @@ mysql -u root mediconnect < your-seed.sql
 
 ---
 
-## 🔄 Deploying Frontend + Backend Together
+## Deploying frontend + backend together
 
 Most features touch both sides. Always deploy in this order:
 
@@ -774,7 +965,7 @@ Most features touch both sides. Always deploy in this order:
 
 ---
 
-## ↩️ Rollback
+## Rollback
 
 ### Frontend — rollback via Netlify (30 seconds)
 
@@ -808,7 +999,7 @@ nginx -t && systemctl reload nginx
 
 ---
 
-## ⚡ Quick Deploy Cheatsheet
+## Quick deploy cheatsheet
 
 ### Frontend — production deploy
 
@@ -841,11 +1032,9 @@ curl -s https://api.mediconnect.rw/api/v1/public/instant-consultations/doctors
 
 ---
 
-## � WebP Image Strategy
+## WebP image strategy
 
 All images served through the platform should be in **WebP format** — it is 25–35% smaller than JPEG/PNG at the same quality, which directly improves page load speed and Core Web Vitals scores.
-
----
 
 ### Frontend — lazy loading images
 
@@ -858,8 +1047,6 @@ All `<img>` tags in the app already use `loading="lazy"` (added by default in ne
 // eager (hero images only)
 <img src={heroPhoto} loading="eager" alt="" />
 ```
-
----
 
 ### Backend — convert existing images to WebP
 
@@ -896,13 +1083,9 @@ UPDATE hospitals  SET logo   = REPLACE(logo,   '.jpeg', '.webp')   WHERE logo   
 UPDATE hospitals  SET logo   = REPLACE(logo,   '.png', '.webp')    WHERE logo   LIKE '%.png';
 ```
 
----
-
 ### Backend — auto-convert on upload (Node)
 
 Uploads go through Express/multer in `server/`. Convert to WebP in the upload handler (sharp or `cwebp`) before writing under `UPLOAD_DIR`, then return the `.webp` public URL. New avatars, doctor photos, and logos should be stored as WebP only.
-
----
 
 ### Summary
 
@@ -914,11 +1097,12 @@ Uploads go through Express/multer in `server/`. Convert to WebP in the upload ha
 
 ---
 
-## �🔑 Test Credentials
+## Test credentials
 
-Use these accounts on the **staging** environment only.
+**Staging only** (`https://staging.mediconnect.rw`). Do not use these on production. Do not commit additional passwords.
 
-**Base URL:** `https://staging-api.mediconnect.rw/api/v1`
+**API:** `https://staging-api.mediconnect.rw/api/v1`  
+Country code: `+250`
 
 | Role | Email | Phone | Password |
 |---|---|---|---|
@@ -928,11 +1112,9 @@ Use these accounts on the **staging** environment only.
 | Hospital | hospital@mediconnect.rw | 0783333333 | `Hospital@2026!` |
 | Pharmacy | pharmacy@mediconnect.rw | 0784444444 | `Pharmacy@2026!` |
 
-Country code for all: `+250`
-
 ---
 
-## 📡 API Documentation
+## API documentation
 
 ### Base URLs
 
@@ -941,7 +1123,9 @@ Country code for all: `+250`
 | Staging | `https://staging-api.mediconnect.rw/api/v1` |
 | Production | `https://api.mediconnect.rw/api/v1` |
 
-### Required Headers
+Dedicated packet/referral URLs follow `/{role}/care-orders/:id` and `/{role}/referrals/:id` (see `server/src/dedicated-ids.js`).
+
+### Required headers
 
 Every request needs:
 ```http
@@ -957,7 +1141,7 @@ Authorization: Bearer {token}
 ---
 
 <details>
-<summary><strong>🔐 Authentication</strong> — register, login, OTP, social, guest</summary>
+<summary><strong>Authentication</strong> — register, login, OTP, social, guest</summary>
 
 Base path: `/auth`
 
@@ -1009,7 +1193,7 @@ Success returns `token` + `user` object.
 
 ---
 
-### Other Auth Endpoints
+### Other auth endpoints
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -1025,7 +1209,7 @@ Success returns `token` + `user` object.
 ---
 
 <details>
-<summary><strong>🧑‍⚕️ Patient</strong> — profile, appointments, search, service bookings, certificates</summary>
+<summary><strong>Patient</strong> — profile, appointments, search, service bookings, certificates</summary>
 
 Base path: `/patient` — all routes 🔒
 
@@ -1070,7 +1254,7 @@ Book payload: `doctor_id`, `type` (online/in_person), `appointment_date`, `appoi
 
 ---
 
-### Service Bookings
+### Service bookings
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1081,7 +1265,7 @@ Book payload: `doctor_id`, `type` (online/in_person), `appointment_date`, `appoi
 
 ---
 
-### Fitness Certificates
+### Fitness certificates
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1095,7 +1279,7 @@ Book payload: `doctor_id`, `type` (online/in_person), `appointment_date`, `appoi
 
 ---
 
-### Dashboard & Records
+### Dashboard & records
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1109,11 +1293,11 @@ Book payload: `doctor_id`, `type` (online/in_person), `appointment_date`, `appoi
 ---
 
 <details>
-<summary><strong>👨‍⚕️ Doctor</strong> — profile, availability, slots, appointments, prescriptions, wallet</summary>
+<summary><strong>Doctor</strong> — profile, availability, slots, appointments, prescriptions, wallet</summary>
 
 Base path: `/doctor` — all routes 🔒
 
-### Profile & Toggles
+### Profile & toggles
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1124,7 +1308,7 @@ Base path: `/doctor` — all routes 🔒
 
 ---
 
-### Availability & Slots
+### Availability & slots
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1153,7 +1337,7 @@ Base path: `/doctor` — all routes 🔒
 
 ---
 
-### Instant Consultations
+### Instant consultations
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1165,6 +1349,14 @@ Base path: `/doctor` — all routes 🔒
 | `POST` | `/doctor/instant-consultations/{id}/complete` | Complete |
 | `GET/PUT` | `/doctor/instant-consultations/{id}/notes` | Get or save notes |
 | `POST` | `/doctor/instant-consultations/{id}/files` | Upload file |
+
+**Consultation status flow:**
+```
+pending → confirmed → accepted → in_progress → completed
+           (paid)   (dr accepts)  (dr joins)   (dr completes)
+```
+
+Also: `declined`, `withdrawn`, `expired`, `payment_expired`. Unpaid requests expire after 15 minutes.
 
 ---
 
@@ -1178,10 +1370,11 @@ Base path: `/doctor` — all routes 🔒
 | `DELETE` | `/doctor/prescriptions/{id}/items/{itemId}` | Remove medicine |
 | `POST` | `/doctor/prescriptions/{id}/issue` | Sign + generate PDF |
 | `POST` | `/doctor/prescriptions/{id}/send-to-pharmacy` | Send to pharmacy |
+| `GET` | `/doctor/prescriptions/{id}/matching-pharmacies` | Rank pharmacies by stocked items |
 
 ---
 
-### Patient Records (Doctor Access)
+### Patient records (doctor access)
 
 | Method | Endpoint | Notes |
 |---|---|---|
@@ -1208,7 +1401,7 @@ Base path: `/doctor` — all routes 🔒
 ---
 
 <details>
-<summary><strong>🏥 Hospital</strong> — profile, departments, services, bookings, working hours</summary>
+<summary><strong>Hospital</strong> — profile, departments, services, bookings, working hours</summary>
 
 Base path: `/hospital` — all routes 🔒
 
@@ -1224,7 +1417,7 @@ Base path: `/hospital` — all routes 🔒
 
 ---
 
-### Working Hours & Closures
+### Working hours & closures
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1237,7 +1430,7 @@ Base path: `/hospital` — all routes 🔒
 
 ---
 
-### Departments & Services
+### Departments & services
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1250,7 +1443,7 @@ Service `price_type`: `fixed` | `from` | `negotiable` | `free`
 
 ---
 
-### Service Bookings
+### Service bookings
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1274,7 +1467,7 @@ Service `price_type`: `fixed` | `from` | `negotiable` | `free`
 ---
 
 <details>
-<summary><strong>💊 Pharmacy</strong> — profile, inventory, orders, prescriptions, external providers</summary>
+<summary><strong>Pharmacy</strong> — profile, inventory, orders, prescriptions, external providers</summary>
 
 Base path: `/pharmacy` — all routes 🔒
 
@@ -1302,7 +1495,7 @@ Base path: `/pharmacy` — all routes 🔒
 
 ---
 
-### Orders & Prescriptions
+### Orders & prescriptions
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1318,7 +1511,7 @@ Base path: `/pharmacy` — all routes 🔒
 
 ---
 
-### External Providers
+### External providers
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1332,11 +1525,11 @@ Base path: `/pharmacy` — all routes 🔒
 ---
 
 <details>
-<summary><strong>🔧 Admin</strong> — users, approvals, wallets, settings, whitelists</summary>
+<summary><strong>Admin</strong> — users, approvals, wallets, settings, whitelists</summary>
 
 Base path: `/admin` — all routes 🔒 (admin token required)
 
-### User Management
+### User management
 
 | Endpoint | Actions |
 |---|---|
@@ -1348,7 +1541,7 @@ Base path: `/admin` — all routes 🔒 (admin token required)
 
 ---
 
-### Instant Consultation Whitelist
+### Instant consultation whitelist
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1358,7 +1551,7 @@ Base path: `/admin` — all routes 🔒 (admin token required)
 
 ---
 
-### Specializations & Fees
+### Specializations & fees
 
 | Endpoint | Description |
 |---|---|
@@ -1369,7 +1562,7 @@ Base path: `/admin` — all routes 🔒 (admin token required)
 
 ---
 
-### Wallet Management
+### Wallet management
 
 | Endpoint | Description |
 |---|---|
@@ -1387,7 +1580,7 @@ Withdrawal status flow: `pending → processing → approved → completed`
 
 ---
 
-### Other Admin
+### Other admin
 
 | Endpoint | Description |
 |---|---|
@@ -1402,11 +1595,11 @@ Withdrawal status flow: `pending → processing → approved → completed`
 ---
 
 <details>
-<summary><strong>🌍 Public / Guest</strong> — instant consultations, medicine search (no auth needed)</summary>
+<summary><strong>Public / guest</strong> — instant consultations, medicine search (no auth needed)</summary>
 
 Base path: `/public`
 
-### Instant Consultations (Guest)
+### Instant consultations (guest)
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1417,6 +1610,7 @@ Base path: `/public`
 | `POST` | `/public/instant-consultations/{id}/pay` | Pay |
 | `POST` | `/public/instant-consultations/bypass-payment/{id}` | Skip payment |
 | `DELETE` | `/public/instant-consultations/{guest_token}` | Withdraw from queue |
+| `GET` | `/public/consultations/relay-health` | TURN/relay health (no secrets) |
 
 **Request payload:**
 ```json
@@ -1442,7 +1636,7 @@ pending → confirmed → accepted → in_progress → completed
 
 ---
 
-### Medicine Search
+### Medicine search
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1455,11 +1649,11 @@ pending → confirmed → accepted → in_progress → completed
 ---
 
 <details>
-<summary><strong>💬 Chat</strong> — appointment chat and instant consultation chat</summary>
+<summary><strong>Chat</strong> — appointment chat and instant consultation chat</summary>
 
 All routes 🔒 Protected
 
-### Appointment Chat
+### Appointment chat
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1475,7 +1669,7 @@ echo.private(`appointment.${appointmentId}.chat`)
 
 ---
 
-### Instant Consultation Chat
+### Instant consultation chat
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1490,11 +1684,11 @@ WebSocket channel: `private-instant-consultation.{consultationId}.chat`
 ---
 
 <details>
-<summary><strong>🗂 Medical Records</strong> — files, visit history, consultation summaries</summary>
+<summary><strong>Medical records</strong> — files, visit history, consultation summaries</summary>
 
 All file URLs are **signed MinIO URLs** valid for 30 minutes.
 
-### Doctor — Patient Files
+### Doctor — patient files
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1506,7 +1700,7 @@ Upload fields: `file`, `file_type` (`lab_result`/`scan`/`report`/`prescription`/
 
 ---
 
-### Patient — Own Records
+### Patient — own records
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -1518,7 +1712,7 @@ Upload fields: `file`, `file_type` (`lab_result`/`scan`/`report`/`prescription`/
 
 ---
 
-### Consultation Summaries
+### Consultation summaries
 
 | Role | Endpoint | Description |
 |---|---|---|
@@ -1532,4 +1726,17 @@ Upload fields: `file`, `file_type` (`lab_result`/`scan`/`report`/`prescription`/
 
 ---
 
-*Last updated: August 2026*
+## Conventions for developers
+
+- **Product copy and routes** live in `src/locales/{en,fr,rw}/`. Add all three languages together.
+- **API access** goes through `src/lib/api.ts` (`apiFetch`) and role hooks — not ad-hoc URLs in random components.
+- **Do not** treat call-complete as care-complete. If you add a follow-up (lab, Rx, booking), give it its own status and inbox.
+- **Do not** hard-code a second consultation API. Extend `consultation_summaries`, `prescriptions`, `care_orders`, `referrals`, `service_bookings`.
+- **Do not** print secrets, TURN passwords, or live Irembo invoices in logs or README updates.
+- **Do not** mark production invoices paid, refund live consults, or approve pending doctors unless that is the requested support action.
+- Morph columns (`tokenable_type`, `notifiable_type`) stay compatible with existing `App\Models\…` strings.
+- After UI changes, verify the flow in the browser (not only a screenshot): empty states, the other tab that shares the same data, and mobile if layout changed.
+
+---
+
+*Last updated: October 2026*

@@ -14,6 +14,7 @@ import {
   type ConsultationSummary,
 } from "@/hooks/doctor/use-consultation-summaries";
 import { useGetAppointments } from "@/hooks/doctor/use-doctor-appointment";
+import { useDoctorEpisodes } from "@/hooks/doctor/use-clinical-episodes";
 import { formatDateOnly } from "@/lib/date";
 
 type FollowRow = {
@@ -40,6 +41,7 @@ export default function DoctorFollowUps() {
   const drafts = useGetPrescriptions({ status: "draft", per_page: 50, page: 1 });
   const summaries = useConsultationSummaries();
   const pending = useGetAppointments({ status: "pending", per_page: 50, page: 1 });
+  const awaitingReview = useDoctorEpisodes("AWAITING_RESULTS_REVIEW");
 
   const unsignedRows = unsigned.data?.data ?? [];
   const draftRows = drafts.data?.data ?? [];
@@ -78,6 +80,14 @@ export default function DoctorFollowUps() {
         href: "/doctor/consultation-summaries",
         date: summary.updated_at || summary.created_at,
       })),
+      ...(awaitingReview.data ?? []).map((episode) => ({
+        id: `ep-${episode.id}`,
+        title: t("pages.doctor.followup_results_review", "Results awaiting review"),
+        patient: `#${episode.patient_id}`,
+        reason: episode.next_action?.task_type || episode.episode_status,
+        href: "/doctor/care-orders",
+        date: episode.note_finalized_at || null,
+      })),
       ...pendingRows.map((appt) => ({
         id: `apt-${appt.id}`,
         title: t("pages.doctor.followup_pending_appt"),
@@ -87,7 +97,7 @@ export default function DoctorFollowUps() {
         date: appt.appointment_date,
       })),
     ].sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
-  }, [draftRows, incompleteSummaries, pendingRows, t, unsignedRows]);
+  }, [awaitingReview.data, draftRows, incompleteSummaries, pendingRows, t, unsignedRows]);
 
   const paged = paginateRows(rows, page);
   const lastPage = tablePageCount(rows.length);
@@ -97,9 +107,10 @@ export default function DoctorFollowUps() {
       <div className="flex h-full w-full flex-col">
         <PageHeader title={t("pages.doctor.followups_title")} subtitle={t("pages.doctor.followups_sub")} />
         <div className="flex-1 space-y-6 overflow-y-auto p-4 md:p-6">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <StatCard label={t("pages.doctor.followup_unsigned_rx")} value={unsignedRows.length} icon={FileText} accent="warning" />
             <StatCard label={t("pages.doctor.followup_missing_plan")} value={incompleteSummaries.length} icon={Stethoscope} />
+            <StatCard label={t("pages.doctor.followup_results_review", "Results to review")} value={awaitingReview.data?.length ?? 0} icon={Stethoscope} accent="warning" />
             <StatCard label={t("pages.doctor.followup_pending_appt")} value={pendingRows.length} icon={ClipboardList} accent="info" />
           </div>
 

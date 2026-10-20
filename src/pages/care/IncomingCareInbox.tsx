@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/PageHeader";
 import {
   useCareOrderAction,
   useGetCareOrders,
+  useHandoverCareOrder,
+  useReviewCareOrder,
   type CareOrder,
 } from "@/hooks/doctor/use-care-orders";
 import { CLINICAL_CATALOG } from "@/pages/doctor/appointments/shared/clinical-catalog";
@@ -55,6 +57,16 @@ function Snapshot({ order }: { order: CareOrder }) {
       {order.result_notes || snap.hospital_results ? (
         <p><span className="font-semibold">Facility reply:</span> {order.result_notes || snap.hospital_results}</p>
       ) : null}
+      {order.handover_status ? (
+        <p><span className="font-semibold">Handover:</span> {order.handover_status}</p>
+      ) : null}
+      {order.result_file_url ? (
+        <p>
+          <a href={order.result_file_url} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
+            Result file
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -69,12 +81,21 @@ function OrderActions({
   onSendPharmacy?: (order: CareOrder) => void;
 }) {
   const action = useCareOrderAction(scope === "patient" ? "doctor" : scope === "doctor" ? "doctor" : scope);
+  const handover = useHandoverCareOrder();
   const [reply, setReply] = useState(order.result_notes || "");
+  const [files, setFiles] = useState<File[]>([]);
   if (scope === "patient") return null;
 
   const run = (next: "accept" | "complete" | "reject") => {
     action.mutate(
-      { id: order.id, care_order_id: order.id, patient_code: order.patient_code, action: next, result_notes: reply },
+      {
+        id: order.id,
+        care_order_id: order.id,
+        patient_code: order.patient_code,
+        action: next,
+        result_notes: reply,
+        files: next === "complete" ? files : undefined,
+      },
       {
         onSuccess: () => toast.success(next === "complete" ? "Reply sent to the referring doctor." : "Updated."),
         onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update this packet."),
@@ -92,6 +113,14 @@ function OrderActions({
           placeholder={scope === "pharmacy" ? "Dispensing notes for the doctor" : "Results and findings for the referring doctor"}
           className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-[12px] outline-none focus:border-primary/50"
         />
+        {scope === "hospital" && (
+          <input
+            type="file"
+            multiple
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
+            className="block w-full text-[11px] text-muted-foreground"
+          />
+        )}
         <div className="flex flex-wrap gap-2">
           {order.status === "pending" && (
             <button type="button" onClick={() => run("accept")} className="h-8 rounded-[5px] border border-border px-3 text-[11px] font-semibold hover:bg-muted">
@@ -106,18 +135,102 @@ function OrderActions({
     );
   }
 
-  if (scope === "doctor" && order.result_notes && !String(order.order_type).includes("pharmacy")) {
+  if (scope === "doctor" && String(order.order_type) === "admission") {
     return (
-      <button
-        type="button"
-        onClick={() => onSendPharmacy?.(order)}
-        className="mt-3 h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
-      >
-        Send this patient to a registered pharmacy
-      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {["RECEIVED", "IN_TRANSIT", "ADMITTED", "TRANSFERRED", "DISCHARGED"].map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() =>
+              handover.mutate(
+                { id: order.id, handover_status: status },
+                {
+                  onSuccess: () => toast.success(`Handover set to ${status}`),
+                  onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update handover."),
+                },
+              )
+            }
+            className="h-8 rounded-[5px] border border-border px-3 text-[11px] font-semibold hover:bg-muted"
+          >
+            {status.replace("_", " ")}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  if (scope === "doctor" && order.result_notes && !String(order.order_type).includes("pharmacy")) {
+    const needsReview = order.status === "completed" && String(order.review_status || "") !== "reviewed";
+    return (
+      <div className="mt-3 space-y-2">
+        {needsReview ? <DoctorReviewForm order={order} /> : (
+          <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+            Reviewed{order.management_decision ? ` · ${order.management_decision}` : ""}. An uploaded result does not close the episode by itself.
+          </p>
+        )}
+        {!needsReview && (
+          <button
+            type="button"
+            onClick={() => onSendPharmacy?.(order)}
+            className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Send this patient to a registered pharmacy
+          </button>
+        )}
+      </div>
     );
   }
   return null;
+}
+
+function DoctorReviewForm({ order }: { order: CareOrder }) {
+  const review = useReviewCareOrder();
+  const [interpretation, setInterpretation] = useState(order.doctor_interpretation || "");
+  const [decision, setDecision] = useState(order.management_decision || "ADVICE_ONLY");
+  return (
+    <div className="space-y-2 rounded-[6px] border border-amber-500/30 bg-amber-500/5 p-3">
+      <p className="text-[11px] font-semibold text-foreground">Clinical review required</p>
+      <p className="text-[11px] text-muted-foreground">
+        The facility uploaded results. Document your interpretation and next management decision. This does not mark the pharmacy as served.
+      </p>
+      <textarea
+        value={interpretation}
+        onChange={(e) => setInterpretation(e.target.value)}
+        rows={3}
+        placeholder="Findings, interpretation, and plan"
+        className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-[12px] outline-none focus:border-primary/50"
+      />
+      <select
+        value={decision}
+        onChange={(e) => setDecision(e.target.value)}
+        className="h-8 w-full rounded-[5px] border border-border bg-background px-2 text-[12px]"
+      >
+        <option value="ADVICE_ONLY">Advice and monitoring</option>
+        <option value="PRESCRIPTION">Prescribe medication</option>
+        <option value="INVESTIGATION">Further investigations</option>
+        <option value="SPECIALIST_BOOKING">Book in-person specialist</option>
+        <option value="REFERRAL_LETTER">Referral letter</option>
+        <option value="INPATIENT_REFERRAL">Urgent / inpatient</option>
+      </select>
+      <button
+        type="button"
+        disabled={review.isPending || !interpretation.trim()}
+        onClick={() =>
+          review.mutate(
+            { id: order.id, interpretation: interpretation.trim(), management_decision: decision },
+            {
+              onSuccess: () => toast.success("Review saved. The episode stays open only if another clinical task is still needed."),
+              onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not save the review."),
+            },
+          )
+        }
+        className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+      >
+        {review.isPending ? "Saving…" : "Record review"}
+      </button>
+    </div>
+  );
 }
 
 export function IncomingCareInbox({
@@ -179,7 +292,10 @@ export function IncomingCareInbox({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">{label}</p>
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      {order.status} · {order.patient_code || "packet"} · {order.urgency || "medium"}
+                      {order.status}
+                      {order.review_status ? ` · review ${order.review_status}` : ""}
+                      {" · "}
+                      {order.patient_code || "packet"} · {order.urgency || "medium"}
                     </p>
                     <Snapshot order={order} />
                     <OrderActions scope={scope} order={order} onSendPharmacy={setPharmacyFrom} />

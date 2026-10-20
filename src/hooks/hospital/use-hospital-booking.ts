@@ -80,6 +80,10 @@ export interface BookingPayload {
   notes?:              string;
 }
 
+/** Platform booking fee layered on top of the hospital service price. */
+export const PLATFORM_BOOKING_FEE = 1000;
+export const PLATFORM_BOOKING_CURRENCY = "RWF";
+
 /** A selectable calendar date falling on an open working day */
 export interface DateSlot {
   date:        string;   // YYYY-MM-DD

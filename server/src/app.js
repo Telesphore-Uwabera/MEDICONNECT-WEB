@@ -19,6 +19,8 @@ import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./do
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { registerCareOrderRoutes } from "./care-orders.js";
 import { registerCareReferralRoutes } from "./care-referrals.js";
+import { registerClinicalEpisodeRoutes } from "./clinical-episodes.js";
+import { afterResourceSaved, registerCareSpecRoutes } from "./care-spec.js";
 import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicated-ids.js";
 import {
   appointmentCollision,
@@ -405,6 +407,8 @@ export function appRoutes(router) {
   attachChatRoutes(router, { requireAuth });
   registerCareOrderRoutes(router, { requireAuth, requireRole });
   registerCareReferralRoutes(router, { requireAuth, requireRole });
+  registerClinicalEpisodeRoutes(router, { requireAuth, requireRole });
+  registerCareSpecRoutes(router, { requireAuth, requireRole });
   registerDedicatedResourceRoutes(router, { requireAuth, requireRole });
   router.use(async (req, res, next) => {
     try {
@@ -1966,7 +1970,12 @@ export function appRoutes(router) {
           params,
         ).catch(() => []);
         active = await doctorActiveInstant(doctorId);
-        queue = rows.map((row, index) => ({
+        queue = rows.map((row, index) => {
+          const created = row.created_at ? new Date(row.created_at).getTime() : NaN;
+          const waitingSeconds = Number.isFinite(created)
+            ? Math.max(0, Math.floor((Date.now() - created) / 1000))
+            : 0;
+          return {
           id: row.id,
           guest_name: row.guest_name || row.patient_name || "",
           guest_phone: row.guest_phone || row.phone || "",
@@ -1976,10 +1985,15 @@ export function appRoutes(router) {
           // where the column is absent or was never written.
           payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
           queue_position: index + 1,
-          waiting_seconds: 0,
-          waiting_label: "Waiting",
+          waiting_seconds: waitingSeconds,
+          waiting_label: waitingSeconds >= 3600
+            ? `${Math.floor(waitingSeconds / 3600)}h`
+            : waitingSeconds >= 60
+              ? `${Math.floor(waitingSeconds / 60)}m`
+              : `${waitingSeconds}s`,
           created_at: row.created_at || null,
-        }));
+        };
+        });
         seenToday = Number((await one(
           `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${owner.includes("?") ? "doctor_id = ?" : "1=1"} AND status IN ('completed','done','in_progress') AND DATE(created_at) = CURDATE()`,
           owner.includes("?") ? [doctorId] : [],
@@ -3174,7 +3188,9 @@ export function appRoutes(router) {
       if (owned.sql.includes("_id")) extra[owned.sql.split("`")[1]] = owned.params[0];
       if (req.body?.password) req.body.password = await hashPassword(req.body.password);
       const id = await insert(table, { ...req.body, ...extra });
-      res.status(201).json({ message: "Saved.", data: await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id])) });
+      let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+      stored = await afterResourceSaved(table, stored, req);
+      res.status(201).json({ message: "Saved.", data: await presentRow(table, stored) });
     } catch (error) {
       next(error);
     }
@@ -3605,7 +3621,9 @@ async function updateResource(req, res, next) {
     const body = visitBodyGuard(req.params.scope, table, { ...(req.body ?? {}) });
     delete body.password;
     await update(table, req.params.id, body);
-    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]));
+    let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+    stored = await afterResourceSaved(table, stored, req);
+    const row = await presentRow(table, stored);
     res.json({ message: "Updated.", data: row, ...(row ?? {}) });
   } catch (error) {
     next(error);

@@ -28,6 +28,7 @@ const DoctorAppointmentsPage = () => {
       const next = new URLSearchParams(prev);
       if (nextTab === "appointments") next.delete("tab");
       else next.set("tab", nextTab);
+      next.delete("id");
       return next;
     }, { replace: true });
   };

@@ -12,6 +12,7 @@ import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
 import { fmtDate, fmtDateTime, fmtTime, fmtRelative, apptLabel, statusLabel, getErrMsg } from "./helpers";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 // ─── Detail row ───────────────────────────────────────────────────────────────
 
@@ -47,6 +48,7 @@ export function AppointmentDetailDrawer({
   appt, onClose, onStart, onRejoin, onRunningLate, onReadyNext, onReschedule, isReadyNextPending, isJoining,
 }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const confirmAppointment = useConfirmAppointment();
   const status = appt.status as UIStatus;
   const canStart = status === "confirmed";
@@ -314,27 +316,52 @@ export function AppointmentDetailDrawer({
           )}
 
           {/* Session */}
-          {(raw.session_started_at || raw.daily_room_name) && (
-            <div className="px-5 py-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
-                <Video className="h-4 w-4" />{t("pages.doctor.session")}
-              </p>
-              <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
-                {raw.daily_room_name && (
-                  <DetailRow label={t("pages.doctor.room")} value={<span className="font-mono text-xs truncate max-w-[200px]">{raw.daily_room_name}</span>} />
-                )}
-                {raw.session_started_at && (
-                  <DetailRow label={t("pages.doctor.started")} value={
-                    <span>
-                      {fmtDateTime(raw.session_started_at)}
-                      <span className="text-muted-foreground ml-1.5 text-xs">({fmtRelative(raw.session_started_at)})</span>
-                    </span>
-                  } />
-                )}
-                {raw.session_ended_at && <DetailRow label={t("pages.doctor.ended")} value={fmtDateTime(raw.session_ended_at)} />}
-              </div>
+          <div className="px-5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+              <Video className="h-4 w-4" />{t("pages.doctor.session")}
+            </p>
+            <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
+              <DetailRow
+                label={t("pages.doctor.how_conducted", { defaultValue: "How conducted" })}
+                value={appt.type === "online" ? t("pages.doctor.video_consult") : t("pages.doctor.in_person")}
+              />
+              <DetailRow
+                label={t("pages.doctor.conducted", { defaultValue: "Meeting conducted" })}
+                value={
+                  status === "completed" || raw.session_ended_at
+                    ? t("pages.doctor.conducted_yes", { defaultValue: "Yes — session completed" })
+                    : status === "in_progress" || raw.session_started_at
+                      ? t("pages.doctor.conducted_in_progress", { defaultValue: "In progress" })
+                      : t("pages.doctor.conducted_no", { defaultValue: "Not yet" })
+                }
+              />
+              {raw.daily_room_name && (
+                <DetailRow label={t("pages.doctor.room")} value={<span className="font-mono text-xs truncate max-w-[200px]">{raw.daily_room_name}</span>} />
+              )}
+              {raw.session_started_at && (
+                <DetailRow label={t("pages.doctor.started")} value={
+                  <span>
+                    {fmtDateTime(raw.session_started_at)}
+                    <span className="text-muted-foreground ml-1.5 text-xs">({fmtRelative(raw.session_started_at)})</span>
+                  </span>
+                } />
+              )}
+              {raw.session_ended_at && <DetailRow label={t("pages.doctor.ended")} value={fmtDateTime(raw.session_ended_at)} />}
+              {(status === "completed" || appt.notes) && (
+                <div className="pt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/doctor/consultation-summaries?appointment=${appt.id}`)}
+                    className="h-8 text-xs"
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-1.5" />
+                    {t("pages.doctor.open_consultation_record", { defaultValue: "Open consultation record" })}
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Notes */}
           {appt.notes && (

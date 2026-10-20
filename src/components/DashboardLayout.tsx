@@ -357,6 +357,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           label: t("sidebar.careOrders", "Labs & care orders"),
           icon: FlaskConical,
         },
+        {
+          to: "/patient/episodes",
+          label: t("sidebar.careTimeline", "Care timeline"),
+          icon: History,
+        },
       ],
     },
     {

@@ -44,6 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { AdminBookingDesk } from "@/pages/admin/components/AdminBookingDesk";
 import { TablePager } from "@/components/TablePager";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
  
@@ -1005,6 +1006,7 @@ function ManageAppointments() {
           title={t("pages.admin.appointments_title")}
           subtitle={t("pages.admin.appointments_sub")}
         />
+        <AdminBookingDesk />
 
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">

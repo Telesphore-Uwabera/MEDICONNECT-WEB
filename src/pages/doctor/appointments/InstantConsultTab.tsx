@@ -1,5 +1,6 @@
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   FileText, Stethoscope,
   UserCheck, Clock3, Users, CheckCircle2, Activity, Video, History,
@@ -26,6 +27,7 @@ import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summar
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
 import { IncomingCard } from "./shared/IncomingCard";
+import { InstantConsultDetailDrawer } from "./shared/InstantConsultDetailDrawer";
 import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSidebar";
 import { readCallChart } from "@/lib/call-note-form";
 import { getErrMsg, fmt } from "./shared/helpers";
@@ -127,14 +129,16 @@ function StatTile({
   label,
   value,
   iconWrapCls,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   iconWrapCls: string;
+  onClick?: () => void;
 }) {
-  return (
-    <div className="flex items-center gap-4 p-4 rounded-[6px] border border-border/60 bg-background">
+  const inner = (
+    <>
       <div className={cn("h-10 w-10 rounded-[6px] flex items-center justify-center shrink-0", iconWrapCls)}>
         {icon}
       </div>
@@ -142,6 +146,18 @@ function StatTile({
         <p className="text-sm font-semibold text-foreground tabular-nums">{value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
+    </>
+  );
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="flex items-center gap-4 p-4 rounded-[6px] border border-border/60 bg-background text-left hover:border-primary/30 transition-colors">
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-[6px] border border-border/60 bg-background">
+      {inner}
     </div>
   );
 }
@@ -150,6 +166,9 @@ function StatTile({
 
 export function InstantConsultTab() {
   const call = useCallStore();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [detailItem, setDetailItem] = useState<InstantConsultQueueItem | null>(null);
   const { data: publicSettings } = usePublicSettings();
   const [notesOpen, setNotesOpen] = useState(true);
   const [queueTab, setQueueTab] = useState<"active" | "completed">("active");
@@ -209,16 +228,32 @@ export function InstantConsultTab() {
 
   const isPaid = (item: InstantConsultQueueItem) =>
     item.payment_status === "paid" || item.status === "confirmed";
+  const unpaidStatuses = ["pending", "queued", "waiting", "payment_pending"];
+  const UNPAID_LIMIT_SEC = 15 * 60;
+  const itemAgeSec = (item: InstantConsultQueueItem) => {
+    if (item.created_at) {
+      const t = new Date(item.created_at).getTime();
+      if (Number.isFinite(t)) return Math.max(0, Math.floor((Date.now() - t) / 1000));
+    }
+    return Math.max(0, Number(item.waiting_seconds) || 0);
+  };
+  const isUnpaidOpen = (item: InstantConsultQueueItem) =>
+    unpaidStatuses.includes(item.status) && !isPaid(item);
+  const isStaleUnpaid = (item: InstantConsultQueueItem) =>
+    isUnpaidOpen(item) && itemAgeSec(item) >= UNPAID_LIMIT_SEC;
 
   const newestFirst = (items: InstantConsultQueueItem[]) =>
     [...items].sort((a, b) => b.id - a.id);
   const visibleQueue = queue.filter((i) => i.status !== "declined" && i.status !== "withdrawn");
   const finishedStatuses = ["completed", "expired", "payment_expired"];
-  const completed = newestFirst(visibleQueue.filter((i) => finishedStatuses.includes(i.status)));
+  const finished = newestFirst(visibleQueue.filter((i) => finishedStatuses.includes(i.status)));
   const activeItems = newestFirst(visibleQueue.filter((i) => !finishedStatuses.includes(i.status)));
-  const waiting = newestFirst(activeItems.filter((i) =>
-    ["pending", "queued", "waiting", "payment_pending"].includes(i.status) && !isPaid(i),
-  ));
+  const waiting = newestFirst(activeItems.filter((i) => isUnpaidOpen(i) && !isStaleUnpaid(i)));
+  const staleUnpaid = newestFirst(activeItems.filter(isStaleUnpaid)).map((item) => ({
+    ...item,
+    status: "payment_expired" as const,
+  }));
+  const completed = newestFirst([...finished, ...staleUnpaid]);
   const confirmed = newestFirst(activeItems.filter((i) =>
     isPaid(i) && !["accepted", "in_progress", "completed", "declined", "withdrawn"].includes(i.status),
   ));
@@ -338,6 +373,35 @@ export function InstantConsultTab() {
     return item.id;
   };
 
+  const openDetail = useCallback((item: InstantConsultQueueItem) => {
+    setDetailItem(item);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("id", String(item.id));
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const closeDetail = useCallback(() => {
+    setDetailItem(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("id");
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    const id = Number(searchParams.get("id") || "");
+    if (!Number.isFinite(id) || id <= 0 || queue.length === 0) return;
+    const match = queue.find((q) => q.id === id);
+    if (!match) return;
+    setDetailItem(match);
+    if (["completed", "expired", "payment_expired", "declined", "withdrawn"].includes(match.status)) {
+      setQueueTab("completed");
+    }
+  }, [queue, searchParams]);
+
   // Open the consultation-summary document (formatted on the frontend) for a
   // completed instant consult. Opens the tab first (user gesture) then fills it.
   const handleViewSummary = async (item: InstantConsultQueueItem) => {
@@ -439,7 +503,12 @@ export function InstantConsultTab() {
 
   // ── Queue view ─────────────────────────────────────────────────────────────
   const actionableCount = confirmed.length + accepted.length + joined.length;
-  const activeCount = activeItems.length;
+  const activeCount = joined.length + accepted.length + confirmed.length + waiting.length;
+  const openCompletedConsult = (item: InstantConsultQueueItem) => {
+    const cid = resolveInstantConsultId(item);
+    if (!cid) return;
+    navigate(`/consultation/instant-consultation-${cid}?cid=${cid}`);
+  };
 
   return (
     <div className="flex min-h-[calc(100dvh-12rem)] flex-1 overflow-hidden bg-background">
@@ -589,6 +658,7 @@ export function InstantConsultTab() {
                   <IncomingCard
                     key={item.id}
                     item={item}
+                    onOpen={() => openDetail(item)}
                     onComplete={() => completeConsult(item)}
                     onOpenFile={() => handleComplete(item)}
                     onJoin={() => handleJoin(item)}
@@ -615,6 +685,7 @@ export function InstantConsultTab() {
                   <IncomingCard
                     key={item.id}
                     item={item}
+                    onOpen={() => openDetail(item)}
                     onAccept={doctorBusy ? undefined : () => handleAccept(item)}
                     onDecline={() => handleDecline(item)}
                     isAccepting={activeAction?.id === item.id && activeAction.action === "accepting"}
@@ -657,6 +728,7 @@ export function InstantConsultTab() {
                   <IncomingCard
                     key={item.id}
                     item={item}
+                    onOpen={() => openDetail(item)}
                     onJoin={() => handleJoin(item)}
                     isJoining={activeAction?.id === item.id && activeAction.action === "joining"}
                   />
@@ -677,7 +749,7 @@ export function InstantConsultTab() {
                   })}
                 </p>
                 {waiting.map((item) => (
-                  <IncomingCard key={item.id} item={item} />
+                  <IncomingCard key={item.id} item={item} onOpen={() => openDetail(item)} />
                 ))}
               </section>
             )}
@@ -691,7 +763,7 @@ export function InstantConsultTab() {
                   count={others.length}
                 />
                 {others.map((item) => (
-                  <IncomingCard key={item.id} item={item} />
+                  <IncomingCard key={item.id} item={item} onOpen={() => openDetail(item)} />
                 ))}
               </section>
             )}
@@ -724,7 +796,10 @@ export function InstantConsultTab() {
                 />
                 {paginateRows(completed, queuePage).map((item) => (
                   <div key={item.id} className="space-y-1.5">
-                    <IncomingCard item={item} />
+                    <IncomingCard
+                      item={item}
+                      onOpen={() => openDetail(item)}
+                    />
                   </div>
                 ))}
                 <TablePager
@@ -753,6 +828,7 @@ export function InstantConsultTab() {
           label={t("consult.bookings.seen_today")}
           value={stats ? String(stats.seen_today) : "—"}
           iconWrapCls="bg-[hsl(var(--success)/0.1)]"
+          onClick={() => setQueueTab("completed")}
         />
         <StatTile
           icon={<Clock3 className="h-5 w-5 text-primary" />}
@@ -765,12 +841,14 @@ export function InstantConsultTab() {
           label={t("consult.bookings.in_queue")}
           value={stats ? String(stats.in_queue) : String(queue.length)}
           iconWrapCls="bg-[hsl(var(--info)/0.1)]"
+          onClick={() => setQueueTab("active")}
         />
         <StatTile
           icon={<CheckCircle2 className="h-5 w-5 text-[hsl(var(--warning))]" />}
           label={t("consult.bookings.resolved")}
           value={stats ? String(stats.resolved) : "—"}
           iconWrapCls="bg-[hsl(var(--warning)/0.1)]"
+          onClick={() => setQueueTab("completed")}
         />
 
         <div className="border-t border-border/60 pt-4 mt-auto">
@@ -779,6 +857,22 @@ export function InstantConsultTab() {
           </p>
         </div>
       </aside>
+
+      {detailItem && (
+        <InstantConsultDetailDrawer
+          item={detailItem}
+          consultId={resolveInstantConsultId(detailItem)}
+          onClose={closeDetail}
+          onOpenRecord={
+            detailItem.status === "completed"
+              ? () => {
+                  closeDetail();
+                  openCompletedConsult(detailItem);
+                }
+              : undefined
+          }
+        />
+      )}
 
       {/* Step 1 — required: consultation summary (SOAP note) */}
       {recordItem != null && (

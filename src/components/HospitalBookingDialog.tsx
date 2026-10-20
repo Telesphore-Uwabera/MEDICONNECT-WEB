@@ -37,6 +37,8 @@ import { useMe } from "@/hooks/useAuth";
 import {
   useHospitalDetail,
   useCreateBooking,
+  PLATFORM_BOOKING_FEE,
+  PLATFORM_BOOKING_CURRENCY,
   buildWeekSchedule,
   buildDateSlots,
   buildTimeSlots,
@@ -620,6 +622,9 @@ export const HospitalBookingDialog = ({
                         date: format(parseISO(selectedDate), "EEEE, MMMM d, yyyy", { locale: dateFnsLocale }),
                         time: selectedTime,
                       })}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground mt-1">
+                      Platform fee {PLATFORM_BOOKING_FEE.toLocaleString()} {PLATFORM_BOOKING_CURRENCY} is added on top of the hospital price.
                     </p>
                   </div>
                 </div>

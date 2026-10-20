@@ -54,6 +54,9 @@ export interface ApiServiceBooking {
   patient_pays: string | null;
   payment_status: string | null;
   payment_method: string | null;
+  booking_fee?: string | number | null;
+  booking_fee_currency?: string | null;
+  booking_channel?: string | null;
   rejection_reason: string | null;
   accepted_at: string | null;
   rejected_at: string | null;

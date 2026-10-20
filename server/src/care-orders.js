@@ -1,7 +1,12 @@
 import crypto from "crypto";
+import multer from "multer";
 import { forgetColumns, hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { loadOwnedId } from "./auth.js";
 import { requireRegisteredFacility, requireRegisteredPharmacy } from "./care-partners.js";
+import { ensureCareOrderReviewColumns, onCareOrderCreated, onCareOrderUpdated } from "./clinical-episodes.js";
+import { attachCareOrderResultFiles } from "./care-spec.js";
+
+const careUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 const ORDER_TYPES = new Set([
   "lab",
@@ -52,6 +57,12 @@ export async function ensureCareOrdersTable() {
     doctor_message: "`doctor_message` TEXT NULL",
     parent_order_id: "`parent_order_id` BIGINT UNSIGNED NULL",
     responded_at: "`responded_at` TIMESTAMP NULL",
+    episode_id: "`episode_id` BIGINT UNSIGNED NULL",
+    review_status: "`review_status` VARCHAR(40) NULL",
+    reviewed_at: "`reviewed_at` TIMESTAMP NULL",
+    reviewed_by: "`reviewed_by` BIGINT UNSIGNED NULL",
+    doctor_interpretation: "`doctor_interpretation` TEXT NULL",
+    management_decision: "`management_decision` VARCHAR(40) NULL",
   };
   for (const [name, ddl] of Object.entries(extra)) {
     if (!(await hasColumn("care_orders", name))) {
@@ -133,6 +144,7 @@ async function shapeOrder(row) {
     items: parseJson(presented.items_json, []),
     protocol: parseJson(presented.protocol_json, []),
     snapshot: parseJson(presented.snapshot_json, {}),
+    result_files: parseJson(presented.result_files_json, []),
   };
 }
 
@@ -212,6 +224,7 @@ export async function handleCareOrders(req, res, parts) {
   const scope = parts[0];
   if (!["doctor", "patient", "hospital", "pharmacy"].includes(scope)) return false;
   await ensureCareOrdersTable();
+  await ensureCareOrderReviewColumns();
 
   if (req.method === "GET" && !parts[2]) {
     const owned = await ownedWhere(scope, req);
@@ -312,6 +325,7 @@ export async function handleCareOrders(req, res, parts) {
       }).catch(() => null);
     }
     const order = await shapeOrder(await one("SELECT * FROM care_orders WHERE id = ?", [id]));
+    await onCareOrderCreated(await one("SELECT * FROM care_orders WHERE id = ?", [id]));
     await notifyUser(
       patient.user_id,
       "Your doctor sent a care order",
@@ -345,15 +359,26 @@ export async function handleCareOrders(req, res, parts) {
     const resultNotes = req.body?.result_notes || req.body?.notes || row.result_notes || null;
     const patch = { status, result_notes: resultNotes };
     if (action === "complete") patch.responded_at = new Date();
+    if (action === "accept" && String(row.order_type) === "admission" && await hasColumn("care_orders", "handover_status")) {
+      patch.handover_status = row.handover_status || "RECEIVED";
+    }
+    if (req.body?.handover_status && await hasColumn("care_orders", "handover_status")) {
+      patch.handover_status = String(req.body.handover_status).toUpperCase();
+    }
     await update("care_orders", row.id, patch);
-    const order = await shapeOrder(await one("SELECT * FROM care_orders WHERE id = ?", [row.id]));
+    let fresh = await one("SELECT * FROM care_orders WHERE id = ?", [row.id]);
+    if (action === "complete" && req.files?.length) {
+      fresh = await attachCareOrderResultFiles(fresh, req.files);
+    }
+    await onCareOrderUpdated(fresh, action, scope);
+    const order = await shapeOrder(fresh);
     if (action === "complete" && row.doctor_id) {
       const doctor = await one("SELECT user_id FROM doctors WHERE id = ?", [row.doctor_id]).catch(() => null);
       const who = scope === "pharmacy" ? "The pharmacy" : "The clinic/hospital";
       await notifyUser(
         doctor?.user_id,
         `${who} replied on ${row.patient_code || "a care packet"}`,
-        resultNotes || `${who} completed the packet. Open Care packets to review and send the patient to a pharmacy if needed.`,
+        resultNotes || `${who} completed the packet. Open Care packets to review the findings. Uploaded results do not close the clinical episode.` ,
       );
     }
     res.json({ message: "Updated.", order, data: order });
@@ -380,7 +405,7 @@ export function registerCareOrderRoutes(router, { requireAuth, requireRole }) {
   for (const scope of ["doctor", "patient", "hospital", "pharmacy"]) {
     router.get(`/${scope}/care-orders`, requireAuth, requireRole(scope), run);
     router.get(`/${scope}/care-orders/:careOrderId`, requireAuth, requireRole(scope), run);
-    router.post(`/${scope}/care-orders/:careOrderId/:action`, requireAuth, requireRole(scope), run);
+    router.post(`/${scope}/care-orders/:careOrderId/:action`, requireAuth, requireRole(scope), careUpload.any(), run);
   }
   router.post("/doctor/care-orders", requireAuth, requireRole("doctor"), run);
 }

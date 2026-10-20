@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
@@ -117,6 +118,9 @@ function inDateRange(iso: string, from: string, to: string) {
 
 export default function DoctorConsultationSummaries() {
   const { t } = useTranslation();
+  const [params] = useSearchParams();
+  const focusInstant = Number(params.get("instant") || "");
+  const focusAppointment = Number(params.get("appointment") || "");
   const { data, isLoading, isError, refetch } = useConsultationSummaries();
   const deleteRx = useDeleteConsultationSummary();
   const { data: publicSettings } = usePublicSettings();
@@ -135,6 +139,20 @@ export default function DoctorConsultationSummaries() {
   }, []);
 
   const rows = useMemo(() => flattenRows(data), [data]);
+
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const match = rows.find((row) => {
+      if (Number.isFinite(focusInstant) && focusInstant > 0) {
+        return Number(row.summary.instant_consultation_id) === focusInstant;
+      }
+      if (Number.isFinite(focusAppointment) && focusAppointment > 0) {
+        return Number(row.summary.appointment_id) === focusAppointment;
+      }
+      return false;
+    });
+    if (match) setSelected(match);
+  }, [focusInstant, focusAppointment, rows]);
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();

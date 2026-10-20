@@ -11,6 +11,7 @@ import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
 import { handleFitnessCertificates } from "./fitness-certificates.js";
 import { isDedicatedResource } from "./dedicated-ids.js";
+import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -576,6 +577,13 @@ async function fillGap(req, res, parts) {
     return true;
   }
 
+  if (action === "fulfill" && id && ["pharmacy_prescription_requests", "prescription_requests"].includes(table) && current) {
+    const fulfilled = await applyPharmacyFulfillment(table, current, req.body || {});
+    const row = await presentRow(table, fulfilled);
+    res.json({ message: "Updated.", data: row, ...(row ?? {}) });
+    return true;
+  }
+
   const status = action ? (EXTRA_STATUS[action] || STATUS_ACTIONS[action]) : null;
   if (action && id && status && await hasColumn(table, "status")) {
     if (
@@ -636,7 +644,9 @@ async function fillGap(req, res, parts) {
   if (!id && req.method === "POST") {
     const extra = await ownedExtra(parts[0], req.user.id, table);
     const newId = await insert(table, { ...(req.body ?? {}), ...extra });
-    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]));
+    let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]);
+    stored = await afterResourceSaved(table, stored, req);
+    const row = await presentRow(table, stored);
     res.status(201).json({ message: "Saved.", data: row, ...(row ?? {}) });
     return true;
   }
@@ -651,7 +661,9 @@ async function fillGap(req, res, parts) {
     // Neither side of a visit may buy its way to "paid" or reassign itself with a
     // plain field update; payment moves status through the payment routes only.
     await update(table, id, visitBodyGuard(parts[0], table, req.body ?? {}));
-    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+    stored = await afterResourceSaved(table, stored, req);
+    const row = await presentRow(table, stored);
     res.json({ message: "Updated.", data: row, ...(row ?? {}) });
     return true;
   }
@@ -735,6 +747,14 @@ export function registerActions(router, RESOURCES) {
         return res.json({ message: "Image saved.", [column]: url, photo_url: url, image: url, avatar: url, logo: url, data: row });
       }
 
+      if (action === "fulfill" && ["pharmacy_prescription_requests", "prescription_requests"].includes(table)) {
+        const currentRow = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => null);
+        if (currentRow) {
+          const fulfilled = await applyPharmacyFulfillment(table, currentRow, req.body || {});
+          const row = await presentRow(table, fulfilled);
+          return res.json({ message: "Updated.", data: row, ...(row ?? {}) });
+        }
+      }
       if (await applyStatus(table, id, action, req.body, req.user?.id)) {
         if (table === "pharmacy_orders") {
           const order = await shapeOrder(await one("SELECT * FROM pharmacy_orders WHERE id = ?", [id]));

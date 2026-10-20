@@ -1,6 +1,7 @@
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { loadOwnedId } from "./auth.js";
 import { requireRegisteredFacility, requireRegisteredPharmacy } from "./care-partners.js";
+import { onReferralCreated } from "./clinical-episodes.js";
 
 async function notifyUser(userId, title, message) {
   if (!userId || !(await hasColumn("notifications", "notifiable_id"))) return;
@@ -236,6 +237,7 @@ export async function handleCareReferrals(req, res, parts) {
     };
     const id = await insert("referrals", payload);
     const referral = await shapeReferral(await one("SELECT * FROM referrals WHERE id = ?", [id]));
+    await onReferralCreated(await one("SELECT * FROM referrals WHERE id = ?", [id])).catch(() => null);
     const patientUserId = patient.user_id;
     const target =
       referral.hospital?.name || referral.pharmacy?.name || referral.referred_to_doctor?.name || "a MediConnect partner";
