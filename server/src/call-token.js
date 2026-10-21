@@ -8,7 +8,13 @@ import crypto from "crypto";
 // spellings.
 function setting(...names) {
   for (const name of names) {
-    const value = String(process.env[name] ?? "").trim();
+    let value = String(process.env[name] ?? "").trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1).trim();
+    }
     if (value) return value;
   }
   return "";
@@ -44,20 +50,35 @@ const PASSWORD_ENV = ["TURN_PASSWORD", "TURN_CREDENTIAL", "VITE_TURN_PASSWORD", 
  * back to the static pair. The mode is reported so a deployment can be audited
  * without printing the credential itself.
  */
-function relayAuth() {
+function hmacAuth() {
   const secret = setting(...SECRET_ENV);
-  if (secret) {
-    const username = `${Math.floor(Date.now() / 1000) + 12 * 3600}:mediconnect`;
-    return {
-      mode: "auth-secret",
-      username,
-      credential: crypto.createHmac("sha1", secret).update(username).digest("base64"),
-    };
-  }
+  if (!secret) return null;
+  const username = `${Math.floor(Date.now() / 1000) + 12 * 3600}:mediconnect`;
+  return {
+    mode: "auth-secret",
+    username,
+    credential: crypto.createHmac("sha1", secret).update(username).digest("base64"),
+  };
+}
+
+function staticAuth() {
   const username = setting(...USERNAME_ENV);
   const credential = setting(...PASSWORD_ENV);
-  if (username && credential) return { mode: "static", username, credential };
-  return { mode: "none" };
+  if (!username || !credential) return null;
+  return { mode: "static", username, credential };
+}
+
+/**
+ * Prefer REST/HMAC credentials (coTURN use-auth-secret). Also keep a static
+ * user= pair when both are configured, so a leftover or mismatched secret
+ * does not block a relay that still accepts the long-lived username.
+ */
+function relayAuthList() {
+  return [hmacAuth(), staticAuth()].filter(Boolean);
+}
+
+function relayAuth() {
+  return relayAuthList()[0] || { mode: "none" };
 }
 
 /** Where the relay lives. TLS is derived from the host on 5349 unless configured. */
@@ -79,11 +100,10 @@ export function iceServers() {
 
   const { plain, tls } = relayEndpoints();
   if (plain) {
-    const auth = relayAuth();
-    if (auth.mode === "none") {
+    const auths = relayAuthList();
+    if (!auths.length) {
       warnOnce(`TURN host ${plain.host}:${plain.port} is set but no credentials are configured (TURN_SECRET or TURN_USERNAME + TURN_PASSWORD) — the relay will reject every allocation.`);
     }
-    const { credential, username, mode } = auth;
     const urls = [
       `turn:${plain.host}:${plain.port}`,
       // Second candidate for networks that block UDP 3478.
@@ -93,8 +113,15 @@ export function iceServers() {
       // TLS penetrates strict firewalls (hospitals, offices) that drop UDP.
       urls.push(`turns:${tls.host}:${tls.port}`);
     }
-    for (const url of urls) {
-      servers.push(mode === "none" ? { urls: url } : { urls: url, username, credential });
+    const credentialSets = auths.length ? auths : [{ mode: "none" }];
+    for (const auth of credentialSets) {
+      for (const url of urls) {
+        servers.push(
+          auth.mode === "none"
+            ? { urls: url }
+            : { urls: url, username: auth.username, credential: auth.credential },
+        );
+      }
     }
   } else {
     warnOnce("No TURN server configured (set VITE_TURN_HOST or TURN_HOST). Calls will fail whenever both peers are not on a directly reachable network.");
@@ -112,7 +139,8 @@ export function iceServers() {
  */
 export function relayDiagnostics() {
   const { plain, tls } = relayEndpoints();
-  const auth = relayAuth();
+  const auths = relayAuthList();
+  const auth = auths[0] || { mode: "none" };
   const relays = iceServers().filter((server) =>
     (Array.isArray(server.urls) ? server.urls : [server.urls]).some((url) => /^turns?:/i.test(String(url))),
   );
@@ -156,7 +184,7 @@ export function relayDiagnostics() {
   return {
     ok: Boolean(plain) && auth.mode !== "none",
     relay: plain ? { host: plain.host, port: plain.port, tls: tls ? `${tls.host}:${tls.port}` : null } : null,
-    credential_mode: auth.mode,
+    credential_mode: auths.length > 1 ? "auth-secret+static" : auth.mode,
     username: auth.username ?? null,
     relays_in_call_token: relays.length,
     checks,

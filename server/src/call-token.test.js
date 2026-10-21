@@ -64,6 +64,26 @@ describe("iceServers", () => {
     expect(JSON.stringify(first)).not.toContain("shared-relay-secret");
   });
 
+  it("offers both HMAC and static credentials when both env pairs are set", () => {
+    vi.stubEnv("TURN_HOST", "relay.example.rw");
+    vi.stubEnv("TURN_SECRET", "shared-relay-secret");
+    vi.stubEnv("TURN_USERNAME", "mediconnect");
+    vi.stubEnv("TURN_PASSWORD", "static-password");
+    const users = new Set(relays(iceServers()).map((server) => server.username));
+    expect(users.has("mediconnect")).toBe(true);
+    expect([...users].some((name) => String(name).endsWith(":mediconnect"))).toBe(true);
+  });
+
+  it("strips wrapping quotes from TURN_SECRET so a quoted .env still signs", () => {
+    vi.stubEnv("TURN_HOST", "relay.example.rw");
+    vi.stubEnv("TURN_SECRET", '"shared-relay-secret"');
+    const quoted = relays(iceServers())[0];
+    vi.stubEnv("TURN_SECRET", "shared-relay-secret");
+    const plain = relays(iceServers())[0];
+    expect(quoted.username).toBe(plain.username);
+    expect(quoted.credential).toBe(plain.credential);
+  });
+
   it("falls back to the static user pair when no secret is configured", () => {
     vi.stubEnv("TURN_HOST", "relay.example.rw");
     vi.stubEnv("TURN_USERNAME", "mediconnect");

@@ -21,6 +21,7 @@ import { registerCareOrderRoutes } from "./care-orders.js";
 import { registerCareReferralRoutes } from "./care-referrals.js";
 import { registerClinicalEpisodeRoutes } from "./clinical-episodes.js";
 import { afterResourceSaved, registerCareSpecRoutes } from "./care-spec.js";
+import { registerPatientRecordRoutes } from "./patient-record.js";
 import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicated-ids.js";
 import {
   appointmentCollision,
@@ -409,6 +410,7 @@ export function appRoutes(router) {
   registerCareReferralRoutes(router, { requireAuth, requireRole });
   registerClinicalEpisodeRoutes(router, { requireAuth, requireRole });
   registerCareSpecRoutes(router, { requireAuth, requireRole });
+  registerPatientRecordRoutes(router, { requireAuth, requireRole });
   registerDedicatedResourceRoutes(router, { requireAuth, requireRole });
   router.use(async (req, res, next) => {
     try {

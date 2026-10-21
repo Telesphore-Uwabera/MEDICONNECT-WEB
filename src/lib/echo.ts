@@ -107,22 +107,9 @@ const echo = {
   disconnect() {
     pusher.disconnect();
   },
+  socketId() {
+    return pusher.connection?.socket_id || "";
+  },
 };
-
-const connection = pusher.connection;
-if (connection) {
-  let stopped = false;
-  const stopRetrying = () => {
-    if (stopped) return;
-    stopped = true;
-    try {
-      echo.disconnect();
-    } catch {
-      /* ignore */
-    }
-  };
-  connection.bind("failed", stopRetrying);
-  connection.bind("unavailable", stopRetrying);
-}
 
 export default echo;

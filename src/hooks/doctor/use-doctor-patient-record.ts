@@ -80,9 +80,27 @@ export function usePatientMedicalRecord(patientId: number | null) {
   return useQuery({
     queryKey: ["patient-record", patientId],
     enabled: patientId != null,
+    retry: false,
     queryFn: async () => {
-      const res = await apiFetch<{ record?: MedicalRecord } | MedicalRecord>(`${base(patientId)}/record`);
-      return ((res as any)?.record ?? res) as MedicalRecord;
+      try {
+        const res = await apiFetch<{ record?: MedicalRecord } | MedicalRecord>(`${base(patientId)}/record`);
+        return ((res as { record?: MedicalRecord })?.record ?? res) as MedicalRecord;
+      } catch (error) {
+        const status = (error as { status?: number })?.status;
+        if (status === 404) {
+          return {
+            patient_id: patientId ?? undefined,
+            blood_type: null,
+            chronic_conditions: null,
+            known_allergies: null,
+            current_medications: null,
+            family_history: null,
+            surgical_history: null,
+            disabilities: null,
+          };
+        }
+        throw error;
+      }
     },
   });
 }
