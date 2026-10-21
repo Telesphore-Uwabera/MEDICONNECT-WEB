@@ -195,9 +195,10 @@ export function useDoctorDashboard(
   // ── Toggle: Instant Consultation ─────────────────────────────────────────
 
   const instantMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (enabled?: boolean) =>
       apiFetch<ToggleInstantResponse>("/doctor/toggle/instant", {
         method: "PATCH",
+        body: enabled === undefined ? {} : { instant_consultation: enabled },
       }),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: doctorDashboardKeys.all });
@@ -272,7 +273,7 @@ export function useDoctorDashboard(
     },
 
     // ── Toggle actions ────────────────────────────────────────────────────
-    toggleInstantConsultation: () => instantMutation.mutate(),
+    toggleInstantConsultation: (enabled?: boolean) => instantMutation.mutate(enabled),
     togglePauseBookings: () => pauseMutation.mutate(),
   };
 }

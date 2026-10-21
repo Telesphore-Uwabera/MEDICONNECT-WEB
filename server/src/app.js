@@ -15,7 +15,6 @@ import {
 } from "./doctor-review.js";
 import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
-import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { registerCareOrderRoutes } from "./care-orders.js";
 import { registerCareReferralRoutes } from "./care-referrals.js";
@@ -369,10 +368,17 @@ async function generatePeriodSlots(doctorId, period) {
     for (let minute = start; minute + duration <= end; minute += step) {
       const startTime = clock(minute);
       const existing = await one(
-        "SELECT id FROM appointment_slots WHERE doctor_id = ? AND slot_date = ? AND start_time = ? LIMIT 1",
+        "SELECT id, status FROM appointment_slots WHERE doctor_id = ? AND slot_date = ? AND start_time = ? LIMIT 1",
         [doctorId, date, startTime],
       ).catch(() => null);
-      if (existing) continue;
+      if (existing) {
+        const status = String(existing.status || "").toLowerCase();
+        if (status !== "booked") {
+          await update("appointment_slots", existing.id, { status: "available" });
+          created += 1;
+        }
+        continue;
+      }
       await insert("appointment_slots", {
         doctor_id: doctorId,
         hospital_id: period.hospital_id ?? null,
@@ -1499,14 +1505,7 @@ export function appRoutes(router) {
   router.get("/doctor/toggle/mystatus", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctor, doctorId } = await currentDoctor(req);
-      let instant = Boolean(Number(doctor?.instant_consultation ?? 0));
-      if (instant && doctorId) {
-        const onSchedule = await doctorOnInstantSchedule(doctorId);
-        if (!onSchedule) {
-          await update("doctors", doctorId, { instant_consultation: 0 }).catch(() => null);
-          instant = false;
-        }
-      }
+      const instant = Boolean(Number(doctor?.instant_consultation ?? 0));
       res.json({
         instant_consultation: instant,
         bookings_paused: Boolean(Number(doctor?.bookings_paused ?? doctor?.pause_bookings ?? 0)),
@@ -1548,14 +1547,6 @@ export function appRoutes(router) {
       if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
       const current = Boolean(Number(doctor?.instant_consultation ?? 0));
       const target = flagValue(req.body, ["instant_consultation", "enabled", "status"], current);
-      if (target) {
-        const onSchedule = await doctorOnInstantSchedule(doctorId);
-        if (!onSchedule) {
-          return res.status(422).json({
-            message: "You cannot enable instant consultation outside your consultation hours. Please add available online hours in your schedule first.",
-          });
-        }
-      }
       return setDoctorFlag(req, res, next, "instant_consultation", target);
     } catch (error) {
       next(error);
@@ -1572,12 +1563,6 @@ export function appRoutes(router) {
   router.get("/doctor/dashboard", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctor, doctorId } = await currentDoctor(req);
-      if (doctorId && Number(doctor?.instant_consultation) === 1) {
-        const onSchedule = await doctorOnInstantSchedule(doctorId);
-        if (!onSchedule) {
-          await update("doctors", doctorId, { instant_consultation: 0 }).catch(() => null);
-        }
-      }
       const period = String(req.query.period || "week");
       const chartGroup = String(req.query.chart_group || "day");
       const count = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
@@ -2897,13 +2882,7 @@ export function appRoutes(router) {
       delete fields.license_expires_at;
       delete fields.license_expiry_reminded_for;
       if (fields.instant_consultation != null) {
-        const target = fields.instant_consultation ? 1 : 0;
-        if (target === 1) {
-          const onSchedule = await doctorOnInstantSchedule(doctorId);
-          fields.instant_consultation = onSchedule ? 1 : 0;
-        } else {
-          fields.instant_consultation = 0;
-        }
+        fields.instant_consultation = fields.instant_consultation ? 1 : 0;
       }
       if (Object.keys(fields).length) await update("doctors", doctorId, fields);
       if (body.gender && await hasColumn("users", "gender")) {

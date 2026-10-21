@@ -1,4 +1,4 @@
-import { hasColumn, one, q, tableExists, update } from "./db.js";
+import { one, q, tableExists } from "./db.js";
 
 export function kigaliClock(dateInput = new Date()) {
   const now = dateInput instanceof Date ? dateInput : new Date(dateInput);
@@ -133,19 +133,6 @@ export async function doctorOnInstantSchedule(doctorId) {
  * Note: NEVER turns instant consultation on automatically; only the doctor can turn it on.
  */
 export async function autoDisableInstantOutsideSchedule() {
-  if (!(await tableExists("doctors")) || !(await hasColumn("doctors", "instant_consultation"))) return;
-
-  const instantDoctors = await q(
-    "SELECT id FROM doctors WHERE instant_consultation = 1 AND (deleted_at IS NULL OR deleted_at > NOW())",
-  ).catch(() => []);
-
-  if (!instantDoctors.length) return;
-
-  for (const { id: doctorId } of instantDoctors) {
-    const onSchedule = await doctorOnInstantSchedule(doctorId);
-    if (!onSchedule) {
-      await update("doctors", doctorId, { instant_consultation: 0 }).catch(() => null);
-      console.info(`[autoDisable] Automatically disabled instant consultation for doctor ${doctorId} — outside consultation hours`);
-    }
-  }
+  // Instant consultation is a doctor-controlled flag. It must not turn off
+  // because the clock moved outside generated appointment slots.
 }

@@ -368,10 +368,13 @@ export function useGenerateSlots() {
 export function useToggleInstantConsultation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (enabled?: boolean) =>
       apiFetch<{ message: string; instant_consultation: boolean }>(
         "/doctor/toggle/instant",
-        { method: "PATCH" }
+        {
+          method: "PATCH",
+          body: enabled === undefined ? {} : { instant_consultation: enabled },
+        }
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["slots"] });

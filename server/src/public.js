@@ -7,7 +7,7 @@ import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
 import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
-import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
+import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { releaseSlot } from "./visit-rules.js";
 
 function pathOf(req) {
@@ -1415,10 +1415,9 @@ export function publicRoutes(router) {
       if (doctor && !doctorIsApproved(doctor.status)) {
         return res.status(422).json({ message: "This doctor is not available for consultations yet." });
       }
-      if (doctor && !(await doctorOnInstantSchedule(doctor.id))) {
-        await update("doctors", doctor.id, { instant_consultation: 0 }).catch(() => null);
+      if (doctor && !Number(doctor.instant_consultation)) {
         return res.status(422).json({
-          message: "This doctor is outside their consultation hours. Book an appointment inside their schedule.",
+          message: "This doctor is not offering instant consultations right now.",
         });
       }
 

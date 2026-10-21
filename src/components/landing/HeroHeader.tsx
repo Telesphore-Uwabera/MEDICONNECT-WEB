@@ -18,6 +18,11 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
@@ -57,7 +62,6 @@ export function HeroHeader({
   const navigate = useNavigate();
   const activeHash = activeSection ? `#${activeSection}` : location.hash || "#home";
   const menuRef = useRef<HTMLDivElement>(null);
-  const quickAccessRef = useRef<HTMLDivElement>(null);
   const desktopSearchRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
   const [quickAccessOpen, setQuickAccessOpen] = useState(false);
@@ -200,12 +204,6 @@ export function HeroHeader({
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMobileMenuOpen(false);
-      }
-      if (
-        quickAccessRef.current &&
-        !quickAccessRef.current.contains(e.target as Node)
-      ) {
-        setQuickAccessOpen(false);
       }
       const target = e.target as Node;
       const insideSearch =
@@ -429,7 +427,7 @@ export function HeroHeader({
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden text-[11px] font-medium xl:flex 2xl:gap-1 2xl:text-xs">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 overflow-visible text-[11px] font-medium xl:flex 2xl:gap-1 2xl:text-xs">
           {navLinks.slice(0, 2).map((l) => {
             const active =
               l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
@@ -459,74 +457,73 @@ export function HeroHeader({
             );
           })}
 
-          {/* Quick Access Dropdown */}
-          <div ref={quickAccessRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setQuickAccessOpen((prev) => !prev)}
-              aria-expanded={quickAccessOpen}
-              className={cn(
-                "relative flex items-center gap-1 rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
-                quickAccessOpen
-                  ? "text-foreground bg-accent"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-              )}
-            >
-              <span>{t("pages.landing.quick_access", { defaultValue: "Quick Access" })}</span>
-              <ChevronDown
+          {/* Quick Access Dropdown — portaled so the nav's overflow cannot clip it */}
+          <DropdownMenu open={quickAccessOpen} onOpenChange={setQuickAccessOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-expanded={quickAccessOpen}
                 className={cn(
-                  "h-3.5 w-3.5 transition-transform duration-200",
-                  quickAccessOpen && "rotate-180 text-primary",
+                  "relative flex items-center gap-1 rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
+                  quickAccessOpen
+                    ? "text-foreground bg-accent"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary",
                 )}
-              />
-            </button>
-
-            {quickAccessOpen && (
-              <div
-                role="menu"
-                className="absolute top-[calc(100%+8px)] left-0 w-[300px] rounded-xl border border-border bg-popover/95 backdrop-blur-md shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
               >
-                <div className="px-2.5 py-1.5 mb-1 border-b border-border/50">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {t("pages.landing.quick_access", { defaultValue: "Quick Access" })}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {quickAccessItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.label}
-                        to={item.to}
-                        onClick={() => setQuickAccessOpen(false)}
-                        className="group flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted/70 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span
-                            className={cn(
-                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
-                              item.color,
-                            )}
-                          >
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                              {item.label}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {item.description}
-                            </p>
-                          </div>
-                        </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary shrink-0" />
-                      </Link>
-                    );
-                  })}
-                </div>
+                <span>{t("pages.landing.quick_access", { defaultValue: "Quick Access" })}</span>
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform duration-200",
+                    quickAccessOpen && "rotate-180 text-primary",
+                  )}
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={8}
+              className="z-[200] w-[300px] overflow-visible rounded-xl p-2"
+            >
+              <div className="mb-1 border-b border-border/50 px-2.5 py-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("pages.landing.quick_access", { defaultValue: "Quick Access" })}
+                </p>
               </div>
-            )}
-          </div>
+              <div className="flex flex-col gap-1">
+                {quickAccessItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setQuickAccessOpen(false)}
+                      className="group flex items-center justify-between gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted/70"
+                    >
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          className={cn(
+                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                            item.color,
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-semibold text-foreground transition-colors group-hover:text-primary">
+                            {item.label}
+                          </p>
+                          <p className="truncate text-[10px] text-muted-foreground">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {navLinks.slice(2).map((l) => {
             const active =

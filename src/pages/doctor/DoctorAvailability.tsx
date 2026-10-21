@@ -1,5 +1,6 @@
 // export default DoctorAvailability;
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -190,14 +191,17 @@ function SlotChip({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const cfg = slotConfig[slot.status];
   const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -205,11 +209,25 @@ function SlotChip({
 
   const displayTime = slot.start_time.slice(0, 5);
 
+  const openMenu = () => {
+    const box = ref.current?.getBoundingClientRect();
+    if (box) {
+      setMenuPos({ top: box.bottom + 4, left: box.left + box.width / 2 });
+    }
+    setOpen(true);
+  };
+
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => {
-          if (slot.status !== "booked") setOpen((v) => !v);
+          if (slot.status === "booked") return;
+          if (slot.status !== "available") {
+            onSetStatus("available");
+            return;
+          }
+          if (open) setOpen(false);
+          else openMenu();
         }}
         disabled={isPending}
         title={`${t(cfg.labelKey)} - ${t("pages.doctor.click_to_change")}`}
@@ -218,6 +236,7 @@ function SlotChip({
         className={cn(
           "w-full rounded-[6px] border px-3 py-2.5 text-sm font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
           cfg.card,
+          slot.status === "available" && "bg-primary text-primary-foreground border-primary",
           isPending && "opacity-50 cursor-wait",
         )}
       >
@@ -228,11 +247,13 @@ function SlotChip({
         )}
       </button>
 
-      {open && slot.status !== "booked" && (
+      {open && slot.status !== "booked" && createPortal(
         <div
+          ref={menuRef}
           role="listbox"
           aria-label={t("pages.doctor.set_slot_status")}
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-[6px] border border-border bg-popover overflow-hidden py-1"
+          style={{ top: menuPos.top, left: menuPos.left }}
+          className="fixed z-[200] w-40 -translate-x-1/2 rounded-[6px] border border-border bg-popover py-1 shadow-xl"
         >
           <p className="px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground font-medium border-b border-border mb-1">
             {t("pages.doctor.set_status")}
@@ -248,7 +269,8 @@ function SlotChip({
               }}
             />
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -585,7 +607,7 @@ const DoctorAvailability = () => {
     to: moment(today).add(6, "days").toDate(),
   });
   const [startTime, setStartTime] = useState("08:00");
-  const [endTime, setEndTime] = useState("17:00");
+  const [endTime, setEndTime] = useState("21:30");
   const [interval, setInterval] = useState(30);
   const [includeWeekends, setIncludeWeekends] = useState(true);
 
@@ -868,8 +890,8 @@ const DoctorAvailability = () => {
     );
   };
 
-  const handleToggleInstant = () => {
-    toggleInstantMutation.mutate(undefined, {
+  const handleToggleInstant = (checked: boolean) => {
+    toggleInstantMutation.mutate(checked, {
       onSuccess: (res) => {
         setInstant(res.instant_consultation);
         toast.success(res.message);
@@ -1319,8 +1341,13 @@ const DoctorAvailability = () => {
                     )}
                     {isGenerating
                       ? t("pages.doctor.generating")
-                      : t("pages.doctor.generate")}
+                      : t("pages.doctor.generate", { defaultValue: "Save hours" })}
                   </Button>
+                  <p className="text-[11px] text-center text-muted-foreground">
+                    {t("pages.doctor.generate_adds_hours", {
+                      defaultValue: "New hours are added to your existing schedule and saved. Booked slots are left unchanged.",
+                    })}
+                  </p>
                 </div>
 
                 {/* Legend */}
@@ -1451,7 +1478,7 @@ const DoctorAvailability = () => {
 
                 {/* Slots panel */}
                 {currentDay && dayStats && (
-                  <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4 sm:p-5">
+                  <div className="min-w-0 max-w-full overflow-visible rounded-[6px] border border-border/70 bg-card p-4 sm:p-5">
                     {/* Header */}
                     <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                       <div>
@@ -1560,7 +1587,7 @@ const DoctorAvailability = () => {
                     </div>
 
                     {/* Slot grid */}
-                    <div className="grid min-w-0 grid-cols-2 min-[360px]:grid-cols-3 min-[480px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-8 gap-1.5">
+                    <div className="grid min-w-0 grid-cols-2 min-[360px]:grid-cols-3 min-[480px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-8 gap-1.5 overflow-visible">
                       {currentDay.slots.map((slot) => (
                         <SlotChip
                           key={slot.id}
