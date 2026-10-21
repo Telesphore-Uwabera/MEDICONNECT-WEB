@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Building2, FileText, Pill, Stethoscope } from "lucide-react";
+import { useDownloadClinicalDocument } from "@/hooks/use-clinical-document";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { useGetPatientReferrals } from "@/hooks/patient/use-patient-referrals";
@@ -12,6 +13,7 @@ export default function PatientReferrals() {
   const { t } = useTranslation();
   const { data, isLoading } = useGetPatientReferrals();
   const letter = useReferralLetter("patient");
+  const downloadDoc = useDownloadClinicalDocument();
   const referrals = data?.referrals ?? [];
 
   return (
@@ -67,6 +69,21 @@ export default function PatientReferrals() {
                     >
                       <FileText className="h-3 w-3" />
                       Letter
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        downloadDoc.mutate({
+                          path: `/patient/referrals/${row.id}/document`,
+                          filename: `referral-${row.id}.pdf`,
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      <FileText className="h-3 w-3" />
+                      PDF
                     </button>
                   </span>
                 </span>

@@ -519,10 +519,27 @@ function DetailDrawer({
               )}
 
               {/* Documents */}
-              {(pdfUrl || qrUrl) && (
+              {(rx?.prescription?.id || pdfUrl || qrUrl) && (
                 <DrawerSection icon={Hash} title={t("pages.pharmacy.documents")}>
                   <div className="py-3 flex flex-col gap-2">
-                    {pdfUrl && (
+                    {rx?.prescription?.id && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          import("@/lib/download-file").then(({ downloadAuthedFile }) =>
+                            downloadAuthedFile(
+                              `/pharmacy/prescriptions/${rx.prescription!.id}/document`,
+                              `prescription-${rx.prescription!.id}.pdf`,
+                            ),
+                          )
+                        }
+                        className="flex items-center gap-2 text-[11px] font-medium text-primary hover:underline"
+                      >
+                        <Download className="w-3 h-3" />
+                        {t("pages.pharmacy.download_pdf")}
+                      </button>
+                    )}
+                    {pdfUrl && !rx?.prescription?.id && (
                       <a
                         href={pdfUrl}
                         target="_blank"

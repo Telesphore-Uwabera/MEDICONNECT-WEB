@@ -17,6 +17,9 @@ import type { ReferralTargetType } from "@/hooks/doctor/use-doctor-referrals";
 export type CareContinueChoice =
   | "facility-book"
   | `order:${CareOrderType}`
+  | "referral:hospital"
+  | "referral:doctor"
+  | "referral:emergency"
   | "done";
 
 interface Props {
@@ -91,6 +94,33 @@ export function CareContinuePanel({ patientName, onChoose }: Props) {
           id: "order:admission",
           title: t("pages.doctor.care_admission", "Admit or observe"),
           hint: t("pages.doctor.care_admission_hint", "Day observation, inpatient or emergency unit."),
+          icon: BedDouble,
+        },
+      ],
+    },
+    {
+      title: t("pages.doctor.care_group_referral", "3. Referral or transfer"),
+      blurb: t(
+        "pages.doctor.care_group_referral_blurb",
+        "Use this when the patient needs in-person assessment, a specialist, or emergency transfer. Do not wait for booking when care is urgent.",
+      ),
+      actions: [
+        {
+          id: "referral:hospital",
+          title: t("pages.doctor.care_refer_patient", "Refer patient"),
+          hint: t("pages.doctor.care_refer_patient_hint", "Routine or specialist facility referral with a transfer summary."),
+          icon: Building2,
+        },
+        {
+          id: "referral:doctor",
+          title: t("pages.doctor.care_refer_specialist", "Specialist doctor"),
+          hint: t("pages.doctor.care_refer_specialist_hint", "Refer to another doctor on MediConnect."),
+          icon: Activity,
+        },
+        {
+          id: "referral:emergency",
+          title: t("pages.doctor.care_refer_emergency", "Urgent / emergency transfer"),
+          hint: t("pages.doctor.care_refer_emergency_hint", "Prioritize emergency instructions. Do not delay for booking or email."),
           icon: BedDouble,
         },
       ],
@@ -186,6 +216,14 @@ export function orderTypeFromChoice(choice: CareContinueChoice): CareOrderType |
   return isCareOrderChoice(choice) ? (choice.slice(6) as CareOrderType) : null;
 }
 
-export function referralKindFromChoice(_choice: CareContinueChoice): ReferralTargetType | null {
+export function referralKindFromChoice(choice: CareContinueChoice): ReferralTargetType | null {
+  if (choice === "referral:hospital" || choice === "referral:emergency") return "hospital";
+  if (choice === "referral:doctor") return "doctor";
+  return null;
+}
+
+export function referralUrgencyFromChoice(choice: CareContinueChoice): string | null {
+  if (choice === "referral:emergency") return "emergency";
+  if (choice.startsWith("referral:")) return "medium";
   return null;
 }

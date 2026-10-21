@@ -14,6 +14,7 @@ import{useGetDoctorReferrals,
   type ReferralStatus,
 } from "@/hooks/doctor/use-doctor-referrals";
 import { openHtmlDocument } from "@/lib/print-html";
+import { useDownloadClinicalDocument } from "@/hooks/use-clinical-document";
 import { toast } from "sonner";
 import {
   AlertCircle,
@@ -247,6 +248,7 @@ function ReferralDetailDrawer({
   const { t } = useTranslation();
   const { data, isLoading, isError } = useGetReferral(referralId);
   const letter = useReferralLetter("doctor");
+  const downloadDoc = useDownloadClinicalDocument();
   const referral = data?.referral;
 
   const canCancel =
@@ -378,6 +380,19 @@ function ReferralDetailDrawer({
             >
               {letter.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
               Referral letter
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                downloadDoc.mutate({
+                  path: `/doctor/referrals/${referral.id}/document`,
+                  filename: `referral-${referral.id}.pdf`,
+                })
+              }
+              className="w-full text-xs gap-1.5"
+            >
+              {downloadDoc.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+              Referral PDF
             </Button>
           )}
           {canCancel && (

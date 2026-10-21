@@ -16,6 +16,7 @@ export type PrescriptionStatus =
   | "active"
   | "pending"
   | "dispensed"
+  | "partially_dispensed"
   | "expired"
   | "completed"
   | "rejected"

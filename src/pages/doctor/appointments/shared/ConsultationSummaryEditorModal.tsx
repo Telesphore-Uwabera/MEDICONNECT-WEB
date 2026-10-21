@@ -33,6 +33,8 @@ import {
 } from "@/hooks/doctor/use-consultation-summaries";
 import { getErrMsg } from "./helpers";
 import { readCallChart } from "@/lib/call-note-form";
+import { VirtualExamFields, VIRTUAL_EXAM_FINDINGS } from "@/components/clinical/VirtualExamFields";
+import { useConfirmDoctorTelemedicineConsent } from "@/hooks/use-telemedicine-consent";
 
 type SummaryTextKey =
   | "chief_complaint"
@@ -46,6 +48,10 @@ type SummaryTextKey =
   | "social_history"
   | "womens_health_history"
   | "pediatric_history"
+  | "immunization_history"
+  | "mental_health_history"
+  | "travel_history"
+  | "nutritional_history"
   | "physical_examination"
   | "attachments"
   | "clinical_assessment"
@@ -93,8 +99,12 @@ const TEXT_FIELDS: Array<{
   { key: "family_history", labelKey: "pages.doctor.summary.family_history", fallback: "Family history", placeholderKey: "pages.doctor.summary.family_history_placeholder", placeholder: "Relevant inherited or family conditions.", optional: true },
   { key: "social_history", labelKey: "pages.doctor.summary.social_history", fallback: "Social history", placeholderKey: "pages.doctor.summary.social_history_placeholder", placeholder: "Smoking, alcohol, occupation, living context, support.", optional: true },
   { key: "womens_health_history", labelKey: "pages.doctor.summary.womens_health_history", fallback: "Women's health history", placeholderKey: "pages.doctor.summary.womens_health_history_placeholder", placeholder: "Gynecologic, obstetric, menstrual, or pregnancy details when relevant.", optional: true },
-  { key: "pediatric_history", labelKey: "pages.doctor.summary.pediatric_history", fallback: "Pediatric history", placeholderKey: "pages.doctor.summary.pediatric_history_placeholder", placeholder: "Birth, feeding, growth, immunization, or development details when relevant.", optional: true },
-  { key: "physical_examination", labelKey: "pages.doctor.summary.physical_examination", fallback: "Physical examination", placeholderKey: "pages.doctor.summary.physical_examination_placeholder", placeholder: "Vitals, general appearance, targeted examination findings.", minHeight: 120 },
+  { key: "pediatric_history", labelKey: "pages.doctor.summary.pediatric_history", fallback: "Pediatric / developmental history", placeholderKey: "pages.doctor.summary.pediatric_history_placeholder", placeholder: "Birth, feeding, growth, immunization, or development details when relevant.", optional: true },
+  { key: "immunization_history", labelKey: "pages.doctor.summary.immunization_history", fallback: "Immunization history", placeholderKey: "pages.doctor.summary.immunization_history_placeholder", placeholder: "Vaccines given, overdue doses, or unknown.", optional: true },
+  { key: "mental_health_history", labelKey: "pages.doctor.summary.mental_health_history", fallback: "Mental health history", placeholderKey: "pages.doctor.summary.mental_health_history_placeholder", placeholder: "Mood, anxiety, psychiatric diagnoses, or treatments when relevant.", optional: true },
+  { key: "travel_history", labelKey: "pages.doctor.summary.travel_history", fallback: "Travel and exposure history", placeholderKey: "pages.doctor.summary.travel_history_placeholder", placeholder: "Recent travel, sick contacts, or occupational exposures.", optional: true },
+  { key: "nutritional_history", labelKey: "pages.doctor.summary.nutritional_history", fallback: "Nutritional and dietary history", placeholderKey: "pages.doctor.summary.nutritional_history_placeholder", placeholder: "Diet, appetite, feeding, or nutrition concerns.", optional: true },
+  { key: "physical_examination", labelKey: "pages.doctor.summary.physical_examination", fallback: "Virtual examination notes", placeholderKey: "pages.doctor.summary.physical_examination_placeholder", placeholder: "Remote findings, patient-reported vitals, and what could not be assessed virtually.", minHeight: 120 },
   { key: "attachments", labelKey: "pages.doctor.summary.attachments", fallback: "Attachments and supporting notes", placeholderKey: "pages.doctor.summary.attachments_placeholder", placeholder: "Paste or insert relevant images, files notes, or supporting observations.", optional: true },
   { key: "clinical_assessment", labelKey: "pages.doctor.summary.clinical_assessment", fallback: "Clinical assessment", placeholderKey: "pages.doctor.summary.clinical_assessment_placeholder", placeholder: "Working diagnosis, differential diagnosis, and clinical reasoning.", minHeight: 120 },
   { key: "management_plan", labelKey: "pages.doctor.summary.management_plan", fallback: "Management plan", placeholderKey: "pages.doctor.summary.management_plan_placeholder", placeholder: "Treatment, prescriptions, investigations, advice, and follow-up plan.", minHeight: 120 },
@@ -102,7 +112,7 @@ const TEXT_FIELDS: Array<{
 
 const STEPS: StepConfig[] = [
   { id: "clinical", icon: Stethoscope, titleKey: "pages.doctor.summary.step_clinical", fallback: "Clinical story", fields: ["chief_complaint", "history_of_present_illness", "review_of_systems", "physical_examination"] },
-  { id: "history", icon: ClipboardList, titleKey: "pages.doctor.summary.step_history", fallback: "Patient history", fields: ["past_medical_history", "past_surgical_history", "medication_history", "allergy_history", "family_history", "social_history", "womens_health_history", "pediatric_history"] },
+  { id: "history", icon: ClipboardList, titleKey: "pages.doctor.summary.step_history", fallback: "Patient history", fields: ["past_medical_history", "past_surgical_history", "medication_history", "allergy_history", "family_history", "social_history", "womens_health_history", "pediatric_history", "immunization_history", "mental_health_history", "travel_history", "nutritional_history"] },
   { id: "assessment", icon: HeartPulse, titleKey: "pages.doctor.summary.step_assessment", fallback: "Assessment and plan", fields: ["clinical_assessment", "management_plan", "attachments"] },
 ];
 
@@ -188,11 +198,16 @@ export function ConsultationSummaryEditorModal({
     clinical_assessment: defaultDiagnosis ?? "",
   }));
   const [redFlags, setRedFlags] = useState<string[]>([]);
+  const [examFindings, setExamFindings] = useState<string[]>([]);
+  const [diagnosisCertainty, setDiagnosisCertainty] = useState<"provisional" | "confirmed">("provisional");
+  const [remoteSufficient, setRemoteSufficient] = useState<"yes" | "no" | "">("");
+  const [consentConfirmed, setConsentConfirmed] = useState(false);
   const [prefilledKey, setPrefilledKey] = useState<string | null>(null);
 
   const createRx = useCreateConsultationSummary();
   const updateRx = useUpdateConsultationSummary();
-  const saving = createRx.isPending || updateRx.isPending;
+  const confirmConsent = useConfirmDoctorTelemedicineConsent();
+  const saving = createRx.isPending || updateRx.isPending || confirmConsent.isPending;
 
   const lookupEnabled = !summary && (appointmentId != null || instantConsultationId != null);
   const { data: existingList, isFetching: isLookingUp } = useConsultationSummaries(
@@ -234,7 +249,7 @@ export function ConsultationSummaryEditorModal({
   const currentStep = safeSteps[Math.min(stepIndex, safeSteps.length - 1)];
   const CurrentStepIcon = currentStep.icon;
   const selectedRedFlagCount = redFlags.length;
-  const canSave = patientId != null && hasRichTextContent(form.chief_complaint) && !saving && !isResolvingExisting;
+  const canSave = patientId != null && hasRichTextContent(form.chief_complaint) && consentConfirmed && !saving && !isResolvingExisting;
   const hiddenCount = TEXT_FIELDS.filter((field) => !fieldVisible(field.key)).length;
 
   useEffect(() => {
@@ -253,6 +268,10 @@ export function ConsultationSummaryEditorModal({
         social_history: textFromSummaryField(sourceSummary.social_history),
         womens_health_history: textFromSummaryField(sourceSummary.womens_health_history),
         pediatric_history: textFromSummaryField(sourceSummary.pediatric_history),
+        immunization_history: "",
+        mental_health_history: "",
+        travel_history: "",
+        nutritional_history: "",
         physical_examination: textFromSummaryField(sourceSummary.physical_examination),
         attachments: textFromSummaryField(sourceSummary.attachments),
         clinical_assessment: textFromSummaryField(sourceSummary.clinical_assessment, "primary_diagnosis"),
@@ -283,24 +302,48 @@ export function ConsultationSummaryEditorModal({
   const setField = (key: SummaryTextKey, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
   const toggleRedFlag = (value: string) => setRedFlags((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
 
-  const buildPayload = (): UpdateSummaryPayload => ({
-    chief_complaint: prepareField(form.chief_complaint),
-    history_of_present_illness: prepareField(form.history_of_present_illness),
-    review_of_systems: prepareField(form.review_of_systems),
-    past_medical_history: prepareField(form.past_medical_history),
-    past_surgical_history: prepareField(form.past_surgical_history),
-    medication_history: prepareField(form.medication_history),
-    allergy_history: prepareField(form.allergy_history),
-    family_history: prepareField(form.family_history),
-    social_history: prepareField(form.social_history),
-    womens_health_history: prepareField(form.womens_health_history, true),
-    pediatric_history: prepareField(form.pediatric_history, true),
-    physical_examination: prepareField(form.physical_examination),
-    attachments: prepareField(form.attachments, true),
-    clinical_assessment: prepareField(form.clinical_assessment),
-    management_plan: prepareField(form.management_plan),
-    red_flag_screening: redFlags,
-  });
+  const buildPayload = (): UpdateSummaryPayload => {
+    const findingLabels = VIRTUAL_EXAM_FINDINGS.flatMap((group) => group.items)
+      .filter((item) => examFindings.includes(item.value))
+      .map((item) => item.label);
+    const examHead = findingLabels.length
+      ? `<p><strong>Virtual findings (remote):</strong> ${findingLabels.join("; ")}</p>`
+      : "";
+    const assessmentHead = [
+      `<p><strong>Diagnosis status:</strong> ${diagnosisCertainty}</p>`,
+      remoteSufficient
+        ? `<p><strong>Virtual assessment sufficient for remote management:</strong> ${remoteSufficient}</p>`
+        : "",
+    ].join("");
+    return {
+      chief_complaint: prepareField(form.chief_complaint),
+      history_of_present_illness: prepareField(form.history_of_present_illness),
+      review_of_systems: prepareField(form.review_of_systems),
+      past_medical_history: prepareField(form.past_medical_history),
+      past_surgical_history: prepareField(form.past_surgical_history),
+      medication_history: prepareField(form.medication_history),
+      allergy_history: prepareField(form.allergy_history),
+      family_history: prepareField(form.family_history),
+      womens_health_history: prepareField(form.womens_health_history, true),
+      pediatric_history: prepareField(
+        `${form.pediatric_history}${hasRichTextContent(form.immunization_history) ? `<p><strong>Immunization history:</strong></p>${form.immunization_history}` : ""}`,
+        true,
+      ),
+      social_history: prepareField(
+        [
+          form.social_history,
+          hasRichTextContent(form.mental_health_history) ? `<p><strong>Mental health history:</strong></p>${form.mental_health_history}` : "",
+          hasRichTextContent(form.travel_history) ? `<p><strong>Travel and exposure:</strong></p>${form.travel_history}` : "",
+          hasRichTextContent(form.nutritional_history) ? `<p><strong>Nutritional history:</strong></p>${form.nutritional_history}` : "",
+        ].join(""),
+      ),
+      physical_examination: prepareField(`${examHead}${form.physical_examination}`),
+      attachments: prepareField(form.attachments, true),
+      clinical_assessment: prepareField(`${assessmentHead}${form.clinical_assessment}`),
+      management_plan: prepareField(form.management_plan),
+      red_flag_screening: redFlags,
+    };
+  };
 
   const handleSave = () => {
     if (patientId == null) {
@@ -315,6 +358,18 @@ export function ConsultationSummaryEditorModal({
       setStepIndex(0);
       toast.error(t("pages.doctor.summary.enter_chief_complaint", "Enter the chief complaint before saving."));
       return;
+    }
+    if (!consentConfirmed) {
+      toast.error(t("clinical.consent.doctor_required", "Confirm that patient telemedicine consent is documented before saving."));
+      return;
+    }
+
+    if (patientId != null) {
+      confirmConsent.mutate({
+        patient_id: patientId,
+        appointment_id: appointmentId,
+        instant_consultation_id: instantConsultationId,
+      });
     }
 
     const updatePayload = buildPayload();
@@ -431,6 +486,23 @@ export function ConsultationSummaryEditorModal({
                   </div>
                 );
               })}
+              {currentStep.id === "clinical" && (
+                <VirtualExamFields
+                  selected={examFindings}
+                  onToggle={(value) =>
+                    setExamFindings((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]))
+                  }
+                  onPreset={(kind) => {
+                    setExamFindings([]);
+                    setField(
+                      "physical_examination",
+                      kind === "none"
+                        ? "<p>No relevant abnormality observed on virtual assessment.</p>"
+                        : "<p>Unable to assess virtually. In-person examination is needed.</p>",
+                    );
+                  }}
+                />
+              )}
             </div>
             {hiddenCount > 0 && !showAllFields && (
               <button
@@ -442,6 +514,33 @@ export function ConsultationSummaryEditorModal({
               </button>
             )}
 
+            {currentStep.id === "assessment" && (
+              <section className="grid gap-2 rounded-[6px] border border-border bg-background/60 p-3 sm:grid-cols-2">
+                <label className="text-[11px] text-foreground">
+                  {t("clinical.assessment.certainty", "Diagnosis status")}
+                  <select
+                    value={diagnosisCertainty}
+                    onChange={(e) => setDiagnosisCertainty(e.target.value as "provisional" | "confirmed")}
+                    className="mt-1 h-9 w-full rounded-[6px] border border-border bg-background px-2 text-xs"
+                  >
+                    <option value="provisional">{t("clinical.assessment.provisional", "Provisional")}</option>
+                    <option value="confirmed">{t("clinical.assessment.confirmed", "Confirmed")}</option>
+                  </select>
+                </label>
+                <label className="text-[11px] text-foreground">
+                  {t("clinical.assessment.remote", "Is virtual assessment sufficient for remote management?")}
+                  <select
+                    value={remoteSufficient}
+                    onChange={(e) => setRemoteSufficient(e.target.value as "yes" | "no" | "")}
+                    className="mt-1 h-9 w-full rounded-[6px] border border-border bg-background px-2 text-xs"
+                  >
+                    <option value="">{t("clinical.assessment.remote_unset", "Not stated")}</option>
+                    <option value="yes">{t("clinical.assessment.remote_yes", "Yes — remote management is appropriate")}</option>
+                    <option value="no">{t("clinical.assessment.remote_no", "No — in-person care is needed")}</option>
+                  </select>
+                </label>
+              </section>
+            )}
             {currentStep.id === "assessment" && (
               <section className="space-y-3 rounded-[6px] border border-border bg-background/60 p-3">
                 <div className="flex items-center gap-2">
@@ -473,7 +572,24 @@ export function ConsultationSummaryEditorModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-4">
+        <div className="flex flex-col gap-3 border-t border-border bg-muted/20 px-5 py-4">
+          {stepIndex >= safeSteps.length - 1 && (
+            <label className="flex items-start gap-2 text-[11px] leading-relaxed text-foreground">
+              <input
+                type="checkbox"
+                checked={consentConfirmed}
+                onChange={(e) => setConsentConfirmed(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5 accent-primary"
+              />
+              <span>
+                {t(
+                  "clinical.consent.doctor_checkbox",
+                  "I confirm that the patient’s consent for telemedicine has been obtained and documented.",
+                )}
+              </span>
+            </label>
+          )}
+          <div className="flex items-center justify-between gap-3">
           <button type="button" onClick={() => setStepIndex((value) => Math.max(0, value - 1))} disabled={stepIndex === 0 || saving} className="flex h-9 items-center gap-2 rounded-[5px] border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50">
             <ArrowLeft className="h-3.5 w-3.5" />
             {t("pages.doctor.summary.back", "Back")}
@@ -496,6 +612,7 @@ export function ConsultationSummaryEditorModal({
               {sourceSummary || existingSummaryId != null ? t("pages.doctor.summary.update_summary", "Update summary") : t("pages.doctor.summary.save_continue", "Save and continue")}
             </button>
           )}
+          </div>
         </div>
       </div>
     </div>

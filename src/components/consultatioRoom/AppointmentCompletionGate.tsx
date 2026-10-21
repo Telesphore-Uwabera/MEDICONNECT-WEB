@@ -20,7 +20,7 @@ import {
 import { ConsultationSummaryModal } from "@/pages/doctor/appointments/shared/ConsultationSummaryModal";
 import { QuickPrescriptionModal } from "@/pages/doctor/appointments/shared/QuickPrescriptionModal";
 import { BookPhysicalModal } from "@/pages/doctor/appointments/shared/BookPhysicalModal";
-import { CareContinuePanel, orderTypeFromChoice, referralKindFromChoice } from "@/pages/doctor/appointments/shared/CareContinuePanel";
+import { CareContinuePanel, orderTypeFromChoice, referralKindFromChoice, referralUrgencyFromChoice } from "@/pages/doctor/appointments/shared/CareContinuePanel";
 import { ReferralCreateModal } from "@/pages/doctor/appointments/shared/ReferralCreateModal";
 import { ClinicalOrderModal } from "@/pages/doctor/appointments/shared/ClinicalOrderModal";
 import type { ReferralTargetType } from "@/hooks/doctor/use-doctor-referrals";
@@ -51,6 +51,7 @@ function CompletionFlow({
   const complete = useCompleteAppointment();
   const [step, setStep] = useState<"record" | "prescription" | "continue" | "booking" | "refer" | "order">("record");
   const [referKind, setReferKind] = useState<ReferralTargetType>("hospital");
+  const [referUrgency, setReferUrgency] = useState("medium");
   const [orderKind, setOrderKind] = useState<CareOrderType>("lab");
   const backToContinue = () => setStep("continue");
 
@@ -134,6 +135,7 @@ function CompletionFlow({
           const referral = referralKindFromChoice(choice);
           if (referral) {
             setReferKind(referral);
+            setReferUrgency(referralUrgencyFromChoice(choice) || "medium");
             setStep("refer");
             return;
           }
@@ -156,6 +158,7 @@ function CompletionFlow({
         patientName={patientName}
         appointmentId={appointmentId}
         defaultReason={defaultNotes}
+        defaultUrgency={referUrgency}
         onClose={backToContinue}
         onSkip={backToContinue}
         onCreated={backToContinue}

@@ -41,6 +41,8 @@ import { DoctorActionModals, useDoctorActions } from "@/components/useDoctorActi
 import { resolveMediaUrl } from "@/lib/image-url";
 import { DateField } from "@/components/ui/date-field";
 import { TablePager } from "@/components/TablePager";
+import { TelemedicineConsentModal } from "@/components/clinical/TelemedicineConsentModal";
+import { useRecordPatientTelemedicineConsent } from "@/hooks/use-telemedicine-consent";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -411,6 +413,8 @@ const PatientInstant = () => {
 
   // ── Modal state ────────────────────────────────────────────────────────────
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [consentAppt, setConsentAppt] = useState<ApiAppointment | null>(null);
+  const recordConsent = useRecordPatientTelemedicineConsent();
 
   const openDetail = useCallback((id: string | number) => setSelectedId(String(id)), []);
   const closeDetail = useCallback(() => setSelectedId(null), []);
@@ -489,18 +493,40 @@ const PatientInstant = () => {
         toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 10 minutes before the appointment time." }));
         return;
       }
-      joinMutation.mutate(appt, {
-        onSuccess: () => {
-          markInstantJoined(appt.id);
-        },
-        onError: (err: any) => {
-          console.error("[Quick] join failed:", err?.status, err?.data);
-          toast.error(err?.message || t("consult.booking.join_failed"));
-        },
-      });
+      setConsentAppt(appt);
     },
-    [joinMutation, markInstantJoined, t],
+    [t],
   );
+
+  const proceedAfterConsent = (payload: {
+    representative_name?: string;
+    representative_relationship?: string;
+    emergency_override?: boolean;
+  }) => {
+    const appt = consentAppt;
+    if (!appt) return;
+    const instantId = appt.booking_type === "instant" ? appt.id : null;
+    const appointmentId = appt.booking_type === "instant" ? null : appt.id;
+    recordConsent.mutate(
+      {
+        appointment_id: appointmentId,
+        instant_consultation_id: instantId,
+        ...payload,
+      },
+      {
+        onSettled: () => {
+          setConsentAppt(null);
+          joinMutation.mutate(appt, {
+            onSuccess: () => markInstantJoined(appt.id),
+            onError: (err: any) => {
+              console.error("[Quick] join failed:", err?.status, err?.data);
+              toast.error(err?.message || t("consult.booking.join_failed"));
+            },
+          });
+        },
+      },
+    );
+  };
 
   // ── API ────────────────────────────────────────────────────────────────────
 
@@ -1039,6 +1065,12 @@ const PatientInstant = () => {
 
       {/* Details → read-only consultation summary for the instant consult */}
       <InstantSummaryModal instantId={selectedId} onClose={() => setSelectedId(null)} />
+      <TelemedicineConsentModal
+        open={consentAppt != null}
+        pending={recordConsent.isPending || joinMutation.isPending}
+        onClose={() => setConsentAppt(null)}
+        onConfirm={proceedAfterConsent}
+      />
 
     </DashboardLayout>
   );

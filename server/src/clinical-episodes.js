@@ -329,6 +329,11 @@ export async function onPharmacyRequestFulfilled(row, fulfillmentStatus = "SERVE
     assigned_to: row.pharmacy_id || null,
     task_status: status,
   });
+  if (prescription?.id && (await tableExists("prescriptions")) && (await hasColumn("prescriptions", "status"))) {
+    await update("prescriptions", prescription.id, {
+      status: status === "PARTIALLY_FULFILLED" ? "partially_dispensed" : "dispensed",
+    }).catch(() => null);
+  }
   return recalculateEpisodeStatus(episode.id);
 }
 

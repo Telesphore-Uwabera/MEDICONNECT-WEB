@@ -32,7 +32,7 @@ import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSi
 import { readCallChart } from "@/lib/call-note-form";
 import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
-import { CareContinuePanel, orderTypeFromChoice, referralKindFromChoice } from "./shared/CareContinuePanel";
+import { CareContinuePanel, orderTypeFromChoice, referralKindFromChoice, referralUrgencyFromChoice } from "./shared/CareContinuePanel";
 import { ReferralCreateModal } from "./shared/ReferralCreateModal";
 import { ClinicalOrderModal } from "./shared/ClinicalOrderModal";
 import type { ReferralTargetType } from "@/hooks/doctor/use-doctor-referrals";
@@ -178,6 +178,7 @@ export function InstantConsultTab() {
   const [careItem, setCareItem] = useState<InstantConsultQueueItem | null>(null);
   const [referItem, setReferItem] = useState<InstantConsultQueueItem | null>(null);
   const [referKind, setReferKind] = useState<ReferralTargetType>("hospital");
+  const [referUrgency, setReferUrgency] = useState("medium");
   const [orderKind, setOrderKind] = useState<CareOrderType>("lab");
   const [orderKindShown, setOrderKindShown] = useState(false);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
@@ -926,6 +927,7 @@ export function InstantConsultTab() {
             const referral = referralKindFromChoice(choice);
             if (referral) {
               setReferKind(referral);
+              setReferUrgency(referralUrgencyFromChoice(choice) || "medium");
               setReferItem(item);
               return;
             }
@@ -944,6 +946,7 @@ export function InstantConsultTab() {
           patientId={patientIdOf(referItem)}
           patientName={referItem.guest_phone}
           instantConsultationId={resolveInstantConsultId(referItem) ?? undefined}
+          defaultUrgency={referUrgency}
           onClose={() => setReferItem(null)}
           onSkip={() => setReferItem(null)}
           onCreated={() => setReferItem(null)}

@@ -13,6 +13,7 @@ import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import { useGetPrescription, type Prescription, type PrescriptionStatus } from "@/hooks/doctor/use-doctor-prescriptions";
 import { openPrescriptionDocument } from "@/lib/prescription-document";
+import { downloadAuthedFile } from "@/lib/download-file";
 import { usePublicSettings } from "@/hooks/use-public-settings";
 
  
@@ -276,7 +277,11 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {  cons
             </button>
             <button
               type="button"
-              onClick={() => openPrescriptionDocument(p, true, publicSettings)}
+              onClick={() =>
+                downloadAuthedFile(`/doctor/prescriptions/${p.id}/document`, `prescription-${p.id}.pdf`).catch(() =>
+                  openPrescriptionDocument(p, true, publicSettings),
+                )
+              }
               className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
             >
               <Download className="h-4 w-4" />

@@ -18,6 +18,7 @@ interface Props {
   appointmentId?: number | null;
   instantConsultationId?: number | null;
   defaultReason?: string;
+  defaultUrgency?: string;
   onClose: () => void;
   onSkip: () => void;
   onCreated: () => void;
@@ -31,6 +32,7 @@ export function ReferralCreateModal({
   appointmentId,
   instantConsultationId,
   defaultReason,
+  defaultUrgency,
   onClose,
   onSkip,
   onCreated,
@@ -40,7 +42,7 @@ export function ReferralCreateModal({
   const debounced = useDebounce(query, 300);
   const [reason, setReason] = useState(defaultReason ?? "");
   const [notes, setNotes] = useState("");
-  const [urgency, setUrgency] = useState("medium");
+  const [urgency, setUrgency] = useState(defaultUrgency || "medium");
   const [hospital, setHospital] = useState<ApiHospital | null>(null);
   const [doctor, setDoctor] = useState<ApiDoctor | null>(null);
   const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);

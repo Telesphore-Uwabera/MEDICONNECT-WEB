@@ -12,6 +12,7 @@ import { handleCareOrders } from "./care-orders.js";
 import { handleFitnessCertificates } from "./fitness-certificates.js";
 import { isDedicatedResource } from "./dedicated-ids.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
+import { enqueuePharmacyPrescription, stampPrescriptionIssued } from "./clinical-documents.js";
 import { withLiveIce } from "./call-token.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -613,6 +614,12 @@ async function fillGap(req, res, parts) {
       }
     }
     await update(table, id, { status });
+    if (table === "prescriptions" && action === "issue") {
+      await stampPrescriptionIssued(current).catch(() => null);
+    }
+    if (table === "prescriptions" && action === "send-to-pharmacy") {
+      await enqueuePharmacyPrescription({ ...current, status }, req.body || {}).catch(() => null);
+    }
     if (table === "appointments" && ["cancelled", "canceled", "declined", "no_show"].includes(status)) {
       await releaseSlot(current);
     }

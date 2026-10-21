@@ -16,6 +16,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import type { Referral } from "@/hooks/doctor/use-doctor-referrals";
 import { toast } from "sonner";
+import { ClinicalResultViewer } from "@/components/clinical/ClinicalResultViewer";
+import { useDownloadClinicalDocument } from "@/hooks/use-clinical-document";
 
 function iconFor(type: string) {
   if (type === "pharmacy_packet") return Pill;
@@ -60,13 +62,7 @@ function Snapshot({ order }: { order: CareOrder }) {
       {order.handover_status ? (
         <p><span className="font-semibold">Handover:</span> {order.handover_status}</p>
       ) : null}
-      {order.result_file_url ? (
-        <p>
-          <a href={order.result_file_url} target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">
-            Result file
-          </a>
-        </p>
-      ) : null}
+      <ClinicalResultViewer files={order.result_files} fallbackUrl={order.result_file_url} />
     </div>
   );
 }
@@ -244,6 +240,7 @@ export function IncomingCareInbox({
 }) {
   const { t } = useTranslation();
   const { data, isLoading } = useGetCareOrders(scope);
+  const downloadDoc = useDownloadClinicalDocument();
   const orders = data ?? [];
   const [pharmacyFrom, setPharmacyFrom] = useState<CareOrder | null>(null);
   const { data: referrals } = useQuery({
@@ -298,6 +295,18 @@ export function IncomingCareInbox({
                       {order.patient_code || "packet"} · {order.urgency || "medium"}
                     </p>
                     <Snapshot order={order} />
+                    <button
+                      type="button"
+                      className="mt-2 text-[11px] font-semibold text-primary hover:underline"
+                      onClick={() =>
+                        downloadDoc.mutate({
+                          path: `/${scope}/care-orders/${order.id}/document`,
+                          filename: `investigation-${order.id}.pdf`,
+                        })
+                      }
+                    >
+                      {t("clinical.docs.investigation_pdf", "Download investigation request PDF")}
+                    </button>
                     <OrderActions scope={scope} order={order} onSendPharmacy={setPharmacyFrom} />
                   </div>
                 </div>

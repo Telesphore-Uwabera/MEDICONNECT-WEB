@@ -202,8 +202,8 @@ export async function handleCareReferrals(req, res, parts) {
     const toDoctorId = Number(body.referred_to_doctor_id || body.doctor_id || 0) || null;
     const hospitalId = Number(body.hospital_id || body.referred_hospital_id || 0) || null;
     const pharmacyId = Number(body.pharmacy_id || body.referred_pharmacy_id || 0) || null;
-    if (!hospitalId && !pharmacyId) {
-      return res.status(422).json({ message: "Choose a registered clinic/hospital or a registered pharmacy." }) || true;
+    if (!hospitalId && !pharmacyId && !toDoctorId) {
+      return res.status(422).json({ message: "Choose a registered clinic/hospital, pharmacy, or specialist doctor." }) || true;
     }
     if (hospitalId) {
       const facility = await requireRegisteredFacility(hospitalId);
