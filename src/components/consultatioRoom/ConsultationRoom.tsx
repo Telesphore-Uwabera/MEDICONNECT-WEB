@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2, Paperclip, Monitor, MonitorOff, Hand, Clock, Signal } from "lucide-react";
+import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2, Paperclip, Monitor, MonitorOff, Hand, Clock, Signal } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
 import { useAudioVolume } from "@/hooks/video/use-audio-volume";
 import { usePictureInPicture } from "@/hooks/video/usePictureInPicture";
@@ -17,7 +17,7 @@ import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface IceServer {
-  urls: string;
+  urls: string | string[];
   username?: string;
   credential?: string;
 }
@@ -50,6 +50,47 @@ interface RelayIssue {
 }
 
 const ICE_SERVER_RELAY_RE = /^turns?:/i;
+// Chrome 701 fires on unused NICs (VPN, Hyper-V) even when TURN on another
+// interface is fine. It is not a credential rejection.
+const ICE_INTERFACE_NOISE = 701;
+
+function canonicalRelayUrl(url: string) {
+  const trimmed = String(url || "").trim();
+  if (!trimmed) return "";
+  const turnOnTlsPort = trimmed.match(/^turn:([^/?]+):5349(?:\?.*)?$/i);
+  if (turnOnTlsPort) return `turns:${turnOnTlsPort[1]}:5349?transport=tcp`;
+  const turnsBare = trimmed.match(/^turns:([^/?]+):(\d+)$/i);
+  if (turnsBare) return `turns:${turnsBare[1]}:${turnsBare[2]}?transport=tcp`;
+  return trimmed;
+}
+
+/** Merge duplicate TURN URLs that share credentials so Chrome does not 701. */
+function normalizeIceServers(servers: IceServer[] | undefined): IceServer[] {
+  const groups = new Map<string, IceServer & { urls: string[] }>();
+  const order: string[] = [];
+  for (const server of servers ?? []) {
+    const raw = server.urls;
+    const list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    const key = `${server.username ?? "\0"}|${server.credential ?? "\0"}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        urls: [],
+        ...(server.username && server.credential
+          ? { username: server.username, credential: server.credential }
+          : {}),
+      });
+      order.push(key);
+    }
+    const group = groups.get(key)!;
+    for (const item of list) {
+      const url = ICE_SERVER_RELAY_RE.test(String(item))
+        ? canonicalRelayUrl(String(item))
+        : String(item);
+      if (url && !group.urls.includes(url)) group.urls.push(url);
+    }
+  }
+  return order.map((key) => groups.get(key)!).filter((server) => server.urls.length);
+}
 
 const INSTANT_DURATION_WARNING_SECONDS = 25 * 60;
 const SESSION_WARNING_LEAD_SECONDS = 5 * 60;
@@ -443,8 +484,6 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     return out;
   }, [token.ice_servers]);
 
-  const [relayIssue, setRelayIssue] = useState<RelayIssue | null>(null);
-  const [relayIssueVisible, setRelayIssueVisible] = useState(false);
   const relayCandidateRef = useRef(false);
   const peerRelayCandidateRef = useRef(false);
   const turnErrorRef = useRef<string | null>(null);
@@ -477,7 +516,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         evidence,
       };
     }
-    if (turnErrorRef.current) {
+    if (turnErrorRef.current && /→\s*401\b/.test(turnErrorRef.current)) {
       return {
         reason: "rejected",
         headline: "The relay refused these credentials",
@@ -501,17 +540,18 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     const issue = relayDiagnosis();
     if (!issue) return;
     relayReportedRef.current = true;
-    setRelayIssue(issue);
-    setRelayIssueVisible(true);
+    // Operator log only — never put TURN host, credential hints, or Chrome 701
+    // text on the consultation screen.
     console.warn(`[WebRTC] Relay unavailable (${issue.reason}): ${issue.headline} — ${issue.evidence}`);
   }, [relayDiagnosis]);
 
   // ── Setup RTCPeerConnection ───────────────────────────────────────────────
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({
-      iceServers: token.ice_servers,
+      iceServers: normalizeIceServers(token.ice_servers),
       bundlePolicy: "max-bundle",
-      rtcpMuxPolicy: "require"
+      rtcpMuxPolicy: "require",
+      iceCandidatePoolSize: 2,
     });
 
     // Fresh evidence for this attempt: an ICE restart re-gathers candidates, and
@@ -545,13 +585,13 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       const url = String(e.url ?? "");
       if (!ICE_SERVER_RELAY_RE.test(url) && !/turn/i.test(url)) return;
       const code = Number(e.errorCode ?? 0);
+      if (code === ICE_INTERFACE_NOISE) return;
       turnErrorRef.current = `${url} → ${code || "?"} ${String(e.errorText ?? "").trim()}`.trim();
-      // Chrome reports 401 on the first unauthenticated Allocate, then retries.
-      // Wait until gathering finishes (or the call fails) before treating it as fatal.
+      // Chrome reports 401 on the first unused credential set, then retries the
+      // other. Wait until gathering finishes before logging; never overlay it.
       if (pc.connectionState === "connected") return;
       if (pc.iceGatheringState === "complete" || pc.connectionState === "failed") {
         console.warn("[WebRTC] Relay candidate error:", turnErrorRef.current);
-        if (code) raiseRelayIssue();
       }
     };
 
@@ -567,8 +607,6 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         clearRecovery();
         // A live call means the path it found is fine, whatever it says about
         // the relay — drop a warning that turned out to be moot.
-        setRelayIssue(null);
-        setRelayIssueVisible(false);
         // Sync our current mic/camera state so the peer's indicators are correct.
         sendSignalRef.current?.("media-status", {
           audio: audioEnabledRef.current,
@@ -1113,8 +1151,6 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     if (durationHideTimerRef.current) window.clearTimeout(durationHideTimerRef.current);
     durationHideTimerRef.current = null;
     setDurationWarningVisible(false);
-    setRelayIssue(null);
-    setRelayIssueVisible(false);
     setPeerDisplayName(null);
   }, [roomName]);
 
@@ -1405,49 +1441,25 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
               </div>
             </div>
 
-            {!isMinimized && (durationWarningVisible || (relayIssueVisible && relayIssue)) && (
+            {!isMinimized && durationWarningVisible && (
               <div className="absolute left-1/2 top-16 z-20 flex w-[min(92vw,28rem)] -translate-x-1/2 flex-col gap-2">
-                {durationWarningVisible && (
-                  <div className="rounded-[6px] border border-amber-400/35 bg-amber-500/15 px-3 py-2.5 text-amber-50 shadow-2xl shadow-black/40 backdrop-blur-md">
-                    <div className="flex items-start gap-2.5">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold">{durationWarningTitle}</p>
-                        <p className="mt-0.5 text-[11px] leading-relaxed ">{durationWarningMessage}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setDurationWarningVisible(false)}
-                        className="rounded-[6px] p-1 text-amber-100/70 hover:bg-amber-400/15 hover:text-amber-50"
-                        aria-label="Dismiss time warning"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                <div className="rounded-[6px] border border-amber-400/35 bg-amber-500/15 px-3 py-2.5 text-amber-50 shadow-2xl shadow-black/40 backdrop-blur-md">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold">{durationWarningTitle}</p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed ">{durationWarningMessage}</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setDurationWarningVisible(false)}
+                      className="rounded-[6px] p-1 text-amber-100/70 hover:bg-amber-400/15 hover:text-amber-50"
+                      aria-label="Dismiss time warning"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                )}
-
-                {relayIssue && relayIssueVisible && (
-                  <div role="alert" className="rounded-[6px] border border-red-400/35 bg-red-500/15 px-3 py-2.5 text-red-50 shadow-2xl shadow-black/40 backdrop-blur-md">
-                    <div className="flex items-start gap-2.5">
-                      <WifiOff className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold">{relayIssue.headline}</p>
-                        <p className="mt-0.5 text-[11px] leading-relaxed">{relayIssue.detail}</p>
-                        {/* Verbatim ICE evidence — this is the line to paste when reporting a call fault. */}
-                        <p className="mt-1.5 break-all font-mono text-[10px] leading-relaxed text-white/45">{relayIssue.evidence}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setRelayIssueVisible(false)}
-                        className="rounded-[6px] p-1 text-red-100/70 hover:bg-red-400/15 hover:text-red-50"
-                        aria-label="Dismiss relay warning"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             )}
           </div>

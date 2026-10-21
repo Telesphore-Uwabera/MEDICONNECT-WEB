@@ -32,16 +32,17 @@ describe("iceServers", () => {
 
   it("accepts the VITE_ spelling of the relay host because that is how the deployment names it", () => {
     vi.stubEnv("VITE_TURN_HOST", "relay.example.rw");
-    expect(relays(iceServers())).toHaveLength(3);
+    expect(relays(iceServers())).toHaveLength(1);
   });
 
-  it("offers udp, tcp and tls from one host and derives port 5349", () => {
+  it("offers udp, tcp and tls from one iceServer so Chrome does not 701 on extra NICs", () => {
     vi.stubEnv("TURN_HOST", "relay.example.rw");
-    const urls = relays(iceServers()).flatMap((server) => server.urls);
-    expect(urls).toEqual([
+    const relay = relays(iceServers());
+    expect(relay).toHaveLength(1);
+    expect(relay[0].urls).toEqual([
       "turn:relay.example.rw:3478",
       "turn:relay.example.rw:3478?transport=tcp",
-      "turns:relay.example.rw:5349",
+      "turns:relay.example.rw:5349?transport=tcp",
     ]);
   });
 
@@ -64,14 +65,15 @@ describe("iceServers", () => {
     expect(JSON.stringify(first)).not.toContain("shared-relay-secret");
   });
 
-  it("prefers HMAC credentials when both env pairs are set, so Chrome does not 401 the unused static user", () => {
+  it("offers HMAC first and the static user as a second iceServer when both env pairs are set", () => {
     vi.stubEnv("TURN_HOST", "relay.example.rw");
     vi.stubEnv("TURN_SECRET", "shared-relay-secret");
     vi.stubEnv("TURN_USERNAME", "mediconnect");
     vi.stubEnv("TURN_PASSWORD", "static-password");
-    const users = new Set(relays(iceServers()).map((server) => server.username));
-    expect(users.has("mediconnect")).toBe(false);
-    expect([...users].some((name) => String(name).endsWith(":mediconnect"))).toBe(true);
+    const users = relays(iceServers()).map((server) => server.username);
+    expect(users.some((name) => String(name).endsWith(":mediconnect"))).toBe(true);
+    expect(users).toContain("mediconnect");
+    expect(relays(iceServers())).toHaveLength(2);
   });
 
   it("strips wrapping quotes from TURN_SECRET so a quoted .env still signs", () => {
@@ -113,7 +115,7 @@ describe("relayDiagnostics", () => {
     expect(report).toMatchObject({
       ok: true,
       credential_mode: "auth-secret",
-      relays_in_call_token: 3,
+      relays_in_call_token: 1,
       relay: { host: "relay.example.rw", port: "3478", tls: "relay.example.rw:5349" },
       missing: [],
     });
@@ -154,8 +156,10 @@ describe("call tokens and room authorisation", () => {
     const refreshed = withLiveIce(stored);
     expect(roomFromToken(refreshed)).toBe("instant-91");
     const payload = JSON.parse(Buffer.from(decodeURIComponent(refreshed), "base64").toString("utf8"));
-    const relay = payload.ice_servers.find((server) => String(server.urls).startsWith("turn:"));
-    expect(relay.urls).toContain("relay.example.rw");
+    const relay = payload.ice_servers.find((server) =>
+      (Array.isArray(server.urls) ? server.urls.join(" ") : String(server.urls)).includes("turn:"),
+    );
+    expect(String(relay.urls)).toContain("relay.example.rw");
     expect(relay.credential).toBe("fresh-password");
   });
 });

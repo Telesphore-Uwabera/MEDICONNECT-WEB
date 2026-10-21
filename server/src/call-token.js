@@ -69,17 +69,17 @@ function staticAuth() {
 }
 
 /**
- * Prefer REST/HMAC credentials (coTURN use-auth-secret). Also keep a static
- * user= pair when both are configured, so a leftover or mismatched secret
- * does not block a relay that still accepts the long-lived username.
+ * Offer REST/HMAC credentials (coTURN use-auth-secret) and, when configured,
+ * the long-lived user= pair as a second iceServer. Chrome tries both; a 401
+ * on the unused method is normal and must not be treated as a failed call.
  */
 function relayAuthList() {
-  // Only one credential set: sending both makes Chrome log 401 on the method
-  // coTURN is not using, even when the other method succeeds.
   const hmac = hmacAuth();
-  if (hmac) return [hmac];
   const stored = staticAuth();
-  return stored ? [stored] : [];
+  const list = [];
+  if (hmac) list.push(hmac);
+  if (stored) list.push(stored);
+  return list;
 }
 
 function relayAuth() {
@@ -109,24 +109,23 @@ export function iceServers() {
     if (!auths.length) {
       warnOnce(`TURN host ${plain.host}:${plain.port} is set but no credentials are configured (TURN_SECRET or TURN_USERNAME + TURN_PASSWORD) — the relay will reject every allocation.`);
     }
+    // One RTCIceServer with several URLs. Splitting each URL into its own
+    // iceServer makes Chrome allocate on every NIC and report 701
+    // ("Address not associated with the desired network interface").
     const urls = [
       `turn:${plain.host}:${plain.port}`,
-      // Second candidate for networks that block UDP 3478.
       `turn:${plain.host}:${plain.port}?transport=tcp`,
     ];
     if (tls) {
-      // TLS penetrates strict firewalls (hospitals, offices) that drop UDP.
-      urls.push(`turns:${tls.host}:${tls.port}`);
+      urls.push(`turns:${tls.host}:${tls.port}?transport=tcp`);
     }
     const credentialSets = auths.length ? auths : [{ mode: "none" }];
     for (const auth of credentialSets) {
-      for (const url of urls) {
-        servers.push(
-          auth.mode === "none"
-            ? { urls: url }
-            : { urls: url, username: auth.username, credential: auth.credential, credentialType: "password" },
-        );
-      }
+      servers.push(
+        auth.mode === "none"
+          ? { urls }
+          : { urls, username: auth.username, credential: auth.credential, credentialType: "password" },
+      );
     }
   } else {
     warnOnce("No TURN server configured (set VITE_TURN_HOST or TURN_HOST). Calls will fail whenever both peers are not on a directly reachable network.");

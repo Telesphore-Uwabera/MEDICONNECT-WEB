@@ -156,43 +156,36 @@ afterEach(() => {
 });
 
 describe("consultation room relay diagnostics", () => {
-  it("names a missing relay when the token ships STUN only", async () => {
-    const pc = await renderRoom(STUN_ONLY);
-    act(() => pc.finishGathering());
-    await waitFor(() => expect(alertBanner()).toBeInTheDocument());
-    expect(screen.getByText("No relay server in this call")).toBeInTheDocument();
-    expect(alertBanner()!.textContent).toContain("relays: none");
-  });
-
-  it("names absent credentials when the API sent a turn: URL with no user", async () => {
-    const pc = await renderRoom(TURN_WITHOUT_CREDENTIALS);
-    act(() => pc.finishGathering());
-    await waitFor(() => expect(alertBanner()).toBeInTheDocument());
-    expect(screen.getByText("The relay was sent without credentials")).toBeInTheDocument();
-    expect(alertBanner()!.textContent).toContain("turn:relay.test:3478 (no credentials)");
-  });
-
-  it("surfaces the relay's own rejection code", async () => {
+  it("never puts TURN operator errors on the call screen", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const pc = await renderRoom(TURN_WITH_CREDENTIALS);
     act(() => {
       pc.turnError(401, "Unauthorized");
+      pc.turnError(701, "Address not associated with the desired network interface", "turn:relay.test:3478?transport=tcp");
       pc.finishGathering();
     });
-    await waitFor(() => expect(alertBanner()).toBeInTheDocument());
-    expect(screen.getByText("The relay refused these credentials")).toBeInTheDocument();
-    expect(alertBanner()!.textContent).toContain("401 Unauthorized");
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(alertBanner()).toBeNull();
+    expect(screen.queryByText("The relay refused these credentials")).toBeNull();
+    expect(warn.mock.calls.some((call) => String(call[0]).includes("Relay unavailable"))).toBe(true);
+    warn.mockRestore();
   });
 
-  it("reports an unresponsive relay when allocation produced no candidate", async () => {
-    const pc = await renderRoom(TURN_WITH_CREDENTIALS);
-    act(() => {
-      pc.candidate("host");
-      pc.candidate("srflx");
-    });
-    act(() => pc.finishGathering());
-    await waitFor(() => expect(alertBanner()).toBeInTheDocument());
-    expect(screen.getByText("The relay is not answering")).toBeInTheDocument();
-    expect(alertBanner()!.textContent).toContain("local: host, srflx");
+  it("groups split TURN urls so Chrome does not allocate once per NIC", async () => {
+    const pc = await renderRoom([
+      { urls: "turn:197.243.29.114:3478", username: "u", credential: "p" },
+      { urls: "turn:197.243.29.114:3478?transport=tcp", username: "u", credential: "p" },
+      { urls: "turn:197.243.29.114:5349", username: "u", credential: "p" },
+      { urls: "turn:197.243.29.114:5349?transport=tcp", username: "u", credential: "p" },
+      { urls: "turns:197.243.29.114:5349", username: "u", credential: "p" },
+      { urls: "turns:197.243.29.114:5349?transport=tcp", username: "u", credential: "p" },
+    ]);
+    expect(pc.iceServers).toHaveLength(1);
+    expect(pc.iceServers[0].urls).toEqual([
+      "turn:197.243.29.114:3478",
+      "turn:197.243.29.114:3478?transport=tcp",
+      "turns:197.243.29.114:5349?transport=tcp",
+    ]);
   });
 
   it("stays quiet once a relay candidate has been gathered", async () => {
@@ -203,12 +196,13 @@ describe("consultation room relay diagnostics", () => {
     expect(alertBanner()).toBeNull();
   });
 
-  it("clears a warning when the call does connect", async () => {
-    const pc = await renderRoom(TURN_WITH_CREDENTIALS);
+  it("does not surface a banner when gathering finishes without a relay", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const pc = await renderRoom(STUN_ONLY);
     act(() => pc.finishGathering());
-    await waitFor(() => expect(alertBanner()).toBeInTheDocument());
-    pc.connectionState = "connected";
-    act(() => pc.onconnectionstatechange?.());
-    await waitFor(() => expect(alertBanner()).toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(alertBanner()).toBeNull();
+    expect(screen.queryByText("No relay server in this call")).toBeNull();
+    warn.mockRestore();
   });
 });
