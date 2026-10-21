@@ -366,36 +366,48 @@ async function generatePeriodSlots(doctorId, period) {
   for (const date of eachDate(period.from_date, period.to_date)) {
     if (days.size && !days.has(WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()])) continue;
     for (let minute = start; minute + duration <= end; minute += step) {
-      const startTime = clock(minute);
-      const existing = await one(
-        "SELECT id, status FROM appointment_slots WHERE doctor_id = ? AND slot_date = ? AND start_time = ? LIMIT 1",
-        [doctorId, date, startTime],
-      ).catch(() => null);
-      if (existing) {
-        const status = String(existing.status || "").toLowerCase();
-        if (status !== "booked") {
-          await update("appointment_slots", existing.id, { status: "available" });
-          created += 1;
-        }
-        continue;
-      }
-      await insert("appointment_slots", {
-        doctor_id: doctorId,
-        hospital_id: period.hospital_id ?? null,
-        doctor_availability_period_id: period.id,
-        availability_period_id: period.id,
-        period_id: period.id,
-        slot_date: date,
-        start_time: startTime,
-        end_time: clock(minute + duration),
-        duration_minutes: duration,
+      const added = await upsertAvailableSlot(doctorId, {
+        date,
+        startTime: clock(minute),
+        duration,
         type: period.type || "online",
-        status: "available",
+        hospitalId: period.hospital_id ?? null,
+        periodId: period.id,
       });
-      created += 1;
+      if (added) created += 1;
     }
   }
   return created;
+}
+
+async function upsertAvailableSlot(doctorId, { date, startTime, duration, type, hospitalId, periodId }) {
+  const start = minutesOf(startTime);
+  if (start == null || duration < 5) return null;
+  const startClock = clock(start);
+  const existing = await one(
+    "SELECT id, status FROM appointment_slots WHERE doctor_id = ? AND slot_date = ? AND start_time = ? LIMIT 1",
+    [doctorId, date, startClock],
+  ).catch(() => null);
+  if (existing) {
+    const status = String(existing.status || "").toLowerCase();
+    if (status === "booked") return null;
+    await update("appointment_slots", existing.id, { status: "available" });
+    return existing;
+  }
+  const id = await insert("appointment_slots", {
+    doctor_id: doctorId,
+    hospital_id: hospitalId ?? null,
+    doctor_availability_period_id: periodId ?? null,
+    availability_period_id: periodId ?? null,
+    period_id: periodId ?? null,
+    slot_date: date,
+    start_time: startClock,
+    end_time: clock(start + duration),
+    duration_minutes: duration,
+    type: type || "online",
+    status: "available",
+  });
+  return { id };
 }
 
 const licenseUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
@@ -1346,6 +1358,51 @@ export function appRoutes(router) {
           bookings_paused: Boolean(Number(doctor?.bookings_paused ?? 0)),
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/slots", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const slotDate = String(req.body.slot_date || req.body.date || "").slice(0, 10);
+      const startTime = String(req.body.start_time || "");
+      const duration = Math.max(5, Number(req.body.duration_minutes) || 30);
+      const type = String(req.body.type || "online") === "in_person" ? "in_person" : "online";
+      const start = minutesOf(startTime);
+      if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      if (!slotDate || !/^\d{4}-\d{2}-\d{2}$/.test(slotDate) || start == null) {
+        return res.status(422).json({ message: "Choose a date and start time." });
+      }
+      if (start + duration > 24 * 60) {
+        return res.status(422).json({ message: "That slot would run past midnight." });
+      }
+      const today = new Date().toISOString().slice(0, 10);
+      if (slotDate < today) {
+        return res.status(422).json({ message: "Past dates cannot receive new slots." });
+      }
+      const existing = await one(
+        "SELECT id, status FROM appointment_slots WHERE doctor_id = ? AND slot_date = ? AND start_time = ? LIMIT 1",
+        [doctorId, slotDate, clock(start)],
+      ).catch(() => null);
+      if (existing && String(existing.status || "").toLowerCase() === "booked") {
+        return res.status(422).json({ message: "That time is already booked." });
+      }
+      const saved = await upsertAvailableSlot(doctorId, {
+        date: slotDate,
+        startTime,
+        duration,
+        type,
+        hospitalId: req.body.hospital_id ?? null,
+        periodId: null,
+      });
+      if (!saved?.id) return res.status(422).json({ message: "Could not add that slot." });
+      const nextSlot = await presentRow(
+        "appointment_slots",
+        await one("SELECT * FROM appointment_slots WHERE id = ?", [saved.id]),
+      );
+      res.json({ message: "Slot added.", slot: nextSlot, reopened: Boolean(existing) });
     } catch (error) {
       next(error);
     }

@@ -290,6 +290,31 @@ export function useGetSlots(params?: GetSlotsParams) {
 }
 
 /* ─────────────────────────────────────────────
+   3.1b  POST /slots  — Add a single working-hour slot
+───────────────────────────────────────────── */
+
+export interface CreateSlotPayload {
+  slot_date: string;
+  start_time: string;
+  duration_minutes: number;
+  type?: "online" | "in_person";
+}
+
+export function useCreateSlot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateSlotPayload) =>
+      apiFetch<{ message: string; slot: Slot; reopened?: boolean }>(
+        "/doctor/slots",
+        { method: "POST", body: payload },
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["slots"] });
+    },
+  });
+}
+
+/* ─────────────────────────────────────────────
    3.2  PATCH /slots/{id}  — Update Single Slot
 ───────────────────────────────────────────── */
 

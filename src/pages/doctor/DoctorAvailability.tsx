@@ -37,6 +37,7 @@ import {
   ChevronRight,
   CalendarDays,
   Trash2,
+  Plus,
 } from "lucide-react";
 import moment from "moment";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ import {
   useGetSlots,
   useUpdateSlot,
   useBulkUpdateSlots,
+  useCreateSlot,
   useCreateAvailabilityPeriod,
   useToggleInstantConsultation,
   useTogglePauseBookings,
@@ -273,6 +275,110 @@ function SlotChip({
         document.body,
       )}
     </div>
+  );
+}
+
+function nextSuggestedTime(slots: Slot[], intervalMinutes: number, fallback: string) {
+  const base = (fallback || "08:00").slice(0, 5);
+  if (!slots.length) return base;
+  const last = slots[slots.length - 1];
+  const [hour, minute] = String(last.start_time || "").slice(0, 5).split(":").map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return base;
+  const duration = Number(last.duration_minutes) || intervalMinutes;
+  const next = hour * 60 + minute + duration;
+  if (next + intervalMinutes > 24 * 60) return base;
+  return `${String(Math.floor(next / 60)).padStart(2, "0")}:${String(next % 60).padStart(2, "0")}`;
+}
+
+function AddHourChip({
+  date,
+  intervalMinutes,
+  suggestedTime,
+  disabled,
+  pending,
+  variant = "grid",
+  onAdd,
+}: {
+  date: string;
+  intervalMinutes: number;
+  suggestedTime: string;
+  disabled?: boolean;
+  pending?: boolean;
+  variant?: "grid" | "icon";
+  onAdd: (payload: {
+    slot_date: string;
+    start_time: string;
+    duration_minutes: number;
+  }) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [time, setTime] = useState(suggestedTime.slice(0, 5));
+
+  useEffect(() => {
+    if (open) setTime(suggestedTime.slice(0, 5));
+  }, [open, suggestedTime]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled || pending}
+          title={t("pages.doctor.add_hour", { defaultValue: "Add working hour" })}
+          className={cn(
+            "flex items-center justify-center rounded-[6px] border border-dashed border-primary/40 bg-primary/5 text-primary transition-all duration-150 hover:bg-primary/10 hover:border-primary/60",
+            variant === "grid" && "w-full px-3 py-2.5",
+            variant === "icon" && "h-9 w-9 shrink-0",
+            (disabled || pending) && "opacity-50 cursor-wait",
+          )}
+        >
+          {pending ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Plus size={16} />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="z-[200] w-56 space-y-3 p-3">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {t("pages.doctor.add_hour", { defaultValue: "Add working hour" })}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {moment(date).format("ddd, MMM D")}
+        </p>
+        <div className="space-y-1.5">
+          <Label className="text-xs">{t("pages.doctor.start_time")}</Label>
+          <Input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="h-9"
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          {t("pages.doctor.add_hour_duration", {
+            defaultValue: "{{minutes}} minute slot — no schedule regenerate.",
+            minutes: intervalMinutes,
+          })}
+        </p>
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={!time}
+          onClick={() => {
+            onAdd({
+              slot_date: date,
+              start_time: time,
+              duration_minutes: intervalMinutes,
+            });
+            setOpen(false);
+          }}
+        >
+          {t("pages.doctor.add_slot", { defaultValue: "Add slot" })}
+        </Button>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -645,6 +751,7 @@ const DoctorAvailability = () => {
 
   const updateSlotMutation = useUpdateSlot();
   const bulkUpdateMutation = useBulkUpdateSlots();
+  const createSlotMutation = useCreateSlot();
   const createPeriodMutation = useCreateAvailabilityPeriod();
   const toggleInstantMutation = useToggleInstantConsultation();
   const togglePauseMutation = useTogglePauseBookings();
@@ -686,8 +793,17 @@ const DoctorAvailability = () => {
   const todayIdx = useMemo(() => days.findIndex((d) => d.date === todayStr), [days, todayStr]);
 
   const [selectedDay, setSelectedDay] = useState(0);
+  const pendingSelectDate = useRef<string | null>(null);
   useEffect(() => {
     if (days.length === 0) return;
+    if (pendingSelectDate.current) {
+      const addedIdx = days.findIndex((d) => d.date === pendingSelectDate.current);
+      if (addedIdx !== -1) {
+        setSelectedDay(addedIdx);
+        pendingSelectDate.current = null;
+        return;
+      }
+    }
     const currentTodayStr = moment().format("YYYY-MM-DD");
     const idx = days.findIndex((d) => d.date === currentTodayStr);
     if (idx !== -1) {
@@ -745,6 +861,49 @@ const DoctorAvailability = () => {
   /* ─────────────────────────────────────────
      Handlers
   ───────────────────────────────────────── */
+
+  const handleAddHour = useCallback(
+    (payload: {
+      slot_date: string;
+      start_time: string;
+      duration_minutes: number;
+    }) => {
+      createSlotMutation.mutate(
+        { ...payload, type: "online" },
+        {
+          onSuccess: (res) => {
+            const date = String(res.slot?.slot_date || payload.slot_date).slice(
+              0,
+              10,
+            );
+            pendingSelectDate.current = date;
+            setGeneratedRange((prev) => {
+              if (!prev) return prev;
+              return {
+                from: date < prev.from ? date : prev.from,
+                to: date > prev.to ? date : prev.to,
+              };
+            });
+            toast.success(
+              res.message ||
+                t("pages.doctor.slot_added", {
+                  defaultValue: "Working hour added.",
+                }),
+            );
+          },
+          onError: (err) => {
+            toast.error(
+              err.message ||
+                t("pages.doctor.add_slot_failed", {
+                  defaultValue: "Could not add that hour.",
+                }),
+            );
+          },
+        },
+      );
+    },
+    [createSlotMutation, t],
+  );
 
   const handleGenerate = () => {
     if (!range?.from || !range?.to) {
@@ -1010,12 +1169,26 @@ const DoctorAvailability = () => {
                         : instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
                     </p>
                   </div>
-                  <Switch
-                    checked={instant ?? false}
-                    onCheckedChange={handleToggleInstant}
-                    disabled={toggleInstantMutation.isPending || !profileApproved}
-                    className="data-[state=checked]:bg-primary"
-                  />
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <AddHourChip
+                      date={todayStr}
+                      intervalMinutes={interval}
+                      suggestedTime={nextSuggestedTime(
+                        days.find((d) => d.date === todayStr)?.slots ?? [],
+                        interval,
+                        startTime,
+                      )}
+                      pending={createSlotMutation.isPending}
+                      variant="icon"
+                      onAdd={handleAddHour}
+                    />
+                    <Switch
+                      checked={instant ?? false}
+                      onCheckedChange={handleToggleInstant}
+                      disabled={toggleInstantMutation.isPending || !profileApproved}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
                 </div>
 
                 {/* Disable schedule */}
@@ -1456,15 +1629,25 @@ const DoctorAvailability = () => {
                           Today is <strong className="text-primary font-bold">{moment().format("dddd, MMMM D, YYYY")}</strong> — no slots exist for today yet.
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRange({ from: today, to: moment(today).add(6, "days").toDate() });
-                        }}
-                        className="font-bold text-primary underline hover:opacity-80"
-                      >
-                        Select this week on calendar
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <AddHourChip
+                          date={todayStr}
+                          intervalMinutes={interval}
+                          suggestedTime={startTime}
+                          pending={createSlotMutation.isPending}
+                          variant="icon"
+                          onAdd={handleAddHour}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRange({ from: today, to: moment(today).add(6, "days").toDate() });
+                          }}
+                          className="font-bold text-primary underline hover:opacity-80"
+                        >
+                          Select this week on calendar
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1477,6 +1660,28 @@ const DoctorAvailability = () => {
                 </div>
 
                 {/* Slots panel */}
+                {!currentDay && !slotsLoading && (
+                  <div className="min-w-0 max-w-full overflow-visible rounded-[6px] border border-dashed border-primary/30 bg-card p-4 sm:p-5">
+                    <h3 className="text-base font-semibold text-foreground">
+                      {t("pages.doctor.add_hour", { defaultValue: "Add working hour" })}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t("pages.doctor.add_hour_empty", {
+                        defaultValue:
+                          "Add a single hour for today without regenerating your schedule. Instant consults can use these hours immediately.",
+                      })}
+                    </p>
+                    <div className="mt-4 grid min-w-0 max-w-xs grid-cols-2 gap-1.5">
+                      <AddHourChip
+                        date={todayStr}
+                        intervalMinutes={interval}
+                        suggestedTime={startTime}
+                        pending={createSlotMutation.isPending}
+                        onAdd={handleAddHour}
+                      />
+                    </div>
+                  </div>
+                )}
                 {currentDay && dayStats && (
                   <div className="min-w-0 max-w-full overflow-visible rounded-[6px] border border-border/70 bg-card p-4 sm:p-5">
                     {/* Header */}
@@ -1598,6 +1803,17 @@ const DoctorAvailability = () => {
                           }
                         />
                       ))}
+                      <AddHourChip
+                        date={currentDay.date}
+                        intervalMinutes={interval}
+                        suggestedTime={nextSuggestedTime(
+                          currentDay.slots,
+                          interval,
+                          startTime,
+                        )}
+                        pending={createSlotMutation.isPending}
+                        onAdd={handleAddHour}
+                      />
                     </div>
 
                     {/* {t("pages.doctor.utilisation")} bar */}
