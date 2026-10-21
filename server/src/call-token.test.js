@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { callToken, iceServers, relayDiagnostics, roomFromToken } from "./call-token.js";
+import { callToken, iceServers, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 
 const RELAY_VARS = [
   "TURN_URL", "TURN_HOST", "TURN_PORT", "TURNS_URL", "TURNS_HOST", "TURNS_PORT",
@@ -64,13 +64,13 @@ describe("iceServers", () => {
     expect(JSON.stringify(first)).not.toContain("shared-relay-secret");
   });
 
-  it("offers both HMAC and static credentials when both env pairs are set", () => {
+  it("prefers HMAC credentials when both env pairs are set, so Chrome does not 401 the unused static user", () => {
     vi.stubEnv("TURN_HOST", "relay.example.rw");
     vi.stubEnv("TURN_SECRET", "shared-relay-secret");
     vi.stubEnv("TURN_USERNAME", "mediconnect");
     vi.stubEnv("TURN_PASSWORD", "static-password");
     const users = new Set(relays(iceServers()).map((server) => server.username));
-    expect(users.has("mediconnect")).toBe(true);
+    expect(users.has("mediconnect")).toBe(false);
     expect([...users].some((name) => String(name).endsWith(":mediconnect"))).toBe(true);
   });
 
@@ -142,5 +142,20 @@ describe("call tokens and room authorisation", () => {
   it("still accepts legacy tokens stored in the daily_* columns when signing is off", () => {
     const token = callToken({ room: "instant-76", role: "doctor", consultationId: 76, name: "Doctor" });
     expect(roomFromToken(token)).toBe("instant-76");
+  });
+
+  it("replaces frozen ICE credentials on a stored token with the live relay", () => {
+    vi.stubEnv("TURN_HOST", "old.example.rw");
+    vi.stubEnv("TURN_USERNAME", "mediconnect");
+    vi.stubEnv("TURN_PASSWORD", "stale-password");
+    const stored = callToken({ room: "instant-91", role: "patient", consultationId: 91, name: "Patient" });
+    vi.stubEnv("TURN_HOST", "relay.example.rw");
+    vi.stubEnv("TURN_PASSWORD", "fresh-password");
+    const refreshed = withLiveIce(stored);
+    expect(roomFromToken(refreshed)).toBe("instant-91");
+    const payload = JSON.parse(Buffer.from(decodeURIComponent(refreshed), "base64").toString("utf8"));
+    const relay = payload.ice_servers.find((server) => String(server.urls).startsWith("turn:"));
+    expect(relay.urls).toContain("relay.example.rw");
+    expect(relay.credential).toBe("fresh-password");
   });
 });

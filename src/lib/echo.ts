@@ -12,11 +12,17 @@ function socketHost() {
   const host = String(import.meta.env.VITE_REVERB_HOST || "")
     .trim()
     .replace(/^https?:\/\//, "");
-  // Netlify owns ws.mediconnect.rw and cannot proxy WebSocket upgrades, so a
-  // bundle that rewrites the tunnel hostname to that alias never connects.
-  // Keep the configured host (including trycloudflare) which terminates on Node.
   if (host) return host;
   return "ws.mediconnect.rw";
+}
+
+function canUseWebsocket() {
+  const host = socketHost();
+  // Quick tunnels front the API over HTTP/2 and reset WebSocket handshakes
+  // (ERR_HTTP2_PING_FAILED). Consult signaling and chat already poll HTTP.
+  if (!host || host.includes("trycloudflare")) return false;
+  if (host === "ws.mediconnect.rw") return false;
+  return true;
 }
 
 type ListenFn = (data: any) => void;
@@ -45,7 +51,8 @@ function wrapChannel(channel: ReturnType<Pusher["subscribe"]>) {
 
 const authHeaders: Record<string, string> = {};
 
-const pusher = new Pusher(import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-staging-key", {
+const pusher = canUseWebsocket()
+  ? new Pusher(import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-staging-key", {
   wsHost: socketHost(),
   wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
   wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
@@ -86,32 +93,44 @@ const pusher = new Pusher(import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-st
         .catch((error) => callback(true, error));
     },
   }),
-});
+})
+  : null;
+
+const silentChannel = {
+  listen() {
+    return this;
+  },
+  stopListening() {
+    return this;
+  },
+};
 
 const echo = {
   connector: {
-    pusher,
+    pusher: pusher || { connection: { bind() {}, socket_id: "" } },
     options: { auth: { headers: authHeaders } },
   },
   channel(name: string) {
-    return wrapChannel(pusher.subscribe(name));
+    return pusher ? wrapChannel(pusher.subscribe(name)) : silentChannel;
   },
   private(name: string) {
-    return wrapChannel(pusher.subscribe(`private-${name}`));
+    return pusher ? wrapChannel(pusher.subscribe(`private-${name}`)) : silentChannel;
   },
   leave(name: string) {
+    if (!pusher) return;
     pusher.unsubscribe(name);
     pusher.unsubscribe(`private-${name}`);
   },
   leaveChannel(name: string) {
+    if (!pusher) return;
     pusher.unsubscribe(name);
     pusher.unsubscribe(`private-${name}`);
   },
   disconnect() {
-    pusher.disconnect();
+    pusher?.disconnect();
   },
   socketId() {
-    return pusher.connection?.socket_id || "";
+    return pusher?.connection?.socket_id || "";
   },
 };
 

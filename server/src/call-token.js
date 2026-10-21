@@ -74,7 +74,12 @@ function staticAuth() {
  * does not block a relay that still accepts the long-lived username.
  */
 function relayAuthList() {
-  return [hmacAuth(), staticAuth()].filter(Boolean);
+  // Only one credential set: sending both makes Chrome log 401 on the method
+  // coTURN is not using, even when the other method succeeds.
+  const hmac = hmacAuth();
+  if (hmac) return [hmac];
+  const stored = staticAuth();
+  return stored ? [stored] : [];
 }
 
 function relayAuth() {
@@ -206,8 +211,7 @@ function signRoom(room) {
   return crypto.createHmac("sha256", secret).update(`v1|${room}`).digest("base64url").slice(0, 32);
 }
 
-/** Returns the room a token is valid for, or null. */
-export function roomFromToken(raw) {
+function decodePayload(raw) {
   let value = String(raw ?? "").trim();
   if (!value) return null;
   try {
@@ -215,26 +219,48 @@ export function roomFromToken(raw) {
   } catch {
     /* already decoded */
   }
-  // Links generated from email/SMS may carry extra base64 layers.
   for (let layer = 0; layer < 3; layer++) {
     const text = Buffer.from(value, "base64").toString("utf8");
     try {
       const payload = JSON.parse(text);
-      if (payload && typeof payload === "object") {
-        const room = String(payload.room ?? "").trim();
-        if (!room) return null;
-        if (!setting("CALL_TOKEN_SECRET")) return room;
-        const expected = signRoom(room);
-        const given = String(payload.sig ?? "");
-        if (given.length !== expected.length) return null;
-        return crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected)) ? room : null;
-      }
+      if (payload && typeof payload === "object") return payload;
     } catch {
       /* not JSON at this layer — peel again */
     }
     value = text;
   }
   return null;
+}
+
+function encodePayload(payload) {
+  return encodeURIComponent(Buffer.from(JSON.stringify(payload)).toString("base64"));
+}
+
+function roomFromPayload(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  const room = String(payload.room ?? "").trim();
+  if (!room) return null;
+  if (!setting("CALL_TOKEN_SECRET")) return room;
+  const expected = signRoom(room);
+  const given = String(payload.sig ?? "");
+  if (given.length !== expected.length) return null;
+  return crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected)) ? room : null;
+}
+
+/** Returns the room a token is valid for, or null. */
+export function roomFromToken(raw) {
+  return roomFromPayload(decodePayload(raw));
+}
+
+/**
+ * Stored guest tokens freeze ICE credentials at mint time. Overlay the live
+ * relay list so a TURN password rotation does not 401 every in-progress call.
+ */
+export function withLiveIce(raw) {
+  const payload = decodePayload(raw);
+  if (!roomFromPayload(payload)) return null;
+  payload.ice_servers = iceServers();
+  return encodePayload(payload);
 }
 
 export function callToken({ room, role, consultationId, name }) {
@@ -251,5 +277,5 @@ export function callToken({ room, role, consultationId, name }) {
   if (!sig) {
     warnOnce("CALL_TOKEN_SECRET is not set, so room tokens cannot be verified — only their room name is checked.");
   }
-  return encodeURIComponent(Buffer.from(JSON.stringify(payload)).toString("base64"));
+  return encodePayload(payload);
 }

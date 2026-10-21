@@ -111,6 +111,9 @@ vi.mock("react-i18next", () => ({
 }));
 vi.mock("react-router-dom", () => ({ Link: () => null }));
 vi.mock("sonner", () => ({ toast: { info: () => {}, error: () => {}, warning: () => {} } }));
+vi.mock("@/hooks/doctor/use-doctor-appointment", () => ({
+  useGetAppointment: () => ({ data: undefined }),
+}));
 
 const { default: ConsultationRoom } = await import("@/components/consultatioRoom/ConsultationRoom");
 
@@ -171,7 +174,10 @@ describe("consultation room relay diagnostics", () => {
 
   it("surfaces the relay's own rejection code", async () => {
     const pc = await renderRoom(TURN_WITH_CREDENTIALS);
-    act(() => pc.turnError(401, "Unauthorized"));
+    act(() => {
+      pc.turnError(401, "Unauthorized");
+      pc.finishGathering();
+    });
     await waitFor(() => expect(alertBanner()).toBeInTheDocument());
     expect(screen.getByText("The relay refused these credentials")).toBeInTheDocument();
     expect(alertBanner()!.textContent).toContain("401 Unauthorized");

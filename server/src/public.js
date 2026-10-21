@@ -4,7 +4,7 @@ import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
 import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
-import { callToken, relayDiagnostics, roomFromToken } from "./call-token.js";
+import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { doctorOnInstantSchedule, autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
@@ -1562,7 +1562,7 @@ export function publicRoutes(router) {
       const ownCall = ["accepted", "in_progress"].includes(String(fresh.status || ""));
       const doctorBusy = !ownCall && Boolean(await doctorBusyInstant(fresh.doctor_id, fresh.id));
       const roomName = fresh.daily_room_name || fresh.room_name || `instant-${fresh.id}`;
-      const guestToken = fresh.daily_guest_token || callToken({
+      const guestToken = withLiveIce(fresh.daily_guest_token) || callToken({
         room: roomName,
         role: "patient",
         consultationId: fresh.id,
@@ -1790,7 +1790,7 @@ export function publicRoutes(router) {
             payment_status: row.payment_status,
             room_name: roomName,
             room_url: `/consultation/${roomName}`,
-            daily_guest_token: row.daily_guest_token || callToken({
+            daily_guest_token: withLiveIce(row.daily_guest_token) || callToken({
               room: roomName, role: "patient", consultationId: row.id,
               name: "Patient",
             }),

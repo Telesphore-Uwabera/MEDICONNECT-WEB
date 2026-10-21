@@ -546,8 +546,13 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       if (!ICE_SERVER_RELAY_RE.test(url) && !/turn/i.test(url)) return;
       const code = Number(e.errorCode ?? 0);
       turnErrorRef.current = `${url} → ${code || "?"} ${String(e.errorText ?? "").trim()}`.trim();
-      console.warn("[WebRTC] Relay candidate error:", turnErrorRef.current);
-      if (code) raiseRelayIssue();
+      // Chrome reports 401 on the first unauthenticated Allocate, then retries.
+      // Wait until gathering finishes (or the call fails) before treating it as fatal.
+      if (pc.connectionState === "connected") return;
+      if (pc.iceGatheringState === "complete" || pc.connectionState === "failed") {
+        console.warn("[WebRTC] Relay candidate error:", turnErrorRef.current);
+        if (code) raiseRelayIssue();
+      }
     };
 
     pc.onicegatheringstatechange = () => {
@@ -768,6 +773,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     try {
       if (payload.type === "ready" && isOwner) {
+        const st = pc.connectionState;
+        if (st === "connected" || st === "connecting") return;
+        if (pc.signalingState !== "stable" || pc.remoteDescription) return;
         await createAndSendOffer();
       }
       else if (payload.type === "offer") {
@@ -792,10 +800,6 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       }
       else if (payload.type === "answer") {
         if (pc.signalingState !== "have-local-offer") {
-          // Benign: a duplicate/late answer arrived while already stable (e.g.
-          // the owner sent repeated offers during connection setup and got back
-          // multiple answers). Safe to discard — the connection is already up.
-          console.debug("[WebRTC] Dropping answer in unexpected signalingState:", pc.signalingState);
           return;
         }
 
@@ -1018,11 +1022,14 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             return;
           }
 
+          const negotiating = Boolean(pc && pc.signalingState !== "stable");
           const needsAnnounce =
+            !negotiating && (
             !pc ||
             ["new", "failed", "closed"].includes(st as string) ||
             (st === "disconnected" &&
-              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000)
+            );
 
           if (needsAnnounce) {
             if (pcRef.current) {

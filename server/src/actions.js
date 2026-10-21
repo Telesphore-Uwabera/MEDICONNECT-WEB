@@ -12,6 +12,7 @@ import { handleCareOrders } from "./care-orders.js";
 import { handleFitnessCertificates } from "./fitness-certificates.js";
 import { isDedicatedResource } from "./dedicated-ids.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
+import { withLiveIce } from "./call-token.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -554,7 +555,7 @@ async function fillGap(req, res, parts) {
       data: row,
       room_url: row?.daily_room_url || row?.room_url || null,
       room_name: row?.daily_room_name || row?.room_name || null,
-      token: row?.daily_doctor_token || row?.daily_guest_token || row?.token || null,
+      token: withLiveIce(row?.daily_doctor_token || row?.daily_guest_token || row?.token) || row?.daily_doctor_token || row?.daily_guest_token || row?.token || null,
       can_join: Boolean(row?.daily_room_name || row?.room_name || row?.daily_room_url || row?.room_url),
     });
     return true;
