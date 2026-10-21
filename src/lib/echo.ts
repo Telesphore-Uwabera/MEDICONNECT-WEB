@@ -9,11 +9,14 @@ declare global {
 window.Pusher = Pusher;
 
 function socketHost() {
-  const host = String(import.meta.env.VITE_REVERB_HOST || "").trim();
-  if (!host || host.includes("trycloudflare")) {
-    return "ws.mediconnect.rw";
-  }
-  return host;
+  const host = String(import.meta.env.VITE_REVERB_HOST || "")
+    .trim()
+    .replace(/^https?:\/\//, "");
+  // Netlify owns ws.mediconnect.rw and cannot proxy WebSocket upgrades, so a
+  // bundle that rewrites the tunnel hostname to that alias never connects.
+  // Keep the configured host (including trycloudflare) which terminates on Node.
+  if (host) return host;
+  return "ws.mediconnect.rw";
 }
 
 type ListenFn = (data: any) => void;

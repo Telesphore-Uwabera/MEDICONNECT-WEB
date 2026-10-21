@@ -119,7 +119,7 @@ export function iceServers() {
         servers.push(
           auth.mode === "none"
             ? { urls: url }
-            : { urls: url, username: auth.username, credential: auth.credential },
+            : { urls: url, username: auth.username, credential: auth.credential, credentialType: "password" },
         );
       }
     }
