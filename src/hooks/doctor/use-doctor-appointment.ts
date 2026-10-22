@@ -433,6 +433,8 @@ export interface InstantConsultQueueItem {
     guest_name?: string | null;
     guest_phone: string;
     description: string | null;
+    patient_id?: number | null;
+    user_id?: number | null;
     status: "pending" | "confirmed" | "accepted" | "in_progress" | "declined" | "withdrawn" | "expired" | "payment_expired" | "completed";
     payment_status?: string | null;
     queue_position: number;

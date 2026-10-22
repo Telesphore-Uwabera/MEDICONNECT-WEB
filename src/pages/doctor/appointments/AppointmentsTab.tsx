@@ -95,7 +95,7 @@ function appointmentDurationMinutes(appt: Appointment): number | null {
 export function AppointmentsTab() {
   const { t, i18n } = useTranslation();
   const call = useCallStore();
-  const { startCall, activeCall, endCall: hangUpCall } = useCallContext();
+  const { startCall, activeCall, endCall: hangUpCall, clearPausedCall } = useCallContext();
   const qc = useQueryClient();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -280,11 +280,12 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       onSuccess: () => {
         hangUpCall();
         call.endCall();
+        clearPausedCall();
         toast.success(t("consult.bookings.session_completed"));
       },
       onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_complete"))),
     });
-  }, [completeAppointment, hangUpCall, call, t]);
+  }, [completeAppointment, hangUpCall, call, clearPausedCall, t]);
 
   const handleStart = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);
   const handleRejoin = useCallback((appt: Appointment) => startOrRejoin(appt, true), [startOrRejoin]);

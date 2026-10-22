@@ -318,6 +318,52 @@ async function tableFromKey(key) {
   return firstTable([last?.replace(/-/g, "_")]);
 }
 
+async function resolveInstantConsult(id) {
+  if (!id) return { consult: null, request: null, canonicalId: id };
+  if (await tableExists("instant_consultations")) {
+    const consult = await one("SELECT * FROM instant_consultations WHERE id = ?", [id]).catch(() => null);
+    if (consult) return { consult, request: null, canonicalId: consult.id };
+  }
+  if (await tableExists("instant_consultation_requests")) {
+    const request = await one("SELECT * FROM instant_consultation_requests WHERE id = ?", [id]).catch(() => null);
+    if (request) {
+      let consult = null;
+      if (await tableExists("instant_consultations")) {
+        const cols = [];
+        if (await hasColumn("instant_consultations", "request_id")) cols.push("request_id");
+        if (await hasColumn("instant_consultations", "instant_consultation_request_id")) cols.push("instant_consultation_request_id");
+        if (cols.length) {
+          consult = await one(
+            `SELECT * FROM instant_consultations WHERE ${cols.map((col) => `\`${col}\` = ?`).join(" OR ")} ORDER BY id DESC LIMIT 1`,
+            cols.map(() => id),
+          ).catch(() => null);
+        }
+      }
+      return { consult, request, canonicalId: consult?.id ?? request.id };
+    }
+  }
+  return { consult: null, request: null, canonicalId: id };
+}
+
+async function fillConsultationSummaryBody(body) {
+  const next = { ...(body || {}) };
+  const apptId = Number(next.appointment_id) || null;
+  const instantIn = Number(next.instant_consultation_id) || null;
+  let patientId = Number(next.patient_id) || null;
+  if (instantIn) {
+    const found = await resolveInstantConsult(instantIn);
+    if (found.canonicalId) next.instant_consultation_id = found.canonicalId;
+    const src = found.consult || found.request;
+    if (!patientId && src) patientId = Number(src.patient_id || src.user_id) || null;
+  }
+  if (!patientId && apptId) {
+    const appt = await one("SELECT * FROM appointments WHERE id = ?", [apptId]).catch(() => null);
+    patientId = Number(appt?.patient_id || appt?.user_id) || null;
+  }
+  if (patientId) next.patient_id = patientId;
+  return next;
+}
+
 async function ownedExtra(scope, userId, table) {
   const extra = {};
   const ownerTable = PROFILE_TABLES[scope];
@@ -651,7 +697,10 @@ async function fillGap(req, res, parts) {
 
   if (!id && req.method === "POST") {
     const extra = await ownedExtra(parts[0], req.user.id, table);
-    const newId = await insert(table, { ...(req.body ?? {}), ...extra });
+    const body = table === "consultation_summaries"
+      ? await fillConsultationSummaryBody(req.body ?? {})
+      : (req.body ?? {});
+    const newId = await insert(table, { ...body, ...extra });
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);
@@ -668,7 +717,10 @@ async function fillGap(req, res, parts) {
   if (id && ["PUT", "PATCH", "POST"].includes(req.method)) {
     // Neither side of a visit may buy its way to "paid" or reassign itself with a
     // plain field update; payment moves status through the payment routes only.
-    await update(table, id, visitBodyGuard(parts[0], table, req.body ?? {}));
+    const body = table === "consultation_summaries"
+      ? await fillConsultationSummaryBody(req.body ?? {})
+      : (req.body ?? {});
+    await update(table, id, visitBodyGuard(parts[0], table, body));
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);

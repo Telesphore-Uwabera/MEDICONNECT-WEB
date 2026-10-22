@@ -390,6 +390,18 @@ export function IncomingCard({
             {/* IN_PROGRESS → patient file, then mark the visit complete */}
             {item.status === "in_progress" && (
               <>
+                {onJoin && (
+                  <button
+                    onClick={onJoin}
+                    disabled={isBusy}
+                    className="h-8 px-3 rounded-[5px] border border-emerald-500/40 bg-emerald-500/10 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-smooth disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    {isJoining
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Video className="h-3.5 w-3.5" />}
+                    {t("consult.bookings.rejoin", "Rejoin")}
+                  </button>
+                )}
                 {onOpenFile && (
                   <button
                     onClick={onOpenFile}

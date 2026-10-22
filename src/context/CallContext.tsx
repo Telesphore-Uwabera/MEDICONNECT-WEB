@@ -13,9 +13,12 @@ export interface PendingCompletion {
 
 interface CallContextType {
   activeCall: ActiveCall | null;
+  /** Last hung-up call that is still open for rejoin until the visit is completed. */
+  pausedCall: ActiveCall | null;
   isMinimized: boolean;
   startCall: (roomName: string, token: any) => void;
   endCall: () => void;
+  clearPausedCall: () => void;
   toggleMinimize: () => void;
   setMinimized: (val: boolean) => void;
   /** Set when a doctor ends a scheduled-appointment call; drives the global
@@ -37,6 +40,7 @@ const CallContext = createContext<CallContextType | undefined>(undefined);
 // which limits credential exposure. Trade-off: no cross-tab mirroring and the
 // call won't restore after a full browser restart.
 const STORAGE_KEY = "active_call_session";
+const PAUSED_KEY = "paused_call_session";
 // Safety expiry so a stale call can't resurrect hours later within the same
 // tab if it was never explicitly ended.
 const CALL_TTL_MS = 1000 * 60 * 60 * 4; // 4 hours
@@ -84,11 +88,53 @@ function clearPersistedCall() {
   }
 }
 
+function loadPausedCall(): ActiveCall | null {
+  try {
+    const raw = sessionStorage.getItem(PAUSED_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedCall;
+    if (!parsed?.roomName || !parsed?.token) return null;
+    if (Date.now() - (parsed.startedAt ?? 0) > CALL_TTL_MS) {
+      sessionStorage.removeItem(PAUSED_KEY);
+      return null;
+    }
+    return { roomName: parsed.roomName, token: parsed.token };
+  } catch {
+    return null;
+  }
+}
+
+function persistPausedCall(call: ActiveCall) {
+  try {
+    const payload: PersistedCall = {
+      roomName: call.roomName,
+      token: call.token,
+      startedAt: Date.now(),
+    };
+    sessionStorage.setItem(PAUSED_KEY, JSON.stringify(payload));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function clearPersistedPausedCall() {
+  try {
+    sessionStorage.removeItem(PAUSED_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function CallProvider({ children }: { children: ReactNode }) {
   // Restore any in-progress call on first mount so a refresh rejoins it.
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(() => loadPersistedCall());
+  const [pausedCall, setPausedCall] = useState<ActiveCall | null>(() =>
+    loadPersistedCall() ? null : loadPausedCall(),
+  );
   const [isMinimized, setIsMinimized] = useState(false);
   const [pendingCompletion, setPendingCompletion] = useState<PendingCompletion | null>(null);
+  const activeCallRef = React.useRef<ActiveCall | null>(null);
+  activeCallRef.current = activeCall;
 
   const requestAppointmentCompletion = useCallback((info: PendingCompletion) => {
     setPendingCompletion(info);
@@ -97,14 +143,26 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setPendingCompletion(null);
   }, []);
 
+  const clearPausedCall = useCallback(() => {
+    clearPersistedPausedCall();
+    setPausedCall(null);
+  }, []);
+
   const startCall = useCallback((roomName: string, token: any) => {
     const call = { roomName, token };
     persistCall(call);
+    clearPersistedPausedCall();
+    setPausedCall(null);
     setActiveCall(call);
     setIsMinimized(false);
   }, []);
 
   const endCall = useCallback(() => {
+    const current = activeCallRef.current;
+    if (current) {
+      persistPausedCall(current);
+      setPausedCall(current);
+    }
     clearPersistedCall();
     setActiveCall(null);
     setIsMinimized(false);
@@ -118,9 +176,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
     <CallContext.Provider
       value={{
         activeCall,
+        pausedCall,
         isMinimized,
         startCall,
         endCall,
+        clearPausedCall,
         toggleMinimize,
         setMinimized: setIsMinimized,
         pendingCompletion,

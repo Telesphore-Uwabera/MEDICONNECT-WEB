@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, FileText, X, Check, Loader2, User } from "lucide-react";
 import {
@@ -19,7 +19,6 @@ import { useDebounce } from "@/hooks/use-debounce";
 import type { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
-  chartHasClinicalContent,
   chartToAppointmentNotes,
   chartToInstantNotesText,
   chartToSummaryFields,
@@ -38,6 +37,7 @@ import {
 interface Props {
   onClose: () => void;
   consultationId?: number;
+  instantConsultationId?: number | null;
   patientId?: number | null;
   patientName?: string;
   patientPhone?: string;
@@ -127,6 +127,7 @@ function summaryRows(payload: unknown): ConsultationSummary[] {
 export function InstantNotesSidebar({
   onClose,
   consultationId,
+  instantConsultationId,
   patientId,
   patientName,
   patientPhone,
@@ -136,6 +137,7 @@ export function InstantNotesSidebar({
   const { t } = useTranslation();
   const dark = variant === "call";
   const isAppointment = mode === "appointment";
+  const summaryInstantId = instantConsultationId ?? (!isAppointment ? consultationId : undefined);
 
   const saveInstant = useSaveInstantNotes();
   const addApptNotes = useAddNotes();
@@ -146,12 +148,13 @@ export function InstantNotesSidebar({
   const { data: existingList } = useConsultationSummaries(
     isAppointment
       ? { appointment_id: consultationId }
-      : { instant_consultation_id: consultationId },
-    { enabled: consultationId != null },
+      : { instant_consultation_id: summaryInstantId },
+    { enabled: (isAppointment ? consultationId : summaryInstantId) != null },
   );
 
   const [chart, setChart] = useState<CallChart>(() => readCallChart(consultationId, mode));
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [identityOpen, setIdentityOpen] = useState(() => {
     const initial = readCallChart(consultationId, mode);
     return !initial.identity.full_name.trim() || !initial.identity.phone.trim();
@@ -176,16 +179,20 @@ export function InstantNotesSidebar({
 
   useEffect(() => {
     const match = summaryRows(existingList).find((row) =>
-      isAppointment ? row.appointment_id === consultationId : row.instant_consultation_id === consultationId,
+      isAppointment
+        ? row.appointment_id === consultationId
+        : row.instant_consultation_id === summaryInstantId || row.instant_consultation_id === consultationId,
     );
     if (match?.id) summaryIdRef.current = match.id;
-  }, [existingList, consultationId, isAppointment]);
+  }, [existingList, consultationId, isAppointment, summaryInstantId]);
 
   useEffect(() => {
     if (dirtyRef.current) return;
     const appt = apptData?.appointment;
     const match = summaryRows(existingList).find((row) =>
-      isAppointment ? row.appointment_id === consultationId : row.instant_consultation_id === consultationId,
+      isAppointment
+        ? row.appointment_id === consultationId
+        : row.instant_consultation_id === summaryInstantId || row.instant_consultation_id === consultationId,
     );
     setChart((prev) => {
       const next = { ...prev, identity: { ...prev.identity }, proofs: prev.proofs ?? [] };
@@ -226,16 +233,18 @@ export function InstantNotesSidebar({
       }
       return next;
     });
-  }, [apptData, existingList, isAppointment, consultationId, patientId, patientName, patientPhone, medicalRecord]);
+  }, [apptData, existingList, isAppointment, consultationId, summaryInstantId, patientId, patientName, patientPhone, medicalRecord]);
 
   const snapshot = JSON.stringify(chart);
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
   const debouncedSnapshot = useDebounce(snapshot, 1500);
   const missingOfficialId = resolvedPatientId(parseCallChart(debouncedSnapshot), effectivePatientId) == null;
 
-  useEffect(() => {
+  const persistChart = useCallback(async (raw: string) => {
     if (!dirtyRef.current) return;
     if (consultationId == null) return;
-    const next = parseCallChart(debouncedSnapshot);
+    const next = parseCallChart(raw);
     const stored = readCallChart(consultationId, mode);
     if (stored.proofs?.length) next.proofs = stored.proofs;
     writeCallChart(consultationId, mode, next);
@@ -244,66 +253,67 @@ export function InstantNotesSidebar({
     const fields = chartToSummaryFields(next);
     const pid = resolvedPatientId(next, patientId ?? apptData?.appointment?.patient?.id ?? null);
 
-    if (isAppointment) {
-      const payload = chartToAppointmentNotes(next);
-      const doPut = () =>
-        updateApptNotes.mutate(
-          { id: consultationId, payload },
-          { onError: () => setSaveStatus("error") },
-        );
-      if (notesExistRef.current) doPut();
-      else {
-        addApptNotes.mutate(
-          { id: consultationId, payload },
-          {
-            onSuccess: () => {
-              notesExistRef.current = true;
-            },
-            onError: (err) => {
-              if ((err as ApiError)?.status === 409) {
-                notesExistRef.current = true;
-                doPut();
-              } else setSaveStatus("error");
-            },
-          },
-        );
+    try {
+      if (isAppointment) {
+        const payload = chartToAppointmentNotes(next);
+        try {
+          if (notesExistRef.current) {
+            await updateApptNotes.mutateAsync({ id: consultationId, payload });
+          } else {
+            await addApptNotes.mutateAsync({ id: consultationId, payload });
+            notesExistRef.current = true;
+          }
+        } catch (err) {
+          if ((err as ApiError)?.status === 409) {
+            notesExistRef.current = true;
+            await updateApptNotes.mutateAsync({ id: consultationId, payload });
+          } else throw err;
+        }
+      } else {
+        await saveInstant.mutateAsync({ id: consultationId, notes: chartToInstantNotesText(next) });
       }
-    } else {
-      saveInstant.mutate({ id: consultationId, notes: chartToInstantNotesText(next) });
-    }
 
-    if (pid != null && chartHasClinicalContent(next)) {
+      const summaryLink = isAppointment
+        ? { appointment_id: consultationId }
+        : { instant_consultation_id: summaryInstantId ?? consultationId };
+
       if (summaryIdRef.current != null) {
-        updateSummary.mutate(
-          { id: summaryIdRef.current, payload: fields },
-          { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
-        );
+        await updateSummary.mutateAsync({ id: summaryIdRef.current, payload: fields });
       } else if (!creatingSummaryRef.current) {
         creatingSummaryRef.current = true;
-        createSummary.mutate(
-          {
-            ...(isAppointment ? { appointment_id: consultationId } : { instant_consultation_id: consultationId }),
-            patient_id: pid,
-            ...fields,
-          },
-          {
-            onSuccess: (res) => {
-              summaryIdRef.current = res.summary?.id ?? null;
-              creatingSummaryRef.current = false;
-              setSaveStatus("saved");
-            },
-            onError: () => {
-              creatingSummaryRef.current = false;
-              setSaveStatus("error");
-            },
-          },
-        );
+        const res = await createSummary.mutateAsync({
+          ...summaryLink,
+          ...(pid != null ? { patient_id: pid } : {}),
+          ...fields,
+        });
+        summaryIdRef.current = res.summary?.id ?? null;
+        creatingSummaryRef.current = false;
       }
-    } else {
+
+      if (snapshotRef.current === raw) dirtyRef.current = false;
+      setSavedAt(new Date());
       setSaveStatus("saved");
+    } catch {
+      creatingSummaryRef.current = false;
+      setSaveStatus("error");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSnapshot, consultationId]);
+  }, [
+    addApptNotes,
+    apptData?.appointment?.patient?.id,
+    consultationId,
+    createSummary,
+    isAppointment,
+    mode,
+    patientId,
+    saveInstant,
+    summaryInstantId,
+    updateApptNotes,
+    updateSummary,
+  ]);
+
+  useEffect(() => {
+    void persistChart(debouncedSnapshot);
+  }, [debouncedSnapshot, persistChart]);
 
   const patch = (partial: Partial<CallChart>) => {
     dirtyRef.current = true;
@@ -327,7 +337,7 @@ export function InstantNotesSidebar({
       <div className={cn("flex items-center justify-between px-3 py-2.5 shrink-0 border-b", dark ? "border-white/10" : "border-border")}>
         <div className="flex items-center gap-2 min-w-0">
           <FileText className={cn("h-3.5 w-3.5 shrink-0", dark ? "text-emerald-300" : "text-primary")} />
-          <span className="text-[12px] font-semibold">{t("consult.notes.title")}</span>
+          <span className="text-[12px] font-semibold">{t("consult.bookings.patient_file", "Patient file")}</span>
         </div>
         <button
           onClick={onClose}
@@ -400,8 +410,8 @@ export function InstantNotesSidebar({
         </div>
       </div>
 
-      <div className={cn("px-3 py-2 border-t shrink-0 flex items-center justify-between", dark ? "border-white/10" : "border-border/60")}>
-        <div className={cn("flex items-center gap-1.5 text-[9px]", dark ? "text-white/45" : "text-muted-foreground/50")}>
+      <div className={cn("px-3 py-2 border-t shrink-0 flex items-center justify-between gap-2", dark ? "border-white/10" : "border-border/60")}>
+        <div className={cn("flex min-w-0 items-center gap-1.5 text-[9px]", dark ? "text-white/55" : "text-muted-foreground")}>
           {saveStatus === "saving" && (
             <>
               <Loader2 className="w-3 h-3 animate-spin" /> {t("consult.notes.saving")}
@@ -409,21 +419,37 @@ export function InstantNotesSidebar({
           )}
           {saveStatus === "saved" && (
             <>
-              <Check className={cn("w-3 h-3", dark ? "text-emerald-400" : "text-emerald-500")} /> {t("consult.notes.saved")}
+              <Check className={cn("w-3 h-3 shrink-0", dark ? "text-emerald-400" : "text-emerald-500")} />
+              <span className="truncate">
+                {t("consult.notes.saved_to_summary", "Saved to consultation summary")}
+                {savedAt ? ` · ${savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
+              </span>
             </>
           )}
           {saveStatus === "error" && <span className="text-red-400">{t("consult.notes.save_failed")}</span>}
           {saveStatus === "idle" && <span>{t("consult.notes.autosaved")}</span>}
         </div>
-        <button
-          onClick={() => {
-            dirtyRef.current = true;
-            setChart(emptyCallChart());
-          }}
-          className={cn("text-[10px] transition-colors", dark ? "text-white/50 hover:text-red-300" : "text-muted-foreground hover:text-red-500")}
-        >
-          {t("consult.notes.clear")}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              dirtyRef.current = true;
+              void persistChart(JSON.stringify(chart));
+            }}
+            className={cn("text-[10px] font-semibold", dark ? "text-emerald-300 hover:text-emerald-200" : "text-primary hover:text-primary/80")}
+          >
+            {t("consult.notes.save_now", "Save")}
+          </button>
+          <button
+            onClick={() => {
+              dirtyRef.current = true;
+              setChart(emptyCallChart());
+            }}
+            className={cn("text-[10px] transition-colors", dark ? "text-white/50 hover:text-red-300" : "text-muted-foreground hover:text-red-500")}
+          >
+            {t("consult.notes.clear")}
+          </button>
+        </div>
       </div>
     </div>
   );

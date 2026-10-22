@@ -15,6 +15,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import { AppointmentCompletionGate } from "./components/consultatioRoom/AppointmentCompletionGate.tsx";
+import { PostCallRejoinBar } from "./components/consultatioRoom/PostCallRejoinBar.tsx";
 import { GlobalInstantPill } from "./components/GlobalInstantPill.tsx";
 import { WhatsAppFloat } from "./components/WhatsAppFloat.tsx";
 import {
@@ -305,6 +306,7 @@ const App = () => (
           <IdleLogoutGuard />
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
+          <PostCallRejoinBar />
           <GlobalInstantPill />
           <WhatsAppFloat />
           <AccessPromptManager />

@@ -520,6 +520,10 @@ export function appRoutes(router) {
 
   router.post("/auth/logout", requireAuth, async (req, res, next) => {
     try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      if (doctorId && await hasColumn("doctors", "instant_consultation")) {
+        await update("doctors", doctorId, { instant_consultation: 0 });
+      }
       await pool.query("DELETE FROM personal_access_tokens WHERE id = ?", [req.auth.token.id]);
       res.json({ message: "Signed out." });
     } catch (error) {
@@ -2040,6 +2044,8 @@ export function appRoutes(router) {
               ? `${Math.floor(waitingSeconds / 60)}m`
               : `${waitingSeconds}s`,
           created_at: row.created_at || null,
+          patient_id: row.patient_id || row.user_id || null,
+          user_id: row.user_id || null,
         };
         });
         seenToday = Number((await one(

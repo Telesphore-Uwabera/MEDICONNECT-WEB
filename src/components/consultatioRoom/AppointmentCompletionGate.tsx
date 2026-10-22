@@ -8,8 +8,8 @@
 // It's mounted once at the app root (next to GlobalCallOverlay) so it works no
 // matter what page the doctor is on when the call ends.
 
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Loader2, Video } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "i18next";
 import { useCallContext } from "@/context/CallContext";
@@ -28,7 +28,7 @@ import type { CareOrderType } from "@/hooks/doctor/use-care-orders";
 import { getErrMsg } from "@/pages/doctor/appointments/shared/helpers";
 
 export function AppointmentCompletionGate() {
-  const { pendingCompletion, clearAppointmentCompletion } = useCallContext();
+  const { pendingCompletion, clearAppointmentCompletion, pausedCall, startCall } = useCallContext();
   if (!pendingCompletion) return null;
   // Re-key on appointment id so internal step state resets per appointment.
   return (
@@ -36,6 +36,14 @@ export function AppointmentCompletionGate() {
       key={pendingCompletion.appointmentId}
       appointmentId={pendingCompletion.appointmentId}
       onDone={clearAppointmentCompletion}
+      onRejoin={
+        pausedCall
+          ? () => {
+              clearAppointmentCompletion();
+              startCall(pausedCall.roomName, pausedCall.token);
+            }
+          : undefined
+      }
     />
   );
 }
@@ -43,12 +51,15 @@ export function AppointmentCompletionGate() {
 function CompletionFlow({
   appointmentId,
   onDone,
+  onRejoin,
 }: {
   appointmentId: number;
   onDone: () => void;
+  onRejoin?: () => void;
 }) {
   const { data, isLoading } = useGetAppointment(appointmentId);
   const complete = useCompleteAppointment();
+  const { clearPausedCall } = useCallContext();
   const [step, setStep] = useState<"record" | "prescription" | "continue" | "booking" | "refer" | "order">("record");
   const [referKind, setReferKind] = useState<ReferralTargetType>("hospital");
   const [referUrgency, setReferUrgency] = useState("medium");
@@ -67,6 +78,7 @@ function CompletionFlow({
     complete.mutate(appointmentId, {
       onSuccess: () => {
         toast.success(t("consult.booking.consultation_complete"));
+        clearPausedCall();
         onDone();
       },
       onError: (err: unknown) => {
@@ -91,8 +103,31 @@ function CompletionFlow({
   }
 
   // Step 1 — required: consultation summary (closing cancels completion).
+  const rejoinBar = onRejoin ? (
+    <div className="fixed bottom-5 left-1/2 z-[10001] flex w-[min(28rem,calc(100vw-1.5rem))] -translate-x-1/2 items-center justify-between gap-3 rounded-[8px] border border-emerald-500/30 bg-[#111] px-4 py-3 text-white shadow-2xl">
+      <p className="text-[12px] text-white/80">
+        {t("consult.call.ended_rejoin_hint", "You can rejoin until the visit is marked complete.")}
+      </p>
+      <button
+        type="button"
+        onClick={onRejoin}
+        className="flex h-9 shrink-0 items-center gap-1.5 rounded-[6px] bg-emerald-600 px-3 text-[12px] font-semibold hover:bg-emerald-500"
+      >
+        <Video className="h-3.5 w-3.5" />
+        {t("consult.bookings.rejoin", "Rejoin")}
+      </button>
+    </div>
+  ) : null;
+
+  const wrap = (node: ReactNode) => (
+    <>
+      {rejoinBar}
+      {node}
+    </>
+  );
+
   if (step === "record") {
-    return (
+    return wrap(
       <ConsultationSummaryModal
         appointmentId={appointmentId}
         patientId={patientId}
@@ -101,13 +136,13 @@ function CompletionFlow({
         defaultDiagnosis={defaultDiagnosis}
         onClose={onDone}
         onSaved={() => setStep("prescription")}
-      />
+      />,
     );
   }
 
   // Step 2 — optional: quick prescription (create + issue + optional pharmacy).
   if (step === "prescription") {
-    return (
+    return wrap(
       <QuickPrescriptionModal
         appointmentId={appointmentId}
         patientName={patientName}
@@ -115,12 +150,12 @@ function CompletionFlow({
         defaultNotes={defaultNotes}
         onSkip={() => setStep("continue")}
         onDone={() => setStep("continue")}
-      />
+      />,
     );
   }
 
   if (step === "continue") {
-    return (
+    return wrap(
       <CareContinuePanel
         patientName={patientName}
         onChoose={(choice) => {
@@ -145,12 +180,12 @@ function CompletionFlow({
             setStep("order");
           }
         }}
-      />
+      />,
     );
   }
 
   if (step === "refer") {
-    return (
+    return wrap(
       <ReferralCreateModal
         open
         kind={referKind}
@@ -162,12 +197,12 @@ function CompletionFlow({
         onClose={backToContinue}
         onSkip={backToContinue}
         onCreated={backToContinue}
-      />
+      />,
     );
   }
 
   if (step === "order") {
-    return (
+    return wrap(
       <ClinicalOrderModal
         open
         kind={orderKind}
@@ -179,11 +214,11 @@ function CompletionFlow({
         onClose={backToContinue}
         onSkip={backToContinue}
         onCreated={backToContinue}
-      />
+      />,
     );
   }
 
-  return (
+  return wrap(
     <BookPhysicalModal
       open
       onClose={backToContinue}
@@ -193,6 +228,6 @@ function CompletionFlow({
       defaultNotes={defaultNotes}
       onSkip={backToContinue}
       onBooked={backToContinue}
-    />
+    />,
   );
 }

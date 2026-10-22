@@ -134,7 +134,7 @@ export function summaryHasRedFlagAlert(value: unknown): boolean {
 export interface CreateSummaryPayload {
   appointment_id?: number | null;
   instant_consultation_id?: number | null;
-  patient_id: number;
+  patient_id?: number;
   chief_complaint?: string | null;
   history_of_present_illness?: string | null;
   review_of_systems?: string | null;
@@ -233,14 +233,25 @@ export function useConsultationSummary(id: number | null) {
    POST /doctor/consultation-summaries
 ───────────────────────────────────────────── */
 
+function unwrapSummary(res: unknown): ConsultationSummary | undefined {
+  if (!res || typeof res !== "object") return undefined;
+  const body = res as { summary?: ConsultationSummary; data?: ConsultationSummary; id?: number };
+  if (body.summary?.id) return body.summary;
+  if (body.data?.id) return body.data;
+  if (typeof body.id === "number" && body.id > 0) return body as ConsultationSummary;
+  return undefined;
+}
+
 export function useCreateConsultationSummary() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateSummaryPayload) =>
-      apiFetch<{ message: string; summary: ConsultationSummary }>(BASE, {
+    mutationFn: async (payload: CreateSummaryPayload) => {
+      const res = await apiFetch<{ message: string; summary?: ConsultationSummary; data?: ConsultationSummary }>(BASE, {
         method: "POST",
         body: payload,
-      }),
+      });
+      return { message: res.message, summary: unwrapSummary(res) };
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: summaryKeys.all() }),
   });
 }
@@ -252,11 +263,13 @@ export function useCreateConsultationSummary() {
 export function useUpdateConsultationSummary() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: UpdateSummaryPayload }) =>
-      apiFetch<{ message: string; summary: ConsultationSummary }>(`${BASE}/${id}`, {
+    mutationFn: async ({ id, payload }: { id: number; payload: UpdateSummaryPayload }) => {
+      const res = await apiFetch<{ message: string; summary?: ConsultationSummary; data?: ConsultationSummary }>(`${BASE}/${id}`, {
         method: "PUT",
         body: payload,
-      }),
+      });
+      return { message: res.message, summary: unwrapSummary(res) };
+    },
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: summaryKeys.detail(id) });
       qc.invalidateQueries({ queryKey: summaryKeys.all() });

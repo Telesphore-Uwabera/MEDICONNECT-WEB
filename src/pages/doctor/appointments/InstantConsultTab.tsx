@@ -196,7 +196,7 @@ export function InstantConsultTab() {
   const declineInstant = useDeclineInstant();
   const joinInstant = useJoinInstant();
   const completeInstant = useCompleteInstant();
-  const { startCall, activeCall, endCall: hangUpCall } = useCallContext();
+  const { startCall, activeCall, endCall: hangUpCall, clearPausedCall } = useCallContext();
 
   // In-progress session the doctor can rejoin after navigating away. Suppressed
   // while a call overlay is already open.
@@ -311,7 +311,11 @@ export function InstantConsultTab() {
           const nativeCid = Number(decodedToken?.consultation_id);
           if (Number.isFinite(nativeCid) && nativeCid > 0 && nativeCid !== item.id) {
             consultIdByRequest.current[item.id] = nativeCid;
+            decodedToken.instant_consultation_id = nativeCid;
+          } else if (Number.isFinite(nativeCid) && nativeCid > 0) {
+            decodedToken.instant_consultation_id = nativeCid;
           }
+          decodedToken.instant_consultation_request_id = item.id;
           // The chat API needs the consultation id; it isn't in the token natively.
           decodedToken.consultation_id = Number.isFinite(consultationId) ? consultationId : item.id;
           enrichedToken = encodeURIComponent(btoa(JSON.stringify(decodedToken)));
@@ -341,6 +345,7 @@ export function InstantConsultTab() {
       onSuccess: () => {
         hangUpCall();
         call.endCall();
+        clearPausedCall();
         toast.success(t("consult.bookings.session_completed"));
       },
       onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_complete"))),
@@ -490,6 +495,7 @@ export function InstantConsultTab() {
             <InstantNotesSidebar
               onClose={() => setNotesOpen(false)}
               consultationId={joined[0]?.id}
+              instantConsultationId={resolveInstantConsultId(joined[0] ?? null)}
               patientId={patientIdOf(joined[0] ?? null)}
               patientName={joined[0]?.guest_name || joined[0]?.guest_phone}
               patientPhone={joined[0]?.guest_phone}
@@ -662,7 +668,7 @@ export function InstantConsultTab() {
                     onOpen={() => openDetail(item)}
                     onComplete={() => completeConsult(item)}
                     onOpenFile={() => handleComplete(item)}
-                    onJoin={() => handleJoin(item)}
+                    onJoin={!activeCall ? () => handleJoin(item) : undefined}
                     isCompleting={activeAction?.id === item.id && activeAction.action === "completing"}
                     isJoining={activeAction?.id === item.id && activeAction.action === "joining"}
                   />
@@ -702,6 +708,12 @@ export function InstantConsultTab() {
                                 const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
                                 try {
                                   const decoded = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
+                                  const nativeCid = Number(decoded?.consultation_id);
+                                  if (Number.isFinite(nativeCid) && nativeCid > 0) {
+                                    if (nativeCid !== item.id) consultIdByRequest.current[item.id] = nativeCid;
+                                    decoded.instant_consultation_id = nativeCid;
+                                  }
+                                  decoded.instant_consultation_request_id = item.id;
                                   decoded.consultation_id = item.id;
                                   startCall(roomName, attachPatientToCallToken(decoded, item));
                                 } catch { /* fallback */ }
@@ -876,7 +888,7 @@ export function InstantConsultTab() {
       )}
 
       {/* Step 1 — required: consultation summary (SOAP note) */}
-      {recordItem != null && (
+      {recordItem != null && !activeCall && (
         <ConsultationSummaryModal
           instantConsultationId={resolveInstantConsultId(recordItem)}
           patientId={recordPatientId}
@@ -893,7 +905,7 @@ export function InstantConsultTab() {
       )}
 
       {/* Step 2 — optional: quick prescription (create + issue + optional pharmacy) */}
-      {prescriptionItem != null && (
+      {prescriptionItem != null && !activeCall && (
         <QuickPrescriptionModal
           instantConsultationId={resolveInstantConsultId(prescriptionItem) ?? undefined}
           patientName={prescriptionItem.guest_phone}
@@ -910,7 +922,7 @@ export function InstantConsultTab() {
         />
       )}
 
-      {careItem != null && !bookingItem && !referItem && !orderKindShown && (
+      {careItem != null && !activeCall && !bookingItem && !referItem && !orderKindShown && (
         <CareContinuePanel
           patientName={careItem.guest_phone}
           onChoose={(choice) => {
@@ -939,7 +951,7 @@ export function InstantConsultTab() {
           }}
         />
       )}
-      {referItem != null && (
+      {referItem != null && !activeCall && (
         <ReferralCreateModal
           open
           kind={referKind}
@@ -952,7 +964,7 @@ export function InstantConsultTab() {
           onCreated={() => setReferItem(null)}
         />
       )}
-      {careItem != null && orderKindShown && (
+      {careItem != null && !activeCall && orderKindShown && (
         <ClinicalOrderModal
           open
           kind={orderKind}
@@ -965,7 +977,7 @@ export function InstantConsultTab() {
         />
       )}
       {/* Step 4 - optional: book physical appointment, then complete */}
-      {bookingItem != null && (
+      {bookingItem != null && !activeCall && (
         <BookPhysicalModal
           open
           onClose={() => setBookingItem(null)}

@@ -1517,6 +1517,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                 <InstantNotesSidebar
                   onClose={() => setNotesOpen(false)}
                   consultationId={effectiveConsultationId}
+                  instantConsultationId={Number((token as { instant_consultation_id?: number }).instant_consultation_id) || null}
                   patientId={notesPatientId}
                   patientName={notesPatientName}
                   patientPhone={notesPatientPhone}
@@ -1535,11 +1536,6 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             <button onClick={toggleAudio} title={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-label={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-400 text-white", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
               {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
             </button>
-            {isOwner && (
-              <button onClick={togglePatientAudio} title={remoteAudioEnabled ? t("consult.call.mute_patient") : t("consult.call.unmute_patient")} aria-label={remoteAudioEnabled ? t("consult.call.mute_patient") : t("consult.call.unmute_patient")} aria-pressed={!remoteAudioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", remoteAudioEnabled ? "bg-amber-500/80 hover:bg-amber-400 text-white" : "bg-red-500 hover:bg-red-400 text-white")}>
-                {remoteAudioEnabled ? <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
-              </button>
-            )}
 
             <button onClick={toggleVideo} title={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-label={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-400 text-white")}>
               {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
@@ -1594,7 +1590,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                       setChatOpen(false);
                       setProofsOpen(false);
                     }
-                  }} title={t("consult.call.call_notes")} aria-label={t("consult.call.call_notes")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                  }} title={t("consult.bookings.patient_file", "Patient file")} aria-label={t("consult.bookings.patient_file", "Patient file")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
                     <FileText className="w-5 h-5" />
                   </button>
                 )}
