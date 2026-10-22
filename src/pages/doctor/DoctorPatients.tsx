@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -216,6 +217,7 @@ const DoctorPatients = () => {
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
+  const [page, setPage] = useState(1);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -255,6 +257,13 @@ const DoctorPatients = () => {
       }
     });
   }, [filters, t]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   const highRiskCount = filtered.filter((p) => p.risk === "High").length;
 
@@ -490,7 +499,7 @@ const DoctorPatients = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((p) => (
+                    {paged.map((p) => (
                       <tr
                         key={p.id}
                         className="border-t border-border hover:bg-secondary/30 transition-smooth"
@@ -536,10 +545,13 @@ const DoctorPatients = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {filtered.map((p) => (
+                {paged.map((p) => (
                   <PatientCard key={p.id} p={p} onAction={handleAction} />
                 ))}
               </div>
+            )}
+            {filtered.length > 0 && (
+              <TablePager page={page} lastPage={lastPage} total={filtered.length} onPageChange={setPage} />
             )}
           </div>
         </main>

@@ -80,8 +80,8 @@ function toQueryString(params?: SettingsAuditLogParams) {
   const query = new URLSearchParams();
   if (params?.group) query.set("group", params.group);
   if (params?.action) query.set("action", params.action);
-  if (params?.per_page) query.set("per_page", String(params.per_page));
-  if (params?.page) query.set("page", String(params.page));
+  query.set("page", String(params?.page ?? 1));
+  query.set("per_page", String(params?.per_page ?? 10));
   return query.toString();
 }
 
@@ -138,7 +138,7 @@ export function useGetSettingsAuditLogs(params?: SettingsAuditLogParams) {
     queryFn: () =>
       readOrEmpty<SettingsAuditLogsResponse>(
         `${BASE}/audit-logs${queryString ? `?${queryString}` : ""}`,
-        { data: [], current_page: 1, per_page: 15, total: 0 },
+        { data: [], current_page: 1, per_page: 10, total: 0 },
       ),
     placeholderData: (prev) => prev,
   });

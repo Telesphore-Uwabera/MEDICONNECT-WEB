@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast as sonnerToast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
 
@@ -290,6 +291,7 @@ const PharmacyOrders = () => {
   const { t } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -346,6 +348,13 @@ const PharmacyOrders = () => {
         }
       });
   }, [orders, filters.search, filters.sort]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   // ── Count per status from the current API response ───────────────────────
   const counts = useMemo(
@@ -685,7 +694,7 @@ const PharmacyOrders = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((o) => (
+                    {paged.map((o) => (
                       <tr
                         key={o.id}
                         className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
@@ -761,6 +770,14 @@ const PharmacyOrders = () => {
                     ))}
                   </tbody>
                 </table>
+                <div className="px-4 pb-3">
+                  <TablePager
+                    page={page}
+                    lastPage={lastPage}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                  />
+                </div>
               </div>
             )}
           </div>

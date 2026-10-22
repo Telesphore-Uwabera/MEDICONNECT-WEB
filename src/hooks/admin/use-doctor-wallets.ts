@@ -220,7 +220,7 @@ function normalizeWithdrawalRequest(raw: RawWithdrawalRequest): WithdrawalReques
 export function useGetDoctorWallets(search?: string, page = 1) {
   const params = new URLSearchParams();
   params.append("page", String(page));
-  params.append("per_page", "20");
+  params.append("per_page", "10");
   if (search) params.append("search", search);
 
   return useQuery<PaginatedResponse<DoctorWallet>>({
@@ -345,6 +345,7 @@ export function useGetPayouts(status?: string, doctorId?: number, page = 1, enab
   if (status) params.append("status", status);
   if (doctorId) params.append("doctor_id", String(doctorId));
   params.append("page", String(page));
+  params.append("per_page", "10");
 
   return useQuery<PaginatedResponse<Payout>>({
     queryKey: ["admin-payouts", status ?? "", doctorId ?? "", page],
@@ -404,6 +405,7 @@ export function useGetTransactions(doctorId?: number, type?: "credit" | "debit",
   if (doctorId) params.append("doctor_id", String(doctorId));
   if (type) params.append("type", type);
   params.append("page", String(page));
+  params.append("per_page", "10");
 
   return useQuery<PaginatedResponse<Transaction>>({
     queryKey: ["admin-transactions", doctorId ?? "", type ?? "", page],
@@ -419,7 +421,7 @@ export function useGetWithdrawalRequests(status?: string, page = 1, enabled = tr
   const params = new URLSearchParams();
   if (status && status !== "all") params.append("status", status);
   params.append("page", String(page));
-  params.append("per_page", "20");
+  params.append("per_page", "10");
   if (search) params.append("search", search);
 
   return useQuery<PaginatedResponse<WithdrawalRequest>>({

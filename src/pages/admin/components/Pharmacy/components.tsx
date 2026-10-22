@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDateOnly } from "@/lib/date";
-import {X, SlidersHorizontal, Search, ChevronDown, ChevronLeft, ChevronRight,
+import {X, SlidersHorizontal, Search, ChevronDown,
   ShieldCheck, ShieldOff, Ban, Loader2, Trash2, MapPin, Calendar, Hash, BadgeCheck,
   FlaskConical, Building2, Phone, Mail, Globe, Clock, Truck, Package,
   AlertCircle, ExternalLink, FileText, Activity, Pill as PillIcon,
@@ -22,6 +22,7 @@ import {
   type PrescriptionStatus,
 } from "@/hooks/admin/use-pharmacy-prescriptions";
 import { DateField } from "@/components/ui/date-field";
+import { TablePager } from "@/components/TablePager";
 
  
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -239,11 +240,12 @@ export function MobileSearchBar({ searchInput, onSearch }: { searchInput: string
   );
 }
  
-export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManage, onPageChange, onClearAll }: {
+export function PharmacyTable({ pharmacies, isLoading, page, totalPages, total, onManage, onPageChange, onClearAll }: {
   pharmacies: ApiPharmacy[];
   isLoading: boolean;
   page: number;
   totalPages: number;
+  total?: number;
   onManage: (p: ApiPharmacy) => void;
   onPageChange: (page: number) => void;
   onClearAll: () => void;
@@ -297,26 +299,12 @@ export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManag
           : pharmacies.map((p) => <PharmacyCard key={p.id} p={p} onManage={onManage} />)}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-          <p className="text-[11px] text-muted-foreground">
-            Page <span className="font-semibold text-foreground">{page}</span> of{" "}
-            <span className="font-semibold text-foreground">{totalPages}</span>
-          </p>
-          <div className="flex items-center gap-1.5">
-            {[
-              { icon: ChevronLeft, disabled: page <= 1, next: page - 1 },
-              { icon: ChevronRight, disabled: page >= totalPages, next: page + 1 },
-            ].map(({ icon: Icon, disabled, next }) => (
-              <button key={next} disabled={disabled} onClick={() => onPageChange(next)}
-                className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <Icon className="w-3.5 h-3.5" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <TablePager
+        page={page}
+        lastPage={Math.max(1, totalPages)}
+        total={total}
+        onPageChange={onPageChange}
+      />
     </>
   );
 }
@@ -926,28 +914,12 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
               ))}
             </div>
 
-            {/* Pagination */}
-            {(data?.total ?? 0) > (data?.per_page ?? 0) && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10.5px] text-muted-foreground/40">
-                  {data?.total} total · page {page} of {data?.last_page}
-                </span>
-                <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                    Prev
-                  </Button>
-                  <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page >= (data?.last_page ?? 1)}
-                    onClick={() => setPage((p) => p + 1)}>
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
+            <TablePager
+              page={page}
+              lastPage={Math.max(1, data?.last_page ?? 1)}
+              total={data?.total}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

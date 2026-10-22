@@ -56,6 +56,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { TablePager } from "@/components/TablePager";
 import { cn } from "@/lib/utils";
 import type {
   ApiDoctor,
@@ -821,34 +822,12 @@ function QuickConsultsTab({ doctorId }: { doctorId: number }) {
               ))}
             </div>
 
-            {/* Pagination */}
-            {data!.total > data!.per_page && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10.5px] text-muted-foreground/40">
-                  Page {page} of {Math.ceil(data!.total / data!.per_page)}
-                </span>
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page * data!.per_page >= data!.total}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    <ChevronRight className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            <TablePager
+              page={page}
+              lastPage={Math.max(1, Math.ceil(data!.total / data!.per_page))}
+              total={data!.total}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>
@@ -1353,33 +1332,12 @@ function AppointmentsTab({ doctorId }: { doctorId: number }) {
               ))}
             </div>
 
-            {data.total > data.per_page && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10.5px] text-muted-foreground/40">
-                  {data.total} total · page {page}
-                </span>
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page * data.per_page >= data.total}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
+            <TablePager
+              page={page}
+              lastPage={Math.max(1, Math.ceil(data.total / data.per_page))}
+              total={data.total}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

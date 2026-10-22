@@ -1,7 +1,8 @@
 ﻿import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -891,6 +892,7 @@ function HospitalInsurances() {
   const deleteIns = useDeleteInsurance();
  
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const [coverageFilter, setCoverageFilter] = useState<
     "all" | "full" | "partial"
@@ -930,6 +932,13 @@ function HospitalInsurances() {
       return true;
     });
   }, [insurances, search, coverageFilter, hasLogo]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, coverageFilter, hasLogo]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
  
   const stats = useMemo(
     () => ({
@@ -1197,18 +1206,21 @@ function HospitalInsurances() {
                 )}
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {filtered.map((ins) => (
-                  <InsuranceCard
-                    key={ins.id}
-                    ins={ins}
-                    onEdit={(i) => {
-                      setMutError(null);
-                      setEditingIns(i);
-                    }}
-                    onDelete={setDeletingIns}
-                  />
-                ))}
+              <div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {paged.map((ins) => (
+                    <InsuranceCard
+                      key={ins.id}
+                      ins={ins}
+                      onEdit={(i) => {
+                        setMutError(null);
+                        setEditingIns(i);
+                      }}
+                      onDelete={setDeletingIns}
+                    />
+                  ))}
+                </div>
+                <TablePager page={page} lastPage={lastPage} total={filtered.length} onPageChange={setPage} />
               </div>
             )}
           </div>

@@ -97,7 +97,8 @@ export function useGetAdminPatients(params: GetAdminPatientsParams = {}) {
       const qs = new URLSearchParams();
       if (status)   qs.set("status", status);
       if (search)   qs.set("search", search);
-      if (page > 1) qs.set("page", String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
 
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<PaginatedPatients>(url);

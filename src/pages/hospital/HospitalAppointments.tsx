@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -898,6 +899,7 @@ const HospitalAppointments = () => {
     useState<ServiceBookingSummary | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const { data: departments = [] } = useGetDepartments({ active_only: true });
   const selectedDepartmentId =
@@ -1009,6 +1011,13 @@ const HospitalAppointments = () => {
       );
     });
   }, [bookings, filters]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   const stats = useMemo(() => {
     const total = bookings.length;
@@ -1457,7 +1466,7 @@ const HospitalAppointments = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {filtered.map((b) => (
+                {paged.map((b) => (
                   <AppointmentCard
                     key={b.id}
                     booking={b}
@@ -1468,6 +1477,7 @@ const HospitalAppointments = () => {
                     isActing={isActing}
                   />
                 ))}
+                <TablePager page={page} lastPage={lastPage} total={filtered.length} onPageChange={setPage} />
               </div>
             )}
           </div>

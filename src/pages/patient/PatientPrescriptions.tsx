@@ -29,6 +29,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import {
   PrescriptionApiStatus,
   useGetPatientPrescriptions,
@@ -75,6 +76,7 @@ const PatientPrescriptions = () => {
   const [pharmacyModalOpen, setPharmacyModalOpen] = useState(false);
   const [prescriptionToSend, setPrescriptionToSend] = useState<Prescription | null>(null);
   const [medInfoOpen, setMedInfoOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const apiFilters = useMemo<PrescriptionFilters>(
     () => ({
@@ -126,6 +128,13 @@ const PatientPrescriptions = () => {
         : new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
   }, [data, filters.sort]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(prescriptions.length);
+  const paged = paginateRows(prescriptions, page);
 
   const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -406,7 +415,7 @@ const PatientPrescriptions = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {prescriptions.map((p) => {
+                    {paged.map((p) => {
                       const expiring = isExpiringSoon(p.valid_until);
                       const expired = new Date(p.valid_until).getTime() < Date.now();
                       return (
@@ -501,15 +510,21 @@ const PatientPrescriptions = () => {
                     })}
                   </tbody>
                 </table>
+                <div className="px-3 pb-3">
+                  <TablePager page={page} lastPage={lastPage} total={prescriptions.length} onPageChange={setPage} />
+                </div>
               </div>
             )}
 
             {/* Card view */}
             {!isLoading && !isError && prescriptions.length > 0 && view === "cards" && (
-              <div className="grid md:grid-cols-2 gap-2.5">
-                {prescriptions.map((p) => (
-                  <PrescriptionCard key={p.id} p={p} onAction={handleAction} onViewDetails={handleViewDetails} />
-                ))}
+              <div>
+                <div className="grid md:grid-cols-2 gap-2.5">
+                  {paged.map((p) => (
+                    <PrescriptionCard key={p.id} p={p} onAction={handleAction} onViewDetails={handleViewDetails} />
+                  ))}
+                </div>
+                <TablePager page={page} lastPage={lastPage} total={prescriptions.length} onPageChange={setPage} />
               </div>
             )}
           </div>

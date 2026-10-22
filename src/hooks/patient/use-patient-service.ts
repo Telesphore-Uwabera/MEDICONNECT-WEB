@@ -88,6 +88,7 @@ export interface ApiSingleBookingResponse {
 export interface ServiceBookingSearchParams {
   status?: BookingStatus;
   page?: number;
+  per_page?: number;
 }
 
 // ─── Query Keys ─────────────────────────────────────────────────────────────────
@@ -106,8 +107,8 @@ export function useGetPatientServiceBookings(
 ) {
   const searchParams = new URLSearchParams();
   if (params.status) searchParams.set("status", params.status);
-  if (params.page && params.page > 1)
-    searchParams.set("page", String(params.page));
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("per_page", String(params.per_page ?? 10));
 
   const queryString = searchParams.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;

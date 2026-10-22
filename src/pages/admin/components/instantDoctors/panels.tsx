@@ -45,6 +45,7 @@ import {
   type ApiDoctor,
 } from "@/hooks/admin/use-admin-doctors";
 import { useGetSpecializationFees } from "@/hooks/admin/use-admin-doctors";
+import { TablePager } from "@/components/TablePager";
 import { cn } from "@/lib/utils";
 import {
   getErrorMessage,
@@ -1129,33 +1130,12 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
                 <QuickConsultCard key={qc.id} qc={qc} />
               ))}
             </div>
-            {total > perPage && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10.5px] text-muted-foreground/40">
-                  Page {page} of {totalPages}
-                </span>
-                <div className="flex gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0 rounded-[5px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 w-7 p-0 rounded-[5px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    <ChevronRight className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            <TablePager
+              page={page}
+              lastPage={totalPages}
+              total={total}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/date";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import {ClipboardList,
   Plus,
   Pencil,
@@ -728,6 +729,7 @@ function ChecklistQuestions() {
   const { t, i18n } = useTranslation(); 
 
   const [searchInput, setSearchInput] = useState("");
+  const [page, setPage] = useState(1);
   const [panelMode, setPanelMode] = useState<"create" | "edit" | null>(null);
   const [selectedQuestion, setSelectedQuestion] = useState<ApiChecklistQuestion | null>(null);
   const [deletingQuestion, setDeletingQuestion] = useState<ApiChecklistQuestion | null>(null);
@@ -745,6 +747,13 @@ function ChecklistQuestions() {
   const filtered = questions.filter((q) =>
     q.question_en.toLowerCase().includes(searchInput.toLowerCase()),
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchInput]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const isDeleting = deleteMutation.isPending;
@@ -942,7 +951,7 @@ function ChecklistQuestions() {
                         {isLoading ? (
                           <SkeletonRows />
                         ) : (
-                          filtered.map((q, i) => (
+                          paged.map((q, i) => (
                             <QuestionRow
                               key={q.id}
                               q={q}
@@ -967,7 +976,7 @@ function ChecklistQuestions() {
                           className="h-28 rounded-[6px] border border-border/60 bg-card animate-pulse"
                         />
                       ))
-                      : filtered.map((q, i) => (
+                      : paged.map((q, i) => (
                         <QuestionCard
                           key={q.id}
                           q={q}
@@ -979,6 +988,12 @@ function ChecklistQuestions() {
                         />
                       ))}
                   </div>
+                  <TablePager
+                    page={page}
+                    lastPage={lastPage}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                  />
                 </>
               )}
             </div>

@@ -38,6 +38,7 @@ import {
   type ApiInsurance,
   type InsurancePayload,
 } from "@/hooks/admin/use-admin-insurances";
+import { TablePager } from "@/components/TablePager";
 import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
 
@@ -1163,35 +1164,12 @@ function ManageInsurances() {
                     ))}
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                    <p className="text-[11px] text-muted-foreground">
-                      Page{" "}
-                      <span className="font-semibold text-foreground">{page}</span>{" "}
-                      of{" "}
-                      <span className="font-semibold text-foreground">
-                        {totalPages}
-                      </span>
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        disabled={page <= 1}
-                        onClick={() => setPage((p) => p - 1)}
-                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        disabled={page >= totalPages}
-                        onClick={() => setPage((p) => p + 1)}
-                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <TablePager
+                  page={page}
+                  lastPage={Math.max(1, totalPages)}
+                  total={total}
+                  onPageChange={setPage}
+                />
               </>
             )}
           </div>

@@ -25,7 +25,6 @@ import {
   ShoppingBag,
   QrCode,
   Download,
-  ChevronRight,
   Hash,
   CalendarDays,
   FlaskConical,
@@ -33,9 +32,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"; 
@@ -43,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { TABLE_PAGE_SIZE, TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 
 import {
   useGetPrescriptionRequests,
@@ -892,7 +889,6 @@ const PharmacyPrescriptions = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [drawerRx, setDrawerRx] = useState<PrescriptionRequest | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -960,14 +956,8 @@ const PharmacyPrescriptions = () => {
     fulfilled: requests.filter((r) => r.status === "fulfilled").length,
   }), [requests]);
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, page, pageSize]);
-
-  const startItem = (page - 1) * pageSize + 1;
-  const endItem = Math.min(page * pageSize, filtered.length);
+  const totalPages = tablePageCount(filtered.length);
+  const paginated = useMemo(() => paginateRows(filtered, page), [filtered, page]);
  
   const filterFields = useMemo(() => [
     {
@@ -1221,77 +1211,21 @@ const PharmacyPrescriptions = () => {
                           key={rx.id}
                           rx={rx}
                           onViewDetails={setDrawerRx}
-                          index={(page - 1) * pageSize + i}
+                          index={(page - 1) * TABLE_PAGE_SIZE + i}
                         />
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-border/40 bg-muted/20">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground">
-                        Showing{" "}
-                        <span className="font-semibold text-foreground">{startItem}</span>-
-                        <span className="font-semibold text-foreground">{endItem}</span> of{" "}
-                        <span className="font-semibold text-foreground">{filtered.length}</span>
-                      </span>
-                      <div className="flex items-center gap-1 ml-2">
-                        <span className="text-[10px] text-muted-foreground">{t("pages.pharmacy.rows")}</span>
-                        <CustomSelect
-                          value={String(pageSize)}
-                          options={[10, 25, 50, 100].map((n) => ({ value: String(n), label: String(n) }))}
-                          onChange={(val) => { setPageSize(Number(val)); setPage(1); }}
-                          compact
-                          className="w-[70px]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => setPage(1)} disabled={page === 1}
-                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                        <ChevronsLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-
-                      <div className="flex items-center gap-0.5 mx-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum: number;
-                          if (totalPages <= 5) pageNum = i + 1;
-                          else if (page <= 3) pageNum = i + 1;
-                          else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
-                          else pageNum = page - 2 + i;
-                          return (
-                            <button key={pageNum} onClick={() => setPage(pageNum)}
-                              className={cn(
-                                "w-7 h-7 rounded-[6px] flex items-center justify-center text-[10px] font-medium transition-all",
-                                page === pageNum
-                                  ? "bg-primary text-primary-foreground border border-primary"
-                                  : "border border-border/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
-                              )}>
-                              {pageNum}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
-                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                        <ChevronsRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <div className="px-4 pb-3">
+                  <TablePager
+                    page={page}
+                    lastPage={totalPages}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                  />
+                </div>
               </div>
             )}
           </div>

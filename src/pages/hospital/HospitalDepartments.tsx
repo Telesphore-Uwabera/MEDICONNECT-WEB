@@ -1,8 +1,9 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { DepartmentFormModal } from "./components/Departmentformmodal";
 
 import {
@@ -649,6 +650,7 @@ const HospitalDepartments = () => {
   // ── Filter state (client-side search + emergency + sort) ──────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -689,6 +691,13 @@ const HospitalDepartments = () => {
         (d.name_kiny && d.name_kiny.toLowerCase().includes(q)),
     );
   }, [departments, filters.search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   // ── Modals / drawer state ─────────────────────────────────────────────────
   const [deptModal, setDeptModal] = useState<{ open: boolean; editing: Department | null }>({
@@ -912,17 +921,20 @@ const HospitalDepartments = () => {
                 )}
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {filtered.map((d) => (
-                  <DepartmentCard
-                    key={d.id}
-                    dept={d}
-                    t={t}
-                    onClick={() => setSelectedDept(d)}
-                    onEdit={(dep) => { setMutError(null); setDeptModal({ open: true, editing: dep }); }}
-                    onDelete={setDeletingDept}
-                  />
-                ))}
+              <div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {paged.map((d) => (
+                    <DepartmentCard
+                      key={d.id}
+                      dept={d}
+                      t={t}
+                      onClick={() => setSelectedDept(d)}
+                      onEdit={(dep) => { setMutError(null); setDeptModal({ open: true, editing: dep }); }}
+                      onDelete={setDeletingDept}
+                    />
+                  ))}
+                </div>
+                <TablePager page={page} lastPage={lastPage} total={filtered.length} onPageChange={setPage} />
               </div>
             )}
           </div>

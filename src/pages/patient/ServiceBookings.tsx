@@ -9,8 +9,6 @@ import { formatDateOnly } from "@/lib/date";
   Clock,
   Building2,
   Stethoscope,
-  ChevronLeft,
-  ChevronRight,
   AlertCircle,
   RefreshCw,
   Search,
@@ -36,6 +34,7 @@ import { formatDateOnly } from "@/lib/date";
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TablePager } from "@/components/TablePager";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -174,7 +173,7 @@ function formatPrice(amount: string | null, currency = "RWF"): string {
 }
 
 function buildApiParams(filters: FilterState): ServiceBookingSearchParams {
-  const params: ServiceBookingSearchParams = { page: filters.page };
+  const params: ServiceBookingSearchParams = { page: filters.page, per_page: 10 };
   if (filters.status !== "all") params.status = filters.status as BookingStatus;
   return params;
 }
@@ -829,75 +828,6 @@ function BookingCardItem({
 }
  
 
-function Pagination({
-  currentPage,
-  totalPages,
-  total,
-  perPage,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  total: number;
-  perPage: number;
-  onPageChange: (p: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-  const { t } = useTranslation();
-
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
-    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-    .reduce<(number | "...")[]>((acc, p, i, arr) => {
-      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
-      acc.push(p);
-      return acc;
-    }, []);
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
-      <p className="text-[10px] text-muted-foreground">
-        {t("pages.patient.page_of_total", { page: currentPage, pages: totalPages, total })}
-      </p>
-      <div className="flex items-center gap-1.5">
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={currentPage <= 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          className="h-7 px-2.5 text-[10px] rounded-[6px]"
-        >
-          <ChevronLeft className="h-3 w-3" />
-        </Button>
-        {pages.map((p, i) =>
-          p === "..." ? (
-            <span key={`e-${i}`} className="text-[10px] text-muted-foreground px-1">...</span>
-          ) : (
-            <Button
-              key={p}
-              size="sm"
-              variant={currentPage === p ? "default" : "outline"}
-              onClick={() => onPageChange(p as number)}
-              className="h-7 w-7 p-0 text-[10px] rounded-[6px]"
-            >
-              {p}
-            </Button>
-          ),
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={currentPage >= totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          className="h-7 px-2.5 text-[10px] rounded-[6px]"
-        >
-          <ChevronRight className="h-3 w-3" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
- 
 function ServiceBookings() {
   const { t, i18n } = useTranslation();
 
@@ -1354,13 +1284,11 @@ function ServiceBookings() {
               </div>
             )}
 
-            {/* Pagination */}
-            {!isLoading && !isError && totalPages > 1 && (
-              <Pagination
-                currentPage={data?.current_page ?? filters.page}
-                totalPages={totalPages}
+            {!isLoading && !isError && (
+              <TablePager
+                page={data?.current_page ?? filters.page}
+                lastPage={totalPages}
                 total={data?.total ?? 0}
-                perPage={data?.per_page ?? 15}
                 onPageChange={(p) => set("page", p)}
               />
             )}

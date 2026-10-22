@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowUpDown,
@@ -33,6 +33,7 @@ import {
 } from "@/hooks/admin/use-admin-services";
 import type { ApiService } from "@/hooks/use-services";
 import { cn } from "@/lib/utils";
+import { TABLE_PAGE_SIZE, TablePager } from "@/components/TablePager";
 
 type StatusFilter = "all" | "active" | "inactive";
 type ServiceLang = "en" | "fr" | "kiny";
@@ -436,11 +437,13 @@ export default function AdminServices() {
   const [editing, setEditing] = useState<ApiService | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [preview, setPreview] = useState<ApiService | null>(null);
+  const [page, setPage] = useState(1);
 
   const queryParams = {
     search,
     is_active: status === "all" ? undefined : status === "active",
-    per_page: 50,
+    per_page: TABLE_PAGE_SIZE,
+    page,
   };
   const { data, isLoading, isError, refetch } =
     useGetAdminServices(queryParams);
@@ -453,6 +456,13 @@ export default function AdminServices() {
         .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999) || a.id - b.id),
     [data],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, status]);
+
+  const servicesTotal = data?.total ?? services.length;
+  const servicesLastPage = Math.max(1, data?.last_page ?? Math.ceil(servicesTotal / TABLE_PAGE_SIZE) || 1);
 
   const activeCount = services.filter((service) => service.is_active).length;
   const inactiveCount = services.length - activeCount;
@@ -757,6 +767,12 @@ export default function AdminServices() {
                     </div>
                   ))}
             </div>
+            <TablePager
+              page={page}
+              lastPage={servicesLastPage}
+              total={servicesTotal}
+              onPageChange={setPage}
+            />
           </section>
         </div>
 

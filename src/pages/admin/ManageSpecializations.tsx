@@ -40,6 +40,7 @@ import { StatCard } from "@/components/StatCard";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { toast as sonnerToast } from "sonner";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1308,6 +1309,7 @@ function ManageSpecializations() {
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   // Specialization panel
   const [specPanelMode, setSpecPanelMode] = useState<SpecPanelMode | null>(
@@ -1382,6 +1384,13 @@ function ManageSpecializations() {
         (s.description ?? "").toLowerCase().includes(q),
     );
   }, [specs, search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const lastPage = tablePageCount(filteredSpecs.length);
+  const pagedSpecs = paginateRows(filteredSpecs, page);
 
   // Stats
   const withSubSpec = specs.filter(
@@ -1672,7 +1681,7 @@ function ManageSpecializations() {
                       {isLoading ? (
                         <SkeletonRows cols={6} />
                       ) : (
-                        filteredSpecs.map((spec) => (
+                        pagedSpecs.map((spec) => (
                           <SpecializationRow
                             key={spec.id}
                             spec={spec}
@@ -1702,7 +1711,7 @@ function ManageSpecializations() {
                         className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse"
                       />
                     ))
-                    : filteredSpecs.map((spec) => (
+                    : pagedSpecs.map((spec) => (
                       <SpecializationCard
                         key={spec.id}
                         spec={spec}
@@ -1717,6 +1726,12 @@ function ManageSpecializations() {
                       />
                     ))}
                 </div>
+                <TablePager
+                  page={page}
+                  lastPage={lastPage}
+                  total={filteredSpecs.length}
+                  onPageChange={setPage}
+                />
               </>
             )}
           </div>

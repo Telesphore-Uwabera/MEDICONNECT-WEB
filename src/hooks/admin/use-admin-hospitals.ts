@@ -170,7 +170,8 @@ export function useGetAdminHospitals(params: GetAdminHospitalsParams = {}) {
       if (status)   qs.set("status", status);
       if (type)     qs.set("type",   type);
       if (search)   qs.set("search", search);
-      if (page > 1) qs.set("page",   String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
 
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<PaginatedHospitals>(url);
@@ -206,7 +207,8 @@ export function useGetHospitalServiceBookings(params: GetServiceBookingsParams) 
       if (filters.search)         qs.set("search",          filters.search);
       if (filters.from)           qs.set("from",            filters.from);
       if (filters.to)             qs.set("to",              filters.to);
-      if (page > 1)               qs.set("page",            String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
 
       const url = `/admin/service-bookings/hospital/${hospital_id}${qs.toString() ? `?${qs}` : ""}`;
       return apiFetch<PaginatedServiceBookings>(url);

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import {
   useAdminRefunds,
   useApproveRefund,
@@ -113,12 +114,19 @@ export default function AdminRefunds() {
   });
   const [actionState, setActionState] = useState<ActionState | null>(null);
   const [adminNote, setAdminNote] = useState("");
+  const [page, setPage] = useState(1);
 
   const refundsQuery = useAdminRefunds(filters);
   const approveRefund = useApproveRefund();
   const rejectRefund = useRejectRefund();
   const completeRefund = useCompleteRefund();
   const refunds = getRefundsFromResponse(refundsQuery.data);
+  const lastPage = tablePageCount(refunds.length);
+  const pagedRefunds = paginateRows(refunds, page);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters.status, filters.search, filters.from, filters.to]);
 
   const stats = useMemo(() => {
     const values = {
@@ -300,7 +308,7 @@ export default function AdminRefunds() {
                     </tr>
                   ))
                 ) : refunds.length ? (
-                  refunds.map((refund) => {
+                  pagedRefunds.map((refund) => {
                     const requester = getRequester(refund);
                     const status = normalizeStatus(refund.status);
                     return (
@@ -392,6 +400,11 @@ export default function AdminRefunds() {
               </tbody>
             </table>
           </div>
+          {refunds.length > 0 && (
+            <div className="px-4 pb-3">
+              <TablePager page={page} lastPage={lastPage} total={refunds.length} onPageChange={setPage} />
+            </div>
+          )}
         </section>
       </main>
 

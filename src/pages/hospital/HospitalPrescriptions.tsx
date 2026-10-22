@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -362,6 +363,7 @@ const HospitalPrescriptions = () => {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
@@ -464,6 +466,13 @@ const HospitalPrescriptions = () => {
         }
       });
   }, [allPrescriptions, filters]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   const sentCount = allPrescriptions.filter(
     (p) => p.status === "sent-to-patient" || p.status === "sent-to-pharmacy",
@@ -685,29 +694,32 @@ const HospitalPrescriptions = () => {
                 </button>
               </div>
             ) : (
-              viewMode === "list" ? (
-                <div className="space-y-2">
-                  {filtered.map((p) => (
-                    <PrescriptionListRow
-                      key={p.id}
-                      p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
-                      statusLabel={statusLabel}
-                      channelLabel={channelLabel}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-2">
-                  {filtered.map((p) => (
-                    <PrescriptionCard
-                      key={p.id}
-                      p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
-                      statusLabel={statusLabel}
-                      channelLabel={channelLabel}
-                    />
-                  ))}
-                </div>
-              )
+              <>
+                {viewMode === "list" ? (
+                  <div className="space-y-2">
+                    {paged.map((p) => (
+                      <PrescriptionListRow
+                        key={p.id}
+                        p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                        statusLabel={statusLabel}
+                        channelLabel={channelLabel}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-2">
+                    {paged.map((p) => (
+                      <PrescriptionCard
+                        key={p.id}
+                        p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                        statusLabel={statusLabel}
+                        channelLabel={channelLabel}
+                      />
+                    ))}
+                  </div>
+                )}
+                <TablePager page={page} lastPage={lastPage} total={filtered.length} onPageChange={setPage} />
+              </>
             )}
           </div>
         </main>

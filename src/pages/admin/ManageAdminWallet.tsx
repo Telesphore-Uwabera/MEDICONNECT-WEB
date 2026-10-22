@@ -57,6 +57,7 @@ import {
 } from "@/hooks/admin/use-doctor-wallets";
 import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
+import { TABLE_PAGE_SIZE, TablePager } from "@/components/TablePager";
 
  
 function getErrorMessage(error: unknown): string {
@@ -1271,13 +1272,13 @@ function ManageAdminWallet() {
             : 0;
 
   const perPage =
-    activeTab === "doctors" ? (walletsData?.per_page ?? 20)
-      : activeTab === "withdrawals" ? (withdrawalRequestsData?.per_page ?? 20)
-        : activeTab === "payouts" ? (payoutsData?.per_page ?? 20)
-          : activeTab === "transactions" ? (transactionsData?.per_page ?? 20)
-            : 20;
+    activeTab === "doctors" ? (walletsData?.per_page ?? TABLE_PAGE_SIZE)
+      : activeTab === "withdrawals" ? (withdrawalRequestsData?.per_page ?? TABLE_PAGE_SIZE)
+        : activeTab === "payouts" ? (payoutsData?.per_page ?? TABLE_PAGE_SIZE)
+          : activeTab === "transactions" ? (transactionsData?.per_page ?? TABLE_PAGE_SIZE)
+            : TABLE_PAGE_SIZE;
 
-  const totalPages = Math.ceil(total / perPage);
+  const totalPages = Math.max(1, Math.ceil(total / perPage) || 1);
 
   const totalBalance = wallets.reduce((sum, w) => sum + parseFloat(w.balance || "0"), 0);
   const withdrawalSummary = withdrawalRequestsData?.summary as Record<string, unknown> | undefined;
@@ -1878,30 +1879,14 @@ function ManageAdminWallet() {
                       </>
                     )}
 
-                    {/* Pagination */}
-                    {totalPages > 1 && activeTab !== "main" && (
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                        <p className="text-[11px] text-muted-foreground">
-                          Page <span className="font-semibold text-foreground">{page}</span>{" "}of{" "}
-                          <span className="font-semibold text-foreground">{totalPages}</span>
-                        </p>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            disabled={page <= 1}
-                            onClick={() => setPage((p) => p - 1)}
-                            className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronLeft className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            disabled={page >= totalPages}
-                            onClick={() => setPage((p) => p + 1)}
-                            className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                    {activeTab !== "main" && (
+                      <TablePager
+                        page={page}
+                        lastPage={totalPages}
+                        total={total}
+                        onPageChange={setPage}
+                        className="border-t border-border/60 px-1"
+                      />
                     )}
                   </>
                 )}

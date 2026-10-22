@@ -6,15 +6,14 @@ import { LegalDocumentsManager } from "@/pages/admin/components/LegalDocumentsMa
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { CustomSelect } from "@/components/ui/custom-select"; 
+import { CustomSelect } from "@/components/ui/custom-select";
+import { TABLE_PAGE_SIZE, TablePager } from "@/components/TablePager"; 
 import { cn } from "@/lib/utils";
 import { parseLocalizedText, stringifyLocalizedText } from "@/lib/localized-settings";
 import {
   AlertTriangle,
   Bell,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   CreditCard,
   Eye,
@@ -637,7 +636,6 @@ function AdminSystemSettings() {
   const [auditGroup, setAuditGroup] = useState<"all" | SettingsGroup>("all");
   const [auditAction, setAuditAction] = useState("updated");
   const [auditPage, setAuditPage] = useState(1);
-  const [auditPerPage, setAuditPerPage] = useState(25);
 
   const activeConfig = useMemo(() => groupConfig(activeGroup), [activeGroup]);
   const ActiveGroupIcon = activeConfig.icon;
@@ -650,7 +648,7 @@ function AdminSystemSettings() {
   const auditLogs = useGetSettingsAuditLogs({
     group: auditGroup === "all" ? undefined : auditGroup,
     action: auditAction || undefined,
-    per_page: auditPerPage,
+    per_page: TABLE_PAGE_SIZE,
     page: auditPage,
   });
   const updateSettings = useUpdateSettingsGroup();
@@ -659,7 +657,7 @@ function AdminSystemSettings() {
 
   useEffect(() => {
     setAuditPage(1);
-  }, [auditGroup, auditAction, auditPerPage]);
+  }, [auditGroup, auditAction]);
 
   useEffect(() => {
     const next: Record<string, FormValue> = {};
@@ -683,10 +681,7 @@ function AdminSystemSettings() {
 
   const auditTotal = auditLogs.data?.total ?? 0;
   const auditCurrentPage = auditLogs.data?.current_page ?? auditPage;
-  const auditPageSize = auditLogs.data?.per_page ?? auditPerPage;
-  const auditTotalPages = Math.max(1, Math.ceil(auditTotal / auditPageSize));
-  const auditStart = auditTotal === 0 ? 0 : (auditCurrentPage - 1) * auditPageSize + 1;
-  const auditEnd = Math.min(auditCurrentPage * auditPageSize, auditTotal);
+  const auditTotalPages = Math.max(1, Math.ceil(auditTotal / TABLE_PAGE_SIZE) || 1);
   const updatedCount = settingsQuery.data
     ? Object.keys(settingsQuery.data.settings).filter((key) => settingsQuery.data?.settings[key]?.value !== null).length
     : 0;
@@ -921,20 +916,6 @@ function AdminSystemSettings() {
                     compact
                     className="w-full"
                   />
-                  <div className="col-span-2">
-                    <CustomSelect
-                      value={String(auditPerPage)}
-                      onChange={(val) => setAuditPerPage(Number(val))}
-                      options={[
-                        { value: "10", label: "10 logs per page" },
-                        { value: "25", label: "25 logs per page" },
-                        { value: "50", label: "50 logs per page" },
-                        { value: "100", label: "100 logs per page" },
-                      ]}
-                      compact
-                      className="w-full"
-                    />
-                  </div>
                 </div>
 
                 <div className=" overflow-y-auto">
@@ -986,41 +967,18 @@ function AdminSystemSettings() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between gap-2 border-t border-border/60 px-4 py-3">
-                  <p className="text-[10px] text-muted-foreground/70">
-                    {auditLogs.isFetching ? (
-                      <span className="inline-flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Loading logs...
-                      </span>
-                    ) : auditTotal > 0 ? (
-                      <>Showing {auditStart}-{auditEnd} of {auditTotal}</>
-                    ) : (
-                      "No logs"
-                    )}
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 rounded-[6px] p-0"
-                      onClick={() => setAuditPage((page) => Math.max(1, page - 1))}
-                      disabled={auditLogs.isFetching || auditCurrentPage <= 1}
-                    >
-                      <ChevronLeft className="h-3.5 w-3.5" />
-                    </Button>
-                    <span className="min-w-10 text-center text-[10px] text-muted-foreground">
-                      {auditCurrentPage}/{auditTotalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7 w-7 rounded-[6px] p-0"
-                      onClick={() => setAuditPage((page) => Math.min(auditTotalPages, page + 1))}
-                      disabled={auditLogs.isFetching || auditCurrentPage >= auditTotalPages}
-                    >
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                <div className="border-t border-border/60 px-4 pb-3">
+                  {auditLogs.isFetching && (
+                    <p className="pt-3 text-[10px] text-muted-foreground/70 inline-flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading logs...
+                    </p>
+                  )}
+                  <TablePager
+                    page={auditCurrentPage}
+                    lastPage={auditTotalPages}
+                    total={auditTotal}
+                    onPageChange={setAuditPage}
+                  />
                 </div>
               </div>
         </main>

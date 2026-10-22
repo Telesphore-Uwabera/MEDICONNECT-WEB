@@ -43,8 +43,8 @@ export function useGetAdminTeam(params?: GetTeamParams) {
   const query = new URLSearchParams();
   if (params?.search) query.set("search", params.search);
   if (params?.is_active !== undefined) query.set("is_active", String(params.is_active));
-  if (params?.per_page) query.set("per_page", String(params.per_page));
-  if (params?.page) query.set("page", String(params.page));
+  query.set("page", String(params?.page ?? 1));
+  query.set("per_page", String(params?.per_page ?? 10));
   const qs = query.toString();
 
   return useQuery<TeamApiResponse>({

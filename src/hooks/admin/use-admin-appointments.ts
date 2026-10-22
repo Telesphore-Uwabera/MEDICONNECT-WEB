@@ -140,8 +140,8 @@ export function useGetAdminAppointments(params: GetAdminAppointmentsParams = {})
   if (params.booking_type) query.set("booking_type", params.booking_type);
   if (params.date)         query.set("date", params.date);
   if (params.doctor_id)    query.set("doctor_id", String(params.doctor_id));
-  if (params.page && params.page > 1) query.set("page", String(params.page));
-  if (params.per_page) query.set("per_page", String(params.per_page));
+  query.set("page", String(params.page ?? 1));
+  query.set("per_page", String(params.per_page ?? 10));
 
   const qs = query.toString();
 

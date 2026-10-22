@@ -5,7 +5,7 @@ import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
 import {
   SlidersHorizontal, X, Search, ChevronDown,
-  ChevronLeft, ChevronRight, Users, CheckCircle2, Clock, XCircle, RefreshCw
+  Users, CheckCircle2, Clock, XCircle, RefreshCw
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -14,6 +14,7 @@ import { SORT_OPTIONS, type StatusFilter } from "./components/patients/Types";
 import { PatientRow, PatientCard, SkeletonRows } from "./components/patients/Components";
 import { PatientPanel } from "./components/patients/PatientPanel";
 import { useManagePatients } from "./components/patients/use-manage-patients";
+import { TablePager } from "@/components/TablePager";
 
 export default function ManagePatients() {
   const { t } = useTranslation();
@@ -219,31 +220,12 @@ export default function ManagePatients() {
                     ))}
                 </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                    <p className="text-[11px] text-muted-foreground">
-                      Page{" "}
-                      <span className="font-semibold text-foreground">{filters.page}</span>{" "}
-                      of{" "}
-                      <span className="font-semibold text-foreground">{totalPages}</span>
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <PaginationButton
-                        disabled={filters.page <= 1}
-                        onClick={() => set("page", filters.page - 1)}
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </PaginationButton>
-                      <PaginationButton
-                        disabled={filters.page >= totalPages}
-                        onClick={() => set("page", filters.page + 1)}
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </PaginationButton>
-                    </div>
-                  </div>
-                )}
+                <TablePager
+                  page={filters.page}
+                  lastPage={Math.max(1, totalPages)}
+                  total={total}
+                  onPageChange={(p) => set("page", p)}
+                />
               </>
             )}
           </div>
@@ -293,26 +275,6 @@ function SearchInput({
         </button>
       )}
     </div>
-  );
-}
-
-function PaginationButton({
-  disabled,
-  onClick,
-  children,
-}: {
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      disabled={disabled}
-      onClick={onClick}
-      className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-    >
-      {children}
-    </button>
   );
 }
 

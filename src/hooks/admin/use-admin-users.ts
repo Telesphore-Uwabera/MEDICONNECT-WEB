@@ -96,7 +96,8 @@ export function useGetAdminUsers(params?: AdminUsersParams) {
   if (params?.role)   query.set("role",   params.role);
   if (params?.status) query.set("status", params.status);
   if (params?.search) query.set("search", params.search);
-  if (params?.page)   query.set("page",   String(params.page));
+  query.set("page", String(params?.page ?? 1));
+  query.set("per_page", "10");
 
   const queryString = query.toString();
 

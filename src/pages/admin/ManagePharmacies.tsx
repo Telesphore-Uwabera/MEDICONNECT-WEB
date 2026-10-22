@@ -34,7 +34,7 @@ function ManagePharmacies() {
 
   const pharmacies = data?.data ?? [];
   const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / (data?.per_page ?? 20));
+  const totalPages = Math.ceil(total / (data?.per_page ?? 10));
 
   const statusCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -211,6 +211,7 @@ function ManagePharmacies() {
             ) : (
               <PharmacyTable
                 pharmacies={sorted} isLoading={isLoading} page={filters.page} totalPages={totalPages}
+                total={total}
                 onManage={setSelected} onPageChange={(p) => set("page", p)} onClearAll={clearAll}
               />
             )}

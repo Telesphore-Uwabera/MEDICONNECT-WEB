@@ -22,7 +22,8 @@ import {
   useBulkUpdateServicePricing,
   type ApiPricingItem,
 } from "@/hooks/admin/use-admin-service-pricing";
-import { StatCard } from "@/components/StatCard"; 
+import { StatCard } from "@/components/StatCard";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager"; 
 import { cn } from "@/lib/utils";
 import { formatDateOnly } from "@/lib/date";
 
@@ -464,10 +465,13 @@ function ManageServicePricing() {
   const [editingItem, setEditingItem] = useState<ApiPricingItem | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, refetch, isFetching } =
     useGetServicePricing();
   const pricing = data?.pricing ?? [];
+  const lastPage = tablePageCount(pricing.length);
+  const pagedPricing = paginateRows(pricing, page);
 
   const openEdit = useCallback(
     (item: ApiPricingItem) => setEditingItem(item),
@@ -599,7 +603,7 @@ function ManageServicePricing() {
                       {isLoading ? (
                         <SkeletonRows />
                       ) : (
-                        pricing.map((item) => (
+                        pagedPricing.map((item) => (
                           <PricingRow
                             key={item.key}
                             item={item}
@@ -621,7 +625,7 @@ function ManageServicePricing() {
                         className="h-20 rounded-[6px] border border-border/60 bg-card animate-pulse"
                       />
                     ))
-                    : pricing.map((item) => (
+                    : pagedPricing.map((item) => (
                       <PricingCard
                         key={item.key}
                         item={item}
@@ -630,6 +634,12 @@ function ManageServicePricing() {
                       />
                     ))}
                 </div>
+                <TablePager
+                  page={page}
+                  lastPage={lastPage}
+                  total={pricing.length}
+                  onPageChange={setPage}
+                />
               </>
             )}
           </div>

@@ -1,4 +1,3 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const TABLE_PAGE_SIZE = 10;
@@ -12,14 +11,25 @@ export function paginateRows<T>(rows: T[], page: number, size = TABLE_PAGE_SIZE)
   return rows.slice((current - 1) * size, current * size);
 }
 
+export function applyTablePaging(qs: URLSearchParams, page = 1) {
+  qs.set("page", String(Math.max(1, page)));
+  qs.set("per_page", String(TABLE_PAGE_SIZE));
+  return qs;
+}
+
 function pageWindow(page: number, last: number): Array<number | "ellipsis"> {
   if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1);
-  const keep = new Set([1, last, page, page - 1, page + 1, page - 2, page + 2]);
-  const nums = [...keep].filter((n) => n >= 1 && n <= last).sort((a, b) => a - b);
+  const start = Math.max(1, Math.min(page - 2, last - 4));
+  const end = Math.min(last, start + 4);
   const out: Array<number | "ellipsis"> = [];
-  for (const n of nums) {
-    if (out.length && n - (out[out.length - 1] as number) > 1) out.push("ellipsis");
-    out.push(n);
+  if (start > 1) {
+    out.push(1);
+    if (start > 2) out.push("ellipsis");
+  }
+  for (let n = start; n <= end; n += 1) out.push(n);
+  if (end < last) {
+    if (end < last - 1) out.push("ellipsis");
+    out.push(last);
   }
   return out;
 }
@@ -35,7 +45,7 @@ interface TablePagerProps {
 export function TablePager({ page, lastPage, total, onPageChange, className }: TablePagerProps) {
   const last = Math.max(1, lastPage);
   const current = Math.min(Math.max(1, page), last);
-  if (last <= 1) return null;
+  if (total === 0) return null;
 
   return (
     <nav
@@ -45,7 +55,7 @@ export function TablePager({ page, lastPage, total, onPageChange, className }: T
       <p className="text-[11px] text-muted-foreground">
         {total != null ? (
           <>
-            {total} {total === 1 ? "row" : "rows"}
+            {total} {total === 1 ? "row" : "rows"} · 10 per page
           </>
         ) : (
           <>
@@ -59,10 +69,9 @@ export function TablePager({ page, lastPage, total, onPageChange, className }: T
           type="button"
           disabled={current <= 1}
           onClick={() => onPageChange(current - 1)}
-          className="h-7 min-w-[28px] px-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/40 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed text-xs"
-          aria-label="Previous page"
+          className="h-7 px-2 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/40 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold"
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
+          Prev
         </button>
         {pageWindow(current, last).map((item, i) =>
           item === "ellipsis" ? (
@@ -91,18 +100,8 @@ export function TablePager({ page, lastPage, total, onPageChange, className }: T
           disabled={current >= last}
           onClick={() => onPageChange(current + 1)}
           className="h-7 px-2 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/40 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed text-xs font-semibold"
-          aria-label="Next page"
         >
           Next
-        </button>
-        <button
-          type="button"
-          disabled={current >= last}
-          onClick={() => onPageChange(current + 1)}
-          className="h-7 min-w-[28px] px-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/40 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed text-xs"
-          aria-label="Next page"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </nav>

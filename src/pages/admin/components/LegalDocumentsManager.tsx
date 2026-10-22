@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import type { LegalDocument, LegalDocumentType } from "@/hooks/Terms/useTerms";
 import {
@@ -162,14 +163,17 @@ export function LegalDocumentsManager() {
   const [type, setType] = useState<LegalDocumentType>("terms");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(() => emptyForm("terms"));
+  const [page, setPage] = useState(1);
 
-  const documentsQuery = useAdminLegalDocuments({ type, per_page: 50 });
+  const documentsQuery = useAdminLegalDocuments({ type, per_page: 100, page: 1 });
   const createDocument = useCreateLegalDocument();
   const updateDocument = useUpdateLegalDocument();
   const deleteDocument = useDeleteLegalDocument();
   const setCurrentDocument = useSetCurrentLegalDocument();
 
   const documents = documentsQuery.data?.data ?? [];
+  const lastPage = tablePageCount(documents.length);
+  const pagedDocuments = paginateRows(documents, page);
   const editingDocument = useMemo(
     () => documents.find((document) => document.id === editingId) ?? null,
     [documents, editingId],
@@ -185,6 +189,10 @@ export function LegalDocumentsManager() {
       setForm(emptyForm(type));
     }
   }, [type, documentsQuery.data]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [type]);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -336,21 +344,29 @@ export function LegalDocumentsManager() {
                 <div key={index} className="h-24 animate-pulse rounded-[6px] border border-border/60 bg-secondary/30" />
               ))
             ) : documents.length ? (
-              documents.map((document) => (
-                <DocumentCard
-                  key={document.id}
-                  document={document}
-                  active={editingId === document.id}
-                  onEdit={() => {
-                    setEditingId(document.id);
-                    setForm(formFromDocument(document));
-                  }}
-                  onSetCurrent={() => handleSetCurrent(document)}
-                  onDelete={() => handleDelete(document)}
-                  isSettingCurrent={setCurrentDocument.isPending}
-                  isDeleting={deleteDocument.isPending}
+              <>
+                {pagedDocuments.map((document) => (
+                  <DocumentCard
+                    key={document.id}
+                    document={document}
+                    active={editingId === document.id}
+                    onEdit={() => {
+                      setEditingId(document.id);
+                      setForm(formFromDocument(document));
+                    }}
+                    onSetCurrent={() => handleSetCurrent(document)}
+                    onDelete={() => handleDelete(document)}
+                    isSettingCurrent={setCurrentDocument.isPending}
+                    isDeleting={deleteDocument.isPending}
+                  />
+                ))}
+                <TablePager
+                  page={page}
+                  lastPage={lastPage}
+                  total={documents.length}
+                  onPageChange={setPage}
                 />
-              ))
+              </>
             ) : (
               <div className="rounded-[6px] border border-dashed border-border/70 px-4 py-8 text-center text-[12px] text-muted-foreground">
                 No {type} documents yet.

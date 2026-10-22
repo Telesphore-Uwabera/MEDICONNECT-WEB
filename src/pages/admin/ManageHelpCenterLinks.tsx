@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import {
   Plus,
   Pencil,
@@ -322,6 +323,7 @@ function ManageHelpCenterLinks() {
   const [search, setSearch] = useState("");
   const [panel, setPanel] = useState<{ mode: "create" | "edit"; link: ApiHelpCenterLink | null } | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data: links, isLoading, isError } = useGetHelpCenterLinks(
     categoryFilter ? { category: categoryFilter } : undefined,
@@ -337,6 +339,13 @@ function ManageHelpCenterLinks() {
       (l) => l.title.toLowerCase().includes(q) || l.description.toLowerCase().includes(q) || l.url.toLowerCase().includes(q),
     );
   }, [links, search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, categoryFilter]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   const handleDelete = (link: ApiHelpCenterLink) => {
     if (!window.confirm(`Delete "${link.title}"? You can undo this right after.`)) return;
@@ -424,6 +433,7 @@ function ManageHelpCenterLinks() {
               </Button>
             </div>
           ) : (
+            <>
             <div className="rounded-[6px] border border-border/70 bg-card overflow-x-auto shadow-sm">
               <table className="w-full text-[11px] min-w-[720px]">
                 <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
@@ -445,7 +455,7 @@ function ManageHelpCenterLinks() {
                           </td>
                         </tr>
                       ))
-                    : filtered.map((link) => (
+                    : paged.map((link) => (
                         <LinkRow
                           key={link.id}
                           link={link}
@@ -457,6 +467,10 @@ function ManageHelpCenterLinks() {
                 </tbody>
               </table>
             </div>
+            <div className="px-3 pb-3">
+              <TablePager page={page} lastPage={lastPage} total={filtered.length} onPageChange={setPage} />
+            </div>
+            </>
           )}
         </main>
       </div>

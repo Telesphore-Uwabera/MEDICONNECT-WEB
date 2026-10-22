@@ -30,6 +30,7 @@ import { formatDateOnly } from "@/lib/date";
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import {
   useGetPatientPharmacyOrders,
   useCancelPatientPharmacyOrder,
@@ -525,6 +526,7 @@ const Orders = () => {
   const [medInfoOpen, setMedInfoOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PharmacyOrder | null>(null);
   const [orderToCancel, setOrderToCancel] = useState<PharmacyOrder | null>(null);
+  const [page, setPage] = useState(1);
 
   const apiFilters = useMemo<OrderFilters>(
     () => ({
@@ -553,6 +555,13 @@ const Orders = () => {
         : new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
   }, [data, filters.sort, filters.search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(orders.length);
+  const paged = paginateRows(orders, page);
 
   const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -814,7 +823,7 @@ const Orders = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => {
+                    {paged.map((order) => {
                       const canCancel = order.status === "draft" || order.status === "pending";
                       return (
                         <tr
@@ -888,15 +897,21 @@ const Orders = () => {
                     })}
                   </tbody>
                 </table>
+                <div className="px-3 pb-3">
+                  <TablePager page={page} lastPage={lastPage} total={orders.length} onPageChange={setPage} />
+                </div>
               </div>
             )}
 
             {/* Card view */}
             {!isLoading && !isError && orders.length > 0 && view === "cards" && (
-              <div className="grid md:grid-cols-2 gap-2.5">
-                {orders.map((order) => (
-                  <OrderCard key={order.id} order={order} onCancel={handleCancel} onViewDetails={handleViewDetails} />
-                ))}
+              <div>
+                <div className="grid md:grid-cols-2 gap-2.5">
+                  {paged.map((order) => (
+                    <OrderCard key={order.id} order={order} onCancel={handleCancel} onViewDetails={handleViewDetails} />
+                  ))}
+                </div>
+                <TablePager page={page} lastPage={lastPage} total={orders.length} onPageChange={setPage} />
               </div>
             )}
           </div>

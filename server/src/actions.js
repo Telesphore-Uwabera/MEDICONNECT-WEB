@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import { hasColumn, insert, one, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
@@ -687,11 +687,21 @@ async function fillGap(req, res, parts) {
   if (!id && req.method === "GET") {
     const extra = await ownedExtra(parts[0], req.user.id, table);
     const column = Object.keys(extra)[0];
+    const { page, perPage, offset } = pageArgs(req);
+    const where = column ? `WHERE \`${column}\` = ?` : "";
+    const params = column ? [extra[column]] : [];
+    const totalRow = await one(`SELECT COUNT(*) AS total FROM \`${table}\` ${where}`, params).catch(() => ({ total: 0 }));
     const rows = await presentRows(table, await q(
-      column ? `SELECT * FROM \`${table}\` WHERE \`${column}\` = ? ORDER BY id DESC LIMIT 50` : `SELECT * FROM \`${table}\` ORDER BY id DESC LIMIT 50`,
-      column ? [extra[column]] : [],
+      `SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
+      [...params, perPage, offset],
     ).catch(() => []));
-    res.json({ data: rows, current_page: 1, last_page: 1, per_page: 50, total: rows.length });
+    res.json(paginateList({
+      data: rows,
+      total: Number(totalRow?.total ?? 0),
+      page,
+      perPage,
+      path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+    }));
     return true;
   }
 

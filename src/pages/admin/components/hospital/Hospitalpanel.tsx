@@ -17,6 +17,7 @@ import {
 } from "@/hooks/admin/use-admin-hospitals";
 import { statusStyle, STATUS_DOT, typeStyle } from "./Styles";
 import { getInitials } from "./Utils";
+import { TablePager } from "@/components/TablePager";
 
  
 export interface HospitalPanelProps {
@@ -549,27 +550,12 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
               ))}
             </div>
 
-            {data.total > data.per_page && (
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10.5px] text-muted-foreground/40">
-                  {data.total} total · page {page}
-                </span>
-                <div className="flex gap-1.5">
-                  <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                    Prev
-                  </Button>
-                  <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                    disabled={page * data.per_page >= data.total}
-                    onClick={() => setPage((p) => p + 1)}>
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
+            <TablePager
+              page={page}
+              lastPage={Math.max(1, Math.ceil(data.total / data.per_page))}
+              total={data.total}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

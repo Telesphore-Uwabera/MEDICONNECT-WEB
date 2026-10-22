@@ -36,6 +36,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { toast } from "sonner";
 
 import {
@@ -540,6 +541,7 @@ function PharmacyCategories() {
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [viewTarget, setViewTarget] = useState<Category | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -584,6 +586,13 @@ function PharmacyCategories() {
         }
       });
   }, [categories, filters.search, filters.status, filters.sort]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   //   stat counts 
   const counts = useMemo(() => ({
@@ -847,7 +856,7 @@ function PharmacyCategories() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((c) => (
+                    {paged.map((c) => (
                       <tr
                         key={c.id}
                         onClick={() => setViewTarget(c)}
@@ -949,6 +958,14 @@ function PharmacyCategories() {
                     ))}
                   </tbody>
                 </table>
+                <div className="px-4 pb-3">
+                  <TablePager
+                    page={page}
+                    lastPage={lastPage}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                  />
+                </div>
               </div>
             )}
           </div>

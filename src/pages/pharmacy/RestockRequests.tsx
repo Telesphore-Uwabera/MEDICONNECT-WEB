@@ -1,7 +1,8 @@
-﻿import { useState, useMemo, useCallback } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
@@ -974,6 +975,7 @@ const RestockRequests = () => {
   const [receiveTarget, setReceiveTarget] = useState<StockRequest | null>(null);
   const [rejectTarget, setRejectTarget] = useState<StockRequest | null>(null);
   const [viewTarget, setViewTarget] = useState<FullStockRequest | null>(null);
+  const [page, setPage] = useState(1);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -1004,6 +1006,13 @@ const RestockRequests = () => {
         (r.requester?.name ?? "").toLowerCase().includes(q),
     );
   }, [requests, filters.search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   const counts = useMemo(
     () => ({
@@ -1329,7 +1338,7 @@ const RestockRequests = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((req) => (
+                    {paged.map((req) => (
                       <tr
                         key={req.id}
                         onClick={() => openView(req)}
@@ -1406,14 +1415,14 @@ const RestockRequests = () => {
                   </tbody>
                 </table>
 
-                {data && data.last_page > 1 && (
-                  <div className="px-4 py-2.5 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between bg-secondary/10">
-                    <span>
-                      Page {data.current_page} of {data.last_page} ·{" "}
-                      {data.total} total
-                    </span>
-                  </div>
-                )}
+                <div className="px-4 pb-3">
+                  <TablePager
+                    page={page}
+                    lastPage={lastPage}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                  />
+                </div>
               </div>
             )}
           </div>

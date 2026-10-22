@@ -62,7 +62,8 @@ export function useGetAdminReviews(filters: ReviewFilters = {}) {
   const params = new URLSearchParams();
   if (filters.status)    params.set("status", filters.status);
   if (filters.doctor_id) params.set("doctor_id", String(filters.doctor_id));
-  if (filters.page)      params.set("page", String(filters.page));
+  params.set("page", String(filters.page ?? 1));
+  params.set("per_page", "10");
 
   const query = params.toString();
 

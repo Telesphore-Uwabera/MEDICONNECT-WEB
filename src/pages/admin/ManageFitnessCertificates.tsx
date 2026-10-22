@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -8,6 +8,7 @@ import {
   type AdminCertificateRow,
 } from "@/hooks/admin/use-admin-certificates";
 import { Loader2, Search, ShieldCheck, Clock, CreditCard, CheckCircle2, XCircle } from "lucide-react";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 
 const FILTERS = [
   { id: "all", label: "All submitted" },
@@ -68,9 +69,16 @@ function Row({ cert }: { cert: AdminCertificateRow }) {
 export default function ManageFitnessCertificates() {
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const { data, isLoading } = useGetAdminCertificates(status, search.trim() || undefined);
   const summary = data?.summary;
   const rows = data?.certificates ?? [];
+  const lastPage = tablePageCount(rows.length);
+  const pagedRows = paginateRows(rows, page);
+
+  useEffect(() => {
+    setPage(1);
+  }, [status, search]);
 
   return (
     <DashboardLayout role="admin">
@@ -152,11 +160,16 @@ export default function ManageFitnessCertificates() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((cert) => (
+                {pagedRows.map((cert) => (
                   <Row key={cert.id} cert={cert} />
                 ))}
               </tbody>
             </table>
+          )}
+          {!isLoading && rows.length > 0 && (
+            <div className="px-3 pb-3">
+              <TablePager page={page} lastPage={lastPage} total={rows.length} onPageChange={setPage} />
+            </div>
           )}
         </div>
       </div>

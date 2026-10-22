@@ -100,7 +100,8 @@ export function usePharmacyPrescriptions(params: GetPharmacyPrescriptionsParams)
       if (valid_until)               qs.set("valid_until", valid_until);
       if (from)                      qs.set("from",        from);
       if (to)                        qs.set("to",          to);
-      if (page > 1)                  qs.set("page",        String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
 
       const url = `/admin/prescriptions/doctor/${doctor_id}${qs.toString() ? `?${qs}` : ""}`;
       return apiFetch<PaginatedPrescriptions>(url);

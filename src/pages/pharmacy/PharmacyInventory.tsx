@@ -42,6 +42,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { TablePager, paginateRows, tablePageCount } from "@/components/TablePager";
 
 import {
   useGetInventoryMedicines,
@@ -831,6 +832,7 @@ const PharmacyInventory = () => {
   const [editTarget, setEditTarget] = useState<Medicine | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Medicine | null>(null);
   const [viewTarget, setViewTarget] = useState<Medicine | null>(null);
+  const [page, setPage] = useState(1);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -867,6 +869,10 @@ const PharmacyInventory = () => {
   const { data, isLoading, isError, refetch } = useGetInventoryMedicines(apiParams);
   const medicines: Medicine[] = data?.data ?? [];
 
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
   //   client-side search + status filter + sort  
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim();
@@ -902,6 +908,9 @@ const PharmacyInventory = () => {
         }
       });
   }, [medicines, filters.search, filters.status, filters.sort]);
+
+  const lastPage = tablePageCount(filtered.length);
+  const paged = paginateRows(filtered, page);
 
   //  stat counts  
   const counts = useMemo(() => {
@@ -1207,7 +1216,7 @@ const PharmacyInventory = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((m) => {
+                    {paged.map((m) => {
                       const status = resolveStockStatus(m);
                       return (
                         <tr
@@ -1314,14 +1323,14 @@ const PharmacyInventory = () => {
                   </tbody>
                 </table>
 
-                {/* Pagination footer */}
-                {data && data.last_page > 1 && (
-                  <div className="px-4 py-2.5 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between bg-secondary/10">
-                    <span>
-                      Page {data.current_page} of {data.last_page} · {data.total} total
-                    </span>
-                  </div>
-                )}
+                <div className="px-4 pb-3">
+                  <TablePager
+                    page={page}
+                    lastPage={lastPage}
+                    total={filtered.length}
+                    onPageChange={setPage}
+                  />
+                </div>
               </div>
             )}
           </div>

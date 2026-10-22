@@ -378,7 +378,8 @@ export function useGetAdminDoctors(params: GetAdminDoctorsParams = {}) {
       if (specialization_fee_id) qs.set("specialization_fee_id", String(specialization_fee_id)); // ← add
       if (consultation_type)     qs.set("consultation_type", consultation_type);
       if (search)                qs.set("search", search);
-      if (page > 1)              qs.set("page", String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<PaginatedDoctors>(url);
     },
@@ -524,7 +525,8 @@ export function useGetAppointments(params: GetAppointmentsParams = {}) {
       if (booking_type) qs.set("booking_type", booking_type);
       if (date)         qs.set("date", date);
       if (doctor_id)    qs.set("doctor_id", String(doctor_id));
-      if (page > 1)     qs.set("page", String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
       const url = qs.toString() ? `${APPT_BASE}?${qs}` : APPT_BASE;
       return apiFetch<PaginatedAppointments>(url);
     },
@@ -552,7 +554,8 @@ export function useGetDoctorQuickConsultations(params: GetQuickConsultationsPara
       if (search)   qs.set("search", search);
       if (from)     qs.set("from", from);
       if (to)       qs.set("to", to);
-      if (page > 1) qs.set("page", String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
       const base = `${QUICK_CONSULT_BASE}/${doctor_id}`;
       const url  = qs.toString() ? `${base}?${qs}` : base;
       return apiFetch<PaginatedQuickConsultations>(url);

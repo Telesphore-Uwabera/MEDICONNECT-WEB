@@ -103,7 +103,8 @@ export function useGetAdminPharmacies(params: GetAdminPharmaciesParams = {}) {
       if (status)   qs.set("status", status);
       if (city)     qs.set("city", city);
       if (search)   qs.set("search", search);
-      if (page > 1) qs.set("page", String(page));
+      qs.set("page", String(page));
+      qs.set("per_page", "10");
 
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<PaginatedPharmacies>(url);

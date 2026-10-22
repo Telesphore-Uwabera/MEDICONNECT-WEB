@@ -34,8 +34,8 @@ export function useAdminLegalDocuments(params?: {
   const search = new URLSearchParams();
   if (params?.type) search.set("type", params.type);
   if (params?.current_only) search.set("current_only", "1");
-  if (params?.per_page) search.set("per_page", String(params.per_page));
-  if (params?.page) search.set("page", String(params.page));
+  search.set("page", String(params?.page ?? 1));
+  search.set("per_page", String(params?.per_page ?? 10));
   const query = search.toString();
 
   return useQuery({
