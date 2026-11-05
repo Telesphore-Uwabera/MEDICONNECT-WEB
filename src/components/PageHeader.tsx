@@ -1,4 +1,5 @@
 import { ReactNode, useRef, useState, useEffect } from "react";
+import { SESSION_CHANGED_EVENT } from "@/lib/auth-session";
 import { useTranslation } from "react-i18next";
 import {
   Bell,
@@ -158,7 +159,17 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   // anyway, so a useState snapshot is sufficient. If you ever need it
   // reactive mid-page (e.g. after an in-place login modal), wrap in
   // useSyncExternalStore on the storage event instead.
-  const [sessionState] = useState<SessionState>(resolveSessionState);
+  const [sessionState, setSessionState] = useState<SessionState>(resolveSessionState);
+  useEffect(() => {
+    const sync = () => setSessionState(resolveSessionState());
+    sync();
+    window.addEventListener(SESSION_CHANGED_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(SESSION_CHANGED_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   const isAuth = sessionState === "auth";
   const isGuest = sessionState === "guest";

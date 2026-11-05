@@ -462,7 +462,7 @@ export default function AdminServices() {
   }, [search, status]);
 
   const servicesTotal = data?.total ?? services.length;
-  const servicesLastPage = Math.max(1, data?.last_page ?? Math.ceil(servicesTotal / TABLE_PAGE_SIZE) || 1);
+  const servicesLastPage = Math.max(1, data?.last_page ?? (Math.ceil(servicesTotal / TABLE_PAGE_SIZE) || 1));
 
   const activeCount = services.filter((service) => service.is_active).length;
   const inactiveCount = services.length - activeCount;

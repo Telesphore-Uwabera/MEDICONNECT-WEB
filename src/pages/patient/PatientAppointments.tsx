@@ -117,9 +117,9 @@ function formatTime(timeStr: string) {
 }
 
 function getDoctorName(appt: ApiAppointment) {
-  if (appt.doctor) return appt.doctor.designations || appt.doctor.user.name;
-  if (appt.hospital) return appt.hospital.name_en;
-  return "—";
+  const named = appt.doctor?.user?.name || appt.doctor?.designations || appt.hospital?.name_en;
+  if (!named || named === "undefined" || named === "null") return "—";
+  return named;
 }
 
 function getDoctorInitials(appt: ApiAppointment) {

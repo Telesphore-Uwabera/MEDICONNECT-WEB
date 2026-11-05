@@ -71,8 +71,115 @@
   status = 200
   force = true
 
-# SPA fallback – must be last.
+# Known app routes stay 200 so a refresh of a real page is not a missing document.
+# Anything else still serves the app (so the React 404 screen can render) but with HTTP 404.
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/auth"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/patient/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/doctor"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/doctor/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/hospital"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/hospital/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/pharmacy"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/pharmacy/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/help"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/contact"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/delete-account"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/onboarding/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/consultation/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/verify-certificate"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/fitness-certificates/*"
+  to = "/index.html"
+  status = 200
+
+# SPA fallback for unknown paths – must be last. Status 404 so a missing URL is not HTTP 200.
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200
+  status = 404

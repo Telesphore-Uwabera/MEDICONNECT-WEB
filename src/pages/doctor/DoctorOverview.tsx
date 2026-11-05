@@ -6,6 +6,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { formatDateOnly } from "@/lib/date";
+import { useGetSlots } from "@/hooks/doctor/use-doctor-availability";
+import { kigaliDate } from "@/lib/booking-calendar";
   import {Calendar,
   Users,
   FileText,
@@ -214,6 +216,7 @@ const DoctorOverview = () => {
     updateFilters,
     refresh,
     toggleState,
+    instantKnown,
     toggleLoading,
     toggleInstantConsultation,
     togglePauseBookings,
@@ -285,6 +288,8 @@ const DoctorOverview = () => {
 
    
   const today = data?.today;
+  const { data: scheduleSlots, isSuccess: slotsKnown } = useGetSlots({ from: kigaliDate() });
+  const noUpcomingAvailability = slotsKnown && Object.keys(scheduleSlots?.slots ?? {}).length === 0;
   const period = data?.period_stats;
   const revenue = data?.revenue;
   const reviews = data?.reviews;
@@ -443,8 +448,22 @@ const DoctorOverview = () => {
               day: "numeric",
               year: "numeric",
             }),
+            count: today?.total ?? todayPending ?? 0,
           })}
         />
+
+        {noUpcomingAvailability && (
+          <div className="mx-4 mt-3 rounded-[6px] border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100">
+            <p className="font-semibold">{t("pages.doctor.no_availability_title", { defaultValue: "No availability yet" })}</p>
+            <p className="mt-1 text-xs">
+              {t("pages.doctor.no_availability_body", { defaultValue: "Patients cannot book you until you publish upcoming hours." })}
+              {" "}
+              <Link to="/doctor/availability" className="font-semibold underline">
+                {t("pages.doctor.set_availability", { defaultValue: "Set availability" })}
+              </Link>
+            </p>
+          </div>
+        )}
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
@@ -520,7 +539,11 @@ const DoctorOverview = () => {
                 {
                   label: t("pages.doctor.instant_queue"),
                   value: String(instantQueue),
-                  sub: toggleState.instant_consultation ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden_from_patients"),
+                  sub: !instantKnown
+                    ? t("pages.doctor.loading")
+                    : toggleState.instant_consultation
+                      ? t("pages.doctor.visible_to_patients")
+                      : t("pages.doctor.hidden_from_patients"),
                   icon: Zap,
                   tone: "text-violet-500 bg-violet-500/10 border-violet-500/20",
                   action: t("pages.doctor.manage_queue"),
@@ -773,9 +796,11 @@ const DoctorOverview = () => {
                                   toggleState.instant_consultation ? "text-success" : "text-muted-foreground",
                                 )}
                               >
-                                {toggleState.instant_consultation
-                                  ? t("pages.doctor.instant_visible")
-                                  : t("pages.doctor.instant_hidden")}
+                                {!instantKnown
+                                  ? t("pages.doctor.loading")
+                                  : toggleState.instant_consultation
+                                    ? t("pages.doctor.instant_visible")
+                                    : t("pages.doctor.instant_hidden")}
                               </p>
                             </div>
                             <Switch

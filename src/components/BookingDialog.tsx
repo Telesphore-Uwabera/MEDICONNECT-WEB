@@ -30,6 +30,15 @@ import {
 import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
 import { useLogin, useMe, useRegister } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import {
+  bookableDates,
+  calendarDayKind,
+  formatLocalDate,
+  initialCalendarMonth,
+  kigaliDate,
+  kigaliMinutes,
+  parseIsoDate,
+} from "@/lib/booking-calendar";
 
 // ─── Doctor type ───────────────────────────────────────────────────────────────
 
@@ -76,13 +85,22 @@ function MiniCalendar({
   selected,
   onSelect,
   allowedDates,
+  focusMonth,
+  today,
 }: {
   selected: Date | undefined;
   onSelect: (d: Date) => void;
   allowedDates: Set<string>;
+  focusMonth: Date;
+  today: string;
 }) {
   const { t, i18n } = useTranslation();
-  const [cursor, setCursor] = useState(() => selected ?? new Date());
+  const [cursor, setCursor] = useState(focusMonth);
+  const focusKey = `${focusMonth.getFullYear()}-${focusMonth.getMonth()}`;
+
+  useEffect(() => {
+    setCursor(focusMonth);
+  }, [focusKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     moment.locale(i18n.language);
@@ -135,26 +153,35 @@ function MiniCalendar({
       {weeks.map((week, wi) => (
         <div key={wi} className="grid grid-cols-7">
           {week.map((day) => {
-            const k = moment(day).format("YYYY-MM-DD");
+            const k = formatLocalDate(day);
             const inMonth = moment(day).isSame(cursor, "month");
-            const isAllowed = allowedDates.has(k);
+            const kind = calendarDayKind(k, allowedDates, today);
+            const isAllowed = kind === "open";
             const isDisabled = !inMonth || !isAllowed;
-            const isSel = selected ? moment(day).isSame(selected, "day") : false;
-            const isTod = moment(day).isSame(moment(), "day");
+            const isSel = selected ? formatLocalDate(selected) === k : false;
+            const isTod = k === today;
 
             return (
               <button
                 key={k}
                 disabled={isDisabled}
-                onClick={() => !isDisabled && onSelect(day)}
+                aria-disabled={isDisabled}
+                aria-label={
+                  kind === "past"
+                    ? t("booking.doctorAppointment.dayPast", { defaultValue: "{{date}}, past", date: k })
+                    : kind === "open"
+                      ? t("booking.doctorAppointment.dayOpen", { defaultValue: "{{date}}, available", date: k })
+                      : t("booking.doctorAppointment.dayNone", { defaultValue: "{{date}}, no slots", date: k })
+                }
+                onClick={() => isAllowed && onSelect(day)}
                 className={cn(
                   "relative flex items-center justify-center h-8 w-full rounded-[6px] text-sm transition-all duration-150",
                   !inMonth && "invisible",
-                  isDisabled && inMonth && "text-muted-foreground/30 cursor-not-allowed",
-                  !isDisabled && !isSel && "text-foreground hover:bg-primary/10 hover:text-primary cursor-pointer",
+                  kind === "past" && inMonth && "text-muted-foreground/35 line-through decoration-muted-foreground/40 cursor-not-allowed",
+                  kind === "none" && inMonth && "text-muted-foreground/45 cursor-not-allowed",
+                  isAllowed && !isSel && "text-foreground hover:bg-primary/10 hover:text-primary cursor-pointer font-medium",
                   isSel && "bg-primary text-primary-foreground font-semibold shadow-sm",
                   isTod && !isSel && "font-semibold underline underline-offset-2",
-                  isAllowed && !isDisabled && !isSel && "font-medium",
                 )}
               >
                 {moment(day).format("D")}
@@ -166,6 +193,19 @@ function MiniCalendar({
           })}
         </div>
       ))}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          {t("booking.doctorAppointment.legendOpen", { defaultValue: "Open" })}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/35" />
+          {t("booking.doctorAppointment.legendNone", { defaultValue: "No slots" })}
+        </span>
+        <span className="inline-flex items-center gap-1 line-through decoration-muted-foreground/40">
+          {t("booking.doctorAppointment.legendPast", { defaultValue: "Past" })}
+        </span>
+      </div>
     </div>
   );
 }
@@ -332,18 +372,26 @@ export const BookingDialog = ({
     shouldRefetchDoctor ? doctor.slug : "",
   );
 
-  // ── Derived: set of allowed calendar dates ─────────────────────────────────
-  const allowedDates = useMemo(() => {
-    if (!slotsData?.dates) return new Set<string>();
-    return new Set(slotsData.dates);
-  }, [slotsData]);
+  // ── Derived: upcoming dates only. Past days in the payload are not selectable.
+  const todayKey = kigaliDate();
+  const bookableDateList = useMemo(
+    () => bookableDates(slotsData?.slots ?? {}),
+    [slotsData],
+  );
+  const allowedDates = useMemo(() => new Set(bookableDateList), [bookableDateList]);
+  const focusMonth = useMemo(
+    () => initialCalendarMonth(bookableDateList),
+    [bookableDateList],
+  );
 
-  // Auto-select first available date
-  useMemo(() => {
-    if (slotsData?.dates?.length && !date) {
-      setDate(moment(slotsData.dates[0]).toDate());
-    }
-  }, [slotsData]);
+  useEffect(() => {
+    if (!open || !slotsData) return;
+    const key = date ? formatLocalDate(date) : null;
+    if (key && allowedDates.has(key)) return;
+    const first = bookableDateList[0];
+    setDate(first ? parseIsoDate(first) : undefined);
+    if (!first) setTime(null);
+  }, [open, slotsData, bookableDateList, allowedDates, date]);
 
   // ── Derived: mapped slots for the selected day ─────────────────────────────
   // const daySlots = useMemo<MappedSlot[]>(() => {
@@ -355,20 +403,16 @@ export const BookingDialog = ({
   const daySlots = useMemo<MappedSlot[]>(() => {
     if (!dateKey || !dayData?.slots[dateKey]) return [];
     const mapped = mapSlots(dayData.slots[dateKey]);
-
-    // If the selected day is today, drop/disable slots whose start time
-    // has already passed — the backend's "available" status doesn't
-    // account for the current clock time, only the day as a whole.
-    const isToday = moment(dateKey).isSame(moment(), "day");
-    if (!isToday) return mapped;
-
-    const now = moment();
-    return mapped.map((s) =>
-      moment(s.rawTime, "HH:mm:ss").isBefore(now, "minute")
-        ? { ...s, status: "past" }
-        : s
-    );
-  }, [dayData, dateKey]);
+    const minutes = kigaliMinutes();
+    if (dateKey < todayKey) {
+      return mapped.map((s) => ({ ...s, status: "past" }));
+    }
+    if (dateKey !== todayKey) return mapped;
+    return mapped.map((s) => {
+      const [hour, minute] = s.rawTime.split(":").map(Number);
+      return hour * 60 + (minute || 0) <= minutes ? { ...s, status: "past" } : s;
+    });
+  }, [dayData, dateKey, todayKey]);
 
   // ── When fresh doctor data arrives, propagate it to the parent ────────────
   // useEffect (not useMemo) so this only runs when freshDoctorData *changes*,
@@ -702,12 +746,23 @@ export const BookingDialog = ({
                 </p>
                 <MiniCalendar
                   selected={date}
+                  focusMonth={focusMonth}
+                  today={todayKey}
                   onSelect={(d) => {
+                    const key = formatLocalDate(d);
+                    if (!allowedDates.has(key) || key < todayKey) return;
                     setDate(d);
                     setTime(null);
                   }}
                   allowedDates={allowedDates}
                 />
+                {bookableDateList.length === 0 && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {t("booking.doctorAppointment.noUpcoming", {
+                      defaultValue: "No availability yet. This doctor has not published upcoming openings.",
+                    })}
+                  </p>
+                )}
                 {date && (
                   <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground border border-border/60 rounded-[6px] px-2.5 py-1.5 bg-muted/30">
                     <CalendarDays className="h-4 w-4 shrink-0" />
