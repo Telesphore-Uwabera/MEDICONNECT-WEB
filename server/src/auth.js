@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
+import { normalizeStoredPhone } from "./phone.js";
 
 /** Polymorphic type already stored in MySQL token/notification rows. */
 const USER_TYPE = "App\\Models\\User";
@@ -39,8 +40,8 @@ export async function toUser(row, activeRole) {
     id: row.id,
     name: row.name,
     email: row.email ?? undefined,
-    phone: row.phone ?? "",
-    country_code: row.country_code ?? "",
+    phone: normalizeStoredPhone(row.phone, row.country_code).phone,
+    country_code: row.phone ? normalizeStoredPhone(row.phone, row.country_code).country_code : (row.country_code ?? ""),
     avatar: row.avatar ?? null,
     role: active,
     is_verified: Boolean(row.is_verified || row.email_verified_at || row.phone_verified_at),

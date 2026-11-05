@@ -140,22 +140,25 @@ export function isDoctorOnInstantSchedule(
   );
 }
 
-/** Returns true if the doctor currently offers instant consultation.
+/** The doctor dashboard, availability page, and patient search all read this flag. */
+export function instantConsultationOn(value: unknown): boolean {
+  return value === true || value === 1 || value === "1";
+}
+
+/**
+ * A doctor offers instant consultation exactly when they have switched it on.
  *
- * Rule: show the button if and only if doctor.instant_consultation === true,
- * bookings are not paused, and if schedule is loaded, current time is within
- * consultation hours.
+ * Appointment hours are a separate schedule. Hiding the doctor because the
+ * clock is outside a generated slot made the dashboard say "visible" while
+ * patient search counted zero. The switch is the only source of truth; the
+ * doctor turns it off themselves (including on logout).
  */
 export function doctorOffersInstant(
-  doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
-  schedule?: PublicDoctorSchedule,
-  now = new Date(),
+  doctor: { instant_consultation?: unknown } | null | undefined,
+  _schedule?: PublicDoctorSchedule,
+  _now = new Date(),
 ) {
-  if (doctor.bookings_paused || !doctor.instant_consultation) {
-    return false;
-  }
-  if (schedule) {
-    return isDoctorOnInstantSchedule(schedule, now);
-  }
-  return true;
+  void _schedule;
+  void _now;
+  return instantConsultationOn(doctor?.instant_consultation);
 }

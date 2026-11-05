@@ -366,6 +366,7 @@ function ReferralDetailDrawer({
 
         <div className="shrink-0 space-y-2 px-5 py-4 border-t border-border bg-card/80 backdrop-blur">
           {referral && (
+            <>
             <Button
               variant="outline"
               onClick={() =>
@@ -394,6 +395,7 @@ function ReferralDetailDrawer({
               {downloadDoc.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
               Referral PDF
             </Button>
+            </>
           )}
           {canCancel && (
             <Button

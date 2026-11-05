@@ -47,7 +47,7 @@ import {
   type RequestPhoneChangePayload,
 } from "@/hooks/admin/use-admin-settings"; 
 import { cn } from "@/lib/utils";
-import { validatePhoneForCountry } from "@/lib/phone-validation";
+import { formatPhoneDisplay, validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import i18n from "@/lib/i18n";
 import { formatDateOnly } from "@/lib/date";
@@ -687,7 +687,7 @@ function PatientSettings() {
                       label={t("consult.connect.phone_number")}
                       value={
                         settings?.phone
-                          ? `${settings?.country_code ?? ""} ${settings?.phone}`.trim()
+                          ? formatPhoneDisplay(settings?.country_code, settings?.phone)
                           : null
                       }
                       badge={
@@ -951,7 +951,7 @@ function PatientSettings() {
                         label={t("pages.patient.set_current_phone")}
                         value={
                           settings?.phone
-                            ? `${settings.country_code ?? ""} ${settings.phone}`.trim()
+                            ? formatPhoneDisplay(settings.country_code, settings.phone)
                             : null
                         }
                         badge={
@@ -972,7 +972,7 @@ function PatientSettings() {
                         <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
                           <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">{t("pages.patient.set_changing_from")}</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">
-                            {settings.country_code} {settings.phone}
+                            {formatPhoneDisplay(settings.country_code, settings.phone)}
                           </p>
                         </div>
                       )}

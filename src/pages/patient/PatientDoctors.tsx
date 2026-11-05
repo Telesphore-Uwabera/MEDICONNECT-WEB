@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useQueries } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
@@ -31,8 +30,7 @@ import { SpecializationSelect, type SpecializationValue } from "./components/Spe
 import { CustomSelect } from "@/components/ui/custom-select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { apiFetch } from "@/lib/api";
-import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
+import { doctorOffersInstant } from "@/lib/doctor-presence";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -810,18 +808,8 @@ const PatientDoctors = () => {
 
   // (no body overflow lock needed — filters are inline top panel)
 
-  const scheduleQueries = useQueries({
-    queries: visibleDoctors.map((doctor) => ({
-      queryKey: ["doctor-availability", doctor.slug],
-      queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
-      enabled: !!doctor.slug,
-      staleTime: 30_000,
-      refetchInterval: 60_000,
-    })),
-  });
-  const instantCount = visibleDoctors.filter((doctor, index) =>
-    doctorOffersInstant(doctor, scheduleQueries[index]?.data),
-  ).length;
+  const instantCount = data?.stats?.instant
+    ?? doctors.filter((doctor) => doctorOffersInstant(doctor)).length;
   const availableCount = visibleDoctors.filter((d) => d.is_available).length;
 
 
@@ -830,7 +818,10 @@ const PatientDoctors = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.patient.doctors_title")}
-          subtitle={t("pages.patient.doctors_sub", { count: data?.total ?? 0 })}
+          subtitle={t(
+            (data?.total ?? 0) === 1 ? "pages.patient.doctors_sub_one" : "pages.patient.doctors_sub_other",
+            { count: data?.total ?? 0 },
+          )}
         />
 
         <div className="flex flex-col flex-1 min-h-0">

@@ -52,6 +52,7 @@ import {
   useToggleInstantConsultation,
   useTogglePauseBookings,
   useDeleteAllSchedule,
+  useDoctorInstantStatus,
   type SlotStatus,
   type Slot,
 } from "@/hooks/doctor/use-doctor-availability";
@@ -756,20 +757,12 @@ const DoctorAvailability = () => {
   const toggleInstantMutation = useToggleInstantConsultation();
   const togglePauseMutation = useTogglePauseBookings();
   const deleteAllScheduleMutation = useDeleteAllSchedule();
+  const { data: instantStatus } = useDoctorInstantStatus();
 
-  /* ── Toggle state from API ── */
-  const [instant, setInstant] = useState<boolean | null>(null);
-  const [scheduleDisabled, setScheduleDisabled] = useState<boolean | null>(
-    null,
-  );
-
-  // Sync toggle state from slots response (doctor flags)
-  useEffect(() => {
-    if (!slotsData) return;
-    if (instant === null) setInstant(slotsData.doctor.instant_consultation);
-    if (scheduleDisabled === null)
-      setScheduleDisabled(slotsData.doctor.bookings_paused);
-  }, [slotsData]);
+  /* Same record the dashboard switch reads. Slots used to seed this once and
+     then ignore later toggles, so this page could stay on Hidden. */
+  const instant = instantStatus ? instantStatus.instant_consultation : null;
+  const scheduleDisabled = instantStatus ? instantStatus.bookings_paused : null;
 
   // Clean up confirm timer on unmount
   useEffect(() => {
@@ -1052,7 +1045,6 @@ const DoctorAvailability = () => {
   const handleToggleInstant = (checked: boolean) => {
     toggleInstantMutation.mutate(checked, {
       onSuccess: (res) => {
-        setInstant(res.instant_consultation);
         toast.success(res.message);
       },
       onError: (err) => {
@@ -1064,7 +1056,6 @@ const DoctorAvailability = () => {
   const handleTogglePause = () => {
     togglePauseMutation.mutate(undefined, {
       onSuccess: (res) => {
-        setScheduleDisabled(res.bookings_paused);
         if (res.bookings_paused) {
           toast.warning(t("pages.doctor.schedule_disabled"), {
             description: t("pages.doctor.schedule_disabled_desc"),
@@ -1166,7 +1157,11 @@ const DoctorAvailability = () => {
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
                       {!profileApproved
                         ? t("doctorProfile.after_approval", { defaultValue: "Opens after admin approval" })
-                        : instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
+                        : instant == null
+                          ? t("pages.doctor.loading")
+                          : instant
+                            ? t("pages.doctor.visible_to_patients")
+                            : t("pages.doctor.hidden")}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -1183,9 +1178,9 @@ const DoctorAvailability = () => {
                       onAdd={handleAddHour}
                     />
                     <Switch
-                      checked={instant ?? false}
+                      checked={instant === true}
                       onCheckedChange={handleToggleInstant}
-                      disabled={toggleInstantMutation.isPending || !profileApproved}
+                      disabled={toggleInstantMutation.isPending || !profileApproved || instant == null}
                       className="data-[state=checked]:bg-primary"
                     />
                   </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useMe } from "@/hooks/useAuth";
 import { apiFetch } from "@/lib/api";
+import { instantConsultationOn } from "@/lib/doctor-presence";
 
 const BASE = "/public/doctors";
 export const DOCTOR_ROTATION_MS = 10 * 60 * 1000;
@@ -115,6 +116,12 @@ export interface ApiDoctorListResponse {
   prev_page_url: string | null;
   to: number;
   total: number;
+  stats?: {
+    total: number;
+    online: number;
+    instant: number;
+    available_today: number;
+  };
 }
 
 // ─── Filter Params ──────────────────────────────────────────────────────────────
@@ -174,15 +181,25 @@ async function withResolvedFees(response: ApiDoctorListResponse) {
 
 function withoutOwnDoctor(response: ApiDoctorListResponse, userId?: number) {
   if (!userId || !Array.isArray(response?.data)) return response;
+  const removedDoctors = response.data.filter(
+    (doctor) => doctor.user_id === userId || doctor.user?.id === userId,
+  );
+  if (!removedDoctors.length) return response;
   const data = response.data.filter(
     (doctor) => doctor.user_id !== userId && doctor.user?.id !== userId,
   );
-  const removed = response.data.length - data.length;
-  if (!removed) return response;
+  const instantRemoved = removedDoctors.filter((doctor) => instantConsultationOn(doctor.instant_consultation)).length;
   return {
     ...response,
     data,
-    total: Math.max(0, (response.total ?? data.length) - removed),
+    total: Math.max(0, (response.total ?? data.length) - removedDoctors.length),
+    stats: response.stats
+      ? {
+          ...response.stats,
+          total: Math.max(0, response.stats.total - removedDoctors.length),
+          instant: Math.max(0, response.stats.instant - instantRemoved),
+        }
+      : response.stats,
   };
 }
 
@@ -221,8 +238,11 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
 
     queryFn: (): Promise<ApiDoctorListResponse> =>
       apiFetch(url).then((res) => withResolvedFees(res as ApiDoctorListResponse)),
-    staleTime: DOCTOR_ROTATION_MS,
-    refetchInterval: () => msUntilNextDoctorRotation() + 250,
+    // Order still rotates every 10 minutes via rotationSlot. Availability itself
+    // must not wait that long: a doctor turning instant consult on or off has
+    // to show up in search within half a minute.
+    staleTime: 15_000,
+    refetchInterval: 30_000,
   });
   const data = useMemo(
     () => (query.data ? withoutOwnDoctor(query.data, ownId) : query.data),
