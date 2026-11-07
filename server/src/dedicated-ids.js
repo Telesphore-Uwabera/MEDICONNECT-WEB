@@ -375,12 +375,19 @@ function withPk(row, idName) {
   return { ...row, id: row.id, [idName]: row.id };
 }
 
+function teamPhotoUrl(photo) {
+  if (!photo) return null;
+  if (/^https?:\/\//i.test(photo) || String(photo).startsWith("/")) return photo;
+  if (!/\.(webp|jpe?g|png|gif|bmp|tiff?)$/i.test(String(photo))) return null;
+  return `/minio/mediconnect-avatars/${String(photo).replace(/^\/+/, "")}`;
+}
+
 function withTeamPhoto(member) {
   if (!member) return member;
   return {
     ...member,
-    photo_url: member.photo_url || member.photo || null,
-    icon_url: member.icon_url || member.icon || null,
+    photo_url: teamPhotoUrl(member.photo) || member.photo_url || null,
+    icon_url: teamPhotoUrl(member.icon) || member.icon_url || null,
   };
 }
 
@@ -405,8 +412,28 @@ async function extraFilters(req, table, spec) {
   const filters = [];
   const params = [];
   if (req.query.status && (await hasColumn(table, "status"))) {
-    filters.push("`status` = ?");
-    params.push(req.query.status);
+    const status = String(req.query.status);
+    const profile = ["doctors", "patients", "hospitals", "pharmacies"].includes(table);
+    if (profile && status === "active") {
+      filters.push("`status` IN ('active','approved')");
+    } else if (table === "doctors" && status === "pending") {
+      filters.push("`status` IN ('pending','submitted','action_requested')");
+    } else {
+      filters.push("`status` = ?");
+      params.push(status);
+    }
+  }
+  if (spec.resource === "staff") {
+    const requested = String(req.query.role || "");
+    const names = ["moderator", "finance", "help_desk"].includes(requested)
+      ? [requested]
+      : ["moderator", "finance", "help_desk"];
+    filters.push(`EXISTS (
+      SELECT 1 FROM model_has_roles m
+      JOIN roles r ON r.id = m.role_id
+      WHERE m.model_id = \`${table}\`.id AND r.name IN (${names.map(() => "?").join(",")})
+    )`);
+    params.push(...names);
   }
   if (req.query.type && (await hasColumn(table, "type"))) {
     filters.push("`type` = ?");
@@ -437,10 +464,16 @@ async function extraFilters(req, table, spec) {
     for (const name of ["name", "name_en", "title", "email", "phone", "slug"]) {
       if (await hasColumn(table, name)) cols.push(name);
     }
+    const likeParts = [];
     if (cols.length) {
-      filters.push(`(${cols.map((name) => `\`${name}\` LIKE ?`).join(" OR ")})`);
+      likeParts.push(`(${cols.map((name) => `\`${name}\` LIKE ?`).join(" OR ")})`);
       cols.forEach(() => params.push(`%${term}%`));
     }
+    if (["doctors", "patients", "hospitals", "pharmacies"].includes(table) && (await hasColumn(table, "user_id"))) {
+      likeParts.push(`EXISTS (SELECT 1 FROM users u WHERE u.id = \`${table}\`.user_id AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?))`);
+      params.push(`%${term}%`, `%${term}%`, `%${term}%`);
+    }
+    if (likeParts.length) filters.push(`(${likeParts.join(" OR ")})`);
   }
   if ((req.query.active_only === "true" || req.query.active_only === "1") && (await hasColumn(table, "is_active"))) {
     filters.push("`is_active` = 1");
@@ -483,11 +516,36 @@ function mountBase(scope, spec) {
   return spec.prefix || `/${scope}/${spec.resource}`;
 }
 
+async function attachAccountUsers(table, rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (!["doctors", "patients", "hospitals", "pharmacies"].includes(table) || !list.length) return list;
+  const ids = [...new Set(list.map((row) => Number(row?.user_id)).filter((id) => id > 0))];
+  if (!ids.length) return list.map((row) => ({ ...row, user: row.user || null }));
+  const users = await presentRows(
+    "users",
+    await q(
+      `SELECT id, name, email, phone, country_code, status, avatar FROM users WHERE id IN (${ids.map(() => "?").join(",")})`,
+      ids,
+    ).catch(() => []),
+  );
+  const map = new Map(users.map((user) => [Number(user.id), user]));
+  return list.map((row) => {
+    if (!row) return row;
+    const user = map.get(Number(row?.user_id)) || row.user || null;
+    return {
+      ...row,
+      user,
+      name: row.name || user?.name || row.name_en || null,
+    };
+  });
+}
+
 async function presentDedicated(table, row, spec) {
   let presented = await presentRow(table, row);
   if (table === "appointments") presented = await decorateAppointments(presented);
   if (table === "team_members") presented = withTeamPhoto(presented);
   if (NAMED_TABLES.has(table)) [presented] = await verifierNames([presented]);
+  [presented] = await attachAccountUsers(table, [presented]);
   return withPk(presented, spec.idName);
 }
 
@@ -518,6 +576,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           if (table === "appointments") data = await decorateAppointments(data);
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
           if (NAMED_TABLES.has(table)) data = await verifierNames(Array.isArray(data) ? data : []);
+          data = await attachAccountUsers(table, Array.isArray(data) ? data : []);
           data = (Array.isArray(data) ? data : []).map((row) => withPk(row, spec.idName));
           const pagePayload = paginateList({
             data,

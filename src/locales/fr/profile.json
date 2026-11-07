@@ -89,6 +89,7 @@
   "fields_are_filled": "{{filled}} sur {{total}} champs requis sont remplis",
   "missing_sections": ". Manquant : {{sections}}.",
   "complete_profile": "Compléter le profil",
+  "complete_before_consult": "Complétez votre profil avant de prendre ou de commencer une consultation.",
   "blood_type_label": "Groupe sanguin {{type}}",
   "insurance_linked": "{{name}} · {{coverage}}% de couverture",
   "no_insurance_linked": "Aucune assurance liée",

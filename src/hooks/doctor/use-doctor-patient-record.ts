@@ -75,6 +75,63 @@ export interface PatientFile {
 
 // ─── Hooks ──────────────────────────────────────────────────────────────────
 
+export interface PatientDemographics {
+  id: number;
+  user_id?: number | null;
+  name?: string | null;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  national_id?: string | null;
+  address?: string | null;
+  user?: { id?: number; name?: string | null; email?: string | null; phone?: string | null } | null;
+}
+
+/** GET /doctor/patients/:id */
+export function usePatientDemographics(patientId: number | null) {
+  return useQuery({
+    queryKey: ["patient-demographics", patientId],
+    enabled: patientId != null,
+    retry: false,
+    queryFn: async () => {
+      const res = await apiFetch<{ patient?: PatientDemographics; data?: PatientDemographics } & PatientDemographics>(
+        `${base(patientId)}/profile`,
+      );
+      return (res.patient ?? res.data ?? res) as PatientDemographics;
+    },
+  });
+}
+
+export type PatientIntakePayload = {
+  full_name: string;
+  phone: string;
+  date_of_birth?: string;
+  gender?: string;
+  national_id?: string;
+  address?: string;
+  appointment_id?: number | null;
+  instant_consultation_id?: number | null;
+};
+
+/** POST /doctor/patients/intake */
+export function useCreatePatientIntake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: PatientIntakePayload) =>
+      apiFetch<{ message: string; patient: PatientDemographics; patient_id: number }>("/doctor/patients/intake", {
+        method: "POST",
+        body: payload,
+      }),
+    onSuccess: (res) => {
+      const id = res.patient_id ?? res.patient?.id;
+      if (id) {
+        qc.invalidateQueries({ queryKey: ["patient-demographics", id] });
+        qc.invalidateQueries({ queryKey: ["patient-record", id] });
+      }
+    },
+  });
+}
+
 /** GET /doctor/patients/:id/record */
 export function usePatientMedicalRecord(patientId: number | null) {
   return useQuery({

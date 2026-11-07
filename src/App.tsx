@@ -24,6 +24,7 @@ import {
 } from "@/lib/access-events";
 import { LogIn, X, ShieldAlert } from "lucide-react";
 import { goToSignIn } from "@/lib/auth-session";
+import { usePatientProfileLocked } from "@/hooks/use-patient-profile-gate";
 import Index from "./pages/Index.tsx"; 
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
@@ -100,6 +101,7 @@ import PharmacyCareOrders from "./pages/pharmacy/PharmacyCareOrders.tsx";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminApprovals from "./pages/admin/AdminApprovals";
 import AdminUsers from "./pages/admin/AdminUsers";
+import ManageDoctors from "./pages/admin/ManageDoctors";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminModeration from "./pages/admin/AdminModeration";
 import AdminProfile from "./pages/admin/AdminProfile.tsx";
@@ -139,7 +141,6 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = !!localStorage.getItem("auth_token");
   const [dismissed, setDismissed] = useState(false);
 
-  // Authenticated — render normally
   if (isAuthenticated) return <>{children}</>;
 
   // User chose "Go back" — navigate away, render nothing
@@ -290,7 +291,28 @@ const AccessPromptManager = () => {
   );
 };
 
-/** Mounts the idle-logout timer — placed inside BrowserRouter so useNavigate works. */
+const profileAllowedPath = (path: string) =>
+  path === "/patient/profile" ||
+  path.startsWith("/auth") ||
+  path.startsWith("/onboarding") ||
+  path === "/help" ||
+  path === "/contact" ||
+  path === "/privacy" ||
+  path === "/terms" ||
+  path === "/delete-account";
+
+/** Incomplete patients stay on the profile form. Search and the rest of the app are closed. */
+const RequirePatientProfile = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const { locked, pending } = usePatientProfileLocked();
+  if (profileAllowedPath(location.pathname)) return <>{children}</>;
+  if (pending) return null;
+  if (locked) {
+    return <Navigate to="/patient/profile" replace state={{ from: location, reason: "complete_profile" }} />;
+  }
+  return <>{children}</>;
+};
+
 const IdleLogoutGuard = () => {
   useIdleLogout();
   useSessionSync();
@@ -311,6 +333,7 @@ const App = () => (
           <WhatsAppFloat />
           <AccessPromptManager />
           <ErrorBoundary>
+          <RequirePatientProfile>
           <Routes>
             {/* ── Public ──────────────────────────────────────── */}
             <Route path="/" element={<Index />} />
@@ -887,7 +910,7 @@ const App = () => (
               path="/admin/manage-doctors"
               element={
                 <RequireAuth>
-                  <Navigate to="/admin/users?tab=doctor" replace />
+                  <ManageDoctors />
                 </RequireAuth>
               }
             />
@@ -1010,6 +1033,7 @@ const App = () => (
             {/* ── 404 ─────────────────────────────────────────── */}
               <Route path="*" element={<NotFound />} />
           </Routes>
+          </RequirePatientProfile>
         </ErrorBoundary>
         </CallProvider>
       </BrowserRouter>

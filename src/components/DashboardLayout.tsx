@@ -60,6 +60,7 @@ import { useState, useCallback } from "react";
 import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
 import { PatientCallAlertListener } from "@/components/patient/PatientCallAlertListener";
 import { RoleApprovalGate } from "@/components/RoleApprovalGate";
+import { usePatientProfileLocked } from "@/hooks/use-patient-profile-gate";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
 
@@ -73,6 +74,8 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.people"),
       items: [
         { to: "/admin/users", label: t("sidebar.users"), icon: Users },
+        { to: "/admin/users?tab=doctor", label: t("sidebar.doctors"), icon: Stethoscope },
+        { to: "/admin/manage-doctors", label: t("sidebar.manageDoctors"), icon: CheckCircle },
       ],
     },
     {
@@ -527,6 +530,8 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
   const groups = buildNav(t)[role];
   const cfg = roleConfig[role];
+  const { locked: profileLocked } = usePatientProfileLocked();
+  const homeTo = role === "patient" && profileLocked ? "/patient/profile" : "/";
 
   const toggleGroup = useCallback((gi: number) => {
     setCollapsedGroups((prev) => ({ ...prev, [gi]: !prev[gi] }));
@@ -543,7 +548,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
       <div className="px-4 pt-5 pb-4 border-b border-sidebar-border flex items-center justify-between gap-2 flex-shrink-0">
-        <NavLink to="/" className="flex items-center gap-2.5 min-w-0">
+        <NavLink to={homeTo} className="flex items-center gap-2.5 min-w-0">
           <img
             src={logo}
             alt="MEDICONNECT"
@@ -557,6 +562,11 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-0.5 scrollbar-thin">
+        {profileLocked && (
+          <p className="mx-1 mb-3 rounded-[6px] bg-amber-500/10 px-3 py-2 text-[11px] leading-snug text-amber-800 dark:text-amber-200">
+            {t("sidebar.finishProfileFirst")}
+          </p>
+        )}
         {groups.map((group, gi) => {
           const hasHeading = !!group.heading;
           const isCollapsed = collapsedGroups[gi];
@@ -590,21 +600,18 @@ export const DashboardLayout = ({ role, children }: Props) => {
                     {group.items.map((item) => {
                       const Icon = item.icon;
                       const active = isActive(item.to);
-                      return (
-                        <li key={item.to}>
-                          <NavLink
-                            to={item.to}
-                            end={item.to === `/${role}`}
-                            onClick={() => setMobileOpen(false)}
-                            className={cn(
-                              "group relative flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-all duration-150",
-                              active
-                                ? "bg-primary/10 text-primary"
-                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70",
-                            )}
-                          >
-                            {/* Active left bar */}
-                            {active && (
+                      const itemLocked = profileLocked && item.to !== "/patient/profile";
+                      const itemClass = cn(
+                        "group relative flex w-full items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-all duration-150",
+                        itemLocked
+                          ? "cursor-not-allowed text-sidebar-foreground/30"
+                          : active
+                            ? "bg-primary/10 text-primary"
+                            : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70",
+                      );
+                      const itemBody = (
+                        <>
+                            {active && !itemLocked && (
                               <motion.div
                                 layoutId="activeBar"
                                 className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary"
@@ -616,33 +623,52 @@ export const DashboardLayout = ({ role, children }: Props) => {
                               />
                             )}
 
-                            {/* Icon */}
                             <span
                               className={cn(
                                 "flex items-center justify-center w-7 h-7 rounded flex-shrink-0 transition-all duration-150",
-                                active
+                                active && !itemLocked
                                   ? "bg-primary/15 text-primary"
                                   : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70",
                               )}
                             >
                               <Icon
                                 className="h-4 w-4"
-                                strokeWidth={active ? 2.5 : 2}
+                                strokeWidth={active && !itemLocked ? 2.5 : 2}
                               />
                             </span>
 
-                            {/* Label */}
                             <span className="truncate flex-1">
                               {item.label}
                             </span>
 
-                            {/* Badge */}
                             {item.badge && (
                               <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold">
                                 {item.badge}
                               </span>
                             )}
+                        </>
+                      );
+                      return (
+                        <li key={item.to}>
+                          {itemLocked ? (
+                            <button
+                              type="button"
+                              disabled
+                              title={t("sidebar.finishProfileFirst")}
+                              className={itemClass}
+                            >
+                              {itemBody}
+                            </button>
+                          ) : (
+                          <NavLink
+                            to={item.to}
+                            end={item.to === `/${role}`}
+                            onClick={() => setMobileOpen(false)}
+                            className={itemClass}
+                          >
+                            {itemBody}
                           </NavLink>
+                          )}
                         </li>
                       );
                     })}
@@ -723,7 +749,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <NavLink to="/" className="flex items-center gap-2">
+          <NavLink to={homeTo} className="flex items-center gap-2">
             <img
               src={logo}
               alt="MEDICONNECT"

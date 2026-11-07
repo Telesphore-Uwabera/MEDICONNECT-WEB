@@ -27,6 +27,7 @@ import { TablePager } from "@/components/TablePager";
 import { AdminTeamMemberPanel } from "./components/AdminTeamMemberPanel";
 import { AdminAddTeamMemberModal } from "./components/AdminAddTeamMemberModal";
 import { useTranslation } from "react-i18next";
+import { teamMemberPhotoSrc } from "@/lib/image-url";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,26 @@ const STATUS_DOT: Record<string, string> = {
   inactive: "bg-slate-400",
 };
 
+function MemberPhoto({ name, photo, photoUrl }: { name: string; photo?: string | null; photoUrl?: string | null }) {
+  const src = teamMemberPhotoSrc(photoUrl, photo);
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
+        {getInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      className="h-9 w-9 rounded-full object-cover flex-shrink-0 border border-border/40"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function StatusBadge({ active }: { active: boolean }) {
   const key = active ? "active" : "inactive";
   return (
@@ -128,17 +149,7 @@ function TeamRow({
       {/* Member */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          {m.photo_url ? (
-            <img
-              src={m.photo_url}
-              alt={m.name}
-              className="h-9 w-9 rounded-full object-cover flex-shrink-0 border border-border/40"
-            />
-          ) : (
-            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
-              {getInitials(m.name)}
-            </div>
-          )}
+          <MemberPhoto name={m.name} photo={m.photo} photoUrl={m.photo_url} />
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">{m.name}</p>
             <p className="text-[10px] text-muted-foreground/60 truncate">#{m.id}</p>
@@ -191,17 +202,9 @@ function TeamCard({
 }) {
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      {m.photo_url ? (
-        <img
-          src={m.photo_url}
-          alt={m.name}
-          className="h-10 w-10 rounded-full object-cover flex-shrink-0 mt-0.5 border border-border/40"
-        />
-      ) : (
-        <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
-          {getInitials(m.name)}
-        </div>
-      )}
+      <div className="mt-0.5 [&_div]:h-10 [&_div]:w-10 [&_img]:h-10 [&_img]:w-10">
+        <MemberPhoto name={m.name} photo={m.photo} photoUrl={m.photo_url} />
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

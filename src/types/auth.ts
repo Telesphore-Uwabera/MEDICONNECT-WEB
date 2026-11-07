@@ -21,6 +21,8 @@ export interface User {
   /** True when this account holds the admin role and may switch (back) to it,
    *  even while another role is active. Admin is never in available_roles. */
   can_be_admin?: boolean;
+  /** False when a patient still needs date of birth, gender, and phone. */
+  profile_complete?: boolean;
 }
 
 // ── Register ──────────────────────────────────────────

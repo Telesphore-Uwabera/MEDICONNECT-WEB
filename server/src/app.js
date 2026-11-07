@@ -423,7 +423,37 @@ const DOCTOR_PROFILE_PREFIXES = [
 ];
 const DOCTOR_SCHEDULE_PREFIXES = ["/doctor/availability", "/doctor/slots"];
 
+const PATIENT_PROFILE_WRITE_OK = [
+  "/patient/profile",
+  "/settings/profile",
+  "/auth",
+  "/patient/medical-info",
+  "/patient/insurance",
+  "/notifications",
+  "/broadcasting/auth",
+];
+
 export function appRoutes(router) {
+  // A patient who created an account cannot book, join, or change anything else
+  // until the profile form is complete. Guests in a call are not account holders.
+  router.use(async (req, res, next) => {
+    try {
+      const user = req.user;
+      if (!user || user.profile_complete !== false) return next();
+      if ((user.active_role || user.role) !== "patient") return next();
+      if (String(user.email || "").endsWith("@mediconnect.local")) return next();
+      if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
+      const path = req.path || "";
+      const allowed = PATIENT_PROFILE_WRITE_OK.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+      if (allowed) return next();
+      return res.status(403).json({
+        message: "Complete your profile before using the rest of your account.",
+        profile_complete: false,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
   attachAppointmentRoutes(router, { requireAuth, requireRole });
   attachChatRoutes(router, { requireAuth });
   registerCareOrderRoutes(router, { requireAuth, requireRole });
@@ -500,10 +530,13 @@ export function appRoutes(router) {
       // Send welcome email (best-effort — never block the response)
       if (created?.email) {
         const html = buildWelcomeEmail({ name: created.name, role });
+        const isPatient = role === "patient";
         sendMail({
           to: created.email,
-          subject: "Welcome to MediConnect!",
-          text: `Hi ${created.name || "there"},\n\nYour MediConnect account has been created. Sign in at https://mediconnect.rw/auth to get started.\n\nThe MediConnect Team`,
+          subject: isPatient ? "Complete your MediConnect profile" : "Welcome to MediConnect!",
+          text: isPatient
+            ? `Hi ${created.name || "there"},\n\nYour MediConnect account has been created. Complete your profile at https://mediconnect.rw/patient/profile before you book or start a consultation.\n\nThe MediConnect Team`
+            : `Hi ${created.name || "there"},\n\nYour MediConnect account has been created. Sign in at https://mediconnect.rw/auth to get started.\n\nThe MediConnect Team`,
           html,
         }).catch(() => null);
       }
@@ -2604,7 +2637,53 @@ export function appRoutes(router) {
 
   router.get("/admin/users", requireAuth, requireRole("admin", "moderator", "finance", "help_desk"), async (req, res, next) => {
     try {
-      const page = await listTable(req, "users", "admin");
+      const { page: pageNo, perPage, offset } = pageArgs(req);
+      const role = req.query.role ? String(req.query.role) : "";
+      const status = req.query.status ? String(req.query.status) : "";
+      const term = req.query.search || req.query.q;
+      const profileTable = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" }[role];
+      const filters = ["1=1"];
+      const params = [];
+      if (await hasColumn("users", "deleted_at")) filters.push("users.deleted_at IS NULL");
+      // A clinical tab is the profile table. Admin and staff tabs are role assignments.
+      if (profileTable && (await tableExists(profileTable)) && (await hasColumn(profileTable, "user_id"))) {
+        filters.push(`EXISTS (SELECT 1 FROM \`${profileTable}\` profile WHERE profile.user_id = users.id)`);
+      } else if (role) {
+        filters.push(`EXISTS (
+          SELECT 1 FROM model_has_roles m
+          JOIN roles r ON r.id = m.role_id
+          WHERE m.model_id = users.id AND r.name = ?
+        )`);
+        params.push(role);
+      }
+      if (status && profileTable && (await tableExists(profileTable)) && (await hasColumn(profileTable, "status"))) {
+        if (status === "active") {
+          filters.push(`EXISTS (SELECT 1 FROM \`${profileTable}\` profile WHERE profile.user_id = users.id AND profile.status IN ('active','approved'))`);
+        } else if (status === "pending" && profileTable === "doctors") {
+          filters.push(`EXISTS (SELECT 1 FROM \`${profileTable}\` profile WHERE profile.user_id = users.id AND profile.status IN ('pending','submitted','action_requested'))`);
+        } else {
+          filters.push(`EXISTS (SELECT 1 FROM \`${profileTable}\` profile WHERE profile.user_id = users.id AND profile.status = ?)`);
+          params.push(status);
+        }
+      } else if (status && (await hasColumn("users", "status"))) {
+        filters.push("`users`.`status` = ?");
+        params.push(status);
+      }
+      if (term) {
+        filters.push("(users.name LIKE ? OR users.email LIKE ? OR users.phone LIKE ?)");
+        const like = `%${term}%`;
+        params.push(like, like, like);
+      }
+      const where = `WHERE ${filters.join(" AND ")}`;
+      const totalRow = await one(`SELECT COUNT(DISTINCT users.id) AS total FROM users ${where}`, params).catch(() => ({ total: 0 }));
+      const rows = await q(`SELECT users.* FROM users ${where} ORDER BY users.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]);
+      const page = paginateList({
+        data: await presentRows("users", rows),
+        total: Number(totalRow?.total || 0),
+        page: pageNo,
+        perPage,
+        path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+      });
       page.data = await Promise.all(page.data.map(async (user) => {
         const roles = await q(
           `SELECT r.id, r.name FROM model_has_roles m JOIN roles r ON r.id = m.role_id
@@ -2650,9 +2729,21 @@ export function appRoutes(router) {
           avatar = `https://mediconnect.rw/minio/mediconnect-avatars/${avatar}`;
         }
 
-        return { ...user, avatar, roles };
+        let status = user.status;
+        let profileStatus = null;
+        const wanted = req.query.role ? String(req.query.role) : (roles[0]?.name || "");
+        const statusTable = { doctor: "doctors", hospital: "hospitals", pharmacy: "pharmacies", patient: "patients" }[wanted];
+        if (statusTable && (await tableExists(statusTable)) && (await hasColumn(statusTable, "status")) && (await hasColumn(statusTable, "user_id"))) {
+          const profile = await one(`SELECT id, status FROM \`${statusTable}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [user.id]).catch(() => null);
+          if (profile?.status) {
+            profileStatus = profile.status;
+            status = profile.status === "approved"
+              ? "active"
+              : (profile.status === "submitted" || profile.status === "action_requested" ? "pending" : profile.status);
+          }
+        }
+        return { ...user, avatar, roles, status, profile_status: profileStatus };
       }));
-      if (req.query.role) page.data = page.data.filter((user) => user.roles.some((role) => role.name === req.query.role));
       res.json(page);
     } catch (error) {
       next(error);

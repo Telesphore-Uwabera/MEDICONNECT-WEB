@@ -12,6 +12,10 @@ import{  getInitials,
 } from "./Types";
 import { ConsultationIcon } from "./Constants";
 
+function doctorEmail(d: ApiDoctor) {
+  return d.user?.email ?? "-";
+}
+
  
 export function DoctorRow({
   d,
@@ -20,19 +24,20 @@ export function DoctorRow({
   d: ApiDoctor;
   onManage: (d: ApiDoctor) => void;
 }) {
+  const name = d.user?.name || "Doctor";
   return (
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 border border-primary/20">
-            {getInitials(d.user.name)}
+            {getInitials(name)}
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">
-              {d.user.name}
+              {name}
             </p>
             <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "-"}
+              {doctorEmail(d)}
             </p>
           </div>
         </div>
@@ -101,16 +106,16 @@ export function DoctorCard({
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
-        {getInitials(d.user.name)}
+        {getInitials(d.user?.name || "Doctor")}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-semibold text-[12px] text-foreground truncate">
-              {d.user.name}
+              {d.user?.name || "Doctor"}
             </p>
             <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "-"}
+              {doctorEmail(d)}
             </p>
           </div>
           <Badge

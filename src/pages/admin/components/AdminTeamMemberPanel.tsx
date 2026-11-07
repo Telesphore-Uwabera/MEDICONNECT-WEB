@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { DateField } from "@/components/ui/date-field";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { teamMemberPhotoSrc } from "@/lib/image-url";
 import { useTranslation } from "react-i18next";
 import {
   useDeleteTeamMember,
@@ -299,7 +300,7 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
                         subtitle: t("admin.team.fit_photo_sub", { defaultValue: "Cut to 800 × 600 px (4:3) so the image fits the card and is fully displayed." }),
                       }}
                       maxSizeMb={10}
-                      existingUrl={member.photo_url}
+                      existingUrl={teamMemberPhotoSrc(member.photo_url, member.photo)}
                       className="min-h-[112px] px-3 py-3"
                       helperText={t("admin.team.photo_card_hint", { defaultValue: "Card fit: 800 × 600 px (4:3). Large images are cut to fit cards." })}
                       disabled={isUploadingPhoto}
@@ -311,7 +312,7 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
                       value={null}
                       onChange={(value) => handleUpload(value, "icon")}
                       maxSizeMb={1}
-                      existingUrl={member.icon_url}
+                      existingUrl={teamMemberPhotoSrc(member.icon_url, member.icon)}
                       className="min-h-[112px] px-3 py-3"
                       helperText={t("common.fileUploader.iconHelper", { defaultValue: "Drop or browse an icon. Max 1 MB." })}
                       disabled={isUploadingIcon}

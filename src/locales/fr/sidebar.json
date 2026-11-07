@@ -57,6 +57,7 @@
   },
   "users": "Utilisateurs",
   "doctors": "Médecins",
+  "manageDoctors": "Approbations médecins",
   "hospitals": "Établissements de santé",
   "myAppointments": "Mes rendez-vous",
   "quickAppointment": "Rendez-vous rapide",
@@ -106,5 +107,6 @@
   "billing": "Factures et reçus",
   "earnings": "Revenus",
   "followUps": "Suivis",
-  "inbox": "Boîte de réception"
+  "inbox": "Boîte de réception",
+  "finishProfileFirst": "Terminez votre profil pour utiliser le reste du compte."
 }

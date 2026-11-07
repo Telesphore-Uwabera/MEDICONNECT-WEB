@@ -15,7 +15,7 @@ import {
 import {
   useLogin,
 } from "@/hooks/useAuth";
-import { dashboardPath } from "@/lib/auth-store";
+import { postAuthPath } from "@/lib/auth-store";
 import { loginReturnPath } from "@/lib/auth-session";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
@@ -59,7 +59,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
         {
           onSuccess: (data) => {
             onSuccess();
-            navigate(loginReturnPath() || dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
+            navigate(postAuthPath(data.user, loginReturnPath()), { replace: true });
           },
           onError: (err: any) => {
             const msg = err?.message ?? t("auth.errors.unknown");
@@ -87,7 +87,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
       {
         onSuccess: (data) => {
           onSuccess();
-          navigate(loginReturnPath() || dashboardPath(data.user?.active_role ?? data.user?.role), { replace: true });
+          navigate(postAuthPath(data.user, loginReturnPath()), { replace: true });
         },
         onError: (err: any) => {
           const msg = err?.message ?? t("auth.errors.unknown");

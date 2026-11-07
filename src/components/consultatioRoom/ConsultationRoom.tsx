@@ -158,6 +158,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [connState, setConnState] = useState<ConnectionState>("connecting");
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  remoteStreamRef.current = remoteStream;
   const [chatOpen, setChatOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [proofsOpen, setProofsOpen] = useState(false);
@@ -788,7 +790,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     }
 
     if (payload.type === "ready" || payload.type === "offer") {
-      if (pc && ["connected", "disconnected", "failed", "closed"].includes(pc.connectionState)) {
+      if (pc && ["disconnected", "failed", "closed"].includes(pc.connectionState)) {
         pc.close();
         pc = null;
         pcRef.current = null;
@@ -811,9 +813,17 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     try {
       if (payload.type === "ready" && isOwner) {
-        const st = pc.connectionState;
-        if (st === "connected" || st === "connecting") return;
-        if (pc.signalingState !== "stable" || pc.remoteDescription) return;
+        const live =
+          pc.connectionState === "connected" &&
+          Boolean(remoteStreamRef.current?.getTracks().some((track) => track.readyState === "live"));
+        if (live) return;
+        // Doctor may already be sitting on a stale local offer from waiting.
+        // Recreate the PC so the joining patient's ready can start a clean offer.
+        if (pc.connectionState === "connecting" || pc.signalingState !== "stable" || pc.remoteDescription) {
+          pc.close();
+          candidateQueue.current = [];
+          pc = createPeerConnection();
+        }
         await createAndSendOffer();
       }
       else if (payload.type === "offer") {

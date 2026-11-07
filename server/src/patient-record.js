@@ -126,6 +126,70 @@ async function listVisits(patient) {
 }
 
 export function registerPatientRecordRoutes(router, { requireAuth, requireRole }) {
+  router.post("/doctor/patients/intake", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const body = req.body || {};
+      const name = String(body.full_name || body.name || "").trim();
+      const phone = String(body.phone || "").trim();
+      if (!name || !phone) return res.status(422).json({ message: "Name and phone are required." });
+      const payload = {
+        name,
+        name_en: name,
+        phone,
+        email: body.email || null,
+        date_of_birth: body.date_of_birth || null,
+        gender: body.gender || null,
+        national_id: body.national_id || null,
+        address: body.address || null,
+        city: body.city || null,
+        province: body.province || null,
+        country: body.country || "Rwanda",
+        status: "pending",
+      };
+      const existingPhone = phone
+        ? await one("SELECT * FROM patients WHERE phone = ? ORDER BY id DESC LIMIT 1", [phone]).catch(() => null)
+        : null;
+      const id = existingPhone?.id || await insert("patients", payload);
+      if (existingPhone?.id) {
+        await update("patients", existingPhone.id, payload);
+      }
+      const patientId = Number(id);
+      const instantId = Number(body.instant_consultation_id) || null;
+      const apptId = Number(body.appointment_id) || null;
+      if (instantId) {
+        for (const table of ["instant_consultations", "instant_consultation_requests"]) {
+          if ((await tableExists(table)) && (await hasColumn(table, "patient_id"))) {
+            const row = await one(`SELECT id FROM \`${table}\` WHERE id = ?`, [instantId]).catch(() => null);
+            if (row) await update(table, instantId, { patient_id: patientId });
+          }
+        }
+      }
+      if (apptId && (await tableExists("appointments")) && (await hasColumn("appointments", "patient_id"))) {
+        const row = await one("SELECT id FROM appointments WHERE id = ?", [apptId]).catch(() => null);
+        if (row) await update("appointments", apptId, { patient_id: patientId });
+      }
+      const patient = await presentRow("patients", await one("SELECT * FROM patients WHERE id = ?", [patientId]));
+      res.status(201).json({ message: "Patient profile saved.", patient, data: patient, patient_id: patientId });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/patients/:patientId/profile", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const patient = await resolvePatientByAnyId(req.params.patientId);
+      if (!patient) return res.status(404).json({ message: "Patient not found." });
+      const user = patient.user_id
+        ? await one("SELECT id, name, email, phone, country_code, avatar FROM users WHERE id = ?", [patient.user_id]).catch(() => null)
+        : null;
+      const presented = await presentRow("patients", patient);
+      const data = { ...presented, user };
+      res.json({ patient: data, data, ...data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/doctor/patients/:patientId/record", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const patient = await resolvePatientByAnyId(req.params.patientId);

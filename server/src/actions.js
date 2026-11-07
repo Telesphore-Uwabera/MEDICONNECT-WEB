@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
-import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
+import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { DOCTOR_WORK_STATUSES, VISIT_TABLES, releaseSlot, visitAwaitsPayment, visitBodyGuard, visitOpenTo } from "./visit-rules.js";
@@ -522,6 +522,74 @@ async function fillGap(req, res, parts) {
     return true;
   }
 
+  if (parts[0] === "patient" && parts[1] === "profile" && !parts[2]) {
+    const table = "patients";
+    const userRow = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+    let id = await loadOwnedId(req.user.id, table);
+    if (["POST", "PUT", "PATCH"].includes(req.method)) {
+      const body = { ...(req.body ?? {}) };
+      delete body.password;
+      delete body.user;
+      delete body.id;
+      if (body.full_name && !body.name) body.name = body.full_name;
+      if (!id) {
+        id = await insert(table, {
+          user_id: req.user.id,
+          name: body.name || userRow?.name,
+          email: userRow?.email,
+          phone: body.phone || userRow?.phone,
+          status: "pending",
+          ...body,
+        });
+      } else {
+        await update(table, id, body);
+      }
+      const userPatch = {};
+      if (body.phone) userPatch.phone = body.phone;
+      if (body.gender) userPatch.gender = body.gender;
+      if (body.name) userPatch.name = body.name;
+      if (Object.keys(userPatch).length) await update("users", req.user.id, userPatch);
+      const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+      const freshUser = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+      await stampPatientProfileCompletion(row, freshUser);
+      const patient = {
+        ...row,
+        user: {
+          id: freshUser?.id,
+          name: freshUser?.name,
+          email: freshUser?.email,
+          phone: freshUser?.phone,
+          country_code: freshUser?.country_code,
+          avatar: freshUser?.avatar ?? null,
+          preferred_language: freshUser?.preferred_language,
+        },
+      };
+      res.json({ message: "Saved.", patient, data: patient });
+      return true;
+    }
+    if (req.method === "GET") {
+      const row = id ? await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id])) : null;
+      if (!row) {
+        res.json({ patient: null, data: null });
+        return true;
+      }
+      const patient = {
+        ...row,
+        user: {
+          id: userRow?.id,
+          name: userRow?.name,
+          email: userRow?.email,
+          phone: userRow?.phone,
+          country_code: userRow?.country_code,
+          avatar: userRow?.avatar ?? null,
+          preferred_language: userRow?.preferred_language,
+        },
+      };
+      res.json({ patient, data: patient });
+      return true;
+    }
+  }
+
   if (parts[1] === "profile" && parts[2]) {
     const table = PROFILE_TABLES[parts[0]];
     if (!table) return false;
@@ -554,6 +622,10 @@ async function fillGap(req, res, parts) {
       }
       await update(table, id, body);
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+      if (parts[0] === "patient") {
+        const userRow = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+        await stampPatientProfileCompletion(row, userRow);
+      }
       res.json({
         message: "Saved.",
         [parts[2]]: row,

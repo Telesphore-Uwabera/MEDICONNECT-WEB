@@ -89,6 +89,7 @@
   "fields_are_filled": "{{filled}} kuri {{total}} by'ibisabwa byuzuye",
   "missing_sections": ". Bibura: {{sections}}.",
   "complete_profile": "Uzuza umwirondoro",
+  "complete_before_consult": "Uzuza umwirondoro mbere yo gufata cyangwa gutangira inama.",
   "blood_type_label": "Ubwoko bw'amaraso {{type}}",
   "insurance_linked": "{{name}} · {{coverage}}% by'ubwishingizi",
   "no_insurance_linked": "Nta bwishingizi buhuye",

@@ -132,5 +132,14 @@ export const dashboardPath = (role?: string | null): string =>
   : role === "admin"    ? "/admin"
   : "/patient";
 
+export const postAuthPath = (
+  user?: { active_role?: string | null; role?: string | null; profile_complete?: boolean } | null,
+  fallback?: string | null,
+): string => {
+  const role = user?.active_role ?? user?.role;
+  if (role === "patient" && user?.profile_complete === false) return "/patient/profile";
+  return fallback || dashboardPath(role);
+};
+
 
 

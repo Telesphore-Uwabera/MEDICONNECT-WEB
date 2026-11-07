@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { dashboardPath } from "@/lib/auth-store";
+import { postAuthPath } from "@/lib/auth-store";
 import { getAuthToken, loginReturnPath } from "@/lib/auth-session";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
@@ -46,7 +46,7 @@ const Auth = () => {
   useEffect(() => {
     if (!getAuthToken() || !user || hasRedirected.current) return;
     hasRedirected.current = true;
-    navigate(loginReturnPath() || dashboardPath(user.active_role ?? user.role), { replace: true });
+    navigate(postAuthPath(user, loginReturnPath()), { replace: true });
   }, [user, navigate]);
 
   // Called by SignInForm/SignUpForm after successful auth.

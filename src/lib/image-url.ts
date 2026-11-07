@@ -88,6 +88,13 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
   return `/storage/${cleanPath}`;
 }
 
+/** Team photos are stored as `team/...webp`. Prefer that file over a raw photo_url the browser cannot load. */
+export function teamMemberPhotoSrc(photoUrl?: string | null, photo?: string | null): string | undefined {
+  const fromPhoto = resolveMediaUrl(photo);
+  if (fromPhoto?.startsWith("/minio/mediconnect-avatars/")) return fromPhoto;
+  return resolveMediaUrl(photoUrl) || fromPhoto;
+}
+
 export function sanitizePayloadUrls<T>(data: T): T {
   if (!data || typeof data !== "object") {
     if (typeof data === "string") {

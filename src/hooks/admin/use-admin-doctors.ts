@@ -131,7 +131,7 @@ export interface ApiDoctor {
   created_at: string;
   updated_at?: string;
   deleted_at?: string | null;
-  user: ApiDoctorUser;
+  user?: ApiDoctorUser | null;
   educations?: ApiEducation[];
   experiences?: ApiExperience[];
   qualifications?: ApiQualification[];

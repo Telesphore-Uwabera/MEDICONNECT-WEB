@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
+import { forgetColumns, hasColumn, insert, one, pool, presentRow, q, tableExists, update } from "./db.js";
 
 /** Polymorphic type already stored in MySQL token/notification rows. */
 const USER_TYPE = "App\\Models\\User";
@@ -30,11 +30,60 @@ export async function roleNames(userId) {
   return sortRoleNames(rows.map((row) => row.name));
 }
 
+const REQUIRED_PATIENT_FIELDS = [
+  "date_of_birth",
+  "gender",
+  "national_id",
+  "blood_type",
+  "address",
+  "city",
+  "province",
+  "country",
+  "emergency_contact_name",
+  "emergency_contact_relation",
+  "emergency_contact_phone",
+];
+
+function profileValueFilled(value, field) {
+  const text = String(value ?? "").trim();
+  if (!text || text.startsWith("0000-00-00")) return false;
+  if (field === "date_of_birth") return !Number.isNaN(new Date(text).getTime());
+  return true;
+}
+
+export function isPatientProfileComplete(patient) {
+  if (!patient?.id) return false;
+  return REQUIRED_PATIENT_FIELDS.every((field) => profileValueFilled(patient[field], field));
+}
+
+async function ensurePatientProfileStampColumn() {
+  if (!(await tableExists("patients"))) return;
+  if (await hasColumn("patients", "profile_completed_at")) return;
+  await pool.query("ALTER TABLE patients ADD COLUMN profile_completed_at TIMESTAMP NULL").catch(() => {});
+  forgetColumns("patients");
+}
+
+export async function stampPatientProfileCompletion(patient, user) {
+  if (!patient?.id) return isPatientProfileComplete(patient, user);
+  await ensurePatientProfileStampColumn();
+  const complete = isPatientProfileComplete(patient, user);
+  if (complete && (await hasColumn("patients", "profile_completed_at")) && !patient.profile_completed_at) {
+    await update("patients", patient.id, { profile_completed_at: new Date() });
+    patient.profile_completed_at = new Date();
+  }
+  return complete;
+}
+
 export async function toUser(row, activeRole) {
   const names = await roleNames(row.id);
   const switchable = names.filter((name) => ["patient", "doctor", "hospital", "pharmacy"].includes(name));
   const canBeAdmin = Boolean(row.can_be_admin) || names.includes("admin");
   const active = activeRole || row.active_role || (canBeAdmin && names.includes("admin") ? "admin" : switchable[0]) || names[0] || "patient";
+  let profileComplete = true;
+  if (active === "patient" && (await tableExists("patients"))) {
+    const patient = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [row.id]).catch(() => null);
+    profileComplete = await stampPatientProfileCompletion(patient, row);
+  }
   return {
     id: row.id,
     name: row.name,
@@ -49,6 +98,7 @@ export async function toUser(row, activeRole) {
     active_role: active,
     available_roles: switchable,
     can_be_admin: canBeAdmin,
+    profile_complete: profileComplete,
   };
 }
 

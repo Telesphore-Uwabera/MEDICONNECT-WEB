@@ -103,7 +103,8 @@
     "hospital": "Établissement de santé",
     "pharmacy": "Pharmacie",
     "patient": "Patient",
-    "admin": "Administrateur"
+    "admin": "Administrateur",
+    "unassigned": "Sans rôle"
   },
   "status": {
     "active": "Actif",

@@ -57,6 +57,7 @@
   },
   "users": "Abakoresha",
   "doctors": "Abaganga",
+  "manageDoctors": "Kwemeza abaganga",
   "hospitals": "Ibigo nderabuzima",
   "myAppointments": "Gahunda zanjye",
   "quickAppointment": "Gahunda yihuse",
@@ -106,5 +107,6 @@
   "billing": "Amafaranga n'inyemezabuguzi",
   "earnings": "Amafaranga yinjiye",
   "followUps": "Gukurikirana",
-  "inbox": "Ubutumwa"
+  "inbox": "Ubutumwa",
+  "finishProfileFirst": "Uzuza umwirondoro mbere yo gukoresha konti yawe."
 }

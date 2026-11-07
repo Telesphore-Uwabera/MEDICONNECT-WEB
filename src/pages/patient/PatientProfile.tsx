@@ -49,6 +49,7 @@ import {
   useUpdateInsurance,
   useGetPublicInsurances,
 } from "@/hooks/use-patient-profile";
+import { usePatientProfileLocked } from "@/hooks/use-patient-profile-gate";
 import type {
   PatientProfile as TPatientProfile,
   MedicalInfo,
@@ -780,6 +781,9 @@ function ProfileForm({
   const step = PROFILE_STEPS[currentStep];
   const isLast = currentStep === PROFILE_STEPS.length - 1;
   const isEdit = mode === "edit";
+  register("gender", { required: t("profile.required") });
+  register("blood_type", { required: t("profile.required") });
+  register("emergency_contact_relation", { required: t("profile.required") });
 
   const goTo = (i: number) => {
     onVisitedChange(new Set([...visited, i]));
@@ -1696,8 +1700,11 @@ const PatientProfile = () => {
 
   const { data: profile, isLoading } = useGetProfile();
   const upsert = useUpsertProfile();
+  const { locked: needsProfile } = usePatientProfileLocked();
 
-  const resolvedMode: ProfileMode = profileMode ?? (profile ? "view" : "create");
+  const resolvedMode: ProfileMode = needsProfile
+    ? (profile ? "edit" : "create")
+    : (profileMode ?? (profile ? "view" : "create"));
   const isForm = resolvedMode === "create" || resolvedMode === "edit";
 
   const handleSubmit = (data: ProfileFormData) => {
@@ -1738,6 +1745,11 @@ const PatientProfile = () => {
   return (
     <DashboardLayout role="patient">
       <PageHeader title={t("pages.patient.profile_title")} subtitle={pageSubtitle} />
+      {needsProfile && (
+        <div className="mx-3 mt-3 sm:mx-6 rounded-[6px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+          {t("profile.complete_before_consult", "Complete your profile before you book or start a consultation.")}
+        </div>
+      )}
       <div className="px-3 py-4 sm:px-6 sm:py-8">
         <div className="rounded-[6px] border border-border bg-card overflow-hidden flex flex-col min-h-[540px]">
           <TabBar active={mainTab} onChange={setMainTab} hasProfile={!!profile} />
@@ -1762,7 +1774,7 @@ const PatientProfile = () => {
                     mode={resolvedMode === "edit" ? "edit" : "create"}
                     defaultValues={resolvedMode === "edit" && profile ? profileToForm(profile) : undefined}
                     onSubmit={handleSubmit}
-                    onCancel={() => { if (profile) setProfileMode("view"); }}
+                    onCancel={() => { if (profile && !needsProfile) setProfileMode("view"); }}
                     currentStep={currentStep}
                     onStepChange={setCurrentStep}
                     visited={visited}

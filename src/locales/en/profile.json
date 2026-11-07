@@ -89,6 +89,7 @@
   "fields_are_filled": "{{filled}} of {{total}} required fields are filled",
   "missing_sections": ". Missing: {{sections}}.",
   "complete_profile": "Complete profile",
+  "complete_before_consult": "Complete your profile before you book or start a consultation.",
   "blood_type_label": "Blood type {{type}}",
   "insurance_linked": "{{name}} · {{coverage}}% coverage",
   "no_insurance_linked": "No insurance linked",

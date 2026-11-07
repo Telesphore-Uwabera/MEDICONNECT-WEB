@@ -315,19 +315,26 @@ export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.
     admin: "Administrator",
   }[role] || "Member";
 
-  const title = "Welcome to MediConnect!";
-  const preheader = `Your ${roleLabel} account is ready. Sign in to get started.`;
+  const patientProfile = role === "patient";
+  const actionUrl = patientProfile ? "https://mediconnect.rw/patient/profile" : loginUrl;
+  const actionLabel = patientProfile ? "Complete your profile" : "Sign In to MediConnect";
+  const title = patientProfile ? "Complete your MediConnect profile" : "Welcome to MediConnect!";
+  const preheader = patientProfile
+    ? "Finish your patient profile before you book or start a consultation."
+    : `Your ${roleLabel} account is ready. Sign in to get started.`;
 
   const body = `
     ${emailP(greeting(name))}
-    ${emailHtml(`Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
+    ${emailHtml(patientProfile
+      ? `Your MediConnect <strong>Patient</strong> account has been created. Complete your profile next — date of birth, gender, phone, and address — so doctors have your file before any consultation.`
+      : `Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
       <tr>
         <td style="background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;padding:16px 20px;border-left:4px solid #0BA59B;">
-          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;">What you can do on MediConnect</p>
+          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;">${patientProfile ? "Before you can consult" : "What you can do on MediConnect"}</p>
           ${role === "patient" ? `
-            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Book appointments with verified doctors</p>
-            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Start instant video consultations</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Fill date of birth, gender, phone, and address</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Then book appointments or start instant video visits</p>
             <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ View prescriptions and medical records</p>
             <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Order medications from partnered pharmacies</p>
           ` : role === "doctor" ? `
@@ -343,7 +350,7 @@ export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.
         </td>
       </tr>
     </table>
-    ${emailBtn("Sign In to MediConnect", loginUrl)}
+    ${emailBtn(actionLabel, actionUrl)}
     ${emailP("If you have any questions, our support team is always happy to help.", "font-size:12px;color:#6b7280;")}
   `;
 

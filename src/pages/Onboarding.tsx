@@ -53,9 +53,17 @@ const Onboarding = () => {
       // Best-effort — profile save is optional at onboarding time
     }
     toast.success(t("auth.onboarding.title") + " ✓");
-    navigate(dashboardPath(user.active_role ?? user.role));
+    const role = user.active_role ?? user.role;
+    navigate(role === "patient" ? "/patient/profile" : dashboardPath(role));
   };
-  const skip = () => navigate(dashboardPath(user.active_role ?? user.role));
+  const skip = () => {
+    const role = user.active_role ?? user.role;
+    if (role === "patient" && user.profile_complete === false) {
+      navigate("/patient/profile");
+      return;
+    }
+    navigate(dashboardPath(role));
+  };
 
   return (
     <div className="min-h-dvh bg-gradient-soft">

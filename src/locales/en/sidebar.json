@@ -41,6 +41,7 @@
   "users": "Users",
   "patients": "Patients",
   "doctors": "Doctors",
+  "manageDoctors": "Doctor approvals",
   "hospitals": "Health Facilities",
   "pharmacies": "Pharmacies",
   "appointments": "Appointments",
@@ -100,5 +101,6 @@
   "billing": "Bills & receipts",
   "earnings": "Earnings",
   "followUps": "Follow-ups",
-  "inbox": "Inbox"
+  "inbox": "Inbox",
+  "finishProfileFirst": "Finish your profile to use the rest of your account."
 }

@@ -1,14 +1,14 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast as sonnerToast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/date";
-import { resolveMediaUrl } from "@/lib/image-url";
+import { resolveMediaUrl, teamMemberPhotoSrc } from "@/lib/image-url";
  import { AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -56,7 +56,7 @@ import {
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
 import {
-  useGetAdminUsers,
+  useUserDirectory,
   useSuspendUser,
   useActivateUser,
   useDeleteUser,
@@ -80,6 +80,7 @@ import {
   type CreateStaffPayload,
   type ResetUserCredentialsPayload,
 } from "@/hooks/admin/use-admin-users";
+import { useGetAdminTeam, type ApiTeamMember } from "@/hooks/admin/use-admin-ourteam";
 import { useCreateManagedUser, type ManagedRole } from "@/hooks/admin/use-admin-manage-users";
 import { ManageProfileModal } from "./components/manage-users/ManageProfileModal";
 import {
@@ -239,7 +240,7 @@ const USER_TABS: Array<{
   { value: "doctor", label: "Doctors", description: "Clinical users", icon: Stethoscope },
   { value: "hospital", label: "Facilities", description: "Health facilities", icon: Building2 },
   { value: "pharmacy", label: "Pharmacies", description: "Medicine providers", icon: Pill },
-  { value: "admin", label: "Admins", description: "Back office", icon: ShieldCheck },
+  { value: "admin", label: "Admins", description: "Same people as Team", icon: ShieldCheck },
   { value: "staff", label: "Staff", description: "Operations users", icon: BriefcaseBusiness },
   { value: "roles", label: "Roles", description: "Permissions", icon: Shield },
 ];
@@ -254,7 +255,78 @@ const ROLE_PRIORITY = ["admin", "doctor", "hospital", "pharmacy", "moderator", "
 
 function getRole(u: ApiUser): string {
   const names = (u.roles ?? []).map((role) => role.name);
-  return ROLE_PRIORITY.find((role) => names.includes(role)) ?? names[0] ?? "patient";
+  return ROLE_PRIORITY.find((role) => names.includes(role)) ?? names[0] ?? "unassigned";
+}
+
+function TeamPhoto({ name, photo, photoUrl }: { name: string; photo?: string | null; photoUrl?: string | null }) {
+  const src = teamMemberPhotoSrc(photoUrl, photo);
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+        {getInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      className="h-9 w-9 shrink-0 rounded-full border border-border/40 object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function AdminsTeamList({ members, loading }: { members: ApiTeamMember[]; loading: boolean }) {
+  if (loading) return <SkeletonRows />;
+  if (members.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+        <p className="text-[12px] font-semibold text-foreground">No team members yet</p>
+        <Link to="/admin/our-team" className="text-[11px] font-semibold text-primary hover:underline">
+          Add them on the Team page
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-[6px] border border-border/70 bg-card">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 px-3 py-2.5">
+        <p className="text-[11px] text-muted-foreground">Same people as the Team page.</p>
+        <Link to="/admin/our-team" className="text-[11px] font-semibold text-primary hover:underline">
+          Edit on Team
+        </Link>
+      </div>
+      <table className="w-full text-left">
+        <thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <tr>
+            <th className="px-3 py-2 font-semibold">Member</th>
+            <th className="px-3 py-2 font-semibold">Title</th>
+            <th className="px-3 py-2 font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {members.map((member) => (
+            <tr key={member.id} className="border-t border-border/50">
+              <td className="px-3 py-2.5">
+                <div className="flex items-center gap-3">
+                  <TeamPhoto name={member.name} photo={member.photo} photoUrl={member.photo_url} />
+                  <span className="text-[12px] font-semibold text-foreground">{member.name}</span>
+                </div>
+              </td>
+              <td className="px-3 py-2.5 text-[11px] text-muted-foreground">{member.title || "—"}</td>
+              <td className="px-3 py-2.5">
+                <span className={cn("rounded-[6px] px-2 py-0.5 text-[10px] font-semibold", member.is_active ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground")}>
+                  {member.is_active ? "Active" : "Inactive"}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function getInitials(name: string) {
@@ -1385,7 +1457,7 @@ function StaffManagementPanel({ search }: { search: string }) {
       <div className="flex flex-col gap-2 rounded-[6px] border border-border/70 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[13px] font-semibold text-foreground">Staff management</p>
-          <p className="text-[11px] text-muted-foreground">Moderators, finance, and help desk users.</p>
+          <p className="text-[11px] text-muted-foreground">Moderator, finance, and help desk logins. The leadership list is the Team page.</p>
         </div>
         <FormSelect label="Role" value={role} options={["all", "moderator", "finance", "help_desk"]} onChange={setRole} compact />
       </div>
@@ -1409,7 +1481,10 @@ function StaffManagementPanel({ search }: { search: string }) {
               <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">No staff users found.</td></tr>
             ) : (
               staff.map((member: StaffUser) => {
-                const currentRole = member.roles?.[0]?.name ?? "moderator";
+                const currentRole = ["moderator", "finance", "help_desk"].find((role) =>
+                  member.roles?.some((item) => item.name === role),
+                );
+                if (!currentRole) return null;
                 const suspended = member.status === "suspended";
                 return (
                   <tr key={member.id} className="border-t border-border/40">
@@ -1547,7 +1622,7 @@ function RolesPermissionsPanel() {
     <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
       <div className="rounded-[6px] border border-border/70 bg-card p-3">
         <p className="text-[13px] font-semibold text-foreground">Roles</p>
-        <p className="mb-3 text-[11px] text-muted-foreground">Select a role to manage permissions.</p>
+        <p className="mb-3 text-[11px] text-muted-foreground">Choose a login role and set what it is allowed to do. This is not a list of people.</p>
         <div className="space-y-1.5">
           {rolesLoading ? <PanelLoader label="Loading roles..." /> : roles.map((role) => (
             <button key={role.id} type="button" onClick={() => setRoleId(role.id)} className={cn("flex w-full items-center justify-between rounded-[6px] border px-3 py-2 text-left text-[12px] font-semibold", roleId === role.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:text-foreground")}>
@@ -1608,12 +1683,24 @@ const AdminUsers = () => {
   }, [searchInput]);
 
  
-  const { data, isLoading, isError, refetch } = useGetAdminUsers({
-    role: filters.role !== "all" ? filters.role : undefined,
-    status: filters.status !== "all" ? filters.status : undefined,
+  const directoryRole = (
+    ["patient", "doctor", "hospital", "pharmacy", "admin", "staff"].includes(filters.role)
+      ? filters.role
+      : "all"
+  ) as "all" | "patient" | "doctor" | "hospital" | "pharmacy" | "admin" | "staff";
+  const teamDirectory = useGetAdminTeam({ per_page: 50, page: 1, search: filters.role === "admin" ? (filters.search || undefined) : undefined });
+  const teamMembers = teamDirectory.data?.data ?? [];
+  const teamActive = teamMembers.filter((member) => member.is_active).length;
+  const staffDirectory = useGetAdminStaff({
+    search: filters.search || undefined,
+    enabled: filters.role === "staff",
+  });
+  const { data, isLoading, isError, refetch, roleCounts, statusCounts } = useUserDirectory({
+    role: directoryRole,
+    status: filters.status,
     search: filters.search || undefined,
     page: filters.page,
-    enabled: !["staff", "roles"].includes(filters.role),
+    enabled: !["staff", "roles", "admin"].includes(filters.role),
   });
 
   const suspendMutation = useSuspendUser();
@@ -1632,8 +1719,31 @@ const AdminUsers = () => {
   const rejectPharmacyMutation = useRejectPharmacy();
   const suspendPharmacyMutation = useSuspendPharmacy();
 
-  const users = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const users = useMemo(() => {
+    const rows = data?.data ?? [];
+    if (filters.role !== "all") return rows;
+    const seen = new Set<number>();
+    return rows.filter((user) => {
+      if (user.deleted_at) return false;
+      if (seen.has(user.id)) return false;
+      seen.add(user.id);
+      return true;
+    });
+  }, [data, filters.role]);
+  const staffRows = staffDirectory.data?.data ?? [];
+  const staffStatus = {
+    active: staffRows.filter((member) => (member.status ?? "active") === "active").length,
+    pending: staffRows.filter((member) => member.status === "pending").length,
+    suspended: staffRows.filter((member) => member.status === "suspended").length,
+  };
+  const onStaffTab = filters.role === "staff";
+  const onAdminTab = filters.role === "admin";
+  const onRolesTab = filters.role === "roles";
+  const total = onAdminTab
+    ? (teamDirectory.data?.total ?? teamMembers.length)
+    : onStaffTab
+      ? (staffDirectory.data?.total ?? 0)
+      : (data?.total ?? 0);
   const perPage = data?.per_page ?? 10;
   const totalPages = Math.ceil(total / perPage);
   const selectedRole = selected ? getRole(selected) : "";
@@ -1645,7 +1755,7 @@ const AdminUsers = () => {
     queryKey: ["admin-users-role-profile", "doctor", lookupUser?.id, lookupSearch],
     enabled: lookupRole === "doctor" && !!lookupUser,
     queryFn: async () => {
-      const qs = queryString({ search: lookupSearch, page: 1 });
+      const qs = queryString({ user_id: lookupUser?.id, page: 1 });
       const res = await apiFetch<PaginatedDoctors>(`/admin/doctors${qs ? `?${qs}` : ""}`);
       return res.data.find((doctor) => sameUserId(doctor, lookupUser)) ?? null;
     },
@@ -1680,23 +1790,6 @@ const AdminUsers = () => {
       return res.data.find((pharmacy) => sameUserId(pharmacy, lookupUser)) ?? null;
     },
   });
-
-  const roleCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: total };
-    users.forEach((u) => {
-      const r = getRole(u);
-      counts[r] = (counts[r] ?? 0) + 1;
-    });
-    return counts;
-  }, [users, total]);
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: total };
-    users.forEach((u) => {
-      counts[u.status] = (counts[u.status] ?? 0) + 1;
-    });
-    return counts;
-  }, [users, total]);
 
   // Client-side sort
   const sorted = useMemo(() => {
@@ -1999,7 +2092,7 @@ const AdminUsers = () => {
     });
   }, [suspendPharmacyMutation, pharmacyLookup.refetch, refetch, sonnerToast, openSuspendDialog]);
 
-  const pendingCount = statusCounts["pending"] ?? 0;
+  const pendingCount = onStaffTab ? staffStatus.pending : (statusCounts.pending ?? 0);
   const isActing = suspendMutation.isPending || activateMutation.isPending;
   const isDoctorActing =
     approveDoctorMutation.isPending ||
@@ -2015,9 +2108,12 @@ const AdminUsers = () => {
     approvePharmacyMutation.isPending ||
     rejectPharmacyMutation.isPending ||
     suspendPharmacyMutation.isPending;
+  const systemUserTotal = typeof roleCounts.all === "number" ? roleCounts.all : null;
+  const unfilteredAll = filters.role === "all" && !filters.search && filters.status === "all";
+  const listedTotal = unfilteredAll && systemUserTotal != null ? systemUserTotal : total;
   const resultLabel =
     currentTab.value === "all"
-      ? total === 1
+      ? listedTotal === 1
         ? "user"
         : "users"
       : currentTab.label.toLowerCase();
@@ -2051,10 +2147,13 @@ const AdminUsers = () => {
           {USER_TABS.map((tab) => {
             const Icon = tab.icon;
             const active = filters.role === tab.value;
-            const count =
-              tab.value === filters.role || (tab.value === "all" && filters.role === "all")
-                ? total
-                : roleCounts[tab.value];
+            const count = tab.value === "staff"
+              ? (staffDirectory.data?.total ?? null)
+              : tab.value === "admin"
+                ? (teamDirectory.data?.total ?? null)
+                : tab.value === "roles"
+                  ? null
+                  : roleCounts[tab.value];
 
             return (
               <button
@@ -2071,7 +2170,7 @@ const AdminUsers = () => {
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span>{tab.label}</span>
-                {typeof count === "number" && count > 0 && (
+                {typeof count === "number" && (
                   <span
                     className={cn(
                       "h-5 min-w-[20px] px-1.5 rounded-[6px] text-[10px] font-bold flex items-center justify-center leading-none",
@@ -2087,33 +2186,36 @@ const AdminUsers = () => {
         </div>
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
-          {/* Stats */}
+          {filters.role !== "roles" && (
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
-              label="Total users"
-              value={total}
+              label={filters.role === "all" ? "Total users" : currentTab.label}
+              value={filters.role === "admin" ? (teamDirectory.isLoading ? "…" : (teamDirectory.data?.total ?? teamMembers.length)) : filters.role === "all" ? (systemUserTotal ?? "…") : onStaffTab ? (staffDirectory.isLoading ? "…" : total) : isLoading ? "…" : total}
               icon={Users}
               accent="primary"
             />
             <StatCard
               label="Active"
-              value={statusCounts["active"] ?? 0}
+              value={filters.role === "admin" ? (teamDirectory.isLoading ? "…" : teamActive) : filters.role === "all" ? (systemUserTotal == null ? "…" : (statusCounts.active ?? 0)) : onStaffTab ? (staffDirectory.isLoading ? "…" : staffStatus.active) : (statusCounts.active ?? "—")}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
-              label="Pending review"
-              value={statusCounts["pending"] ?? 0}
+              label={filters.role === "admin" ? "Inactive" : "Pending review"}
+              value={filters.role === "admin" ? (teamDirectory.isLoading ? "…" : Math.max(0, (teamDirectory.data?.total ?? teamMembers.length) - teamActive)) : filters.role === "all" ? (systemUserTotal == null ? "…" : (statusCounts.pending ?? 0)) : onStaffTab ? (staffDirectory.isLoading ? "…" : staffStatus.pending) : (statusCounts.pending ?? "—")}
               icon={Clock}
               accent="warning"
             />
+            {filters.role !== "admin" && (
             <StatCard
               label="Suspended"
-              value={statusCounts["suspended"] ?? 0}
+              value={filters.role === "all" ? (systemUserTotal == null ? "…" : (statusCounts.suspended ?? 0)) : onStaffTab ? (staffDirectory.isLoading ? "…" : staffStatus.suspended) : (statusCounts.suspended ?? "—")}
               icon={XCircle}
               accent="warning"
             />
+            )}
           </div>
+          )}
 
           {/* Mobile search */}
           <div className="hidden">
@@ -2138,14 +2240,15 @@ const AdminUsers = () => {
           </div>
 
           {/* Meta bar */}
+          {!onRolesTab && (
           <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 justify-between lg:justify-start">
               <p className="text-[11px] text-muted-foreground shrink-0">
-                {isLoading ? (
+                {(onAdminTab ? teamDirectory.isLoading : onStaffTab ? staffDirectory.isLoading : isLoading) ? (
                   <span className="text-muted-foreground/50">Loading...</span>
                 ) : (
                   <>
-                    <span className="font-bold text-foreground">{total}</span>{" "}
+                    <span className="font-bold text-foreground">{listedTotal}</span>{" "}
                     {resultLabel}
                   </>
                 )}
@@ -2189,7 +2292,14 @@ const AdminUsers = () => {
                 )}
               </div>
 
-            {filters.role !== "roles" && (
+            {filters.role === "admin" ? (
+              <Link
+                to="/admin/our-team"
+                className="inline-flex h-8 items-center rounded-[6px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground shrink-0"
+              >
+                Edit on Team
+              </Link>
+            ) : filters.role !== "roles" ? (
               <Button
                 type="button"
                 onClick={() => setCreateUserOpen(true)}
@@ -2198,17 +2308,19 @@ const AdminUsers = () => {
                 <UserPlus className="h-3.5 w-3.5" />
                 {filters.role === "staff" ? "Create staff" : "Create user"}
               </Button>
-            )}
+            ) : null}
 
             {/* Refresh Button */}
             <button
-              onClick={() => refetch()}
+              onClick={() => { if (onAdminTab) void teamDirectory.refetch(); else if (onStaffTab) void staffDirectory.refetch(); else void refetch(); }}
               className="h-8 w-8 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors shrink-0"
               title="Refresh"
             >
-              <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+              <RefreshCw className={cn("w-3.5 h-3.5", (onAdminTab ? teamDirectory.isLoading : onStaffTab ? staffDirectory.isLoading : isLoading) && "animate-spin")} />
             </button>
 
+            {!onAdminTab && (
+            <>
             {/* Sort */}
             <CustomSelect
               value={filters.sort}
@@ -2223,10 +2335,14 @@ const AdminUsers = () => {
               onToggle={() => setFilterOpen(!filterOpen)}
               hasActiveFilters={hasActiveFilters}
             />
+            </>
+            )}
               </div>
             </div>
           </div>
+          )}
 
+          {!onRolesTab && !onAdminTab && (
           <FilterBar
             open={filterOpen}
             onToggle={() => setFilterOpen(!filterOpen)}
@@ -2235,10 +2351,13 @@ const AdminUsers = () => {
             fields={filterFields}
             cols={{ default: 1, sm: 2 }}
           />
+          )}
 
           {/* Content */}
           <div className="p-3 sm:p-4">
-            {filters.role === "staff" ? (
+            {filters.role === "admin" ? (
+              <AdminsTeamList members={teamMembers} loading={teamDirectory.isLoading} />
+            ) : filters.role === "staff" ? (
               <StaffManagementPanel search={filters.search} />
             ) : filters.role === "roles" ? (
               <RolesPermissionsPanel />

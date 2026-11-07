@@ -69,11 +69,12 @@ interface PublicInsurancesResponse {
    useGetProfile  →  GET /patient/profile
 ───────────────────────────────────────────── */
 
-export function useGetProfile() {
+export function useGetProfile(enabled = true) {
   return useQuery({
     queryKey: ["patient-profile"],
     queryFn: () =>
       apiFetch<ProfileResponse>(BASE).then((r) => r.patient),
+    enabled,
     retry: false, // 404 means no profile yet
   });
 }
@@ -92,6 +93,7 @@ export function useUpsertProfile() {
       }).then((r) => r.patient),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
 }

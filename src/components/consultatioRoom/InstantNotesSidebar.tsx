@@ -14,7 +14,12 @@ import {
   useUpdateConsultationSummary,
   type ConsultationSummary,
 } from "@/hooks/doctor/use-consultation-summaries";
-import { usePatientMedicalRecord } from "@/hooks/doctor/use-doctor-patient-record";
+import { toast } from "sonner";
+import {
+  useCreatePatientIntake,
+  usePatientDemographics,
+  usePatientMedicalRecord,
+} from "@/hooks/doctor/use-doctor-patient-record";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -167,6 +172,9 @@ export function InstantNotesSidebar({
 
   const effectivePatientId = resolvedPatientId(chart, patientId ?? apptData?.appointment?.patient?.id ?? null);
   const { data: medicalRecord } = usePatientMedicalRecord(effectivePatientId);
+  const { data: demographics } = usePatientDemographics(effectivePatientId);
+  const intake = useCreatePatientIntake();
+  const isRegisteredPatient = Boolean(effectivePatientId && demographics?.user_id);
 
   useEffect(() => {
     setChart(readCallChart(consultationId, mode));
@@ -201,10 +209,13 @@ export function InstantNotesSidebar({
           next.identity[key] = String(value);
         }
       };
-      fill("patient_id", patientId ?? appt?.patient?.id);
-      fill("full_name", patientName || appt?.patient?.name || match?.patient?.name);
-      fill("phone", patientPhone || appt?.patient?.phone);
-      fill("national_id", (appt?.patient as { national_id?: string } | undefined)?.national_id);
+      fill("patient_id", patientId ?? appt?.patient?.id ?? demographics?.id);
+      fill("full_name", patientName || appt?.patient?.name || match?.patient?.name || demographics?.user?.name || demographics?.name);
+      fill("phone", patientPhone || appt?.patient?.phone || demographics?.user?.phone || demographics?.phone);
+      fill("national_id", (appt?.patient as { national_id?: string } | undefined)?.national_id || demographics?.national_id);
+      fill("date_of_birth", demographics?.date_of_birth ? String(demographics.date_of_birth).slice(0, 10) : null);
+      fill("gender", demographics?.gender);
+      fill("address", demographics?.address);
       if (match) {
         if (!next.chief_complaint.trim()) next.chief_complaint = summaryFieldText(match.chief_complaint, "main_complaint");
         if (!next.medication_history.trim()) next.medication_history = summaryFieldText(match.medication_history);
@@ -233,7 +244,7 @@ export function InstantNotesSidebar({
       }
       return next;
     });
-  }, [apptData, existingList, isAppointment, consultationId, summaryInstantId, patientId, patientName, patientPhone, medicalRecord]);
+  }, [apptData, existingList, isAppointment, consultationId, summaryInstantId, patientId, patientName, patientPhone, medicalRecord, demographics]);
 
   const snapshot = JSON.stringify(chart);
   const snapshotRef = useRef(snapshot);
@@ -383,10 +394,54 @@ export function InstantNotesSidebar({
               <div className="col-span-2">
                 <MiniInput dark={dark} label={t("consult.notes.patient_id")} value={chart.identity.patient_id} onChange={(patient_id) => patchIdentity({ patient_id })} placeholder={t("consult.notes.ph_patient_id")} />
               </div>
-              {missingOfficialId && (
-                <p className={cn("col-span-2 text-[10px] leading-snug", dark ? "text-amber-200/90" : "text-amber-700")}>
-                  {t("consult.notes.patient_id_needed")}
+              {isRegisteredPatient ? (
+                <p className={cn("col-span-2 text-[10px] leading-snug", dark ? "text-emerald-300/90" : "text-emerald-700")}>
+                  {t("consult.notes.profile_autofilled", "Patient file loaded from their account.")}
                 </p>
+              ) : (
+                <div className="col-span-2 space-y-1.5">
+                  {missingOfficialId && (
+                    <p className={cn("text-[10px] leading-snug", dark ? "text-amber-200/90" : "text-amber-700")}>
+                      {t("consult.notes.patient_id_needed")}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={intake.isPending || !chart.identity.full_name.trim() || !chart.identity.phone.trim()}
+                    onClick={() => {
+                      intake.mutate(
+                        {
+                          full_name: chart.identity.full_name.trim(),
+                          phone: chart.identity.phone.trim(),
+                          date_of_birth: chart.identity.date_of_birth || undefined,
+                          gender: chart.identity.gender || undefined,
+                          national_id: chart.identity.national_id || undefined,
+                          address: chart.identity.address || undefined,
+                          appointment_id: isAppointment ? consultationId : null,
+                          instant_consultation_id: isAppointment ? null : summaryInstantId,
+                        },
+                        {
+                          onSuccess: (res) => {
+                            const id = res.patient_id ?? res.patient?.id;
+                            if (id) patchIdentity({ patient_id: String(id) });
+                            toast.success(t("consult.notes.profile_added", "Patient profile saved."));
+                          },
+                          onError: (err: unknown) => {
+                            toast.error((err as ApiError)?.message || t("consult.notes.save_failed"));
+                          },
+                        },
+                      );
+                    }}
+                    className={cn(
+                      "w-full rounded-[6px] px-2.5 py-1.5 text-[11px] font-semibold disabled:opacity-50",
+                      dark ? "bg-white/10 text-white hover:bg-white/15" : "bg-primary text-primary-foreground hover:bg-primary/90",
+                    )}
+                  >
+                    {intake.isPending
+                      ? t("consult.notes.saving")
+                      : t("consult.notes.add_profile", "Add profile")}
+                  </button>
+                </div>
               )}
             </div>
           )}
