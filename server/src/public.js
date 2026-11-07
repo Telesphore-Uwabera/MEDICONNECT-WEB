@@ -8,6 +8,7 @@ import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
+import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { releaseSlot } from "./visit-rules.js";
 
 function pathOf(req) {
@@ -978,9 +979,10 @@ export function publicRoutes(router) {
       }
       const recurring = await q("SELECT * FROM doctor_availabilities WHERE doctor_id = ?", [doctor.id]).catch(() => []);
       const periods = await q("SELECT * FROM doctor_availability_periods WHERE doctor_id = ?", [doctor.id]).catch(() => []);
+      const today = kigaliClock().date;
       const slots = await q(
-        "SELECT * FROM appointment_slots WHERE doctor_id = ? AND slot_date = CURDATE()",
-        [doctor.id],
+        "SELECT * FROM appointment_slots WHERE doctor_id = ? AND slot_date = ?",
+        [doctor.id, today],
       ).catch(() => []);
       res.json({
         recurring_availability: await presentRows("doctor_availabilities", recurring),
@@ -1009,26 +1011,41 @@ export function publicRoutes(router) {
           total: 0,
         });
       }
-      const params = [doctor.id];
-      let sql = "SELECT * FROM appointment_slots WHERE doctor_id = ?";
-      if (req.query.date) {
-        sql += " AND slot_date = ?";
-        params.push(String(req.query.date).slice(0, 10));
+      const now = kigaliClock();
+      const requested = req.query.date ? String(req.query.date).slice(0, 10) : "";
+      const doctorCard = { id: doctor.id, name: doctor.user_name, slug: doctor.slug };
+      if (requested && requested < now.date) {
+        return res.json({ doctor: doctorCard, slots: {}, dates: [], total: 0 });
       }
-      sql += " ORDER BY slot_date, start_time LIMIT 500";
-      const rows = await presentRows("appointment_slots", await q(sql, params).catch(() => []));
-      const grouped = {};
-      for (const row of rows) {
-        const key = String(row.slot_date || "").slice(0, 10);
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(row);
-      }
-      res.json({
-        doctor: { id: doctor.id, name: doctor.user_name, slug: doctor.slug },
-        slots: grouped,
-        dates: Object.keys(grouped),
-        total: rows.length,
+      const from = requested || now.date;
+      const to = requested || addIsoDays(now.date, 90);
+      const rows = await q(
+        `SELECT * FROM appointment_slots
+         WHERE doctor_id = ? AND slot_date >= ? AND slot_date <= ?
+         ORDER BY slot_date, start_time
+         LIMIT 4000`,
+        [doctor.id, from, to],
+      ).catch(() => []);
+      const periods = await q(
+        "SELECT * FROM doctor_availability_periods WHERE doctor_id = ?",
+        [doctor.id],
+      ).catch(() => []);
+      const recurring = await q(
+        "SELECT * FROM doctor_availabilities WHERE doctor_id = ?",
+        [doctor.id],
+      ).catch(() => []);
+      const presentedRows = await presentRows("appointment_slots", rows).catch(() => rows);
+      const presentedPeriods = await presentRows("doctor_availability_periods", periods).catch(() => periods);
+      const presentedRecurring = await presentRows("doctor_availabilities", recurring).catch(() => recurring);
+      const upcoming = upcomingPublicSlots({
+        rows: presentedRows,
+        periods: presentedPeriods,
+        recurring: presentedRecurring,
+        now,
+        from,
+        to,
       });
+      res.json({ doctor: doctorCard, ...upcoming });
     } catch (error) {
       next(error);
     }
@@ -1236,7 +1253,8 @@ export function publicRoutes(router) {
       for (const row of rows) {
         const key = row.key || row.name || row.setting_key;
         if (!key) continue;
-        const group = settings[row.group] ? row.group : "general";
+        const namedGroup = row.group || row.group_name;
+        const group = settings[namedGroup] ? namedGroup : "general";
         let value = row.value ?? row.setting_value;
         if (typeof value === "string" && (value.startsWith("{") || value.startsWith("["))) {
           try { value = JSON.parse(value); } catch { /* keep string */ }

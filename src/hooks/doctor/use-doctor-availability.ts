@@ -69,6 +69,32 @@ export const availabilityKeys = {
     ["slots", params ?? {}] as const,
 };
 
+/** Shared by the doctor dashboard and the availability page. */
+export const doctorInstantStatusKey = ["doctor-instant-status"] as const;
+
+export interface DoctorInstantStatus {
+  instant_consultation: boolean;
+  bookings_paused: boolean;
+}
+
+export function useDoctorInstantStatus() {
+  return useQuery({
+    queryKey: doctorInstantStatusKey,
+    queryFn: () => apiFetch<DoctorInstantStatus>("/doctor/toggle/mystatus"),
+    staleTime: 0,
+  });
+}
+
+export function writeDoctorInstantStatus(
+  qc: ReturnType<typeof useQueryClient>,
+  patch: Partial<DoctorInstantStatus>,
+) {
+  qc.setQueryData<DoctorInstantStatus>(doctorInstantStatusKey, (current) => ({
+    instant_consultation: patch.instant_consultation ?? current?.instant_consultation ?? false,
+    bookings_paused: patch.bookings_paused ?? current?.bookings_paused ?? false,
+  }));
+}
+
 /* ─────────────────────────────────────────────
    2.1  GET /availability
 ───────────────────────────────────────────── */
@@ -394,15 +420,30 @@ export function useToggleInstantConsultation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (enabled?: boolean) =>
-      apiFetch<{ message: string; instant_consultation: boolean }>(
+      apiFetch<{ message: string; instant_consultation: boolean; bookings_paused?: boolean }>(
         "/doctor/toggle/instant",
         {
           method: "PATCH",
           body: enabled === undefined ? {} : { instant_consultation: enabled },
         }
       ),
-    onSuccess: () => {
+    onMutate: async (enabled) => {
+      await qc.cancelQueries({ queryKey: doctorInstantStatusKey });
+      const previous = qc.getQueryData<DoctorInstantStatus>(doctorInstantStatusKey);
+      const next = typeof enabled === "boolean" ? enabled : !(previous?.instant_consultation);
+      writeDoctorInstantStatus(qc, { instant_consultation: next });
+      return { previous };
+    },
+    onError: (_error, _enabled, context) => {
+      if (context?.previous) qc.setQueryData(doctorInstantStatusKey, context.previous);
+    },
+    onSuccess: (res) => {
+      writeDoctorInstantStatus(qc, {
+        instant_consultation: res.instant_consultation,
+        bookings_paused: res.bookings_paused,
+      });
       qc.invalidateQueries({ queryKey: ["slots"] });
+      qc.invalidateQueries({ queryKey: ["patient-search-doctors"] });
     },
   });
 }
@@ -415,11 +456,24 @@ export function useTogglePauseBookings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiFetch<{ message: string; bookings_paused: boolean }>(
+      apiFetch<{ message: string; bookings_paused: boolean; instant_consultation?: boolean }>(
         "/doctor/toggle/pause",
         { method: "PATCH" }
       ),
-    onSuccess: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: doctorInstantStatusKey });
+      const previous = qc.getQueryData<DoctorInstantStatus>(doctorInstantStatusKey);
+      writeDoctorInstantStatus(qc, { bookings_paused: !(previous?.bookings_paused) });
+      return { previous };
+    },
+    onError: (_error, _value, context) => {
+      if (context?.previous) qc.setQueryData(doctorInstantStatusKey, context.previous);
+    },
+    onSuccess: (res) => {
+      writeDoctorInstantStatus(qc, {
+        bookings_paused: res.bookings_paused,
+        instant_consultation: res.instant_consultation,
+      });
       qc.invalidateQueries({ queryKey: ["slots"] });
     },
   });

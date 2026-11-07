@@ -14,6 +14,8 @@ import { startRealtime } from "./realtime.js";
 import { remindExpiringLicenses } from "./doctor-review.js";
 import { remindUpcomingVisits, autoDisableInstantOutsideSchedule } from "./visit-notify.js";
 import { expireUnpaidPayments } from "./public.js";
+import { normalizeStoredPhones } from "./phone.js";
+import { ensureSettingsTables } from "./system-settings.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -129,6 +131,12 @@ function warnOnMissingConfig() {
 pool.query("SELECT 1").then(async () => {
   await ensureDoctorSearchFields().catch((error) => {
     console.error("Could not prepare doctor search fields", error.message);
+  });
+  await ensureSettingsTables().catch((error) => {
+    console.error("Could not prepare system settings", error.message);
+  });
+  await normalizeStoredPhones().catch((error) => {
+    console.error("Could not normalize stored phone numbers", error.message);
   });
   const server = app.listen(port, "127.0.0.1", () => {
     console.log(`MediConnect API listening on ${port}`);

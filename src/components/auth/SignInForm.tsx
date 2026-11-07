@@ -264,7 +264,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 <button
                   type="button"
                   onClick={() => setShowForgot(true)}
-                  className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                  className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
                 >
                   {t("auth.forgot_password", "Forgot password?")}
                 </button>

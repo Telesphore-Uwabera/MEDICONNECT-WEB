@@ -234,6 +234,19 @@ export async function enqueuePharmacyPrescription(prescription, body = {}) {
         delivery_address: body.delivery_address || null,
         notes: body.notes || null,
       }).catch(() => null);
+      const pharmacy = await one("SELECT user_id, name, name_en FROM pharmacies WHERE id = ?", [pharmacyId]).catch(() => null);
+      if (pharmacy?.user_id && await tableExists("notifications")) {
+        await insert("notifications", {
+          notifiable_id: pharmacy.user_id,
+          notifiable_type: "App\\Models\\User",
+          type: "pharmacy_prescription",
+          data: JSON.stringify({
+            title: "New prescription",
+            message: "A doctor sent a prescription for you to prepare.",
+            prescription_id: prescription.id,
+          }),
+        }).catch(() => null);
+      }
     }
   }
   return one("SELECT * FROM prescriptions WHERE id = ?", [prescription.id]);

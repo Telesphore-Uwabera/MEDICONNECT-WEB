@@ -14,6 +14,8 @@ import { isDedicatedResource } from "./dedicated-ids.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 import { enqueuePharmacyPrescription, stampPrescriptionIssued } from "./clinical-documents.js";
 import { withLiveIce } from "./call-token.js";
+import { readAuditLogs, readPublicSettings, readSettingsGroup, writeSettingsGroup } from "./system-settings.js";
+import { normalizeStoredPhone } from "./phone.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -402,8 +404,8 @@ async function fillGap(req, res, parts) {
       id: row?.id,
       name: row?.name ?? "",
       email: row?.email ?? "",
-      phone: row?.phone ?? null,
-      country_code: row?.country_code ?? null,
+      phone: normalizeStoredPhone(row?.phone, row?.country_code).phone || null,
+      country_code: row?.phone ? normalizeStoredPhone(row?.phone, row?.country_code).country_code : (row?.country_code ?? null),
       preferred_language: row?.preferred_language || "en",
       avatar: row?.avatar ?? null,
       roles: roles.length ? roles : [req.user.role].filter(Boolean),
@@ -443,19 +445,32 @@ async function fillGap(req, res, parts) {
   }
 
 
-  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2] === "public") {
-    res.json({ settings: {} });
-    return true;
-  }
-
-  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2] === "audit-logs") {
-    res.json({ data: [], current_page: 1, per_page: 15, total: 0 });
-    return true;
-  }
-
-  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2]) {
-    res.json({ group: parts[2], settings: {} });
-    return true;
+  if (parts[0] === "admin" && parts[1] === "settings" && parts[2]) {
+    if (req.user?.active_role !== "admin" && req.user?.role !== "admin" && !req.user?.can_be_admin) {
+      res.status(403).json({ message: "You do not have access to this area." });
+      return true;
+    }
+    if (req.method === "GET" && parts[2] === "public") {
+      res.json(await readPublicSettings());
+      return true;
+    }
+    if (req.method === "GET" && parts[2] === "audit-logs") {
+      res.json(await readAuditLogs(req.query || {}));
+      return true;
+    }
+    if (req.method === "GET") {
+      res.json(await readSettingsGroup(parts[2]));
+      return true;
+    }
+    if (["PUT", "PATCH", "POST"].includes(req.method)) {
+      const saved = await writeSettingsGroup(parts[2], req.body || {}, {
+        adminId: req.user.id,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+      res.json(saved);
+      return true;
+    }
   }
 
   if (parts[0] === "doctor" && parts[1] === "wallet" && parts[2] === "withdraw" && req.method === "POST") {

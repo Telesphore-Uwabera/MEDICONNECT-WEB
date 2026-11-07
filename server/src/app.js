@@ -1346,7 +1346,7 @@ export function appRoutes(router) {
         params.push(String(req.query.from).slice(0, 10));
       } else if (!req.query.date) {
         filters.push("slot_date >= ?");
-        params.push(new Date().toISOString().slice(0, 10));
+        params.push(kigaliIso());
       }
       if (req.query.to) {
         filters.push("slot_date <= ?");
@@ -1370,7 +1370,7 @@ export function appRoutes(router) {
           `SELECT appointment_date, appointment_time FROM appointments
            WHERE doctor_id = ? AND LOWER(COALESCE(status,'')) NOT IN ('cancelled','canceled','expired','payment_expired','no_show','declined')
              AND appointment_date >= ?`,
-          [doctorId ?? 0, new Date().toISOString().slice(0, 10)],
+          [doctorId ?? 0, kigaliIso()],
         ).catch(() => []);
         for (const visit of visits) {
           const day = String(visit.appointment_date || "").slice(0, 10);
@@ -1419,7 +1419,7 @@ export function appRoutes(router) {
       if (start + duration > 24 * 60) {
         return res.status(422).json({ message: "That slot would run past midnight." });
       }
-      const today = new Date().toISOString().slice(0, 10);
+      const today = kigaliIso();
       if (slotDate < today) {
         return res.status(422).json({ message: "Past dates cannot receive new slots." });
       }
@@ -2242,6 +2242,56 @@ export function appRoutes(router) {
     }
   });
 
+  router.get("/patient/appointments", requireAuth, requireRole("patient"), async (req, res, next) => {
+    try {
+      const profileId = await loadOwnedId(req.user.id, "patients");
+      const ids = [...new Set([Number(req.user.id), Number(profileId || 0)].filter((id) => id > 0))];
+      if (!ids.length) {
+        return res.json({ data: [], total: 0, current_page: 1, last_page: 1, per_page: 10 });
+      }
+      const filters = [`patient_id IN (${ids.map(() => "?").join(",")})`];
+      const params = [...ids];
+      if (await hasColumn("appointments", "deleted_at")) filters.push("deleted_at IS NULL");
+      if (req.query.status) {
+        filters.push("status = ?");
+        params.push(String(req.query.status));
+      }
+      if (req.query.type && await hasColumn("appointments", "type")) {
+        filters.push("type = ?");
+        params.push(String(req.query.type));
+      }
+      if (req.query.date) {
+        filters.push("DATE(appointment_date) = ?");
+        params.push(String(req.query.date).slice(0, 10));
+      }
+      if (req.query.date_from) {
+        filters.push("DATE(appointment_date) >= ?");
+        params.push(String(req.query.date_from).slice(0, 10));
+      }
+      if (req.query.date_to) {
+        filters.push("DATE(appointment_date) <= ?");
+        params.push(String(req.query.date_to).slice(0, 10));
+      }
+      const where = `WHERE ${filters.join(" AND ")}`;
+      const { page, perPage, offset } = pageArgs(req, 10);
+      const total = Number((await one(`SELECT COUNT(*) AS total FROM appointments ${where}`, params).catch(() => ({ total: 0 })))?.total ?? 0);
+      const rows = await presentRows(
+        "appointments",
+        await q(`SELECT * FROM appointments ${where} ORDER BY appointment_date DESC, appointment_time DESC, id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(() => []),
+      );
+      const data = await decorateAppointments(rows);
+      res.json(paginateList({
+        data: data || [],
+        total,
+        page,
+        perPage,
+        path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+      }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/patient/appointments/:appointmentId/join", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
       const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
@@ -2576,7 +2626,7 @@ export function appRoutes(router) {
       const hospitals = await roleCount("hospitals");
       const users = await count(`SELECT COUNT(*) AS total FROM users WHERE ${await alive("users")}${userFilter}`, userParams);
       const appointmentsTotal = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive}${appointmentDates.sql}`, appointmentDates.params);
-      const appointmentsPending = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('pending','confirmed')${appointmentDates.sql}`, appointmentDates.params);
+      const appointmentsPending = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status = 'pending'${appointmentDates.sql}`, appointmentDates.params);
       const appointmentDay = await dateColumn("appointments");
       const appointmentsToday = appointmentDay
         ? await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND DATE(\`${appointmentDay}\`) = CURDATE()`)

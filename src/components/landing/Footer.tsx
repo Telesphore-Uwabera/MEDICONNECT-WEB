@@ -54,11 +54,11 @@ function Footer({ className, hideTopBorder, containerClassName }: FooterProps = 
   ];
 
   const footerForLinks = [
-    { label: t("pages.landing.footer_role_patient"), to: "/patient" },
-    { label: t("pages.landing.footer_role_doctor"), to: "/doctor" },
-    { label: t("pages.landing.footer_role_hospital"), to: "/hospital" },
-    { label: t("pages.landing.footer_pharmacy"), to: "/pharmacy" },
-    { label: t("pages.landing.footer_role_admin"), to: "/admin" },
+    { label: t("pages.landing.footer_role_patient", "Patient portal"), to: "/patient" },
+    { label: t("pages.landing.footer_role_doctor", "Doctor portal"), to: "/doctor" },
+    { label: t("pages.landing.footer_role_hospital", "Hospital portal"), to: "/hospital" },
+    { label: t("pages.landing.footer_pharmacy", "Pharmacy portal"), to: "/pharmacy" },
+    { label: t("pages.landing.footer_role_admin", "Admin portal"), to: "/admin" },
   ];
 
   const footerLegalLinks = [
