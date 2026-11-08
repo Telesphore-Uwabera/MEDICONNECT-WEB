@@ -42,7 +42,10 @@ import {
   visitBodyGuard,
   visitIsClosed,
   visitIsSettled,
-  visitOpenTo,
+  insuranceCatalogWhere,
+  isPublicCatalog,
+  mayReadRow,
+  personalPatientWhere,
   visitReadWhere,
 } from "./visit-rules.js";
 import { attachChatRoutes } from "./chat.js";
@@ -145,10 +148,17 @@ async function createProfile(user, role, body = {}) {
   }
 }
 
+const PERSONAL_READ_TABLES = new Set(["reviews", "refunds", "payments"]);
+
 async function ownedFilter(req, table, scope) {
   const visitWhere = await visitReadWhere(scope, table, req.user);
   if (visitWhere) return visitWhere;
   if (scope === "admin" || scope === "notifications") return { sql: "1=1", params: [] };
+  if (table === "insurances") return insuranceCatalogWhere();
+  if (isPublicCatalog(table)) return { sql: "1=1", params: [] };
+  if (scope === "patient" && PERSONAL_READ_TABLES.has(table) && (await hasColumn(table, "patient_id"))) {
+    return personalPatientWhere(table, req.user);
+  }
   const profile = PROFILE_TABLE[scope];
   const ownerId = profile ? await loadOwnedId(req.user.id, profile) : null;
   if (table === "referrals") {
@@ -186,7 +196,7 @@ async function ownedFilter(req, table, scope) {
     return { sql: `\`${scope}_id\` = ?`, params: [ownerId ?? 0] };
   }
   if (await hasColumn(table, "user_id")) return { sql: "`user_id` = ?", params: [req.user.id] };
-  return { sql: "1=1", params: [] };
+  return { sql: "0", params: [] };
 }
 
 async function listTable(req, table, scope) {
@@ -3405,8 +3415,14 @@ export function appRoutes(router) {
       if (isDedicatedResource(req.params.resource)) return next();
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
-      const raw = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
-      if (!(await visitOpenTo(req.params.scope, table, raw, req.user))) {
+      let raw;
+      try {
+        raw = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      } catch {
+        return res.status(403).json({ message: "You do not have access to this record." });
+      }
+      if (!raw) return res.status(404).json({ message: "Record not found." });
+      if (!(await mayReadRow(req.params.scope, table, raw, req.user))) {
         return res.status(403).json({ message: "You do not have access to this record." });
       }
       let row = await presentRow(table, raw);

@@ -9,7 +9,7 @@ import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
-import { loadInstantViewer, releaseSlot } from "./visit-rules.js";
+import { insuranceCatalogWhere, loadInstantViewer, releaseSlot } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
 import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
@@ -1331,7 +1331,8 @@ export function publicRoutes(router) {
 
   router.get("/public/insurances", async (req, res, next) => {
     try {
-      const insurances = await presentRows("insurances", await q("SELECT * FROM insurances ORDER BY name ASC"));
+      const catalog = await insuranceCatalogWhere();
+      const insurances = await presentRows("insurances", await q(`SELECT * FROM insurances WHERE ${catalog.sql} ORDER BY name ASC`, catalog.params));
       res.json({ insurances, data: insurances });
     } catch (error) {
       next(error);

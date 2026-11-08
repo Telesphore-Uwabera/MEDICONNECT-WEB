@@ -14,11 +14,34 @@ const db = {
   ],
   pharmacies: [{ id: 8, user_id: 6 }],
   patients: [
-    { id: 55, user_id: 77, name: "Amina", email: "amina@example.com" },
-    { id: 56, user_id: 80, name: "Other", email: "other@example.com" },
+    { id: 55, user_id: 77, name: "Amina", email: "amina@example.com", phone: "788100100" },
+    { id: 56, user_id: 80, name: "Other", email: "other@example.com", phone: "788200200" },
     { id: 77, user_id: 8, name: "Foreign Profile", email: "foreign@example.com" },
-    { id: 90, user_id: null, name: "Guest Chart", email: null },
+    { id: 90, user_id: null, name: "Guest Chart", email: null, phone: "788100200" },
   ],
+  reviews: [
+    { id: 1, patient_id: 55, user_id: null, doctor_id: 31, comment: "my-review" },
+    { id: 2, patient_id: 77, user_id: null, doctor_id: 31, comment: "foreign-review" },
+    { id: 3, patient_id: 55, user_id: null, doctor_id: 32, comment: "other-doctor-review" },
+  ],
+  refunds: [
+    { id: 1, patient_id: 55, user_id: null, amount: "10", reason: "my-refund" },
+    { id: 2, patient_id: 77, user_id: null, amount: "secret-refund", reason: "not-mine" },
+  ],
+  payments: [
+    { id: 1, patient_id: 55, user_id: null, amount: "own-fee" },
+    { id: 2, patient_id: 77, user_id: null, amount: "secret-fee" },
+  ],
+  legal: [{ id: 1, title: "Terms of care", body: "Public terms" }],
+  specializations: [{ id: 1, name: "Cardiology" }],
+  fees: [{ id: 1, name: "General", online_fee: 10 }],
+  helpLinks: [{ id: 1, title: "How to book" }],
+  questions: [{ id: 1, question: "Do you smoke?" }],
+  insurers: [
+    { id: 1, name: "RSSB", hospital_id: 4, patient_id: null, policy_number: null },
+    { id: 2, name: "Hidden policy", hospital_id: 9, patient_id: 55, policy_number: "secret-policy" },
+  ],
+  leaflets: [{ id: 1, title: "private-leaflet" }],
   accounts: [
     { id: 77, name: "Amina Account", email: "amina-account@example.com" },
     { id: 90, name: "Unrelated Account", email: "stranger@example.com" },
@@ -48,7 +71,16 @@ function sqliteRows(sql, params) {
   if (/\bWHERE\s+0\b/i.test(text)) return [];
   const database = new DatabaseSync(":memory:");
   database.exec(`
-    CREATE TABLE patients (id INTEGER, user_id INTEGER, name TEXT, email TEXT);
+    CREATE TABLE patients (id INTEGER, user_id INTEGER, name TEXT, email TEXT, phone TEXT);
+    CREATE TABLE reviews (id INTEGER, patient_id INTEGER, user_id INTEGER, doctor_id INTEGER, comment TEXT);
+    CREATE TABLE refunds (id INTEGER, patient_id INTEGER, user_id INTEGER, amount TEXT, reason TEXT);
+    CREATE TABLE payments (id INTEGER, patient_id INTEGER, user_id INTEGER, amount TEXT);
+    CREATE TABLE legal_documents (id INTEGER, title TEXT, body TEXT);
+    CREATE TABLE insurances (id INTEGER, name TEXT, hospital_id INTEGER, patient_id INTEGER, policy_number TEXT);
+    CREATE TABLE specializations (id INTEGER, name TEXT);
+    CREATE TABLE specialization_fees (id INTEGER, name TEXT, online_fee INTEGER);
+    CREATE TABLE help_center_links (id INTEGER, title TEXT);
+    CREATE TABLE fitness_checklist_questions (id INTEGER, question TEXT);
     CREATE TABLE appointments (
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
@@ -71,7 +103,7 @@ function sqliteRows(sql, params) {
   `);
   const insert = database.prepare.bind(database);
   for (const row of db.patients) {
-    insert("INSERT INTO patients (id, user_id, name, email) VALUES (?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email);
+    insert("INSERT INTO patients (id, user_id, name, email, phone) VALUES (?, ?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email, row.phone ?? null);
   }
   for (const row of db.appointments) {
     insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
@@ -94,6 +126,27 @@ function sqliteRows(sql, params) {
   for (const row of db.medical) {
     insert("INSERT INTO patient_medical_infos (id, patient_id, known_allergies) VALUES (?, ?, ?)").run(row.id, row.patient_id, row.known_allergies);
   }
+  for (const row of db.reviews) {
+    insert("INSERT INTO reviews (id, patient_id, user_id, doctor_id, comment) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.doctor_id, row.comment);
+  }
+  for (const row of db.refunds) {
+    insert("INSERT INTO refunds (id, patient_id, user_id, amount, reason) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.amount, row.reason);
+  }
+  for (const row of db.payments) {
+    insert("INSERT INTO payments (id, patient_id, user_id, amount) VALUES (?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.amount);
+  }
+  for (const row of db.legal) {
+    insert("INSERT INTO legal_documents (id, title, body) VALUES (?, ?, ?)").run(row.id, row.title, row.body);
+  }
+  for (const row of db.insurers) {
+    insert("INSERT INTO insurances (id, name, hospital_id, patient_id, policy_number) VALUES (?, ?, ?, ?, ?)").run(
+      row.id, row.name, row.hospital_id, row.patient_id, row.policy_number,
+    );
+  }
+  for (const row of db.specializations) insert("INSERT INTO specializations (id, name) VALUES (?, ?)").run(row.id, row.name);
+  for (const row of db.fees) insert("INSERT INTO specialization_fees (id, name, online_fee) VALUES (?, ?, ?)").run(row.id, row.name, row.online_fee);
+  for (const row of db.helpLinks) insert("INSERT INTO help_center_links (id, title) VALUES (?, ?)").run(row.id, row.title);
+  for (const row of db.questions) insert("INSERT INTO fitness_checklist_questions (id, question) VALUES (?, ?)").run(row.id, row.question);
   return database.prepare(text).all(...params);
 }
 
@@ -105,6 +158,8 @@ vi.mock("./db.js", async (importOriginal) => {
       "appointments", "prescriptions", "prescription_requests", "patients", "doctors", "pharmacies",
       "patient_medical_infos", "team_members", "instant_consultation_requests",
       "pharmacy_orders", "service_bookings", "hospitals", "users", "leaflets", "chart_notes",
+      "reviews", "refunds", "payments", "legal_documents", "insurances",
+      "specializations", "specialization_fees", "help_center_links", "fitness_checklist_questions",
     ].includes(name),
     hasColumn: async (table, column) => {
       if (db.columnThrows) throw new Error("columns unreadable");
@@ -129,7 +184,7 @@ vi.mock("./db.js", async (importOriginal) => {
         throw new Error("care unreadable");
       }
       if (db.patientThrows && text.includes("FROM patients")) throw new Error("patients unreadable");
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions)"?/i.test(text)) {
         return sqliteRows(sql, params);
       }
       return [];
@@ -158,8 +213,11 @@ vi.mock("./db.js", async (importOriginal) => {
       if (text.includes("FROM users") && text.includes("WHERE id")) {
         return db.accounts.find((row) => row.id === Number(params[0])) || null;
       }
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions)"?/i.test(text)) {
         return sqliteRows(sql, params)[0] ?? null;
+      }
+      if (text.includes("FROM leaflets")) {
+        return db.leaflets.find((row) => row.id === Number(params[0])) || null;
       }
       if (text.includes("FROM team_members")) return { id: Number(params[0]) || 50, name: "Nurse", is_active: 1 };
       return null;
@@ -181,6 +239,7 @@ vi.mock("./db.js", async (importOriginal) => {
 });
 
 const { appRoutes } = await import("./app.js");
+const { publicRoutes } = await import("./public.js");
 
 const users = {
   patient: { id: 77, active_role: "patient", role: "patient" },
@@ -199,6 +258,7 @@ function request(user, method, path, body) {
     req.user = user;
     next();
   });
+  publicRoutes(router);
   appRoutes(router);
   app.use("/api/v1", router);
   app.use((error, _req, res, _next) => {
@@ -696,5 +756,150 @@ describe("resource write authorization", () => {
     });
     expect(stillLinked.status).toBe(201);
     expect(writes.at(-1).data).toMatchObject({ patient_id: 55, doctor_id: 31, instant_consultation_id: 9 });
+  });
+
+  it("keeps reviews, refunds, catalogs, and intake on the owning person", async () => {
+    const ownReview = await request(users.patient, "GET", "/patient/reviews/1");
+    const foreignReview = await request(users.patient, "GET", "/patient/reviews/2");
+    const doctorReview = await request(users.doctor, "GET", "/doctor/reviews/1");
+    const otherDoctorReview = await request(users.doctor, "GET", "/doctor/reviews/3");
+    expect(ownReview.status).toBe(200);
+    expect(JSON.stringify(ownReview.body)).toContain("my-review");
+    expect(foreignReview.status).toBe(404);
+    expect(JSON.stringify(foreignReview.body)).not.toContain("foreign-review");
+    expect(doctorReview.status).toBe(200);
+    expect(otherDoctorReview.status).toBe(404);
+    const ownRefund = await request(users.patient, "GET", "/patient/refunds/1");
+    const foreignRefund = await request(users.patient, "GET", "/patient/refunds/2");
+    expect(ownRefund.status).toBe(200);
+    expect(JSON.stringify(ownRefund.body)).toContain("my-refund");
+    expect(foreignRefund.status).toBe(404);
+    expect(JSON.stringify(foreignRefund.body)).not.toContain("secret-refund");
+    const ownFee = await request(users.patient, "GET", "/patient/payments/1");
+    const foreignFee = await request(users.patient, "GET", "/patient/payments/2");
+    const feeList = await request(users.patient, "GET", "/patient/payments");
+    expect(ownFee.status).toBe(200);
+    expect(JSON.stringify(ownFee.body)).toContain("own-fee");
+    expect(foreignFee.status).toBe(403);
+    expect(JSON.stringify(foreignFee.body)).not.toContain("secret-fee");
+    expect(JSON.stringify(feeList.body)).toContain("own-fee");
+    expect(JSON.stringify(feeList.body)).not.toContain("secret-fee");
+    const leaflet = await request(users.doctor, "GET", "/doctor/leaflets/1");
+    expect(leaflet.status).toBe(403);
+    expect(JSON.stringify(leaflet.body)).not.toContain("private-leaflet");
+    const terms = await request(users.patient, "GET", "/patient/legal_documents/1");
+    const termsList = await request(users.patient, "GET", "/patient/legal_documents");
+    expect(terms.status).toBe(200);
+    expect(JSON.stringify(terms.body)).toContain("Terms of care");
+    expect(JSON.stringify(termsList.body)).toContain("Terms of care");
+    const patientInsurers = await request(users.patient, "GET", "/patient/insurances");
+    const hospitalInsurers = await request(users.hospital, "GET", "/hospital/insurances");
+    const doctorPolicy = await request(users.doctor, "GET", "/doctor/insurances/2");
+    const patientPolicy = await request(users.patient, "GET", "/patient/insurances/2");
+    const doctorCatalog = await request(users.doctor, "GET", "/doctor/insurances");
+    const publicCatalog = await request(users.patient, "GET", "/public/insurances");
+    const catalogRecord = await request(users.doctor, "GET", "/doctor/insurances/1");
+    expect(JSON.stringify(patientInsurers.body)).toContain("RSSB");
+    expect(JSON.stringify(patientInsurers.body)).not.toContain("secret-policy");
+    expect(JSON.stringify(hospitalInsurers.body)).toContain("RSSB");
+    expect(JSON.stringify(hospitalInsurers.body)).not.toContain("secret-policy");
+    expect(doctorPolicy.status).toBe(403);
+    expect(JSON.stringify(doctorPolicy.body)).not.toContain("secret-policy");
+    expect(patientPolicy.status).toBe(404);
+    expect(JSON.stringify(patientPolicy.body)).not.toContain("secret-policy");
+    expect(JSON.stringify(doctorCatalog.body)).toContain("RSSB");
+    expect(JSON.stringify(doctorCatalog.body)).not.toContain("secret-policy");
+    expect(JSON.stringify(publicCatalog.body)).toContain("RSSB");
+    expect(JSON.stringify(publicCatalog.body)).not.toContain("secret-policy");
+    expect(catalogRecord.status).toBe(200);
+    expect(JSON.stringify(catalogRecord.body)).toContain("RSSB");
+    const catalogs = [
+      ["/patient/specializations", "/patient/specializations/1", "Cardiology"],
+      ["/patient/specialization-fees", "/patient/specialization-fees/1", "General"],
+      ["/patient/help-center-links", "/patient/help-center-links/1", "How to book"],
+      ["/patient/fitness_checklist_questions", "/patient/fitness_checklist_questions/1", "Do you smoke?"],
+    ];
+    for (const [listPath, recordPath, label] of catalogs) {
+      const list = await request(users.patient, "GET", listPath);
+      const record = await request(users.patient, "GET", recordPath);
+      expect(JSON.stringify(list.body), listPath).toContain(label);
+      expect(record.status, recordPath).toBe(200);
+      expect(JSON.stringify(record.body), recordPath).toContain(label);
+    }
+    db.columnThrows = true;
+    const unreadable = await request(users.patient, "GET", "/patient/reviews/1");
+    expect(unreadable.status).toBe(404);
+    expect(JSON.stringify(unreadable.body)).not.toContain("my-review");
+    db.columnThrows = false;
+    writes.length = 0;
+    db.instants.push({ id: 30, doctor_id: 31, patient_id: null, user_id: null, status: "accepted" });
+    const saved = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234567",
+      instant_consultation_id: 30,
+      appointment_id: 5,
+    });
+    expect(saved.status).toBe(201);
+    const appointmentWrites = writes.filter((write) => write.op === "update" && write.table === "appointments");
+    const instantWrites = writes.filter((write) => write.op === "update" && write.table === "instant_consultation_requests");
+    expect(appointmentWrites).toEqual([]);
+    expect(instantWrites).toHaveLength(1);
+    expect(instantWrites[0].data.patient_id).toBe(50);
+    writes.length = 0;
+    const stolen = await request(users.otherDoctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234568",
+      appointment_id: 5,
+    });
+    const contradicted = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234569",
+      appointment_id: 9,
+    });
+    const occupied = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234560",
+      instant_consultation_id: 9,
+    });
+    expect(stolen.status).toBe(403);
+    expect(contradicted.status).toBe(403);
+    expect(occupied.status).toBe(403);
+    expect(writes).toEqual([]);
+    db.patientThrows = true;
+    const unreadPhone = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234561",
+      instant_consultation_id: 30,
+    });
+    expect(unreadPhone.status).toBe(403);
+    expect(writes).toEqual([]);
+  });
+
+  it("refuses an intake that would change a profile before the appointment check fails", async () => {
+    db.appointments.push({ id: 7, doctor_id: 31, patient_id: 80, user_id: null, status: "confirmed" });
+    const mismatched = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Renamed Amina",
+      phone: "788100100",
+      appointment_id: 7,
+    });
+    expect(mismatched.status).toBe(403);
+    expect(writes).toEqual([]);
+    const stranger = await request(users.otherDoctor, "POST", "/doctor/patients/intake", {
+      full_name: "Renamed Amina",
+      phone: "788100100",
+    });
+    const noCare = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Renamed Guest",
+      phone: "788100200",
+    });
+    expect(stranger.status).toBe(403);
+    expect(noCare.status).toBe(403);
+    expect(writes).toEqual([]);
+    const cared = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Amina Updated",
+      phone: "788100100",
+    });
+    expect(cared.status).toBe(201);
+    expect(writes).toEqual([expect.objectContaining({ op: "update", table: "patients", id: 55 })]);
   });
 });

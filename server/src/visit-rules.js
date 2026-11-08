@@ -359,12 +359,21 @@ const PROFILE_OWNED_TABLES = new Set([
   "prescription_requests",
   "pharmacy_orders",
 ]);
+const PERSONAL_TABLES = new Set(["reviews", "refunds", "payments"]);
+const PUBLIC_CATALOGS = new Set([
+  "specializations",
+  "specialization_fees",
+  "help_center_links",
+  "legal_documents",
+  "fitness_checklist_questions",
+]);
 
 /**
  * Patient ownership for one table. Appointments and service bookings use the
  * account id. Instant rows use the profile rules. Clinical rows use profile ids.
- * A lookup failure is no access. Unknown tables return null so the caller can
- * keep its existing predicate.
+ * A lookup failure is no access. Reviews and refunds match a profile id, or an
+ * account id only when that integer is not someone else's profile. Any other
+ * patient_id table is closed.
  */
 export async function patientOwnedWhere(table, user) {
   try {
@@ -397,10 +406,79 @@ export async function patientOwnedWhere(table, user) {
       }
       return { sql, params };
     }
-    return null;
+    if (PERSONAL_TABLES.has(table)) return patientIdentityWhere(table, user);
+    return { sql: "0", params: [] };
   } catch {
     return { sql: "0", params: [] };
   }
+}
+
+/** Profile ids, or an account id only when no other person occupies that integer. */
+async function patientIdentityWhere(table, user) {
+  const accountId = Number(user?.id) || 0;
+  if (!accountId) return { sql: "0", params: [] };
+  const ids = [...(await ownProfileIds(user))];
+  const parts = [];
+  const params = [];
+  if (ids.length) {
+    parts.push(`\`patient_id\` IN (${ids.map(() => "?").join(",")})`);
+    params.push(...ids);
+  }
+  parts.push("(`patient_id` = ? AND NOT EXISTS (SELECT 1 FROM patients p WHERE p.id = ? AND p.user_id IS NOT NULL AND p.user_id <> ?))");
+  params.push(accountId, accountId, accountId);
+  let sql = `(${parts.join(" OR ")})`;
+  if (await hasColumn(table, "user_id")) {
+    sql = `(${sql} AND (\`user_id\` IS NULL OR \`user_id\` = ?))`;
+    params.push(accountId);
+  }
+  return { sql, params };
+}
+
+export async function insuranceCatalogWhere() {
+  const parts = [];
+  if (await hasColumn("insurances", "patient_id")) parts.push("(`patient_id` IS NULL OR `patient_id` = 0)");
+  if (await hasColumn("insurances", "policy_number")) parts.push("(`policy_number` IS NULL OR TRIM(`policy_number`) = '')");
+  return { sql: parts.length ? parts.join(" AND ") : "1=1", params: [] };
+}
+
+export function insuranceRowIsPublic(row) {
+  const patient = Number(row?.patient_id) || 0;
+  const policy = String(row?.policy_number ?? "").trim();
+  return !patient && !policy;
+}
+
+export async function personalPatientWhere(table, user) {
+  return patientIdentityWhere(table, user);
+}
+
+export async function mayReadRow(scope, table, row, user) {
+  if (!table || !row) return false;
+  if (VISIT_TABLES.has(table)) return visitOpenTo(scope, table, row, user);
+  if (scope === "admin") return scopeRoleAllowed(user, "admin");
+  if (table === "insurances") return insuranceRowIsPublic(row);
+  if (PUBLIC_CATALOGS.has(table)) return true;
+  try {
+    if (scope === "patient" && (await hasColumn(table, "patient_id"))) {
+      return patientRowMatches(row, user);
+    }
+    return columnMatches(scope, table, row, user);
+  } catch {
+    return false;
+  }
+}
+
+async function patientRowMatches(row, user) {
+  const accountId = Number(user?.id) || 0;
+  if (!accountId || contradictsAccount(row, accountId)) return false;
+  const profiles = await ownProfileIds(user);
+  if (profiles.has(Number(row.patient_id))) return true;
+  if (Number(row.patient_id) !== accountId) return false;
+  const occupant = await one("SELECT user_id FROM patients WHERE id = ? LIMIT 1", [accountId]);
+  return !(occupant?.user_id && Number(occupant.user_id) !== accountId);
+}
+
+export function isPublicCatalog(table) {
+  return PUBLIC_CATALOGS.has(table);
 }
 
 /** List filter for a visit table. Never falls open when the owner column is absent. */
