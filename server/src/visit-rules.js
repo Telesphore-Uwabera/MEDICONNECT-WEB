@@ -1,7 +1,7 @@
 import { hasColumn, one, pool, q, tableExists } from "./db.js";
 import { hashPassword, loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
-import { ownsInstant } from "./instant-visit.js";
+import { instantOwnedWhere, ownsInstant } from "./instant-visit.js";
 
 /**
  * Visit rules shared by the patient, doctor and payment routes.
@@ -141,11 +141,17 @@ export const DOCTOR_WORK_STATUSES = new Set(["accepted", "confirmed", "in_progre
  */
 export async function visitOpenTo(scope, table, row, user) {
   if (!VISIT_TABLES.has(table) || !row) return true;
-  if (scope === "patient") {
-    return (await patientOwnsAppointment(row, user)) || (await patientOwnsInstant(row, user));
+  try {
+    if (scope === "admin") return scopeRoleAllowed(user, "admin");
+    if (scope === "patient") {
+      if (table === "appointments") return patientMayWriteAppointment(row, user);
+      return patientMayWriteInstant(row, user);
+    }
+    if (scope === "doctor") return doctorOwnsVisit(row, user);
+    return columnMatches(scope, table, row, user);
+  } catch {
+    return false;
   }
-  if (scope === "doctor") return doctorOwnsVisit(row, user);
-  return true;
 }
 
 const ADMIN_ROLES = ["admin", "moderator", "finance", "help_desk"];
@@ -334,6 +340,94 @@ export async function doctorHasCareLink(user, patient) {
   return false;
 }
 
+async function strictInstantViewer(user) {
+  const profiles = await ownProfileIds(user);
+  const occupant = await one("SELECT user_id FROM patients WHERE id = ? LIMIT 1", [user.id]);
+  return {
+    userId: Number(user.id),
+    patientIds: [...profiles],
+    email: user?.email || "",
+    phone: user?.phone || "",
+    occupiedUserId: occupant?.user_id ? Number(occupant.user_id) : null,
+  };
+}
+
+const INSTANT_TABLES = new Set(["instant_consultation_requests", "instant_consultations"]);
+const PROFILE_OWNED_TABLES = new Set([
+  "prescriptions",
+  "consultation_summaries",
+  "prescription_requests",
+  "pharmacy_orders",
+]);
+
+/**
+ * Patient ownership for one table. Appointments and service bookings use the
+ * account id. Instant rows use the profile rules. Clinical rows use profile ids.
+ * A lookup failure is no access. Unknown tables return null so the caller can
+ * keep its existing predicate.
+ */
+export async function patientOwnedWhere(table, user) {
+  try {
+    const accountId = Number(user?.id) || 0;
+    if (!accountId) return { sql: "0", params: [] };
+    if (ACCOUNT_PATIENT_TABLES.has(table)) {
+      if (await hasColumn(table, "user_id")) {
+        return {
+          sql: "`patient_id` = ? AND (`user_id` IS NULL OR `user_id` = ?)",
+          params: [accountId, accountId],
+        };
+      }
+      return { sql: "`patient_id` = ?", params: [accountId] };
+    }
+    if (INSTANT_TABLES.has(table)) {
+      const columns = new Set(["patient_id"]);
+      for (const name of ["user_id", "guest_email", "email", "guest_phone", "phone"]) {
+        if (await hasColumn(table, name)) columns.add(name);
+      }
+      return instantOwnedWhere(await strictInstantViewer(user), columns);
+    }
+    if (PROFILE_OWNED_TABLES.has(table)) {
+      const ids = [...(await ownProfileIds(user))];
+      if (!ids.length) return { sql: "0", params: [] };
+      let sql = `\`patient_id\` IN (${ids.map(() => "?").join(",")})`;
+      const params = [...ids];
+      if (await hasColumn(table, "user_id")) {
+        sql += " AND (`user_id` IS NULL OR `user_id` = ?)";
+        params.push(accountId);
+      }
+      return { sql, params };
+    }
+    return null;
+  } catch {
+    return { sql: "0", params: [] };
+  }
+}
+
+/** List filter for a visit table. Never falls open when the owner column is absent. */
+export async function visitReadWhere(scope, table, user) {
+  if (!VISIT_TABLES.has(table)) return null;
+  try {
+    if (scope === "admin") {
+      return scopeRoleAllowed(user, "admin") ? { sql: "1=1", params: [] } : { sql: "0", params: [] };
+    }
+    if (scope === "patient") return (await patientOwnedWhere(table, user)) || { sql: "0", params: [] };
+    if (scope === "doctor") {
+      const doctorId = await loadOwnedId(user?.id, "doctors");
+      if (!doctorId || !(await hasColumn(table, "doctor_id"))) return { sql: "0", params: [] };
+      return { sql: "`doctor_id` = ?", params: [doctorId] };
+    }
+    const column = `${scope}_id`;
+    if (PROFILE_TABLE[scope] && (await hasColumn(table, column))) {
+      const ownerId = await loadOwnedId(user?.id, PROFILE_TABLE[scope]);
+      if (!ownerId) return { sql: "0", params: [] };
+      return { sql: `\`${column}\` = ?`, params: [ownerId] };
+    }
+    return { sql: "0", params: [] };
+  } catch {
+    return { sql: "0", params: [] };
+  }
+}
+
 async function careRows(table, whereSql, params) {
   const names = ["id", "patient_id"];
   if (await hasColumn(table, "user_id")) names.push("user_id");
@@ -442,50 +536,71 @@ export async function resolveCreateBody(scope, table, body, user) {
   } catch {
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
-  if (!["doctor_id", "prescriber_id", "patient_id", "user_id", "hospital_id", "pharmacy_id"].some((key) => actor[key] != null)) {
+  const callerKeys = {
+    doctor: ["doctor_id", "prescriber_id"],
+    patient: ["patient_id", "user_id"],
+    hospital: ["hospital_id"],
+    pharmacy: ["pharmacy_id"],
+  }[scope] || [];
+  if (!callerKeys.some((key) => actor[key] != null)) {
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
   return { ok: true, body: { ...stripClientOwners(source), ...actor } };
 }
 
-async function resolveTargetPatient(rawId, { accountPointer }) {
+/** One integer must not name both a foreign profile and a different account. */
+async function unambiguousProfile(rawId) {
   const requested = Number(rawId);
   if (!requested) return { ok: false, status: 422, message: "Choose the patient this record is for." };
   const byAccount = await q("SELECT id, user_id FROM patients WHERE user_id = ?", [requested]);
-  if (accountPointer && byAccount.length === 1) {
-    return { ok: true, patient: byAccount[0], storedId: requested };
-  }
   const profile = await profileById(requested);
-  if (profile?.id && accountPointer && Number(profile.user_id)) {
-    return { ok: true, patient: profile, storedId: Number(profile.user_id) };
+  const profileIsOther = Boolean(profile?.id && Number(profile.user_id) !== requested);
+  const accountOthers = byAccount.filter((row) => Number(row.id) !== Number(profile?.id));
+  if (profileIsOther && accountOthers.length) {
+    return { ok: false, status: 422, message: "Choose the patient this record is for." };
   }
-  if (profile?.id && !accountPointer) return { ok: true, patient: profile, storedId: Number(profile.id) };
+  if (byAccount.length > 1) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+  if (profile?.id && !profileIsOther) {
+    return { ok: true, patient: profile, profileId: Number(profile.id), accountId: Number(profile.user_id) || requested };
+  }
+  if (byAccount.length === 1) {
+    return { ok: true, patient: byAccount[0], profileId: Number(byAccount[0].id), accountId: requested };
+  }
+  if (profile?.id) {
+    return { ok: true, patient: profile, profileId: Number(profile.id), accountId: Number(profile.user_id) || null };
+  }
   return { ok: false, status: 422, message: "Choose the patient this record is for." };
 }
 
-async function patientFromClinicalVisit(body, doctorId, user) {
-  const appointmentId = Number(body?.appointment_id) || null;
-  const instantId = Number(body?.instant_consultation_id) || null;
-  if (!appointmentId && !instantId && !Number(body?.patient_id)) {
-    return { ok: false, status: 422, message: "Choose the patient this record is for." };
+async function resolveTargetPatient(rawId, { accountPointer }) {
+  const named = await unambiguousProfile(rawId);
+  if (!named.ok) return named;
+  if (accountPointer) {
+    if (!named.accountId) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+    return { ok: true, patient: named.patient, storedId: named.accountId };
   }
-  if (Number(body?.patient_id) && !appointmentId && !instantId) {
-    const patient = await profileById(body.patient_id);
-    if (!patient?.id) return { ok: false, status: 422, message: "Choose the patient this record is for." };
-    if (!(await doctorHasCareLink(user, patient))) {
-      return { ok: false, status: 403, message: "You do not have access to this record." };
-    }
-    return { ok: true, patientId: Number(patient.id) };
+  return { ok: true, patient: named.patient, storedId: named.profileId };
+}
+
+async function appointmentProfile(appointmentId, doctorId) {
+  const names = ["id", "doctor_id", "patient_id"];
+  if (await hasColumn("appointments", "user_id")) names.push("user_id");
+  const visit = await one(
+    `SELECT ${names.map((name) => `\`${name}\``).join(", ")} FROM appointments WHERE id = ? LIMIT 1`,
+    [appointmentId],
+  );
+  if (!visit || Number(visit.doctor_id) !== Number(doctorId)) {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
   }
-  if (appointmentId) {
-    const visit = await one("SELECT id, doctor_id, patient_id FROM appointments WHERE id = ? LIMIT 1", [appointmentId]);
-    if (!visit || Number(visit.doctor_id) !== Number(doctorId)) {
-      return { ok: false, status: 403, message: "You do not have access to this record." };
-    }
-    const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [visit.patient_id]);
-    if (profiles.length !== 1) return { ok: false, status: 422, message: "Choose the patient this record is for." };
-    return { ok: true, patientId: Number(profiles[0].id) };
+  if (contradictsAccount(visit, Number(visit.patient_id))) {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
   }
+  const profiles = await q("SELECT id, user_id FROM patients WHERE user_id = ?", [visit.patient_id]);
+  if (profiles.length !== 1) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+  return { ok: true, patientId: Number(profiles[0].id) };
+}
+
+async function instantProfile(instantId, doctorId) {
   let instantTable = null;
   if (await tableExists("instant_consultation_requests")) instantTable = "instant_consultation_requests";
   else if (await tableExists("instant_consultations")) instantTable = "instant_consultations";
@@ -503,6 +618,40 @@ async function patientFromClinicalVisit(body, doctorId, user) {
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
   return { ok: true, patientId: Number(visit.patient_id) };
+}
+
+async function patientFromClinicalVisit(body, doctorId, user) {
+  const appointmentId = Number(body?.appointment_id) || null;
+  const instantId = Number(body?.instant_consultation_id) || null;
+  const rawPatient = Number(body?.patient_id) || null;
+  if (!appointmentId && !instantId && !rawPatient) {
+    return { ok: false, status: 422, message: "Choose the patient this record is for." };
+  }
+  const fromAppointment = appointmentId ? await appointmentProfile(appointmentId, doctorId) : null;
+  if (fromAppointment && !fromAppointment.ok) return fromAppointment;
+  const fromInstant = instantId ? await instantProfile(instantId, doctorId) : null;
+  if (fromInstant && !fromInstant.ok) return fromInstant;
+  if (fromAppointment && fromInstant && fromAppointment.patientId !== fromInstant.patientId) {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
+  }
+  const visitProfile = fromAppointment?.patientId || fromInstant?.patientId || null;
+  if (rawPatient) {
+    const named = await unambiguousProfile(rawPatient);
+    if (!named.ok) return named;
+    if (visitProfile && named.profileId !== visitProfile) {
+      return { ok: false, status: 403, message: "You do not have access to this record." };
+    }
+    if (!(await doctorHasCareLink(user, named.patient))) {
+      return { ok: false, status: 403, message: "You do not have access to this record." };
+    }
+    return { ok: true, patientId: named.profileId };
+  }
+  if (!visitProfile) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+  const patient = await profileById(visitProfile);
+  if (!patient?.id || !(await doctorHasCareLink(user, patient))) {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
+  }
+  return { ok: true, patientId: visitProfile };
 }
 
 /** Fields no caller may set on a visit with a plain record update. */

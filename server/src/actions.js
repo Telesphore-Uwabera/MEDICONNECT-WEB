@@ -5,7 +5,7 @@ import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, prese
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
-import { DOCTOR_WORK_STATUSES, VISIT_TABLES, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard } from "./visit-rules.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -799,11 +799,12 @@ async function fillGap(req, res, parts) {
   }
 
   if (!id && req.method === "GET") {
-    const extra = await ownedExtra(parts[0], req.user.id, table);
-    const column = Object.keys(extra)[0];
+    const visitWhere = await visitReadWhere(parts[0], table, req.user);
+    const extra = visitWhere ? null : await ownedExtra(parts[0], req.user.id, table);
+    const column = extra ? Object.keys(extra)[0] : null;
     const { page, perPage, offset } = pageArgs(req);
-    const where = column ? `WHERE \`${column}\` = ?` : "";
-    const params = column ? [extra[column]] : [];
+    const where = visitWhere ? `WHERE ${visitWhere.sql}` : column ? `WHERE \`${column}\` = ?` : "";
+    const params = visitWhere ? visitWhere.params : column ? [extra[column]] : [];
     const totalRow = await one(`SELECT COUNT(*) AS total FROM \`${table}\` ${where}`, params).catch(() => ({ total: 0 }));
     const rows = await presentRows(table, await q(
       `SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,

@@ -38,24 +38,41 @@ async function firstTable(names) {
   return null;
 }
 
-export async function resolvePatientByAnyId(rawId) {
+/**
+ * Chart identity. A profile id and an account id are different people when both
+ * exist. A lookup error is not "no such patient", and neither person is returned.
+ */
+async function resolveChartPatient(rawId) {
   const id = Number(rawId);
-  if (!id) return null;
-  return one("SELECT * FROM patients WHERE id = ? OR user_id = ? ORDER BY id DESC LIMIT 1", [id, id]).catch(() => null);
-}
-
-/** Chart writes use the profile id first. A lookup error is not "no such patient". */
-async function patientForChart(rawId) {
-  const id = Number(rawId);
-  if (!id) return { patient: null, unreadable: false };
+  if (!id) return { patient: null, unreadable: false, ambiguous: false };
   try {
     const byId = await one("SELECT * FROM patients WHERE id = ? LIMIT 1", [id]);
-    if (byId) return { patient: byId, unreadable: false };
-    const byAccount = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [id]);
-    return { patient: byAccount || null, unreadable: false };
+    const byAccount = await q("SELECT * FROM patients WHERE user_id = ?", [id]);
+    const profileIsOther = Boolean(byId && Number(byId.user_id) !== id);
+    const accountOthers = byAccount.filter((row) => Number(row.id) !== Number(byId?.id));
+    if (profileIsOther && accountOthers.length) return { patient: null, unreadable: false, ambiguous: true };
+    if (byAccount.length > 1) return { patient: null, unreadable: false, ambiguous: true };
+    if (byId && !profileIsOther) return { patient: byId, unreadable: false, ambiguous: false };
+    if (byAccount.length === 1) return { patient: byAccount[0], unreadable: false, ambiguous: false };
+    if (byId) return { patient: byId, unreadable: false, ambiguous: false };
+    return { patient: null, unreadable: false, ambiguous: false };
   } catch {
-    return { patient: null, unreadable: true };
+    return { patient: null, unreadable: true, ambiguous: false };
   }
+}
+
+async function openChart(res, user, rawId) {
+  const found = await resolveChartPatient(rawId);
+  if (found.unreadable || found.ambiguous) {
+    res.status(403).json({ message: "You do not have access to this record." });
+    return null;
+  }
+  if (!found.patient) {
+    res.status(404).json({ message: "Patient not found." });
+    return null;
+  }
+  if (!(await assertCareLink(res, user, found.patient))) return null;
+  return found.patient;
 }
 
 async function assertCareLink(res, user, patient) {
@@ -74,16 +91,12 @@ async function assertCareLink(res, user, patient) {
 
 async function medicalRow(patient) {
   const table = await firstTable(MEDICAL_TABLES);
-  if (!table || !patient) return { table: null, row: null };
-  const ids = [...new Set([patient.id, patient.user_id].filter(Boolean))];
-  for (const patientId of ids) {
-    const row = await one(
-      `SELECT * FROM \`${table}\` WHERE patient_id = ? ORDER BY id DESC LIMIT 1`,
-      [patientId],
-    ).catch(() => null);
-    if (row) return { table, row };
-  }
-  return { table, row: null };
+  if (!table || !patient?.id) return { table: null, row: null };
+  const row = await one(
+    `SELECT * FROM \`${table}\` WHERE patient_id = ? ORDER BY id DESC LIMIT 1`,
+    [patient.id],
+  ).catch(() => null);
+  return { table, row };
 }
 
 function shapeRecord(patient, row, user) {
@@ -108,13 +121,16 @@ function shapeRecord(patient, row, user) {
 }
 
 async function listVisits(patient) {
-  const ids = [...new Set([patient.id, patient.user_id].filter(Boolean))];
-  const inList = ids.map(() => "?").join(",") || "?";
+  const accountId = Number(patient?.user_id) || null;
+  const profileId = Number(patient?.id) || null;
   const visits = [];
-  if (await tableExists("appointments")) {
+  if (accountId && (await tableExists("appointments"))) {
+    const userClause = (await hasColumn("appointments", "user_id"))
+      ? "AND (`user_id` IS NULL OR `user_id` = ?)"
+      : "";
     const rows = await q(
-      `SELECT * FROM appointments WHERE patient_id IN (${inList}) ORDER BY id DESC LIMIT 40`,
-      ids.length ? ids : [0],
+      `SELECT * FROM appointments WHERE patient_id = ? ${userClause} ORDER BY id DESC LIMIT 40`,
+      userClause ? [accountId, accountId] : [accountId],
     ).catch(() => []);
     for (const row of rows) {
       visits.push({
@@ -132,10 +148,13 @@ async function listVisits(patient) {
   const instantTable = (await tableExists("instant_consultation_requests"))
     ? "instant_consultation_requests"
     : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
-  if (instantTable) {
+  if (instantTable && profileId) {
+    const userClause = (await hasColumn(instantTable, "user_id"))
+      ? "AND (`user_id` IS NULL OR `user_id` = ?)"
+      : "";
     const rows = await q(
-      `SELECT * FROM \`${instantTable}\` WHERE patient_id IN (${inList}) ORDER BY id DESC LIMIT 40`,
-      ids.length ? ids : [0],
+      `SELECT * FROM \`${instantTable}\` WHERE patient_id = ? ${userClause} ORDER BY id DESC LIMIT 40`,
+      userClause ? [profileId, accountId || 0] : [profileId],
     ).catch(() => []);
     for (const row of rows) {
       visits.push({
@@ -209,8 +228,8 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.get("/doctor/patients/:patientId/profile", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const patient = await resolvePatientByAnyId(req.params.patientId);
-      if (!patient) return res.status(404).json({ message: "Patient not found." });
+      const patient = await openChart(res, req.user, req.params.patientId);
+      if (!patient) return;
       const user = patient.user_id
         ? await one("SELECT id, name, email, phone, country_code, avatar FROM users WHERE id = ?", [patient.user_id]).catch(() => null)
         : null;
@@ -224,8 +243,8 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.get("/doctor/patients/:patientId/record", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const patient = await resolvePatientByAnyId(req.params.patientId);
-      if (!patient) return res.status(404).json({ message: "Patient not found." });
+      const patient = await openChart(res, req.user, req.params.patientId);
+      if (!patient) return;
       const user = await one("SELECT id, name, email FROM users WHERE id = ?", [patient.user_id || patient.id]).catch(() => null);
       const { row } = await medicalRow(patient);
       const record = shapeRecord(patient, row, user);
@@ -237,11 +256,8 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.put("/doctor/patients/:patientId/record", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const found = await patientForChart(req.params.patientId);
-      if (found.unreadable) return res.status(403).json({ message: "You do not have access to this record." });
-      const patient = found.patient;
-      if (!patient) return res.status(404).json({ message: "Patient not found." });
-      if (!(await assertCareLink(res, req.user, patient))) return;
+      const patient = await openChart(res, req.user, req.params.patientId);
+      if (!patient) return;
       const { table, row } = await medicalRow(patient);
       if (!table) return res.status(422).json({ message: "Medical records are not available yet." });
       const body = req.body || {};
@@ -266,8 +282,8 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.get("/doctor/patients/:patientId/visits", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const patient = await resolvePatientByAnyId(req.params.patientId);
-      if (!patient) return res.status(404).json({ message: "Patient not found." });
+      const patient = await openChart(res, req.user, req.params.patientId);
+      if (!patient) return;
       let visits = await listVisits(patient);
       if (req.query.visit_type) visits = visits.filter((row) => row.visit_type === req.query.visit_type);
       res.json({ data: visits, visits });
@@ -278,14 +294,13 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.get("/doctor/patients/:patientId/files", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const patient = await resolvePatientByAnyId(req.params.patientId);
-      if (!patient) return res.status(404).json({ message: "Patient not found." });
+      const patient = await openChart(res, req.user, req.params.patientId);
+      if (!patient) return;
       const table = await firstTable(FILE_TABLES);
       if (!table) return res.json({ data: [], files: [] });
-      const ids = [...new Set([patient.id, patient.user_id].filter(Boolean))];
       const rows = await q(
-        `SELECT * FROM \`${table}\` WHERE patient_id IN (${ids.map(() => "?").join(",") || "?"}) ORDER BY id DESC LIMIT 80`,
-        ids.length ? ids : [0],
+        `SELECT * FROM \`${table}\` WHERE patient_id = ? ORDER BY id DESC LIMIT 80`,
+        [patient.id],
       ).catch(() => []);
       const files = [];
       for (const row of rows) {
@@ -300,11 +315,8 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.post("/doctor/patients/:patientId/files", requireAuth, requireRole("doctor"), upload.any(), async (req, res, next) => {
     try {
-      const found = await patientForChart(req.params.patientId);
-      if (found.unreadable) return res.status(403).json({ message: "You do not have access to this record." });
-      const patient = found.patient;
-      if (!patient) return res.status(404).json({ message: "Patient not found." });
-      if (!(await assertCareLink(res, req.user, patient))) return;
+      const patient = await openChart(res, req.user, req.params.patientId);
+      if (!patient) return;
       let table = await firstTable(FILE_TABLES);
       if (!table) {
         await q(`
