@@ -42,8 +42,10 @@ import {
   visitBodyGuard,
   visitIsClosed,
   visitIsSettled,
+  insuranceCatalogWhere,
   isPublicCatalog,
   mayReadRow,
+  personalPatientWhere,
   visitReadWhere,
 } from "./visit-rules.js";
 import { attachChatRoutes } from "./chat.js";
@@ -146,11 +148,17 @@ async function createProfile(user, role, body = {}) {
   }
 }
 
+const PERSONAL_READ_TABLES = new Set(["reviews", "refunds", "payments"]);
+
 async function ownedFilter(req, table, scope) {
   const visitWhere = await visitReadWhere(scope, table, req.user);
   if (visitWhere) return visitWhere;
   if (scope === "admin" || scope === "notifications") return { sql: "1=1", params: [] };
+  if (table === "insurances") return insuranceCatalogWhere();
   if (isPublicCatalog(table)) return { sql: "1=1", params: [] };
+  if (scope === "patient" && PERSONAL_READ_TABLES.has(table) && (await hasColumn(table, "patient_id"))) {
+    return personalPatientWhere(table, req.user);
+  }
   const profile = PROFILE_TABLE[scope];
   const ownerId = profile ? await loadOwnedId(req.user.id, profile) : null;
   if (table === "referrals") {

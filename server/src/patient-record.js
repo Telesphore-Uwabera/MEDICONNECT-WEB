@@ -269,6 +269,24 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
           return res.status(403).json({ message: "You do not have access to this record." });
         }
       }
+      if (existingPhone) {
+        const namedByInstant = linked.instant
+          && Number(linked.instant.patient_id) === Number(existingPhone.id)
+          && (!linked.instant.user_id || Number(linked.instant.user_id) === Number(existingPhone.user_id));
+        const namedByAppointment = linked.appointment
+          && Number(existingPhone.user_id) > 0
+          && Number(linked.appointment.patient_id) === Number(existingPhone.user_id)
+          && (!linked.appointment.user_id || Number(linked.appointment.user_id) === Number(existingPhone.user_id));
+        const caring = namedByInstant || namedByAppointment || await doctorHasCareLink(req.user, existingPhone);
+        if (!caring) return res.status(403).json({ message: "You do not have access to this record." });
+      }
+      if (linked.appointment) {
+        const accountId = Number(existingPhone?.user_id) || null;
+        const current = Number(linked.appointment.patient_id) || null;
+        if (current && accountId && current !== accountId) {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+      }
       if (linked.instant?.user_id && Number(linked.instant.user_id) !== Number(existingPhone?.user_id || 0)) {
         return res.status(403).json({ message: "You do not have access to this record." });
       }
@@ -280,19 +298,12 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         await update("patients", existingPhone.id, payload);
       }
       const patientId = Number(id);
-      const saved = await one("SELECT * FROM patients WHERE id = ?", [patientId]);
+      const saved = existingPhone || await one("SELECT * FROM patients WHERE id = ?", [patientId]);
       if (linked.instant && !Number(linked.instant.patient_id)) {
         await update(linked.instantTable, linked.instant.id, { patient_id: patientId });
       }
-      if (linked.appointment) {
-        const accountId = Number(saved?.user_id) || null;
-        const current = Number(linked.appointment.patient_id) || null;
-        if (current && accountId && current !== accountId) {
-          return res.status(403).json({ message: "You do not have access to this record." });
-        }
-        if (!current && accountId) {
-          await update("appointments", linked.appointment.id, { patient_id: accountId });
-        }
+      if (linked.appointment && !Number(linked.appointment.patient_id) && Number(saved?.user_id)) {
+        await update("appointments", linked.appointment.id, { patient_id: Number(saved.user_id) });
       }
       const patient = await presentRow("patients", await one("SELECT * FROM patients WHERE id = ?", [patientId]));
       res.status(201).json({ message: "Patient profile saved.", patient, data: patient, patient_id: patientId });

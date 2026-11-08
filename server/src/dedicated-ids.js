@@ -13,7 +13,7 @@ import {
   tableExists,
   update,
 } from "./db.js";
-import { patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
+import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
@@ -402,6 +402,13 @@ async function ownerWhere(scope, table, user) {
 
 async function ownerWhereFor(scope, table, user) {
   const ownerId = PROFILE[scope] ? await loadOwnedId(user.id, PROFILE[scope]) : null;
+  if (table === "insurances") {
+    const catalog = await insuranceCatalogWhere();
+    if (scope === "hospital" && (await hasColumn(table, "hospital_id"))) {
+      return { sql: `(${catalog.sql}) AND \`hospital_id\` = ?`, params: [...catalog.params, ownerId ?? 0] };
+    }
+    return catalog;
+  }
   if (table === "notifications" && (await hasColumn(table, "notifiable_id"))) {
     return { sql: "`notifiable_id` = ?", params: [user.id] };
   }

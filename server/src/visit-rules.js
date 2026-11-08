@@ -359,11 +359,10 @@ const PROFILE_OWNED_TABLES = new Set([
   "prescription_requests",
   "pharmacy_orders",
 ]);
-const PERSONAL_TABLES = new Set(["reviews", "refunds"]);
+const PERSONAL_TABLES = new Set(["reviews", "refunds", "payments"]);
 const PUBLIC_CATALOGS = new Set([
   "specializations",
   "specialization_fees",
-  "insurances",
   "help_center_links",
   "legal_documents",
   "fitness_checklist_questions",
@@ -435,10 +434,28 @@ async function patientIdentityWhere(table, user) {
   return { sql, params };
 }
 
+export async function insuranceCatalogWhere() {
+  const parts = [];
+  if (await hasColumn("insurances", "patient_id")) parts.push("(`patient_id` IS NULL OR `patient_id` = 0)");
+  if (await hasColumn("insurances", "policy_number")) parts.push("(`policy_number` IS NULL OR TRIM(`policy_number`) = '')");
+  return { sql: parts.length ? parts.join(" AND ") : "1=1", params: [] };
+}
+
+export function insuranceRowIsPublic(row) {
+  const patient = Number(row?.patient_id) || 0;
+  const policy = String(row?.policy_number ?? "").trim();
+  return !patient && !policy;
+}
+
+export async function personalPatientWhere(table, user) {
+  return patientIdentityWhere(table, user);
+}
+
 export async function mayReadRow(scope, table, row, user) {
   if (!table || !row) return false;
   if (VISIT_TABLES.has(table)) return visitOpenTo(scope, table, row, user);
   if (scope === "admin") return scopeRoleAllowed(user, "admin");
+  if (table === "insurances") return insuranceRowIsPublic(row);
   if (PUBLIC_CATALOGS.has(table)) return true;
   try {
     if (scope === "patient" && (await hasColumn(table, "patient_id"))) {
