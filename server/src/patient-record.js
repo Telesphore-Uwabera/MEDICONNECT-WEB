@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import multer from "multer";
+import { loadOwnedId } from "./auth.js";
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { plausibleDateOfBirth, sniffedUploadExtension } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -187,6 +188,48 @@ async function listVisits(patient) {
   return visits;
 }
 
+async function readIntakeVisit(table, id) {
+  const names = ["id", "doctor_id", "patient_id"];
+  if (await hasColumn(table, "user_id")) names.push("user_id");
+  return one(
+    `SELECT ${names.map((name) => `\`${name}\``).join(", ")} FROM \`${table}\` WHERE id = ? LIMIT 1`,
+    [id],
+  );
+}
+
+async function intakeVisits(appointmentId, instantId, doctorId) {
+  try {
+    let appointment = null;
+    let instant = null;
+    let instantTable = null;
+    if (appointmentId) {
+      if (!(await tableExists("appointments"))) {
+        return { ok: false, status: 403, message: "You do not have access to this record." };
+      }
+      appointment = await readIntakeVisit("appointments", appointmentId);
+      if (!appointment || Number(appointment.doctor_id) !== Number(doctorId)) {
+        return { ok: false, status: 403, message: "You do not have access to this record." };
+      }
+      if (appointment.user_id && Number(appointment.user_id) > 0 && Number(appointment.user_id) !== Number(appointment.patient_id)) {
+        return { ok: false, status: 403, message: "You do not have access to this record." };
+      }
+    }
+    if (instantId) {
+      instantTable = (await tableExists("instant_consultation_requests"))
+        ? "instant_consultation_requests"
+        : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
+      if (!instantTable) return { ok: false, status: 403, message: "You do not have access to this record." };
+      instant = await readIntakeVisit(instantTable, instantId);
+      if (!instant || Number(instant.doctor_id) !== Number(doctorId)) {
+        return { ok: false, status: 403, message: "You do not have access to this record." };
+      }
+    }
+    return { ok: true, appointment, instant, instantTable };
+  } catch {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
+  }
+}
+
 export function registerPatientRecordRoutes(router, { requireAuth, requireRole }) {
   router.post("/doctor/patients/intake", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
@@ -212,27 +255,44 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         country: body.country || "Rwanda",
         status: "pending",
       };
-      const existingPhone = phone
-        ? await one("SELECT * FROM patients WHERE phone = ? ORDER BY id DESC LIMIT 1", [phone]).catch(() => null)
-        : null;
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      if (!doctorId) return res.status(403).json({ message: "You do not have access to this record." });
+      const instantId = Number(body.instant_consultation_id) || null;
+      const apptId = Number(body.appointment_id) || null;
+      const linked = await intakeVisits(apptId, instantId, doctorId);
+      if (!linked.ok) return res.status(linked.status).json({ message: linked.message });
+      let existingPhone = null;
+      if (phone) {
+        try {
+          existingPhone = await one("SELECT * FROM patients WHERE phone = ? ORDER BY id DESC LIMIT 1", [phone]);
+        } catch {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+      }
+      if (linked.instant?.user_id && Number(linked.instant.user_id) !== Number(existingPhone?.user_id || 0)) {
+        return res.status(403).json({ message: "You do not have access to this record." });
+      }
+      if (linked.instant?.patient_id && Number(linked.instant.patient_id) !== Number(existingPhone?.id || 0)) {
+        return res.status(403).json({ message: "You do not have access to this record." });
+      }
       const id = existingPhone?.id || await insert("patients", payload);
       if (existingPhone?.id) {
         await update("patients", existingPhone.id, payload);
       }
       const patientId = Number(id);
-      const instantId = Number(body.instant_consultation_id) || null;
-      const apptId = Number(body.appointment_id) || null;
-      if (instantId) {
-        for (const table of ["instant_consultations", "instant_consultation_requests"]) {
-          if ((await tableExists(table)) && (await hasColumn(table, "patient_id"))) {
-            const row = await one(`SELECT id FROM \`${table}\` WHERE id = ?`, [instantId]).catch(() => null);
-            if (row) await update(table, instantId, { patient_id: patientId });
-          }
-        }
+      const saved = await one("SELECT * FROM patients WHERE id = ?", [patientId]);
+      if (linked.instant && !Number(linked.instant.patient_id)) {
+        await update(linked.instantTable, linked.instant.id, { patient_id: patientId });
       }
-      if (apptId && (await tableExists("appointments")) && (await hasColumn("appointments", "patient_id"))) {
-        const row = await one("SELECT id FROM appointments WHERE id = ?", [apptId]).catch(() => null);
-        if (row) await update("appointments", apptId, { patient_id: patientId });
+      if (linked.appointment) {
+        const accountId = Number(saved?.user_id) || null;
+        const current = Number(linked.appointment.patient_id) || null;
+        if (current && accountId && current !== accountId) {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+        if (!current && accountId) {
+          await update("appointments", linked.appointment.id, { patient_id: accountId });
+        }
       }
       const patient = await presentRow("patients", await one("SELECT * FROM patients WHERE id = ?", [patientId]));
       res.status(201).json({ message: "Patient profile saved.", patient, data: patient, patient_id: patientId });

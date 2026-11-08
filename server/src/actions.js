@@ -5,7 +5,7 @@ import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, prese
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
-import { DOCTOR_WORK_STATUSES, VISIT_TABLES, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, isPublicCatalog, mayReadRow, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -800,10 +800,16 @@ async function fillGap(req, res, parts) {
 
   if (!id && req.method === "GET") {
     const visitWhere = await visitReadWhere(parts[0], table, req.user);
-    const extra = visitWhere ? null : await ownedExtra(parts[0], req.user.id, table);
+    const extra = visitWhere || isPublicCatalog(table) ? null : await ownedExtra(parts[0], req.user.id, table);
     const column = extra ? Object.keys(extra)[0] : null;
     const { page, perPage, offset } = pageArgs(req);
-    const where = visitWhere ? `WHERE ${visitWhere.sql}` : column ? `WHERE \`${column}\` = ?` : "";
+    const where = visitWhere
+      ? `WHERE ${visitWhere.sql}`
+      : isPublicCatalog(table)
+        ? "WHERE 1=1"
+        : column
+          ? `WHERE \`${column}\` = ?`
+          : "WHERE 0";
     const params = visitWhere ? visitWhere.params : column ? [extra[column]] : [];
     const totalRow = await one(`SELECT COUNT(*) AS total FROM \`${table}\` ${where}`, params).catch(() => ({ total: 0 }));
     const rows = await presentRows(table, await q(
@@ -919,8 +925,17 @@ export function registerActions(router, RESOURCES) {
       }
 
       if (req.method === "GET" && !action) {
-        const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
-        if (!row) return res.status(404).json({ message: "Record not found." });
+        let currentRow;
+        try {
+          currentRow = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+        } catch {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+        if (!currentRow) return res.status(404).json({ message: "Record not found." });
+        if (!(await mayReadRow(parts[0], table, currentRow, req.user))) {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+        const row = await presentRow(table, currentRow);
         return res.json({ data: row, ...row });
       }
       if (!action) {
@@ -955,8 +970,18 @@ export function registerActions(router, RESOURCES) {
       }
 
       if (req.method === "GET") {
-        const rows = await q(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => []);
-        return res.json({ data: await presentRow(table, rows[0]), items: [] });
+        let currentRow;
+        try {
+          currentRow = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+        } catch {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+        if (!currentRow || !(await mayReadRow(parts[0], table, currentRow, req.user))) {
+          return res.status(currentRow ? 403 : 404).json({
+            message: currentRow ? "You do not have access to this record." : "Record not found.",
+          });
+        }
+        return res.json({ data: await presentRow(table, currentRow), items: [] });
       }
       if (await fillGap(req, res, parts)) return;
       return next();

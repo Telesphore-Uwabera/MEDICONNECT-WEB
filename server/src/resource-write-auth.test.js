@@ -17,8 +17,27 @@ const db = {
     { id: 55, user_id: 77, name: "Amina", email: "amina@example.com" },
     { id: 56, user_id: 80, name: "Other", email: "other@example.com" },
     { id: 77, user_id: 8, name: "Foreign Profile", email: "foreign@example.com" },
-    { id: 90, user_id: null, name: "Guest Chart", email: null },
+    { id: 90, user_id: null, name: "Guest Chart", email: null, phone: "788100100" },
   ],
+  reviews: [
+    { id: 1, patient_id: 55, user_id: null, doctor_id: 31, comment: "my-review" },
+    { id: 2, patient_id: 77, user_id: null, doctor_id: 31, comment: "foreign-review" },
+    { id: 3, patient_id: 55, user_id: null, doctor_id: 32, comment: "other-doctor-review" },
+  ],
+  refunds: [
+    { id: 1, patient_id: 55, user_id: null, amount: "10", reason: "my-refund" },
+    { id: 2, patient_id: 77, user_id: null, amount: "secret-refund", reason: "not-mine" },
+  ],
+  payments: [
+    { id: 1, patient_id: 55, user_id: null, amount: "10" },
+    { id: 2, patient_id: 77, user_id: null, amount: "secret-fee" },
+  ],
+  legal: [{ id: 1, title: "Terms of care", body: "Public terms" }],
+  insurers: [
+    { id: 1, name: "RSSB", hospital_id: 4, patient_id: null, policy_number: null },
+    { id: 2, name: "Hidden policy", hospital_id: 9, patient_id: 55, policy_number: "secret-policy" },
+  ],
+  leaflets: [{ id: 1, title: "private-leaflet" }],
   accounts: [
     { id: 77, name: "Amina Account", email: "amina-account@example.com" },
     { id: 90, name: "Unrelated Account", email: "stranger@example.com" },
@@ -48,7 +67,12 @@ function sqliteRows(sql, params) {
   if (/\bWHERE\s+0\b/i.test(text)) return [];
   const database = new DatabaseSync(":memory:");
   database.exec(`
-    CREATE TABLE patients (id INTEGER, user_id INTEGER, name TEXT, email TEXT);
+    CREATE TABLE patients (id INTEGER, user_id INTEGER, name TEXT, email TEXT, phone TEXT);
+    CREATE TABLE reviews (id INTEGER, patient_id INTEGER, user_id INTEGER, doctor_id INTEGER, comment TEXT);
+    CREATE TABLE refunds (id INTEGER, patient_id INTEGER, user_id INTEGER, amount TEXT, reason TEXT);
+    CREATE TABLE payments (id INTEGER, patient_id INTEGER, user_id INTEGER, amount TEXT);
+    CREATE TABLE legal_documents (id INTEGER, title TEXT, body TEXT);
+    CREATE TABLE insurances (id INTEGER, name TEXT, hospital_id INTEGER, patient_id INTEGER, policy_number TEXT);
     CREATE TABLE appointments (
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
@@ -71,7 +95,7 @@ function sqliteRows(sql, params) {
   `);
   const insert = database.prepare.bind(database);
   for (const row of db.patients) {
-    insert("INSERT INTO patients (id, user_id, name, email) VALUES (?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email);
+    insert("INSERT INTO patients (id, user_id, name, email, phone) VALUES (?, ?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email, row.phone ?? null);
   }
   for (const row of db.appointments) {
     insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
@@ -94,6 +118,23 @@ function sqliteRows(sql, params) {
   for (const row of db.medical) {
     insert("INSERT INTO patient_medical_infos (id, patient_id, known_allergies) VALUES (?, ?, ?)").run(row.id, row.patient_id, row.known_allergies);
   }
+  for (const row of db.reviews) {
+    insert("INSERT INTO reviews (id, patient_id, user_id, doctor_id, comment) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.doctor_id, row.comment);
+  }
+  for (const row of db.refunds) {
+    insert("INSERT INTO refunds (id, patient_id, user_id, amount, reason) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.amount, row.reason);
+  }
+  for (const row of db.payments) {
+    insert("INSERT INTO payments (id, patient_id, user_id, amount) VALUES (?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.amount);
+  }
+  for (const row of db.legal) {
+    insert("INSERT INTO legal_documents (id, title, body) VALUES (?, ?, ?)").run(row.id, row.title, row.body);
+  }
+  for (const row of db.insurers) {
+    insert("INSERT INTO insurances (id, name, hospital_id, patient_id, policy_number) VALUES (?, ?, ?, ?, ?)").run(
+      row.id, row.name, row.hospital_id, row.patient_id, row.policy_number,
+    );
+  }
   return database.prepare(text).all(...params);
 }
 
@@ -105,6 +146,7 @@ vi.mock("./db.js", async (importOriginal) => {
       "appointments", "prescriptions", "prescription_requests", "patients", "doctors", "pharmacies",
       "patient_medical_infos", "team_members", "instant_consultation_requests",
       "pharmacy_orders", "service_bookings", "hospitals", "users", "leaflets", "chart_notes",
+      "reviews", "refunds", "payments", "legal_documents", "insurances",
     ].includes(name),
     hasColumn: async (table, column) => {
       if (db.columnThrows) throw new Error("columns unreadable");
@@ -129,7 +171,7 @@ vi.mock("./db.js", async (importOriginal) => {
         throw new Error("care unreadable");
       }
       if (db.patientThrows && text.includes("FROM patients")) throw new Error("patients unreadable");
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances)"?/i.test(text)) {
         return sqliteRows(sql, params);
       }
       return [];
@@ -158,8 +200,11 @@ vi.mock("./db.js", async (importOriginal) => {
       if (text.includes("FROM users") && text.includes("WHERE id")) {
         return db.accounts.find((row) => row.id === Number(params[0])) || null;
       }
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances)"?/i.test(text)) {
         return sqliteRows(sql, params)[0] ?? null;
+      }
+      if (text.includes("FROM leaflets")) {
+        return db.leaflets.find((row) => row.id === Number(params[0])) || null;
       }
       if (text.includes("FROM team_members")) return { id: Number(params[0]) || 50, name: "Nurse", is_active: 1 };
       return null;
@@ -696,5 +741,92 @@ describe("resource write authorization", () => {
     });
     expect(stillLinked.status).toBe(201);
     expect(writes.at(-1).data).toMatchObject({ patient_id: 55, doctor_id: 31, instant_consultation_id: 9 });
+  });
+
+  it("keeps reviews, refunds, catalogs, and intake on the owning person", async () => {
+    const ownReview = await request(users.patient, "GET", "/patient/reviews/1");
+    const foreignReview = await request(users.patient, "GET", "/patient/reviews/2");
+    const doctorReview = await request(users.doctor, "GET", "/doctor/reviews/1");
+    const otherDoctorReview = await request(users.doctor, "GET", "/doctor/reviews/3");
+    expect(ownReview.status).toBe(200);
+    expect(JSON.stringify(ownReview.body)).toContain("my-review");
+    expect(foreignReview.status).toBe(404);
+    expect(JSON.stringify(foreignReview.body)).not.toContain("foreign-review");
+    expect(doctorReview.status).toBe(200);
+    expect(otherDoctorReview.status).toBe(404);
+    const ownRefund = await request(users.patient, "GET", "/patient/refunds/1");
+    const foreignRefund = await request(users.patient, "GET", "/patient/refunds/2");
+    expect(ownRefund.status).toBe(200);
+    expect(JSON.stringify(ownRefund.body)).toContain("my-refund");
+    expect(foreignRefund.status).toBe(404);
+    expect(JSON.stringify(foreignRefund.body)).not.toContain("secret-refund");
+    const ownFee = await request(users.patient, "GET", "/patient/payments/1");
+    const foreignFee = await request(users.patient, "GET", "/patient/payments/2");
+    const feeList = await request(users.patient, "GET", "/patient/payments");
+    expect(ownFee.status).toBe(200);
+    expect(JSON.stringify(ownFee.body)).toContain("10");
+    expect(foreignFee.status).toBe(403);
+    expect(JSON.stringify(foreignFee.body)).not.toContain("secret-fee");
+    expect(JSON.stringify(feeList.body)).not.toContain("secret-fee");
+    const leaflet = await request(users.doctor, "GET", "/doctor/leaflets/1");
+    expect(leaflet.status).toBe(403);
+    expect(JSON.stringify(leaflet.body)).not.toContain("private-leaflet");
+    const terms = await request(users.patient, "GET", "/patient/legal_documents/1");
+    const termsList = await request(users.patient, "GET", "/patient/legal_documents");
+    expect(terms.status).toBe(200);
+    expect(JSON.stringify(terms.body)).toContain("Terms of care");
+    expect(JSON.stringify(termsList.body)).toContain("Terms of care");
+    const patientInsurers = await request(users.patient, "GET", "/patient/insurances");
+    const hospitalInsurers = await request(users.hospital, "GET", "/hospital/insurances");
+    expect(JSON.stringify(patientInsurers.body)).not.toContain("secret-policy");
+    expect(JSON.stringify(hospitalInsurers.body)).toContain("RSSB");
+    expect(JSON.stringify(hospitalInsurers.body)).not.toContain("secret-policy");
+    db.columnThrows = true;
+    const unreadable = await request(users.patient, "GET", "/patient/reviews/1");
+    expect(unreadable.status).toBe(404);
+    expect(JSON.stringify(unreadable.body)).not.toContain("my-review");
+    db.columnThrows = false;
+    writes.length = 0;
+    db.instants.push({ id: 30, doctor_id: 31, patient_id: null, user_id: null, status: "accepted" });
+    const saved = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234567",
+      instant_consultation_id: 30,
+      appointment_id: 5,
+    });
+    expect(saved.status).toBe(201);
+    const appointmentWrites = writes.filter((write) => write.op === "update" && write.table === "appointments");
+    const instantWrites = writes.filter((write) => write.op === "update" && write.table === "instant_consultation_requests");
+    expect(appointmentWrites).toEqual([]);
+    expect(instantWrites).toHaveLength(1);
+    expect(instantWrites[0].data.patient_id).toBe(50);
+    writes.length = 0;
+    const stolen = await request(users.otherDoctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234568",
+      appointment_id: 5,
+    });
+    const contradicted = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234569",
+      appointment_id: 9,
+    });
+    const occupied = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234560",
+      instant_consultation_id: 9,
+    });
+    expect(stolen.status).toBe(403);
+    expect(contradicted.status).toBe(403);
+    expect(occupied.status).toBe(403);
+    expect(writes).toEqual([]);
+    db.patientThrows = true;
+    const unreadPhone = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest New",
+      phone: "781234561",
+      instant_consultation_id: 30,
+    });
+    expect(unreadPhone.status).toBe(403);
+    expect(writes).toEqual([]);
   });
 });

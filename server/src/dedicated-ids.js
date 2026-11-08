@@ -393,15 +393,25 @@ function withTeamPhoto(member) {
 
 async function ownerWhere(scope, table, user) {
   if (scope === "admin") return { sql: "1=1", params: [] };
+  try {
+    return await ownerWhereFor(scope, table, user);
+  } catch {
+    return { sql: "0", params: [] };
+  }
+}
+
+async function ownerWhereFor(scope, table, user) {
   const ownerId = PROFILE[scope] ? await loadOwnedId(user.id, PROFILE[scope]) : null;
   if (table === "notifications" && (await hasColumn(table, "notifiable_id"))) {
     return { sql: "`notifiable_id` = ?", params: [user.id] };
   }
   if (table === "users") return { sql: "`id` = ?", params: [user.id] };
-  if (scope === "patient" && (await hasColumn(table, "patient_id"))) {
-    const typed = await patientOwnedWhere(table, user);
-    if (typed) return typed;
-    return { sql: "(`patient_id` = ? OR `patient_id` = ?)", params: [user.id, ownerId ?? 0] };
+  if (scope === "patient") {
+    try {
+      if (await hasColumn(table, "patient_id")) return patientOwnedWhere(table, user);
+    } catch {
+      return { sql: "0", params: [] };
+    }
   }
   if (await hasColumn(table, `${scope}_id`)) {
     return { sql: `\`${scope}_id\` = ?`, params: [ownerId ?? 0] };
