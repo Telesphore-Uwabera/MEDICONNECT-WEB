@@ -257,7 +257,7 @@ export async function handleCareOrders(req, res, parts) {
     if (!patient) return res.status(422).json({ message: "Choose a patient." }) || true;
     const hospitalId = Number(body.hospital_id || 0) || null;
     const pharmacyId = Number(body.pharmacy_id || 0) || null;
-    if (["lab", "imaging", "procedure", "nursing", "admission", "rehab", "vaccination", "facility_packet"].includes(orderType)) {
+    if (["lab", "imaging", "procedure", "nursing", "admission", "rehab", "vaccination", "facility_packet"].includes(orderType) || (orderType === "home_care" && hospitalId)) {
       const facility = await requireRegisteredFacility(hospitalId);
       if (facility.error) return res.status(422).json({ message: facility.error }) || true;
     }
@@ -348,7 +348,17 @@ export async function handleCareOrders(req, res, parts) {
     if (!["accept", "complete", "reject"].includes(action)) {
       return res.status(422).json({ message: "Unknown care packet action." }) || true;
     }
-    if (scope !== "hospital" && scope !== "pharmacy") {
+    if (scope === "doctor") {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const own = await findCareOrder(parts[2]);
+      const ownType = String(own?.order_type || "");
+      if (!own || Number(own.doctor_id) !== Number(doctorId)) {
+        return res.status(404).json({ message: "Care order not found." }) || true;
+      }
+      if (action !== "complete" || !["follow_up", "home_care"].includes(ownType)) {
+        return res.status(403).json({ message: "The assigned clinic or pharmacy updates this packet. You can complete follow-up and home care." }) || true;
+      }
+    } else if (scope !== "hospital" && scope !== "pharmacy") {
       return res.status(403).json({ message: "Only the assigned clinic/hospital or pharmacy can update this packet." }) || true;
     }
     const row = await findCareOrder(parts[2]);
@@ -370,8 +380,19 @@ export async function handleCareOrders(req, res, parts) {
     if (action === "complete" && req.files?.length) {
       fresh = await attachCareOrderResultFiles(fresh, req.files);
     }
-    await onCareOrderUpdated(fresh, action, scope);
+    const outcome = await onCareOrderUpdated(fresh, action, scope);
     const order = await shapeOrder(fresh);
+    if (action === "complete") {
+      const patient = await one("SELECT user_id FROM patients WHERE id = ?", [row.patient_id]).catch(() => null);
+      const patientLine = String(row.order_type) === "pharmacy_packet"
+        ? outcome?.patient_message || "The pharmacy marked your medicine packet dispensed."
+        : String(row.order_type) === "admission"
+          ? `Your admission is now ${String(fresh.handover_status || "updated").replace(/_/g, " ").toLowerCase()}.`
+          : ["follow_up", "home_care"].includes(String(row.order_type))
+            ? "Your doctor recorded this follow-up step as done."
+            : "The facility sent results to your doctor.";
+      await notifyUser(patient?.user_id, "Update on your care", patientLine);
+    }
     if (action === "complete" && row.doctor_id) {
       const doctor = await one("SELECT user_id FROM doctors WHERE id = ?", [row.doctor_id]).catch(() => null);
       const who = scope === "pharmacy" ? "The pharmacy" : "The clinic/hospital";

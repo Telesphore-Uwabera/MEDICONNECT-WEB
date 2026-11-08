@@ -23,7 +23,7 @@ import { STEPS, CONSULTATION_TYPES, LANGUAGES } from "./Constants";
 import { Switch } from "@/components/ui/switch";
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { FormField } from "./UiPrimitives";
-import { SpecializationsStep } from "./Specializationsstep";
+import { SpecialitiesStep } from "./SpecialitiesStep";
 import { EducationStep } from "./Educationstep";
 import { ExperienceStep, experienceCanSave } from "./Experiencestep";
 import { checkSocialLinks } from "@/lib/social-link";
@@ -34,7 +34,7 @@ import { StepSaveStatusBadge } from "./Stepsavestatusbadge";
 
 import type {
   PersonalInfo,
-  SpecializationsInfo,
+  SpecialitiesInfo,
   EducationEntry,
   ExperienceEntry,
   QualificationEntry,
@@ -47,7 +47,7 @@ import type {
 // ─────────────────────────────────────────────────────────────────────────────
 // Defaults
 // ─────────────────────────────────────────────────────────────────────────────
-const DEFAULT_SPECIALIZATIONS: SpecializationsInfo = {
+const DEFAULT_SPECIALITIES: SpecialitiesInfo = {
   primary: "",
   specialization_fee_id: null,
   years_of_experience: 0,
@@ -97,8 +97,8 @@ export function DoctorProfileForm({
   const { t } = useTranslation();
   const { data: insuranceCatalog } = useGetPublicInsurances();
   const weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
-  const [specializations, setSpecializations] = useState<SpecializationsInfo>(
-    defaultData?.specializations ?? DEFAULT_SPECIALIZATIONS,
+  const [specializations, setSpecialities] = useState<SpecialitiesInfo>(
+    defaultData?.specializations ?? DEFAULT_SPECIALITIES,
   );
 
   const [education, setEducation] = useState<EducationEntry[]>(
@@ -515,11 +515,11 @@ export function DoctorProfileForm({
           </div>
         )}
 
-        {/* ── Specializations ───────────────────────────────────────────── */}
+        {/* ── Specialities ───────────────────────────────────────────── */}
         {step.id === "specializations" && (
-          <SpecializationsStep
+          <SpecialitiesStep
             data={specializations}
-            onChange={setSpecializations}
+            onChange={setSpecialities}
           />
         )}
 

@@ -31,9 +31,9 @@ interface State {
 }
 
 const seedUsers: AdminUser[] = [
-  { id: "u1", name: "Dr. Elena Vance", email: "elena@kfh.rw", phone: "+250788111222", role: "doctor", status: "active", createdAt: Date.now() - 86400000 * 40, meta: { specialty: "Cardiology", hospital: "King Faisal Hospital" } },
-  { id: "u2", name: "Dr. Marcus Thorne", email: "marcus@kmc.rw", phone: "+250788333444", role: "doctor", status: "pending", createdAt: Date.now() - 86400000 * 2, meta: { specialty: "General Practice", hospital: "Kigali Medical Center" } },
-  { id: "u3", name: "Dr. Anya Sharma", email: "anya@rhc.rw", phone: "+250788555666", role: "doctor", status: "pending", createdAt: Date.now() - 86400000 * 1, meta: { specialty: "Dermatology", hospital: "Rwanda Health Clinic" } },
+  { id: "u1", name: "Dr. Elena Vance", email: "elena@kfh.rw", phone: "+250788111222", role: "doctor", status: "active", createdAt: Date.now() - 86400000 * 40, meta: { speciality: "Cardiology", hospital: "King Faisal Hospital" } },
+  { id: "u2", name: "Dr. Marcus Thorne", email: "marcus@kmc.rw", phone: "+250788333444", role: "doctor", status: "pending", createdAt: Date.now() - 86400000 * 2, meta: { speciality: "General Practice", hospital: "Kigali Medical Center" } },
+  { id: "u3", name: "Dr. Anya Sharma", email: "anya@rhc.rw", phone: "+250788555666", role: "doctor", status: "pending", createdAt: Date.now() - 86400000 * 1, meta: { speciality: "Dermatology", hospital: "Rwanda Health Clinic" } },
   { id: "u4", name: "King Faisal Hospital", email: "admin@kfh.rw", phone: "+250788001001", role: "hospital", status: "active", createdAt: Date.now() - 86400000 * 120, meta: { city: "Kigali", beds: "240" } },
   { id: "u5", name: "Bethesda Hospital", email: "info@bethesda.rw", phone: "+250788002002", role: "hospital", status: "pending", createdAt: Date.now() - 86400000 * 3, meta: { city: "Musanze", beds: "60" } },
   { id: "u6", name: "GreenCross Pharmacy", email: "ops@greencross.rw", phone: "+250788777888", role: "pharmacy", status: "active", createdAt: Date.now() - 86400000 * 60, meta: { city: "Kigali" } },

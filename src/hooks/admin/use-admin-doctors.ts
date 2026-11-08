@@ -112,6 +112,7 @@ export interface ApiDoctor {
   slug?: string | null;
   status: "active" | "pending" | "suspended" | "rejected" | "approved" | "action_requested";
   specialization?: string | ApiLocalizedName | null;
+  specialization_fee_id?: number | null;
   doctor_degree?: string | null;
   degree_document?: string | null;
   medical_license?: string | null;
@@ -276,9 +277,9 @@ export interface ApiCertificationDoctor {
   created_at: string;
 }
 
-// ─── Specializations ─────────────────────────────────────────────────────────
+// ─── Specialities ─────────────────────────────────────────────────────────
 
-export interface ApiSpecialization {
+export interface ApiSpeciality {
   id: number;
   name: string;
   name_fr?: string | null;
@@ -288,9 +289,9 @@ export interface ApiSpecialization {
   created_at?: string;
 }
 
-// ─── Specialization Fees ─────────────────────────────────────────────────────
+// ─── Speciality Fees ─────────────────────────────────────────────────────
 
-export interface ApiSpecializationFee {
+export interface ApiSpecialityFee {
   id: number;
   specialization: string | ApiLocalizedName;
   slug: string;
@@ -391,7 +392,7 @@ export const doctorKeys = {
   appointments:         (p: GetAppointmentsParams)        => ["admin-appointments", p]               as const,
   instantList:          ()                                => ["admin-instant-consultations"]         as const,
   certList:             ()                                => ["admin-certification-doctors"]         as const,
-  specializationList:   ()                                => ["admin-specializations"]               as const,
+  specialityList:   ()                                => ["admin-specializations"]               as const,
   specFeeList:          ()                                => ["admin-specialization-fees"]           as const,
   doctorConsultList:    ()                                => ["admin-doctor-consultations"]          as const,
   quickConsultations:   (p: GetQuickConsultationsParams)  => ["admin-quick-consultations", p]       as const,
@@ -683,85 +684,85 @@ export function useRemoveCertificationDoctor() {
   });
 }
 
-// ─── Specializations ─────────────────────────────────────────────────────────
+// ─── Specialities ─────────────────────────────────────────────────────────
 
-export function useGetSpecializations() {
-  return useQuery<ApiSpecialization[]>({
-    queryKey: doctorKeys.specializationList(),
+export function useGetSpecialities() {
+  return useQuery<ApiSpeciality[]>({
+    queryKey: doctorKeys.specialityList(),
     queryFn: () =>
-      apiFetch<{ specializations: ApiSpecialization[] }>(SPEC_BASE).then(
+      apiFetch<{ specializations: ApiSpeciality[] }>(SPEC_BASE).then(
         (r) => r.specializations,
       ),
   });
 }
 
-export function useCreateSpecialization() {
+export function useCreateSpeciality() {
   const qc = useQueryClient();
-  return useMutation<ApiSpecialization, Error, { name: string; description?: string }>({
+  return useMutation<ApiSpeciality, Error, { name: string; description?: string }>({
     mutationFn: (body) =>
-      apiFetch<{ specialization: ApiSpecialization }>(SPEC_BASE, { method: "POST", body }).then(
+      apiFetch<{ specialization: ApiSpeciality }>(SPEC_BASE, { method: "POST", body }).then(
         (r) => r.specialization,
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specializationList() }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specialityList() }),
   });
 }
 
-export function useUpdateSpecialization() {
+export function useUpdateSpeciality() {
   const qc = useQueryClient();
-  return useMutation<ApiSpecialization, Error, { id: number; name?: string; description?: string }>({
+  return useMutation<ApiSpeciality, Error, { id: number; name?: string; description?: string }>({
     mutationFn: ({ id, ...body }) =>
-      apiFetch<{ specialization: ApiSpecialization }>(`${SPEC_BASE}/${id}`, {
+      apiFetch<{ specialization: ApiSpeciality }>(`${SPEC_BASE}/${id}`, {
         method: "PUT",
         body,
       }).then((r) => r.specialization),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specializationList() }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specialityList() }),
   });
 }
 
-export function useDeleteSpecialization() {
+export function useDeleteSpeciality() {
   const qc = useQueryClient();
   return useMutation<void, Error, number>({
     mutationFn: (id) => apiFetch<void>(`${SPEC_BASE}/${id}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specializationList() }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specialityList() }),
   });
 }
 
-// ─── Specialization Fees ─────────────────────────────────────────────────────
+// ─── Speciality Fees ─────────────────────────────────────────────────────
 
-export function useGetSpecializationFees() {
-  return useQuery<ApiSpecializationFee[]>({
+export function useGetSpecialityFees() {
+  return useQuery<ApiSpecialityFee[]>({
     queryKey: doctorKeys.specFeeList(),
     queryFn: () =>
-      apiFetch<{ specialization_fees: ApiSpecializationFee[] }>(SPEC_FEE_BASE).then(
+      apiFetch<{ specialization_fees: ApiSpecialityFee[] }>(SPEC_FEE_BASE).then(
         (r) => r.specialization_fees,
       ),
   });
 }
 
-export function useCreateSpecializationFee() {
+export function useCreateSpecialityFee() {
   const qc = useQueryClient();
   return useMutation<
-    ApiSpecializationFee,
+    ApiSpecialityFee,
     Error,
     { specialization_id: number; online_fee: number; in_person_fee: number; currency?: string; description?: string }
   >({
     mutationFn: (body) =>
-      apiFetch<{ fee: ApiSpecializationFee }>(SPEC_FEE_BASE, { method: "POST", body }).then(
+      apiFetch<{ fee: ApiSpecialityFee }>(SPEC_FEE_BASE, { method: "POST", body }).then(
         (r) => r.fee,
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.specFeeList() }),
   });
 }
 
-export function useUpdateSpecializationFee() {
+export function useUpdateSpecialityFee() {
   const qc = useQueryClient();
   return useMutation<
-    ApiSpecializationFee,
+    ApiSpecialityFee,
     Error,
     { id: number; online_fee?: number; in_person_fee?: number; is_active?: boolean }
   >({
     mutationFn: ({ id, ...body }) =>
-      apiFetch<{ fee: ApiSpecializationFee }>(`${SPEC_FEE_BASE}/${id}`, {
+      apiFetch<{ fee: ApiSpecialityFee }>(`${SPEC_FEE_BASE}/${id}`, {
         method: "PUT",
         body,
       }).then((r) => r.fee),
@@ -769,7 +770,7 @@ export function useUpdateSpecializationFee() {
   });
 }
 
-export function useDeleteSpecializationFee() {
+export function useDeleteSpecialityFee() {
   const qc = useQueryClient();
   return useMutation<void, Error, number>({
     mutationFn: (id) => apiFetch<void>(`${SPEC_FEE_BASE}/${id}`, { method: "DELETE" }),

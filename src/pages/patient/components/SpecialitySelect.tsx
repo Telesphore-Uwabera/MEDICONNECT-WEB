@@ -1,4 +1,4 @@
-// SpecializationSelect.tsx
+// SpecialitySelect.tsx
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
@@ -6,19 +6,19 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { X, Search, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import {
-  useSpecializationSelect,
-  type SpecializationValue,
-} from "@/hooks/use-specialization-select";
+  useSpecialitySelect,
+  type SpecialityValue,
+} from "@/hooks/use-speciality-select";
 
-export type { SpecializationValue };
+export type { SpecialityValue };
 
-export function SpecializationSelect({
+export function SpecialitySelect({
   value,
   onChange,
   className
 }: {
-  value: SpecializationValue;
-  onChange: (v: SpecializationValue) => void;
+  value: SpecialityValue;
+  onChange: (v: SpecialityValue) => void;
   className?: string;
 }) {
   const { t } = useTranslation();
@@ -32,19 +32,19 @@ export function SpecializationSelect({
     query,
     setQuery,
     specializations,
-    loadingSpecializations,
-    errorSpecializations,
+    loadingSpecialities,
+    errorSpecialities,
     fees,
     loadingFees,
     errorFees,
-    selectSpecialization,
+    selectSpeciality,
     selectFee,
     clear,
-    backToSpecialization,
+    backToSpeciality,
     openDropdown,
     resetQuery,
     triggerLabel,
-  } = useSpecializationSelect();
+  } = useSpecialitySelect();
 
   // Recalculate dropdown position whenever it opens or window resizes/scrolls
   useLayoutEffect(() => {
@@ -81,15 +81,15 @@ export function SpecializationSelect({
   }, [open]);
 
   const feeName = value.fee?.sub_specialization?.trim();
-  const specializationName = value.specialization?.name?.trim();
+  const specialityName = value.specialization?.name?.trim();
   const showFee =
     Boolean(feeName) &&
-    feeName !== "Selected sub-specialization" &&
-    feeName !== specializationName;
-  const controlledLabel = specializationName
+    feeName !== "Selected sub-speciality" &&
+    feeName !== specialityName;
+  const controlledLabel = specialityName
     ? showFee
-      ? `${specializationName} › ${feeName}${value.fee?.tier_name ? ` (${value.fee.tier_name})` : ""}`
-      : specializationName
+      ? `${specialityName} › ${feeName}${value.fee?.tier_name ? ` (${value.fee.tier_name})` : ""}`
+      : specialityName
     : null;
 
   const handleOpen = () => {
@@ -98,8 +98,8 @@ export function SpecializationSelect({
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const handleSelectSpecialization = (spec: Parameters<typeof selectSpecialization>[0]) => {
-    selectSpecialization(spec);
+  const handleSelectSpeciality = (spec: Parameters<typeof selectSpeciality>[0]) => {
+    selectSpeciality(spec);
     onChange({ specialization: spec, fee: null });
     setTimeout(() => inputRef.current?.focus(), 0);
   };
@@ -118,7 +118,7 @@ export function SpecializationSelect({
   };
 
   const handleBack = () => {
-    backToSpecialization();
+    backToSpeciality();
   };
 
   // Close on outside click
@@ -153,7 +153,7 @@ export function SpecializationSelect({
           className
         )}
       >
-        <span className="truncate">{controlledLabel ?? triggerLabel ?? t("common.specSelect.anySpecializationPlaceholder")}</span>
+        <span className="truncate">{controlledLabel ?? triggerLabel ?? t("common.specSelect.anySpecialityPlaceholder")}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
           {(controlledLabel ?? triggerLabel) && (
             <span
@@ -193,7 +193,7 @@ export function SpecializationSelect({
                 {value.specialization?.name}
               </span>
               <span className="text-xs text-muted-foreground/60 ml-auto">
-                {t("common.specSelect.selectSubSpecialization")}
+                {t("common.specSelect.selectSubSpeciality")}
               </span>
             </div>
           )}
@@ -206,8 +206,8 @@ export function SpecializationSelect({
               type="text"
               placeholder={
                 step === "specialization"
-                  ? t("common.specSelect.searchSpecializationsPlaceholder")
-                  : t("common.specSelect.searchSubSpecializationsPlaceholder")
+                  ? t("common.specSelect.searchSpecialitiesPlaceholder")
+                  : t("common.specSelect.searchSubSpecialitiesPlaceholder")
               }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -237,15 +237,15 @@ export function SpecializationSelect({
                         : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
                     )}
                   >
-                    {t("common.specSelect.anySpecialization")}
+                    {t("common.specSelect.anySpeciality")}
                   </button>
                 )}
 
-                {loadingSpecializations ? (
+                {loadingSpecialities ? (
                   <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-muted-foreground/60">
                     <Loader2 className="w-3 h-3 animate-spin" /> {t("common.loading")}
                   </div>
-                ) : errorSpecializations ? (
+                ) : errorSpecialities ? (
                   <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-destructive/70">
                     <AlertCircle className="w-3 h-3" /> {t("common.specSelect.failedToLoad")}
                   </div>
@@ -257,7 +257,7 @@ export function SpecializationSelect({
                   specializations.map((spec) => (
                     <button
                       key={spec.id}
-                      onClick={() => handleSelectSpecialization(spec)}
+                      onClick={() => handleSelectSpeciality(spec)}
                       className={cn(
                         "w-full px-2.5 py-1.5 text-left text-xs flex items-center justify-between transition-colors",
                         value.specialization?.id === spec.id
@@ -283,7 +283,7 @@ export function SpecializationSelect({
                   </div>
                 ) : fees.length === 0 ? (
                   <p className="px-2.5 py-4 text-xs text-muted-foreground/60 text-center">
-                    {query ? t("common.specSelect.noResultsFor", { query }) : t("common.specSelect.noSubSpecializations")}
+                    {query ? t("common.specSelect.noResultsFor", { query }) : t("common.specSelect.noSubSpecialities")}
                   </p>
                 ) : (
                   fees.map((fee) => (

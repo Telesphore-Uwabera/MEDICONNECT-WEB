@@ -431,7 +431,7 @@ function DetailDrawer({
               {/* Doctor */}
               <DrawerSection icon={Stethoscope} title={t("pages.pharmacy.prescribing_doctor")}>
                 <DetailRow label={t("pages.pharmacy.name")} value={doctor?.user?.name} />
-                <DetailRow label={t("pages.pharmacy.specialization")} value={doctor?.specialization} />
+                <DetailRow label={t("pages.pharmacy.speciality")} value={doctor?.specialization} />
                 <DetailRow label={t("pages.pharmacy.degree")} value={doctor?.doctor_degree} />
                 <DetailRow label={t("pages.pharmacy.license")} value={doctor?.medical_license} />
               </DrawerSection>

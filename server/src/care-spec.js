@@ -5,6 +5,7 @@ import { loadOwnedId } from "./auth.js";
 import { forgetColumns, hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { shapeReferral } from "./care-referrals.js";
 import {
+  deductForPrescription,
   ensureCareOrderReviewColumns,
   onCareOrderUpdated,
   onConsultationSummarySaved,
@@ -108,12 +109,15 @@ export async function stampServiceBooking(row, { channel, userId, agentNotes } =
 
 export async function applyPharmacyFulfillment(table, row, body = {}) {
   await ensureCareSpecTables();
-  const fulfillmentStatus = String(body.fulfillment_status || body.status || "SERVED").toUpperCase() === "PARTIALLY_FULFILLED"
-    ? "PARTIALLY_FULFILLED"
-    : "SERVED";
   const method = String(body.fulfillment_method || body.method || row.delivery_type || "pickup").toLowerCase() === "delivery"
     ? "delivery"
     : "pickup";
+  const shortages = row.prescription_id && row.pharmacy_id
+    ? await deductForPrescription(row.pharmacy_id, row.prescription_id)
+    : [];
+  const fulfillmentStatus = shortages.length || String(body.fulfillment_status || body.status || "SERVED").toUpperCase() === "PARTIALLY_FULFILLED"
+    ? "PARTIALLY_FULFILLED"
+    : "SERVED";
   const now = new Date();
   const patch = { status: "fulfilled" };
   if (await hasColumn(table, "fulfillment_status")) patch.fulfillment_status = fulfillmentStatus;
@@ -124,7 +128,7 @@ export async function applyPharmacyFulfillment(table, row, body = {}) {
   if (body.partial_notes && await hasColumn(table, "partial_notes")) patch.partial_notes = body.partial_notes;
   await update(table, row.id, patch);
   const fresh = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
-  await onPharmacyRequestFulfilled(fresh, fulfillmentStatus);
+  await onPharmacyRequestFulfilled(fresh, fulfillmentStatus, { shortages, method });
   return fresh;
 }
 

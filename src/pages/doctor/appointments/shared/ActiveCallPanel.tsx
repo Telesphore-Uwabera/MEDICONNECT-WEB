@@ -41,8 +41,8 @@ export function ActiveCallPanel() {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const displayName = activeRequest?.patientName ?? activeAppointment?.patientLabel ?? "Patient";
-  const displaySub = activeRequest?.reason ?? activeAppointment?.specialty ?? "";
-  const displayAvatar = activeRequest?.patientAvatar ?? (activeAppointment?.specialty.slice(0, 2).toUpperCase() ?? "PT");
+  const displaySub = activeRequest?.reason ?? activeAppointment?.speciality ?? "";
+  const displayAvatar = activeRequest?.patientAvatar ?? (activeAppointment?.speciality.slice(0, 2).toUpperCase() ?? "PT");
   const chatName = activeRequest?.patientName ?? activeAppointment?.patientLabel ?? "Patient";
   const chatAvatar = activeRequest?.patientAvatar ?? displayAvatar;
 

@@ -104,7 +104,7 @@ const buildNav = (t: TFunction): Record<Role, NavGroup[]> => ({
         },
         {
           to: "/admin/manage-specializations",
-          label: t("sidebar.specializations"),
+          label: t("sidebar.specialities"),
           icon: FlaskConical,
         },
         {

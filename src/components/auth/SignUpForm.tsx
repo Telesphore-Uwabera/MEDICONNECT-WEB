@@ -9,6 +9,8 @@ import { getErrorMessage } from "@/lib/getErrorMessage";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import TermsDrawer from "@/components/auth/TermsDrawer";
+import { BrowseSpecialityPicker } from "@/components/auth/BrowseSpecialityPicker";
+import { findBrowseSpeciality } from "@/lib/browse-specialities";
 import type { Role } from "@/types/auth";
 import {
   User,
@@ -78,6 +80,7 @@ interface FormState {
   countryCode: string;
   role: Role;
   gender: Gender | "";
+  specialities: string[];
   password: string;
   confirm: string;
 }
@@ -92,6 +95,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
     countryCode: "+250",
     role: "patient",
     gender: "",
+    specialities: [],
     password: "",
     confirm: "",
   });
@@ -153,6 +157,12 @@ if (form.password !== form.confirm)
     setTermsError(false);
     if (!form.gender)
       return toast.error(t("auth.errors.gender_required", "Please select your gender"));
+    const chosen = form.role === "doctor"
+      ? form.specialities.map((value) => findBrowseSpeciality(value)).filter((item) => item != null)
+      : [];
+    if (form.role === "doctor" && chosen.length === 0) {
+      return toast.error(t("auth.errors.speciality_required", "Choose at least one speciality"));
+    }
 
     register.mutate(
       {
@@ -165,6 +175,13 @@ if (form.password !== form.confirm)
         password: form.password,
         password_confirmation: form.confirm,
         accepted_terms: acceptedTerms,
+        ...(form.role === "doctor"
+          ? {
+              specialities: chosen.map((item) => item.label),
+              specialization: chosen.map((item) => item.label).join(", "),
+              specialization_fee_ids: chosen.flatMap((item) => item.feeId != null ? [item.feeId] : []),
+            }
+          : {}),
       },
       {
         onSuccess: () => {
@@ -357,6 +374,21 @@ if (form.password !== form.confirm)
             })}
           </RadioGroup>
         </div>
+
+        {form.role === "doctor" && (
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              {t("auth.speciality", "Specialities")}
+            </label>
+            <BrowseSpecialityPicker
+              selected={form.specialities}
+              onChange={(specialities) => setForm((current) => ({ ...current, specialities }))}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              {t("auth.speciality_hint", "Same specialities patients see on the home page.")}
+            </p>
+          </div>
+        )}
 
         {/* Password row */}
         <div className="grid grid-cols-2 gap-2">

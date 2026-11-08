@@ -80,7 +80,7 @@ const AdminApprovals = () => {
         status: doctor.status,
         createdAt: doctor.created_at || "",
         meta: doctor.specialization
-          ? { specialty: typeof doctor.specialization === "string" ? doctor.specialization : doctor.specialization.name_en || "" }
+          ? { speciality: typeof doctor.specialization === "string" ? doctor.specialization : doctor.specialization.name_en || "" }
           : undefined,
       })),
     ...(hospitals.data?.data ?? [])

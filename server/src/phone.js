@@ -27,7 +27,7 @@ export function validateIncomingPhone(phone, countryCode) {
   if (!stored.phone) return { ok: false, message: "Phone number is required.", ...stored };
   if (stored.country_code === "+250") {
     if (!/^7[2389]\d{7}$/.test(stored.phone)) {
-      return { ok: false, message: "Enter a valid Rwandan phone number, for example 0781234567.", ...stored };
+      return { ok: false, message: "After +250, enter 9 digits starting with 72, 73, 78, or 79. Do not start with 0. Example: 781234567.", ...stored };
     }
     return { ok: true, ...stored };
   }

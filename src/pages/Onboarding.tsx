@@ -197,7 +197,7 @@ const PatientFields = ({ t, form, set }: any) => (
 const DoctorFields = ({ t, form, set }: any) => (
   <>
     <div className="grid sm:grid-cols-2 gap-4">
-      <Field label={t("auth.onboarding.doctor.specialization")}>
+      <Field label={t("auth.onboarding.doctor.speciality")}>
         <Input onChange={(e) => set("specialization", e.target.value)} />
       </Field>
       <Field label={t("auth.onboarding.doctor.degree")}>

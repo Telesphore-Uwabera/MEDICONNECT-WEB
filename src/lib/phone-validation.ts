@@ -18,6 +18,9 @@ export const normalizePhoneDigits = (phone?: string | null): string =>
 export const isRwandaCountryCode = (countryCode?: string | null): boolean =>
   normalizeCountryCode(countryCode) === "+250";
 
+/** Nine digits after +250. The trunk 0 is not written next to the country code. */
+export const RWANDA_PHONE_EXAMPLE = "781234567";
+
 /** Local number with the trunk 0 removed, plus E.164 (+2507XXXXXXXX). */
 export function normalizeStoredPhone(
   phone?: string | null,
@@ -69,7 +72,7 @@ export function validatePhoneForCountry(
         isValid: false,
         normalizedPhone: withoutLeadingZero,
         normalizedCountryCode,
-        message: "Enter a valid Rwandan phone number, for example 0781234567.",
+        message: "After +250, enter 9 digits starting with 72, 73, 78, or 79. Do not start with 0. Example: 781234567.",
       };
     }
 

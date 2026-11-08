@@ -203,7 +203,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className={inputCls}
-                      placeholder="0786420000"
+                      placeholder={countryCode === "+250" ? "781234567" : undefined}
                       required
                     />
                   </div>

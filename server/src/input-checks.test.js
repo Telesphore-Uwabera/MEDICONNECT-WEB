@@ -15,4 +15,14 @@ describe("input checks", () => {
     expect(validateIncomingPhone("0712345678", "+250").ok).toBe(false);
     expect(validateIncomingPhone("123456", "+1").ok).toBe(true);
   });
+
+  it("accepts 72, 73, 78, and 79 and drops a trunk 0 before checking", () => {
+    for (const prefix of ["72", "73", "78", "79"]) {
+      const result = validateIncomingPhone(`${prefix}1234567`, "+250");
+      expect(result.ok).toBe(true);
+      expect(result.phone.startsWith("0")).toBe(false);
+    }
+    expect(validateIncomingPhone("0701234567", "+250").ok).toBe(false);
+    expect(validateIncomingPhone("701234567", "+250").ok).toBe(false);
+  });
 });

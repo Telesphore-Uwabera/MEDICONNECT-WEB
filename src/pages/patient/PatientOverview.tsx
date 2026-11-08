@@ -420,7 +420,7 @@ const PatientOverview = () => {
                         const time = formatAppointmentTime(a.appointment_time);
                         const doctorName =
                           a.doctor?.designations ?? a.doctor?.user?.name ?? "—";
-                        const specialty = a.doctor?.specialization ?? "—";
+                        const speciality = a.doctor?.specialization ?? "—";
                         const canJoin =
                           a.status === "in_progress";
 
@@ -446,7 +446,7 @@ const PatientOverview = () => {
                                 </div>
                                 <span className="text-xs font-medium text-muted-foreground/80 flex items-center gap-1.5 mt-1">
                                   <Stethoscope className="h-3.5 w-3.5 text-muted-foreground/60" />
-                                  {specialty}
+                                  {speciality}
                                   <span className="text-border">·</span>
                                   {time}
                                   <Badge

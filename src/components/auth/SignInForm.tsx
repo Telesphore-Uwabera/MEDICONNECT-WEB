@@ -214,7 +214,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                         inputMode="numeric"
                         maxLength={13}
                         className={inputCls}
-                        placeholder="0781234567"
+                        placeholder={phoneCountryCode === "+250" ? "781234567" : undefined}
                         required
                       />
                     </div>

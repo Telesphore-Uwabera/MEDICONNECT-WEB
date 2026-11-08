@@ -18,17 +18,17 @@ export interface PersonalInfo {
   working_days: string[];
 }
 
-export interface SpecializationsInfo {
-  primary: string;                    // specialization name
+export interface SpecialitiesInfo {
+  primary: string;                    // speciality name
   specialization_fee_id: number | null;
-  /** "other" when the doctor picks the synthetic "Other" sub-specialization
-   *  (sent with a null specialization_fee_id); null otherwise. */
+  /** "other" when the doctor picks the synthetic "Other" sub-speciality
+   *  (sent with a null speciality_fee_id); null otherwise. */
   sub_specialization?: string | null;
-  /** Specialist-only: selected sub-types under the chosen sub-specialization.
+  /** Specialist-only: selected sub-types under the chosen sub-speciality.
    *  Saved as [{ id }, …]. Empty for General Practitioner / "Other". */
   sub_specializations?: { id: number }[];
   /** Display-only: names of the saved sub-types (for the read-only view). */
-  sub_specialization_names?: string[];
+  sub_speciality_names?: string[];
   years_of_experience: number;
   // Add these for display after save
   fee_name?: string;                  // e.g. "sub -test namw"
@@ -98,7 +98,7 @@ export interface SocialLinksInfo {
 
 export interface DoctorProfileData {
   personal: PersonalInfo;
-  specializations: SpecializationsInfo;
+  specializations: SpecialitiesInfo;
   education: EducationEntry[];
   experience: ExperienceEntry[];
   qualifications: QualificationEntry[];

@@ -41,8 +41,8 @@ export interface DoctorProfile {
     in_person_fee?: string | number;
     currency?: string;
   };
-  /** Specialist sub-types the doctor saved under their sub-specialization.
-   *  Field/name shape is read defensively (name / sub_type / sub_specialization). */
+  /** Specialist sub-types the doctor saved under their sub-speciality.
+   *  Field/name shape is read defensively (name / sub_type / sub_speciality). */
   sub_specializations?: Array<{
     id: number;
     name?: string;
@@ -115,6 +115,7 @@ export interface Hospital {
 
 export interface UpsertProfilePayload {
   specialization?: string;
+  specialities?: string[];
   doctor_degree?: string;
   medical_license?: string;
   bio_en?: string;
@@ -132,7 +133,7 @@ export interface UpsertProfilePayload {
   bio_kiny?: string;
   // Add these:
   specialization_fee_id?: number | null;
-  sub_specialization?: string | null;   // "other" for a custom specialization
+  sub_specialization?: string | null;   // "other" for a custom speciality
   sub_specializations?: { id: number }[]; // specialist sub-types: [{ id }, …]
   years_of_experience?: number;
   designations?: string;

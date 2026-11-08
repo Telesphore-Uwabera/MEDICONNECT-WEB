@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/PageHeader";
 import {
   useCareOrderAction,
   useGetCareOrders,
-  useHandoverCareOrder,
   useReviewCareOrder,
   type CareOrder,
 } from "@/hooks/doctor/use-care-orders";
@@ -77,10 +76,26 @@ function OrderActions({
   onSendPharmacy?: (order: CareOrder) => void;
 }) {
   const action = useCareOrderAction(scope === "patient" ? "doctor" : scope === "doctor" ? "doctor" : scope);
-  const handover = useHandoverCareOrder();
   const [reply, setReply] = useState(order.result_notes || "");
   const [files, setFiles] = useState<File[]>([]);
-  if (scope === "patient") return null;
+  if (scope === "patient") {
+    const type = String(order.order_type);
+    const handover = order.handover_status ? order.handover_status.replace(/_/g, " ").toLowerCase() : "";
+    const line = type === "admission" && handover
+      ? `Admission: ${handover}.`
+      : order.status === "pending"
+        ? (type === "pharmacy_packet" ? "Waiting for the pharmacy." : type === "follow_up" || type === "home_care" ? "Your doctor still has this step open." : "Waiting for the facility.")
+        : order.status === "accepted"
+          ? (type === "pharmacy_packet" ? "The pharmacy has your packet." : "The facility has accepted you.")
+          : order.status === "rejected"
+            ? "This step was declined."
+            : order.status === "completed" && type === "pharmacy_packet"
+              ? "The pharmacy marked this dispensed. Your doctor has the reply."
+              : order.status === "completed"
+                ? "This step is done. Your doctor has the update."
+                : order.status;
+    return <p className="mt-3 text-[11px] text-muted-foreground">{line}</p>;
+  }
 
   const run = (next: "accept" | "complete" | "reject") => {
     action.mutate(
@@ -93,7 +108,7 @@ function OrderActions({
         files: next === "complete" ? files : undefined,
       },
       {
-        onSuccess: () => toast.success(next === "complete" ? "Reply sent to the referring doctor." : "Updated."),
+        onSuccess: () => toast.success(scope === "doctor" ? "Step recorded." : next === "complete" ? "Reply sent to the referring doctor." : "Updated."),
         onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update this packet."),
       },
     );
@@ -126,32 +141,44 @@ function OrderActions({
           <button type="button" onClick={() => run("complete")} className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90">
             {scope === "pharmacy" ? "Mark dispensed and reply" : "Send results to doctor"}
           </button>
+          {scope === "hospital" && String(order.order_type) === "admission" && ["RECEIVED", "IN_TRANSIT", "ADMITTED", "TRANSFERRED", "DISCHARGED"].map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => action.mutate(
+                {
+                  id: order.id,
+                  care_order_id: order.id,
+                  patient_code: order.patient_code,
+                  action: status === "DISCHARGED" || status === "TRANSFERRED" ? "complete" : "accept",
+                  result_notes: reply,
+                  handover_status: status,
+                },
+                {
+                  onSuccess: () => toast.success(`Admission set to ${status.replace(/_/g, " ").toLowerCase()}.`),
+                  onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update admission."),
+                },
+              )}
+              className="h-8 rounded-[5px] border border-border px-3 text-[11px] font-semibold hover:bg-muted"
+            >
+              {status.replace("_", " ")}
+            </button>
+          ))}
         </div>
       </div>
     );
   }
 
-  if (scope === "doctor" && String(order.order_type) === "admission") {
+  if (scope === "doctor" && ["follow_up", "home_care"].includes(String(order.order_type)) && order.status !== "completed") {
     return (
-      <div className="mt-3 flex flex-wrap gap-2">
-        {["RECEIVED", "IN_TRANSIT", "ADMITTED", "TRANSFERRED", "DISCHARGED"].map((status) => (
-          <button
-            key={status}
-            type="button"
-            onClick={() =>
-              handover.mutate(
-                { id: order.id, handover_status: status },
-                {
-                  onSuccess: () => toast.success(`Handover set to ${status}`),
-                  onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update handover."),
-                },
-              )
-            }
-            className="h-8 rounded-[5px] border border-border px-3 text-[11px] font-semibold hover:bg-muted"
-          >
-            {status.replace("_", " ")}
-          </button>
-        ))}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => run("complete")}
+          className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Mark this step done
+        </button>
       </div>
     );
   }

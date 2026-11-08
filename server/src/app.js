@@ -24,6 +24,7 @@ import { registerPatientRecordRoutes } from "./patient-record.js";
 import { registerTelemedicineConsentRoutes } from "./telemedicine-consent.js";
 import { registerClinicalDocumentRoutes } from "./clinical-documents.js";
 import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicated-ids.js";
+import { selectedBrowseSpecialities } from "./browse-specialities.js";
 import {
   appointmentCollision,
   appointmentJoinWindow,
@@ -89,7 +90,31 @@ function slugify(value) {
   return `${base}-${crypto.randomBytes(3).toString("hex")}`;
 }
 
-async function createProfile(user, role) {
+async function saveDoctorBrowseSpecialities(doctorId, body) {
+  const chosen = selectedBrowseSpecialities(body);
+  if (!doctorId || !chosen.length) return;
+  const labels = chosen.map((item) => item.label);
+  const patch = { specialization: labels.join(", ") };
+  const fee = chosen.find((item) => item.feeId);
+  if (fee && await hasColumn("doctors", "specialization_fee_id")) patch.specialization_fee_id = fee.feeId;
+  if (await hasColumn("doctors", "sub_specialization")) {
+    patch.sub_specialization = labels.join(", ");
+  }
+  if (await hasColumn("doctors", "sub_specializations")) {
+    patch.sub_specializations = chosen.map((item) => ({ name: item.label }));
+  }
+  await update("doctors", doctorId, patch);
+  if (!(await tableExists("doctor_specialization_fees"))) return;
+  await pool.query("DELETE FROM doctor_specialization_fees WHERE doctor_id = ?", [doctorId]).catch(() => {});
+  for (const item of chosen) {
+    if (!item.feeId) continue;
+    const row = { doctor_id: doctorId, specialization_fee_id: item.feeId };
+    if (await hasColumn("doctor_specialization_fees", "is_active")) row.is_active = 1;
+    await insert("doctor_specialization_fees", row).catch(() => {});
+  }
+}
+
+async function createProfile(user, role, body = {}) {
   const table = PROFILE_TABLE[role];
   if (!table || !(await tableExists(table))) return;
   if (await loadOwnedId(user.id, table)) return;
@@ -106,6 +131,11 @@ async function createProfile(user, role) {
     await insert(table, payload);
   } catch (error) {
     console.error(`Could not create ${role} profile`, error.message);
+    return;
+  }
+  if (role === "doctor") {
+    const doctorId = await loadOwnedId(user.id, "doctors");
+    await saveDoctorBrowseSpecialities(doctorId, body);
   }
 }
 
@@ -519,6 +549,12 @@ export function appRoutes(router) {
       const existing = await one("SELECT id FROM users WHERE email = ? LIMIT 1", [body.email]);
       if (existing) return res.status(422).json({ message: "Email is already registered.", errors: { email: ["Email is already registered."] } });
       const role = ["patient", "doctor", "hospital", "pharmacy"].includes(body.role) ? body.role : "patient";
+      if (role === "doctor" && !selectedBrowseSpecialities(body).length) {
+        return res.status(422).json({
+          message: "Choose at least one speciality from the home page list.",
+          errors: { specialities: ["Choose at least one speciality from the home page list."] },
+        });
+      }
       const id = await insert("users", {
         name: body.name,
         email: body.email,
@@ -531,7 +567,7 @@ export function appRoutes(router) {
       });
       await ensureRole(id, role);
       const created = await one("SELECT * FROM users WHERE id = ?", [id]);
-      await createProfile(created, role);
+      await createProfile(created, role, body);
 
       // Send welcome email (best-effort — never block the response)
       if (created?.email) {
@@ -3207,6 +3243,9 @@ export function appRoutes(router) {
         await update("users", req.user.id, { gender: String(body.gender).toLowerCase() });
       }
       if (Array.isArray(body.insurance_ids)) await saveDoctorInsurances(doctorId, body.insurance_ids);
+      if (body.specialities || body.specialization || body.specialization_fee_ids || body.specialization_fee_id) {
+        await saveDoctorBrowseSpecialities(doctorId, body);
+      }
       if (Array.isArray(body.working_days)) await saveWorkingDays(doctorId, body.working_days);
       const review = await submitProfileForReview(doctorId);
       const doctor = await doctorProfileFor(req);

@@ -4,7 +4,7 @@ import { listFrom } from "@/lib/list-payload";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface ApiSpecialization {
+export interface ApiSpeciality {
   id: number;
   name: string;
   name_fr?: string | null;
@@ -17,9 +17,9 @@ export interface ApiSpecialization {
   created_at?: string;
 }
 
-export interface ApiSpecializationFee {
+export interface ApiSpecialityFee {
   id: number;
-  /** Can be null for orphaned/legacy fees not linked to a specialization */
+  /** Can be null for orphaned/legacy fees not linked to a speciality */
   specialization_id: number | null;
   slug: string;
   sub_specialization?: string | null;
@@ -31,9 +31,9 @@ export interface ApiSpecializationFee {
   currency: string;
   description?: string | null;
   is_active: boolean;
-  doctor_specialization_fees_count?: number;
-  /** Populated by the API when specialization_id is set */
-  specialization_model?: {
+  doctor_speciality_fees_count?: number;
+  /** Populated by the API when speciality_id is set */
+  speciality_model?: {
     id: number;
     name: string;
     name_fr?: string | null;
@@ -42,7 +42,7 @@ export interface ApiSpecializationFee {
   created_at?: string;
 }
 
-export interface SpecializationListParams {
+export interface SpecialityListParams {
   search?: string;
   is_active?: boolean;
   page?: number;
@@ -50,8 +50,8 @@ export interface SpecializationListParams {
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
 
-export interface SpecializationListResponse {
-  data: ApiSpecialization[];
+export interface SpecialityListResponse {
+  data: ApiSpeciality[];
   current_page: number;
   last_page: number;
   per_page: number;
@@ -65,10 +65,10 @@ export interface SpecializationListResponse {
 const SPEC_KEY = ["specializations"] as const;
 const FEES_KEY = ["specialization-fees"] as const;
 
-// ─── Specializations ──────────────────────────────────────────────────────────
+// ─── Specialities ──────────────────────────────────────────────────────────
 
-/** GET /admin/specializations */
-export function useGetSpecializations(params?: SpecializationListParams) {
+/** GET /admin/specialities */
+export function useGetSpecialities(params?: SpecialityListParams) {
   const query = new URLSearchParams();
   if (params?.search)                  query.set("search",    params.search);
   if (params?.is_active !== undefined) query.set("is_active", String(params.is_active));
@@ -79,14 +79,14 @@ export function useGetSpecializations(params?: SpecializationListParams) {
   return useQuery({
     queryKey: [...SPEC_KEY, params],
     queryFn: () =>
-      apiFetch<SpecializationListResponse>(
+      apiFetch<SpecialityListResponse>(
         `/admin/specializations${qs ? `?${qs}` : ""}`
       ),
   });
 }
 
-/** POST /admin/specializations */
-export function useCreateSpecialization() {
+/** POST /admin/specialities */
+export function useCreateSpeciality() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: {
@@ -96,7 +96,7 @@ export function useCreateSpecialization() {
       description?: string;
       icon?: string;
     }) =>
-      apiFetch<{ message: string; specialization: ApiSpecialization }>(
+      apiFetch<{ message: string; specialization: ApiSpeciality }>(
         "/admin/specializations",
         { method: "POST", body: payload }
       ),
@@ -104,8 +104,8 @@ export function useCreateSpecialization() {
   });
 }
 
-/** PUT /admin/specializations/:id */
-export function useUpdateSpecialization() {
+/** PUT /admin/specialities/:id */
+export function useUpdateSpeciality() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -120,7 +120,7 @@ export function useUpdateSpecialization() {
       icon?: string;
       is_active?: boolean;
     }) =>
-      apiFetch<{ message: string; specialization: ApiSpecialization }>(
+      apiFetch<{ message: string; specialization: ApiSpeciality }>(
         `/admin/specializations/${id}`,
         { method: "PUT", body: payload }
       ),
@@ -128,8 +128,8 @@ export function useUpdateSpecialization() {
   });
 }
 
-/** DELETE /admin/specializations/:id */
-export function useDeleteSpecialization() {
+/** DELETE /admin/specialities/:id */
+export function useDeleteSpeciality() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
@@ -143,21 +143,21 @@ export function useDeleteSpecialization() {
   });
 }
 
-// ─── Specialization Fees (Sub-specializations) ────────────────────────────────
+// ─── Speciality Fees (Sub-specialities) ────────────────────────────────
 
-/** GET /admin/specialization-fees */
-export function useGetSpecializationFees() {
+/** GET /admin/speciality-fees */
+export function useGetSpecialityFees() {
   return useQuery({
     queryKey: FEES_KEY,
     queryFn: () =>
       apiFetch<unknown>("/admin/specialization-fees?per_page=100").then((res) =>
-        listFrom<ApiSpecializationFee>(res, "specialization_fees"),
+        listFrom<ApiSpecialityFee>(res, "specialization_fees"),
       ),
   });
 }
 
-/** POST /admin/specialization-fees */
-export function useCreateSpecializationFee() {
+/** POST /admin/speciality-fees */
+export function useCreateSpecialityFee() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: {
@@ -171,7 +171,7 @@ export function useCreateSpecializationFee() {
       currency?: string;
       description?: string;
     }) =>
-      apiFetch<{ message: string; fee: ApiSpecializationFee }>(
+      apiFetch<{ message: string; fee: ApiSpecialityFee }>(
         "/admin/specialization-fees",
         { method: "POST", body: payload }
       ),
@@ -179,8 +179,8 @@ export function useCreateSpecializationFee() {
   });
 }
 
-/** PUT /admin/specialization-fees/:id */
-export function useUpdateSpecializationFee() {
+/** PUT /admin/speciality-fees/:id */
+export function useUpdateSpecialityFee() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -194,7 +194,7 @@ export function useUpdateSpecializationFee() {
       tier_name?: string;
       description?: string;
     }) =>
-      apiFetch<{ message: string; fee: ApiSpecializationFee }>(
+      apiFetch<{ message: string; fee: ApiSpecialityFee }>(
         `/admin/specialization-fees/${id}`,
         { method: "PUT", body: payload }
       ),
@@ -202,8 +202,8 @@ export function useUpdateSpecializationFee() {
   });
 }
 
-/** DELETE /admin/specialization-fees/:id */
-export function useDeleteSpecializationFee() {
+/** DELETE /admin/speciality-fees/:id */
+export function useDeleteSpecialityFee() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>

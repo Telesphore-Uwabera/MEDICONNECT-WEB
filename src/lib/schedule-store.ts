@@ -25,7 +25,7 @@ export interface BookedAppointment {
   id: string;
   doctorId: string;
   doctorName: string;
-  specialty: string;
+  speciality: string;
   date: string; // "yyyy-MM-dd"
   time: string; // "HH:mm"
   createdAt: number;
@@ -98,7 +98,7 @@ export const getSchedule = (doctorId: string): DoctorSchedule | undefined =>
 export const bookSlot = (
   doctorId: string,
   doctorName: string,
-  specialty: string,
+  speciality: string,
   date: string,
   time: string,
 ): BookedAppointment | null => {
@@ -113,7 +113,7 @@ export const bookSlot = (
     id: `b-${Date.now()}`,
     doctorId,
     doctorName,
-    specialty,
+    speciality,
     date,
     time,
     createdAt: Date.now(),

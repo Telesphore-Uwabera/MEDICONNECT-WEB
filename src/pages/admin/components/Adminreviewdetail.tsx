@@ -623,7 +623,7 @@ export default function AdminReviewDetail({
           </Row>
         )}
         {doctor.specialization && (
-          <Row label="Specialization" icon={Stethoscope}>
+          <Row label="Speciality" icon={Stethoscope}>
             {doctor.specialization.name}
           </Row>
         )}

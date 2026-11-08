@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
+import { RWANDA_PHONE_EXAMPLE, validatePhoneForCountry } from "@/lib/phone-validation";
 import CountryCodesData from "@/lib/CountryCodes.json";
 import { toast } from "sonner";
 import {
@@ -214,7 +215,10 @@ const splitEmergencyPhone = (raw?: string | null): { code: string; digits: strin
   const compact = String(raw ?? "").replace(/\s+/g, "");
   if (!compact) return { code: "+250", digits: "" };
   const match = EMERGENCY_DIAL_CODES.find((c) => compact.startsWith(c));
-  return match ? { code: match, digits: compact.slice(match.length) } : { code: "+250", digits: compact };
+  const code = match ?? "+250";
+  let digits = match ? compact.slice(match.length) : compact;
+  if (code === "+250" && digits.startsWith("0")) digits = digits.slice(1);
+  return { code, digits };
 };
 
 const formatGender = (gender?: string | null) =>
@@ -791,9 +795,11 @@ function ProfileForm({
   };
 
   const onFormSubmit = (data: ProfileFormData) => {
+    const phone = validatePhoneForCountry(data.emergency_contact_phone, emergencyCountryCode);
+    if (!phone.isValid) return;
     onSubmit({
       ...data,
-      emergency_contact_phone: `${emergencyCountryCode} ${data.emergency_contact_phone}`.trim(),
+      emergency_contact_phone: `${phone.normalizedCountryCode}${phone.normalizedPhone}`,
     });
   };
 
@@ -980,8 +986,14 @@ function ProfileForm({
                 </div>
                 <Input
                   type="tel"
-                  {...register("emergency_contact_phone", { required: t("profile.required") })}
-                  placeholder="0789999999"
+                  {...register("emergency_contact_phone", {
+                    required: t("profile.required"),
+                    validate: (value) => {
+                      const phone = validatePhoneForCountry(value, emergencyCountryCode);
+                      return phone.isValid || phone.message || t("profile.required");
+                    },
+                  })}
+                  placeholder={emergencyCountryCode === "+250" ? RWANDA_PHONE_EXAMPLE : undefined}
                   className="border-border focus-visible:ring-primary text-xs h-9 flex-1"
                 />
               </div>

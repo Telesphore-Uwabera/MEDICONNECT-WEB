@@ -147,7 +147,7 @@ function getDoctorAvatar(appt: ApiAppointment) {
   return appt.doctor?.image ?? appt.doctor?.user.avatar ?? null;
 }
 
-function getSpecialty(appt: ApiAppointment) {
+function getSpeciality(appt: ApiAppointment) {
   if (appt.doctor) return appt.doctor.specialization || appt.doctor.doctor_degree || "—";
   if (appt.hospital) return [appt.hospital.city, appt.hospital.address].filter(Boolean).join(" · ");
   return "—";
@@ -291,7 +291,7 @@ function AppointmentCardItem({
               {getDoctorName(appt)}
             </h3>
             <p className="text-[13px] font-medium text-muted-foreground mt-1 truncate">
-              {getSpecialty(appt)}
+              {getSpeciality(appt)}
             </p>
           </div>
         </div>
@@ -1001,7 +1001,7 @@ const PatientInstant = () => {
                   <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
                       <th className="text-left px-5 py-4 font-semibold">Doctor / Health Facility</th>
-                      <th className="text-left px-5 py-4 font-semibold">Specialty</th>
+                      <th className="text-left px-5 py-4 font-semibold">Speciality</th>
                       <th className="text-left px-5 py-4 font-semibold">Date & Time</th>
                       <th className="text-left px-5 py-4 font-semibold">Type</th>
                       <th className="text-left px-5 py-4 font-semibold">Status</th>
@@ -1029,7 +1029,7 @@ const PatientInstant = () => {
                               <span className="font-semibold text-sm text-foreground">{getDoctorName(a)}</span>
                             </div>
                           </td>
-                          <td className="px-5 py-4 text-muted-foreground/80">{getSpecialty(a)}</td>
+                          <td className="px-5 py-4 text-muted-foreground/80">{getSpeciality(a)}</td>
                           <td className="px-5 py-4 whitespace-nowrap">
                             <div className="flex flex-col gap-1">
                               <span className="flex items-center gap-1.5 font-medium text-foreground">

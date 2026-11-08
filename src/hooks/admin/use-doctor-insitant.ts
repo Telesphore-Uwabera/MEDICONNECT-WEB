@@ -16,7 +16,7 @@
 //   user: ApiDoctorUser;
 // }
 
-// export interface ApiSpecializationFee {
+// export interface ApiSpecialityFee {
 //   id: number;
 //   online_fee: number;
 //   in_person_fee: number;
@@ -25,14 +25,14 @@
 // export interface ApiDoctorConsultation {
 //   id: number;
 //   doctor_id: number;
-//   primary_specialization: string | null;
-//   secondary_specialization: string | null;
+//   primary_speciality: string | null;
+//   secondary_speciality: string | null;
 //   online_fee_override: number | null;
 //   in_person_fee_override: number | null;
 //   override_reason: string | null;
 //   is_active: boolean;
 //   doctor: ApiDoctorConsultationDoctor;
-//   specialization_fee: ApiSpecializationFee | null;
+//   speciality_fee: ApiSpecialityFee | null;
 //   override_set_by: number | null;
 // }
 
@@ -42,9 +42,9 @@
 
 // export interface AssignDoctorPayload {
 //   doctor_id: number;
-//   specialization_fee_id: number;
-//   primary_specialization: string;
-//   secondary_specialization?: string;
+//   speciality_fee_id: number;
+//   primary_speciality: string;
+//   secondary_speciality?: string;
 // }
 
 // export interface AssignDoctorResponse {
@@ -52,17 +52,17 @@
 //   consultation: {
 //     id: number;
 //     doctor_id: number;
-//     specialization_fee_id: number;
-//     primary_specialization: string;
+//     speciality_fee_id: number;
+//     primary_speciality: string;
 //     is_active: boolean;
 //   };
 // }
 
 // export interface UpdateConsultationPayload {
 //   doctor_id: number; // used as path param
-//   specialization_fee_id?: number;
-//   primary_specialization?: string;
-//   secondary_specialization?: string;
+//   speciality_fee_id?: number;
+//   primary_speciality?: string;
+//   secondary_speciality?: string;
 //   is_active?: boolean;
 // }
 
@@ -70,8 +70,8 @@
 //   message: string;
 //   consultation: {
 //     doctor_id: number;
-//     specialization_fee_id: number;
-//     primary_specialization: string;
+//     speciality_fee_id: number;
+//     primary_speciality: string;
 //     is_active: boolean;
 //   };
 // }
@@ -155,7 +155,7 @@ export interface ApiDoctorConsultationDoctor {
   user: ApiDoctorUser;
 }
 
-export interface ApiSpecializationFee {
+export interface ApiSpecialityFee {
   id: number;
   online_fee: number;
   in_person_fee: number;
@@ -171,7 +171,7 @@ export interface ApiDoctorConsultation {
   override_reason: string | null;
   is_active: boolean;
   doctor: ApiDoctorConsultationDoctor;
-  specialization_fee: ApiSpecializationFee | null;
+  specialization_fee: ApiSpecialityFee | null;
   override_set_by: number | null;
 }
 
