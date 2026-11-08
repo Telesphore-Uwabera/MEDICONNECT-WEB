@@ -75,6 +75,7 @@ interface PrescriptionWizardProps {
   onOpenChange: (open: boolean) => void;
   doctorName?: string;
   issuer?: string;
+  issuerOrg?: string;
 }
 
  

@@ -14,7 +14,6 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
   "scroll",
   "click",
   "focus",
-  "visibilitychange",
 ];
 
 const IDLE_MS = 60 * 60 * 1_000; // 1 hour
@@ -66,12 +65,14 @@ export function useIdleLogout() {
     ACTIVITY_EVENTS.forEach((event) => {
       window.addEventListener(event, handleActivity, { passive: true });
     });
+    document.addEventListener("visibilitychange", handleActivity);
 
     return () => {
       clearTimer();
       ACTIVITY_EVENTS.forEach((event) => {
         window.removeEventListener(event, handleActivity);
       });
+      document.removeEventListener("visibilitychange", handleActivity);
     };
     // Only re-run when navigate/qc identity changes (effectively never)
     // eslint-disable-next-line react-hooks/exhaustive-deps

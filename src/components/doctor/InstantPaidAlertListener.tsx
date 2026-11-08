@@ -104,14 +104,15 @@ export function InstantPaidAlertListener() {
     (alert: PaidAlert) => {
       if (!notificationsSupported || Notification.permission !== "granted") return;
 
-      const notification = new Notification(getAlertTitle(alert), {
+      const note: NotificationOptions = {
         body: getAlertBody(alert),
         icon: "/favicon.ico",
         badge: "/favicon.ico",
         tag: `${alert.kind}-${alert.item.id}`,
-        renotify: true,
         requireInteraction: true,
-      });
+      };
+      Object.assign(note, { renotify: true });
+      const notification = new Notification(getAlertTitle(alert), note);
 
       notification.onclick = () => {
         window.focus();

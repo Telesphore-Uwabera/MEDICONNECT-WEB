@@ -1541,7 +1541,10 @@ const DoctorProfile = () => {
             if (d.signature_file) {
               const res = await uploadSignature.mutateAsync(d.signature_file);
               d.existing = {
-                ...(d.existing ?? {}),
+                profile_image_url: d.existing?.profile_image_url ?? null,
+                degree_document_url: d.existing?.degree_document_url ?? null,
+                medical_license_document_url: d.existing?.medical_license_document_url ?? null,
+                national_id_document_url: d.existing?.national_id_document_url ?? null,
                 signature_url: (res as { signature?: string })?.signature ?? d.existing?.signature_url ?? null,
               };
             }

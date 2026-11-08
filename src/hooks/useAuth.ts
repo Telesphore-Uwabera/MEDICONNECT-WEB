@@ -26,12 +26,12 @@ function persistSession(
 }
 
 
-export const useMe = () => {
+export const useMe = (options?: { enabled?: boolean }) => {
   const token = getAuthToken();
   return useQuery({
     queryKey: [...AUTH_KEY, token ? "in" : "out"],
     queryFn: () => apiFetch<MeResponse>("/auth/me"),
-    enabled: Boolean(token),
+    enabled: Boolean(token) && (options?.enabled ?? true),
     select: (data) => data.user,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,

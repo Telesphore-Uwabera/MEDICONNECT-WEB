@@ -25,6 +25,7 @@ export interface ServicesApiResponse {
   data: ApiService[];
   per_page?: number;
   total: number;
+  last_page?: number;
 }
 
 export interface ServiceResponse {

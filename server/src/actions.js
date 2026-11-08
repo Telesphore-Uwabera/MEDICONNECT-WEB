@@ -16,6 +16,7 @@ import { enqueuePharmacyPrescription, stampPrescriptionIssued } from "./clinical
 import { withLiveIce } from "./call-token.js";
 import { readAuditLogs, readPublicSettings, readSettingsGroup, writeSettingsGroup } from "./system-settings.js";
 import { normalizeStoredPhone } from "./phone.js";
+import { clientMayClaimEmail } from "./guest-account.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -537,6 +538,9 @@ async function fillGap(req, res, parts) {
     if (parts[1] === "profile") {
       const body = { ...(req.body ?? {}) };
       delete body.password;
+      if (body.email && !clientMayClaimEmail(body.email)) {
+        return res.status(422).json({ message: "Choose a different email address." }) || true;
+      }
       await update("users", req.user.id, body);
       res.json({ message: "Profile updated." });
       return true;

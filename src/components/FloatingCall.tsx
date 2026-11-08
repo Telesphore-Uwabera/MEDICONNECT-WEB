@@ -50,9 +50,9 @@ export const FloatingCall = () => {
       <div className="relative aspect-video bg-slate-900 flex items-center justify-center cursor-move">
         <div className="text-center">
           <div className="h-10 w-10 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-sm mx-auto">
-            {call.doctor.avatar}
+            {(call.doctor.user?.name || "?").slice(0, 1)}
           </div>
-          <p className="text-[9px] text-white/50 mt-1">{call.doctor.name}</p>
+          <p className="text-[9px] text-white/50 mt-1">{call.doctor.user?.name}</p>
         </div>
         <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black/60">
           <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -71,7 +71,7 @@ export const FloatingCall = () => {
       {/* Controls */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#1a1a1a]">
         <p className="text-[9px] text-white/50 truncate flex-1 mr-2">
-          {call.doctor.specialty}
+          {call.doctor.specialization}
         </p>
         <div className="flex items-center gap-1.5">
           <button

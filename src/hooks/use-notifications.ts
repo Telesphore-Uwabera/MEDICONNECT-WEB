@@ -43,7 +43,7 @@ export const notificationKeys = {
 
 /* ─── useGetNotifications  GET /notifications ────────────────────── */
 
-export function useGetNotifications(params?: { per_page?: number }) {
+export function useGetNotifications(params?: { per_page?: number }, options?: { enabled?: boolean }) {
   const isAuthenticated = !!localStorage.getItem("auth_token");
   return useQuery({
     queryKey: notificationKeys.list(params),
@@ -51,7 +51,7 @@ export function useGetNotifications(params?: { per_page?: number }) {
       const qs = params?.per_page ? `?per_page=${params.per_page}` : "";
       return apiFetch<NotificationsResponse>(`${BASE}${qs}`);
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && (options?.enabled ?? true),
   });
 }
 

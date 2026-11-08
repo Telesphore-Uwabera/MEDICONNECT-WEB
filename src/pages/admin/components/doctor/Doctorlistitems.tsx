@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ApiDoctor } from "@/hooks/admin/use-admin-doctors";
+import { specializationLabel, type ApiDoctor } from "@/hooks/admin/use-admin-doctors";
 import { formatDateOnly } from "@/lib/date";
 import{  getInitials,
   statusStyle,
@@ -44,7 +44,7 @@ export function DoctorRow({
       </td>
 
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {d.specialization ?? <span className="text-muted-foreground/40">-</span>}
+        {specializationLabel(d.specialization) || <span className="text-muted-foreground/40">-</span>}
       </td>
 
       <td className="px-4 py-3">
@@ -133,7 +133,7 @@ export function DoctorCard({
           {d.specialization && (
             <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
               <Stethoscope className="w-3 h-3" />
-              {d.specialization}
+              {specializationLabel(d.specialization)}
             </span>
           )}
           {d.consultation_type && (

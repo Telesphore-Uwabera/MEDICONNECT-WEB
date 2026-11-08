@@ -12,6 +12,8 @@ import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { releaseSlot } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
 import { validateIncomingPhone } from "./phone.js";
+import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
+import { withNamedLock } from "./named-lock.js";
 
 function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -570,6 +572,10 @@ async function attachPayerAccount(payment) {
   let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
   let created = false;
   let plain = cached?.tempPassword || null;
+
+  if (!user && isReservedAccountEmail(email)) {
+    return { created: false, email: null, plain: null };
+  }
 
   if (!user) {
     plain = temporaryPassword();
@@ -1493,8 +1499,6 @@ export function publicRoutes(router) {
   }
 
   router.post(["/public/instant-consultations/request", "/public/instant-consultations/request-any"], async (req, res, next) => {
-    let lockName = null;
-    let locked = false;
     try {
       const body = { ...(req.body ?? {}) };
       delete body.password;
@@ -1512,7 +1516,7 @@ export function publicRoutes(router) {
       }
       const role = req.user?.active_role || req.user?.role;
       const accountEmail = String(req.user?.email || "");
-      if (req.user && role === "patient" && !accountEmail.endsWith("@mediconnect.local") && req.user.profile_complete === false) {
+      if (req.user && role === "patient" && !isServerGuestAccount(accountEmail) && req.user.profile_complete === false) {
         return res.status(403).json({
           message: "Complete your profile before requesting an instant consultation.",
           profile_complete: false,
@@ -1528,18 +1532,18 @@ export function publicRoutes(router) {
         body.country_code = checked.country_code;
       }
 
+      const requestedEmail = body.email || body.guest_email || "";
+      if (requestedEmail && !clientMayClaimEmail(requestedEmail)) {
+        return res.status(422).json({ message: "Choose a different email address." });
+      }
       const identity = await instantOwnerIdentity(req);
       if (phone) identity.phone = identity.phone || phone;
-      const email = body.email || body.guest_email || req.user?.email || "";
+      const email = requestedEmail || req.user?.email || "";
       if (email) identity.email = identity.email || email;
       const table = await instantRequestTable();
       if (!table) return res.status(503).json({ message: "Instant consultations are not available." });
       const ownerKey = req.user?.id ? `u${req.user.id}` : `g${phone || email || "anon"}`;
-      lockName = `ic:${doctorId || 0}:${ownerKey}`.slice(0, 64);
-      const [lockRows] = await pool.query("SELECT GET_LOCK(?, 5) AS locked", [lockName]);
-      locked = Number(lockRows?.[0]?.locked) === 1;
-      if (!locked) return res.status(409).json({ message: "Your request is already being saved. Try again." });
-
+      await withNamedLock(pool, `ic:${doctorId || 0}:${ownerKey}`, async () => {
       const existing = await findOpenInstant(table, doctorId, identity);
       if (existing) {
         const place = placeInQueue(existing, await queuePeers(table, existing.doctor_id));
@@ -1584,10 +1588,12 @@ export function publicRoutes(router) {
         created: true,
         message: doctorBusy ? DOCTOR_BUSY_MESSAGE : "Request received.",
       }));
+      });
     } catch (error) {
+      if (error?.status === 409 && !res.headersSent) {
+        return res.status(409).json({ message: error.message });
+      }
       next(error);
-    } finally {
-      if (locked && lockName) await pool.query("SELECT RELEASE_LOCK(?)", [lockName]).catch(() => null);
     }
   });
 

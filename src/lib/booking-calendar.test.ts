@@ -15,7 +15,7 @@ describe("booking calendar", () => {
   });
 
   it("opens on the current month and ignores an October backlog", () => {
-    const slots: Record<string, { start_time: string; status: string }> = {};
+    const slots: Record<string, { start_time: string; status: string }[]> = {};
     for (let day = 6; day <= 24; day += 1) {
       const date = `2026-10-${String(day).padStart(2, "0")}`;
       slots[date] = [{ start_time: "08:00:00", status: "available" }];

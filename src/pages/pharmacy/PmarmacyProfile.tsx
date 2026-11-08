@@ -2172,14 +2172,11 @@ function SocialLinksSection({
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const p = profile as any;
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
-  // FIX: `website` lives on the top-level profile field, the rest live
-  // inside social_links - merge them so neither display nor edit loses it.
-  const links = {
+  const links: Record<string, string> = {
     ...(profile.social_links ?? {}),
-    website: p.website ?? profile.social_links?.website ?? "",
+    website: profile.website ?? profile.social_links?.website ?? "",
   };
 
   const { register, handleSubmit, reset } = useForm({

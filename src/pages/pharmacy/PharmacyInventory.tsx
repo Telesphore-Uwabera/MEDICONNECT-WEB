@@ -482,7 +482,7 @@ function MedicineFormDrawer({
                 onChange={(val) => set("category_id", val)}
                 options={[
                   { value: "", label: t("pages.pharmacy.none") },
-                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                  ...categories.map((c) => ({ value: String(c.id), label: c.name })),
                 ]}
                 className="w-full"
               />

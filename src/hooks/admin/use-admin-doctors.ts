@@ -20,6 +20,7 @@ export interface ApiDoctorUser {
   phone?: string | null;
   country_code?: string | null;
   is_verified?: boolean;
+  email_verified_at?: string | null;
   status?: string | null;
   avatar?: string | null;
 }
@@ -62,8 +63,12 @@ export interface ApiQualification {
 export interface ApiAvailability {
   id: number;
   day: string;
+  day_of_week?: string;
   start_time: string;
   end_time: string;
+  slot_duration_minutes?: number | null;
+  type?: string | null;
+  is_recurring?: boolean | number | null;
 }
 
 export interface ApiSocialLink {
@@ -95,6 +100,12 @@ export interface ApiLocalizedName {
   name_kiny?: string | null;
 }
 
+export function specializationLabel(value: string | ApiLocalizedName | null | undefined): string {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  return value.name_en || value.name || value.name_fr || value.name_kiny || "";
+}
+
 export interface ApiDoctor {
   id: number;
   user_id?: number;
@@ -113,7 +124,22 @@ export interface ApiDoctor {
   bio_en?: string | null;
   bio_fr?: string | null;
   bio_kiny?: string | null;
-  consultation_fee?: string | number | null;
+  consultation_fee?: string | number | {
+    resolved_online_fee?: string | number | null;
+    resolved_in_person_fee?: string | number | null;
+    specialization_fee?: { specialization?: string | ApiLocalizedName | null } | null;
+  } | null;
+  appointments?: Array<{
+    id: number;
+    status?: string;
+    type?: string;
+    appointment_date?: string;
+    payment_status?: string;
+    patient_pays?: string | number;
+    currency?: string;
+    patient?: { name?: string; email?: string; phone?: string; user?: { name?: string } };
+  }>;
+  primary_specialization?: string | ApiLocalizedName | null;
   currency?: string | null;
   is_available?: boolean;
   instant_consultation?: boolean;
@@ -289,6 +315,7 @@ export interface ApiDoctorConsultation {
   is_active: boolean;
   doctor: {
     id: number;
+    instant_consultation?: boolean;
     user: { id: number; name: string; phone: string };
   };
   specialization_fee: {
@@ -306,6 +333,11 @@ export interface ApiQuickConsultation {
   status: "pending" | "confirmed" | "accepted" | "in_progress" | "completed" | "cancelled" | "withdrawn";
   guest_name?: string | null;
   guest_phone?: string | null;
+  guest_email?: string | null;
+  guest_token?: string | null;
+  expires_at?: string | null;
+  accepted_at?: string | null;
+  completed_at?: string | null;
   /** Registered patient (null for guest bookings) */
   user?: {
     id: number;
@@ -450,7 +482,7 @@ export function useUploadRenewedLicense() {
     },
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: doctorKeys.detail(id) });
-      qc.invalidateQueries({ queryKey: doctorKeys.all });
+      qc.invalidateQueries({ queryKey: doctorKeys.all() });
     },
   });
 }

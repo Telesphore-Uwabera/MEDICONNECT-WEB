@@ -5,7 +5,7 @@ interface StatCardProps {
   label: string;
   value: string | number;
   icon?: LucideIcon;
-  accent?: "primary" | "info" | "warning" | "success";
+  accent?: "primary" | "info" | "warning" | "success" | "danger";
 }
 
 export const StatCard = ({

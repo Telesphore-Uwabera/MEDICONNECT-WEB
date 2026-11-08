@@ -44,6 +44,7 @@ import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments, consultationAmount } from "./public.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
+import { clientMayClaimEmail, isServerGuestAccount } from "./guest-account.js";
 import { checkSocialLink } from "./social-links.js";
 import {
   countWhere,
@@ -443,7 +444,7 @@ export function appRoutes(router) {
       const user = req.user;
       if (!user || user.profile_complete !== false) return next();
       if ((user.active_role || user.role) !== "patient") return next();
-      if (String(user.email || "").endsWith("@mediconnect.local")) return next();
+      if (isServerGuestAccount(user.email)) return next();
       if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
       const path = req.path || "";
       const allowed = PATIENT_PROFILE_WRITE_OK.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -508,6 +509,9 @@ export function appRoutes(router) {
       const body = req.body ?? {};
       if (!body.email || !body.password || !body.name) {
         return res.status(422).json({ message: "Name, email, and password are required.", errors: { email: ["Name, email, and password are required."] } });
+      }
+      if (!clientMayClaimEmail(body.email)) {
+        return res.status(422).json({ message: "Choose a different email address.", errors: { email: ["Choose a different email address."] } });
       }
       if (body.password !== body.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match.", errors: { password: ["Password confirmation does not match."] } });
@@ -731,6 +735,9 @@ export function appRoutes(router) {
       );
       if (!row) return res.status(422).json({ message: "That code is not valid." });
       let user = await findUserByLogin(req.body ?? {});
+      if (!user && req.body?.email && !clientMayClaimEmail(req.body.email)) {
+        return res.status(422).json({ message: "Choose a different email address." });
+      }
       if (!user && req.body?.email) {
         const id = await insert("users", {
           name: req.body.email,
@@ -798,6 +805,9 @@ export function appRoutes(router) {
         ? await one("SELECT tokenable_id FROM personal_access_tokens WHERE token = ? LIMIT 1", [crypto.createHash("sha256").update(plain).digest("hex")])
         : null;
       if (!row) return res.status(422).json({ message: "Guest session was not found." });
+      if (req.body?.email && !clientMayClaimEmail(req.body.email)) {
+        return res.status(422).json({ message: "Choose a different email address." });
+      }
       await update("users", row.tokenable_id, {
         name: req.body?.name,
         phone: req.body?.phone,
@@ -3681,6 +3691,9 @@ export function appRoutes(router) {
       const userPatch = {};
       for (const field of ["name", "email", "phone", "gender", "preferred_language"]) {
         if (patch[field] != null) userPatch[field] = patch[field];
+      }
+      if (userPatch.email && !clientMayClaimEmail(userPatch.email)) {
+        return res.status(422).json({ message: "Choose a different email address." });
       }
       if (Object.keys(userPatch).length) await update("users", found.user.id, userPatch);
       if (await tableExists(table)) {

@@ -246,7 +246,7 @@ export function IllnessProofPanel({
 
     const fetchProof = (id: number, direct?: IllnessProof | null) => {
       fetchDoctorProof.mutate(id, {
-        onSuccess: upsertDoctorProof,
+        onSuccess: (proof) => upsertDoctorProof(proof),
         onError: () => {
           if (direct) upsertDoctorProof(direct);
         },
@@ -293,7 +293,7 @@ export function IllnessProofPanel({
 
   useEffect(() => {
     if (!isOwner || !proofSignal?.id) return;
-    fetchDoctorProof.mutate(proofSignal.id, { onSuccess: upsertDoctorProof });
+    fetchDoctorProof.mutate(proofSignal.id, { onSuccess: (proof) => upsertDoctorProof(proof) });
   }, [isOwner, proofSignal?.nonce]);
 
   const submit = () => {

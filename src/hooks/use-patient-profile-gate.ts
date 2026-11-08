@@ -1,7 +1,7 @@
 import { useGetProfile } from "@/hooks/use-patient-profile";
 import { useMe } from "@/hooks/useAuth";
 import { getAuthToken } from "@/lib/auth-session";
-import { isPatientRecordComplete } from "@/lib/patient-profile-complete";
+import { isPatientRecordComplete, isServerGuestAccount } from "@/lib/patient-profile-complete";
 
 /** True while a signed-in patient still has to finish the profile form. */
 export function usePatientProfileLocked() {
@@ -16,7 +16,7 @@ export function usePatientProfileLocked() {
 
   if (!isPatient) return { locked: false, pending: false };
   if (me.isLoading || !me.isFetched) return { locked: false, pending: true };
-  if (String(user?.email || "").endsWith("@mediconnect.local")) return { locked: false, pending: false };
+  if (isServerGuestAccount(user?.email)) return { locked: false, pending: false };
   if (flag === true) return { locked: false, pending: false };
   if (flag === false) return { locked: true, pending: false };
   if (!profile.isFetched) return { locked: false, pending: true };
@@ -25,7 +25,7 @@ export function usePatientProfileLocked() {
     return { locked: status === 404, pending: false };
   }
   return {
-    locked: !isPatientRecordComplete(profile.data as Record<string, unknown> | null),
+    locked: !isPatientRecordComplete(profile.data),
     pending: false,
   };
 }

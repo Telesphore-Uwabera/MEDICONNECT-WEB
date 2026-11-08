@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-import { ApiDoctor } from "../doctor/use-doctor-appointments";
 
 export interface RecordNote {
   id: number;

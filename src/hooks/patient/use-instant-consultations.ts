@@ -210,7 +210,7 @@ interface UseInvoicePollerResult {
   /** Start polling. Cancels any in-flight poll first. */
   start: (
     invoiceNumber: string,
-    onPaid: () => void,
+    onPaid: (result?: CheckInvoiceResponse) => void,
     onFailed: (msg: string) => void,
     options?: InvoicePollerOptions,
   ) => void;

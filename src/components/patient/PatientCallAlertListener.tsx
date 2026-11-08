@@ -197,14 +197,15 @@ export function PatientCallAlertListener() {
         : alert.kind === "instant"
           ? `instant-call-${alert.instant.id}`
           : `appointment-call-${alert.appointment.id}`;
-      const notification = new Notification(getAlertTitle(alert), {
+      const note: NotificationOptions = {
         body: getAlertBody(alert),
         icon: "/favicon.ico",
         badge: "/favicon.ico",
         tag,
-        renotify: true,
         requireInteraction: true,
-      });
+      };
+      Object.assign(note, { renotify: true });
+      const notification = new Notification(getAlertTitle(alert), note);
       notification.onclick = () => {
         window.focus();
         notification.close();

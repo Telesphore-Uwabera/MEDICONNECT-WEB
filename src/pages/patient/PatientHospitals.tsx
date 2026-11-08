@@ -51,6 +51,13 @@ const INITIAL_FILTERS: FilterState = {
   sort: "name",
 };
 
+const TYPE_LABEL: Record<ApiHospital["type"], string> = {
+  hospital: "Hospital",
+  clinic: "Clinic",
+  health_center: "Health center",
+  pharmacy_clinic: "Pharmacy clinic",
+};
+
 const TYPE_BADGE_STYLE: Record<ApiHospital["type"], string> = {
   hospital: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
   clinic: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",

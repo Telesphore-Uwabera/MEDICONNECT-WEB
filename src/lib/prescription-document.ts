@@ -71,7 +71,6 @@ export interface PrescriptionLike {
     quantity?: number;
     instructions?: string;
   }>;
-  [key: string]: unknown;
 }
 
 function getGeneral(settings?: DocumentBrandSettings): Record<string, unknown> {

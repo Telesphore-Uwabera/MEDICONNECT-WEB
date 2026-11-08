@@ -26,6 +26,7 @@ import {
   CalendarDays,
   Loader2,
   Building2,
+  Clock,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";

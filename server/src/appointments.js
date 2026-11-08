@@ -5,6 +5,7 @@ import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
 import { notifyAppointmentConfirmed, notifyBookedVisit } from "./visit-notify.js";
 import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot } from "./visit-rules.js";
+import { withNamedLock } from "./named-lock.js";
 
 export async function doctorOnlineFee(doctorId) {
   const doctor = await one(
@@ -127,12 +128,7 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
       if (appointmentStartIsInPast(date, time)) {
         return res.status(422).json({ message: "Choose a time later today, or another day." });
       }
-      const lockName = `book:${doctorId}:${date}:${String(time).slice(0, 8)}`.slice(0, 64);
-      const [lockRows] = await pool.query("SELECT GET_LOCK(?, 5) AS locked", [lockName]);
-      if (Number(lockRows?.[0]?.locked) !== 1) {
-        return res.status(409).json({ message: "That slot is being booked. Try again." });
-      }
-      try {
+      await withNamedLock(pool, `book:${doctorId}:${date}:${String(time).slice(0, 8)}`, async () => {
       const taken = await appointmentCollision(doctorId, date, time);
       if (taken) {
         return res.status(409).json({ message: "That slot is already booked. Choose another time.", collision_id: taken.id });
@@ -176,10 +172,11 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         data: row,
         ...(row ?? {}),
       });
-      } finally {
-        await pool.query("SELECT RELEASE_LOCK(?)", [lockName]).catch(() => null);
-      }
+      });
     } catch (error) {
+      if (error?.status === 409 && !res.headersSent) {
+        return res.status(409).json({ message: error.message });
+      }
       next(error);
     }
   });

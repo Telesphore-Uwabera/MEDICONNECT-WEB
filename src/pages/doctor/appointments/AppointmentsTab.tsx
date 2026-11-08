@@ -22,7 +22,7 @@ import {
   type GetAppointmentsParams,
 } from "@/hooks/doctor/use-doctor-appointment";
 import { useQueryClient } from "@tanstack/react-query";
-import { AppointmentContext, useCallStore } from "@/context/CallStore";
+import { AppointmentContext, useCallStore, type Doctor } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 
@@ -46,10 +46,10 @@ import { DateField } from "@/components/ui/date-field";
 import { TABLE_PAGE_SIZE, TablePager, tablePageCount } from "@/components/TablePager";
 
  
-const MOCK_DOCTOR = {
-  id: "mock", name: "Dr. (Scheduled)", specialty: "General", hospital: "",
-  avatar: "DR", status: "online" as const, rating: 5, reviews: 0,
-  experience: 10, instantAvailable: true, fee: 0,
+const MOCK_DOCTOR: Doctor = {
+  id: 0,
+  specialization: "General",
+  user: { id: 0, name: "Dr. (Scheduled)", avatar: null },
 };
 
 function filtersToParams(filters: FilterState): GetAppointmentsParams {

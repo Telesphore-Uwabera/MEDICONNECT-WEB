@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   Calendar,
   Stethoscope,
@@ -67,7 +68,7 @@ export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
 type NavItem = { to: string; label: string; icon: LucideIcon; badge?: number };
 type NavGroup = { heading?: string; items: NavItem[] };
 
-const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
+const buildNav = (t: TFunction): Record<Role, NavGroup[]> => ({
   admin: [
     { items: [{ to: "/admin", label: t("sidebar.dashboard"), icon: Home }] },
     {

@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
-import { plausibleDateOfBirth } from "./input-checks.js";
+import { plausibleDateOfBirth, sniffedUploadExtension } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
 
 const MEDICAL_TABLES = [
@@ -22,20 +22,9 @@ function saveFile(file, prefix) {
     ? path.join(process.env.UPLOAD_DIR, "doctors-webp")
     : path.resolve("storage", "doctors-webp");
   fs.mkdirSync(dir, { recursive: true });
-  const allowed = new Set([".pdf", ".png", ".jpg", ".jpeg", ".webp"]);
-  const allowedMime = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp"]);
-  const rawExt = path.extname(String(file.originalname || "")).toLowerCase();
-  const mimeExt = file.mimetype === "application/pdf"
-    ? ".pdf"
-    : file.mimetype === "image/png"
-      ? ".png"
-      : file.mimetype === "image/jpeg"
-        ? ".jpg"
-        : file.mimetype === "image/webp"
-          ? ".webp"
-          : "";
-  if (!allowed.has(rawExt) && !allowedMime.has(file.mimetype)) return { error: "Upload a PDF or an image (PNG, JPG, or WEBP)." };
-  const ext = allowed.has(rawExt) ? rawExt : mimeExt;
+  const sniffed = sniffedUploadExtension(file.buffer);
+  if (!sniffed) return { error: "Upload a PDF or an image (PNG, JPG, or WEBP)." };
+  const ext = sniffed === ".jpg" ? ".jpg" : sniffed;
   const filename = `${prefix}_${Date.now()}${ext}`;
   fs.writeFileSync(path.join(dir, filename), file.buffer);
   return { url: `https://mediconnect.rw/api/v1/media/${filename}` };
