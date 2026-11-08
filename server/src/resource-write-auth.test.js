@@ -104,7 +104,7 @@ function sqliteRows(sql, params) {
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
       status TEXT, notes TEXT, daily_guest_token TEXT,
-      appointment_date TEXT, appointment_time TEXT
+      appointment_date TEXT, appointment_time TEXT, consultation_fee INTEGER
     );
     CREATE TABLE fitness_certificates (id INTEGER, patient_id INTEGER, user_id INTEGER, status TEXT);
     CREATE TABLE instant_consultation_requests (
@@ -127,8 +127,8 @@ function sqliteRows(sql, params) {
     insert("INSERT INTO patients (id, user_id, name, email, phone) VALUES (?, ?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email, row.phone ?? null);
   }
   for (const row of db.appointments) {
-    insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
-      row.id, row.doctor_id, row.patient_id, row.user_id, row.pharmacy_id ?? null, row.hospital_id ?? null, row.status, row.notes || null, row.daily_guest_token || null,
+    insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, consultation_fee) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+      row.id, row.doctor_id, row.patient_id, row.user_id, row.pharmacy_id ?? null, row.hospital_id ?? null, row.status, row.notes || null, row.daily_guest_token || null, row.consultation_fee ?? null,
     );
   }
   for (const row of db.instants) {
@@ -182,6 +182,14 @@ function sqliteRows(sql, params) {
   }
   return database.prepare(text).all(...params);
 }
+
+vi.mock("./public.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    createIremboInvoice: async () => ({ invoiceNumber: "INV-FIXTURE", publicKey: "pk_fixture" }),
+  };
+});
 
 vi.mock("./db.js", async (importOriginal) => {
   const actual = await importOriginal();
@@ -1007,5 +1015,46 @@ describe("resource write authorization", () => {
     expect(dashboard.body.period_stats.total_appointments).toBe(list.body.total);
     expect(dashboard.body.certificates.issued).toBe(1);
     expect(dashboard.body.certificates.total).toBe(1);
+  });
+
+  it("joins, pays, cancels, and reschedules only the account appointment", async () => {
+    const own = db.appointments.find((row) => row.id === 5);
+    own.consultation_fee = 10;
+    const refused = async (method, path) => {
+      const result = await request(users.patient, method, path, method === "POST" ? { appointment_date: "2026-12-15", appointment_time: "10:00" } : undefined);
+      expect(result.status, `${method} ${path}`).toBe(403);
+      expect(JSON.stringify(result.body), `${method} ${path}`).not.toMatch(/token|INV-FIXTURE|pk_fixture/);
+    };
+    await refused("POST", "/patient/appointments/8/join");
+    await refused("POST", "/patient/appointments/9/join");
+    await refused("POST", "/patient/appointments/8/pay");
+    await refused("POST", "/patient/appointments/9/pay");
+    await refused("DELETE", "/patient/appointments/8");
+    await refused("DELETE", "/patient/appointments/9");
+    await refused("POST", "/patient/appointments/8/reschedule");
+    await refused("POST", "/patient/appointments/9/reschedule");
+    const missing = await request(users.patient, "DELETE", "/patient/appointments/404");
+    expect(missing.status).toBe(404);
+    expect(writes).toEqual([]);
+    const joined = await request(users.patient, "POST", "/patient/appointments/5/join");
+    expect(joined.status).toBe(200);
+    expect(joined.body.token).toBeTruthy();
+    expect(writes.filter((write) => write.table === "appointments" || write.table === "payments")).toEqual([]);
+    const paid = await request(users.patient, "POST", "/patient/appointments/5/pay");
+    expect(paid.status).toBe(200);
+    expect(paid.body.invoice_number).toBe("INV-FIXTURE");
+    expect(paid.body.public_key).toBe("pk_fixture");
+    expect(writes.some((write) => write.op === "insert" && write.table === "payments" && write.data.appointment_id === 5)).toBe(true);
+    writes.length = 0;
+    const cancelled = await request(users.patient, "DELETE", "/patient/appointments/5");
+    expect(cancelled.status).toBe(200);
+    expect(writes.some((write) => write.op === "update" && write.table === "appointments" && write.data.status === "cancelled")).toBe(true);
+    writes.length = 0;
+    const moved = await request(users.patient, "POST", "/patient/appointments/5/reschedule", {
+      appointment_date: "2026-12-15",
+      appointment_time: "10:00",
+    });
+    expect(moved.status).toBe(200);
+    expect(writes.some((write) => write.op === "update" && write.table === "appointments" && write.data.appointment_date === "2026-12-15")).toBe(true);
   });
 });
