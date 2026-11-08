@@ -61,6 +61,21 @@ async function resolveChartPatient(rawId) {
   }
 }
 
+function linkedAccountId(patient) {
+  const accountId = Number(patient?.user_id);
+  return accountId > 0 ? accountId : null;
+}
+
+/** The profile id is not an account id. A guest chart must not borrow users.id. */
+async function accountForChart(patient) {
+  const accountId = linkedAccountId(patient);
+  if (!accountId) return null;
+  return one(
+    "SELECT id, name, email, phone, country_code, avatar FROM users WHERE id = ? LIMIT 1",
+    [accountId],
+  ).catch(() => null);
+}
+
 async function openChart(res, user, rawId) {
   const found = await resolveChartPatient(rawId);
   if (found.unreadable || found.ambiguous) {
@@ -230,9 +245,7 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
     try {
       const patient = await openChart(res, req.user, req.params.patientId);
       if (!patient) return;
-      const user = patient.user_id
-        ? await one("SELECT id, name, email, phone, country_code, avatar FROM users WHERE id = ?", [patient.user_id]).catch(() => null)
-        : null;
+      const user = await accountForChart(patient);
       const presented = await presentRow("patients", patient);
       const data = { ...presented, user };
       res.json({ patient: data, data, ...data });
@@ -245,7 +258,7 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
     try {
       const patient = await openChart(res, req.user, req.params.patientId);
       if (!patient) return;
-      const user = await one("SELECT id, name, email FROM users WHERE id = ?", [patient.user_id || patient.id]).catch(() => null);
+      const user = await accountForChart(patient);
       const { row } = await medicalRow(patient);
       const record = shapeRecord(patient, row, user);
       res.json({ record, data: record, ...record });
@@ -272,7 +285,7 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         await insert(table, payload);
       }
       const fresh = await medicalRow(patient);
-      const user = await one("SELECT id, name, email FROM users WHERE id = ?", [patient.user_id || patient.id]).catch(() => null);
+      const user = await accountForChart(patient);
       const record = shapeRecord(patient, fresh.row, user);
       res.json({ message: "Record saved.", record, data: record });
     } catch (error) {

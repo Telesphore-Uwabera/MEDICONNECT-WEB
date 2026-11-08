@@ -17,6 +17,11 @@ const db = {
     { id: 55, user_id: 77, name: "Amina", email: "amina@example.com" },
     { id: 56, user_id: 80, name: "Other", email: "other@example.com" },
     { id: 77, user_id: 8, name: "Foreign Profile", email: "foreign@example.com" },
+    { id: 90, user_id: null, name: "Guest Chart", email: null },
+  ],
+  accounts: [
+    { id: 77, name: "Amina Account", email: "amina-account@example.com" },
+    { id: 90, name: "Unrelated Account", email: "stranger@example.com" },
   ],
   medical: [
     { id: 1, patient_id: 55, known_allergies: "pollen" },
@@ -149,6 +154,9 @@ vi.mock("./db.js", async (importOriginal) => {
       }
       if (text.includes("FROM hospitals") && text.includes("user_id")) {
         return { id: 4, user_id: 10 };
+      }
+      if (text.includes("FROM users") && text.includes("WHERE id")) {
+        return db.accounts.find((row) => row.id === Number(params[0])) || null;
       }
       if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos)"?/i.test(text)) {
         return sqliteRows(sql, params)[0] ?? null;
@@ -631,5 +639,62 @@ describe("resource write authorization", () => {
     expect(hospital.status).toBe(403);
     expect(doctor.status).toBe(403);
     expect(writes).toEqual([]);
+  });
+
+  it("does not borrow an account from a guest profile id and requires an instant profile", async () => {
+    db.instants.push({ id: 20, doctor_id: 31, patient_id: 90, user_id: null, status: "accepted" });
+    const guest = await request(users.doctor, "GET", "/doctor/patients/90/record");
+    const guestProfile = await request(users.doctor, "GET", "/doctor/patients/90/profile");
+    expect(guest.status).toBe(200);
+    expect(guestProfile.status).toBe(200);
+    expect(JSON.stringify(guest.body)).not.toContain("stranger@example.com");
+    expect(JSON.stringify(guestProfile.body)).not.toContain("stranger@example.com");
+    expect(JSON.stringify(guestProfile.body)).toContain("Guest Chart");
+    const linked = await request(users.doctor, "GET", "/doctor/patients/55/record");
+    expect(linked.status).toBe(200);
+    expect(JSON.stringify(linked.body)).toContain("amina-account@example.com");
+    writes.length = 0;
+    db.instants.push(
+      { id: 21, doctor_id: 31, patient_id: 404, user_id: null, status: "accepted" },
+      { id: 22, doctor_id: 31, patient_id: null, user_id: null, status: "accepted" },
+    );
+    const missingProfile = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 21,
+      diagnosis: "no",
+      items: [],
+    });
+    const missingWithPatient = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 21,
+      patient_id: 55,
+      diagnosis: "no",
+      items: [],
+    });
+    const nameless = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 22,
+      patient_id: 55,
+      diagnosis: "no",
+      items: [],
+    });
+    expect(missingProfile.status).toBe(403);
+    expect(missingWithPatient.status).toBe(403);
+    expect(nameless.status).toBe(403);
+    expect(writes).toEqual([]);
+    db.instants.push({ id: 23, doctor_id: 31, patient_id: null, user_id: 77, status: "accepted" });
+    const byAccount = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 23,
+      diagnosis: "follow-up",
+      items: [],
+    });
+    expect(byAccount.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({ patient_id: 55, doctor_id: 31, instant_consultation_id: 23 });
+    writes.length = 0;
+    db.hideUserId = true;
+    const stillLinked = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 9,
+      diagnosis: "course",
+      items: [],
+    });
+    expect(stillLinked.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({ patient_id: 55, doctor_id: 31, instant_consultation_id: 9 });
   });
 });

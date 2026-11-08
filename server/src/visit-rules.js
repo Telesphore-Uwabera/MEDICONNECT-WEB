@@ -614,10 +614,20 @@ async function instantProfile(instantId, doctorId) {
   if (!visit || Number(visit.doctor_id) !== Number(doctorId)) {
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
-  if (visit.user_id && Number(visit.patient_id) && Number(visit.user_id) !== Number((await profileById(visit.patient_id))?.user_id)) {
-    return { ok: false, status: 403, message: "You do not have access to this record." };
+  const pointed = Number(visit.patient_id) || null;
+  const account = Number(visit.user_id) || null;
+  if (pointed) {
+    const profile = await profileById(pointed);
+    if (!profile?.id) return { ok: false, status: 403, message: "You do not have access to this record." };
+    if (account && Number(profile.user_id) !== account) {
+      return { ok: false, status: 403, message: "You do not have access to this record." };
+    }
+    return { ok: true, patientId: Number(profile.id) };
   }
-  return { ok: true, patientId: Number(visit.patient_id) };
+  if (!account) return { ok: false, status: 403, message: "You do not have access to this record." };
+  const profiles = await q("SELECT id, user_id FROM patients WHERE user_id = ?", [account]);
+  if (profiles.length !== 1) return { ok: false, status: 403, message: "You do not have access to this record." };
+  return { ok: true, patientId: Number(profiles[0].id) };
 }
 
 async function patientFromClinicalVisit(body, doctorId, user) {
