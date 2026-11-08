@@ -5,7 +5,8 @@ const writes = [];
 const db = {
   patientThrows: false,
   careThrows: false,
-  columnThrows: false,
+    columnThrows: false,
+    hideUserId: false,
   doctors: [
     { id: 31, user_id: 4 },
     { id: 32, user_id: 5 },
@@ -39,10 +40,14 @@ vi.mock("./db.js", async (importOriginal) => {
     tableExists: async (name) => [
       "appointments", "prescriptions", "prescription_requests", "patients", "doctors", "pharmacies",
       "patient_medical_infos", "team_members", "instant_consultation_requests",
-      "pharmacy_orders", "service_bookings", "hospitals",
+      "pharmacy_orders", "service_bookings", "hospitals", "users", "leaflets",
     ].includes(name),
-    hasColumn: async () => {
+    hasColumn: async (table, column) => {
       if (db.columnThrows) throw new Error("columns unreadable");
+      if (db.hideUserId && column === "user_id" && (table === "appointments" || table === "instant_consultation_requests")) {
+        return false;
+      }
+      if (table === "leaflets") return false;
       return true;
     },
     insert: async (table, data) => {
@@ -78,11 +83,17 @@ vi.mock("./db.js", async (importOriginal) => {
       if (db.careThrows && text.includes("FROM appointments") && text.includes("doctor_id")) {
         throw new Error("care unreadable");
       }
+      if (text.includes("FROM doctors") && text.includes("WHERE id")) {
+        return db.doctors.find((row) => row.id === Number(params[0])) || null;
+      }
       if (text.includes("FROM doctors") && text.includes("user_id")) {
         return db.doctors.find((row) => row.user_id === Number(params[0])) || null;
       }
       if (text.includes("FROM pharmacies") && text.includes("user_id")) {
         return db.pharmacies.find((row) => row.user_id === Number(params[0])) || null;
+      }
+      if (text.includes("FROM hospitals") && text.includes("WHERE id")) {
+        return Number(params[0]) === 4 ? { id: 4 } : null;
       }
       if (text.includes("FROM hospitals") && text.includes("user_id")) {
         return { id: 4, user_id: 10 };
@@ -120,7 +131,16 @@ vi.mock("./db.js", async (importOriginal) => {
     },
     presentRow: async (_table, row) => row,
     presentRows: async (_table, rows) => rows,
-    pool: { query: async (...args) => { writes.push({ op: "sql", args }); return []; } },
+    pool: {
+      query: async (...args) => { writes.push({ op: "sql", args }); return []; },
+      getConnection: async () => ({
+        query: async (sql) => {
+          if (String(sql).includes("GET_LOCK")) return [[{ locked: 1 }]];
+          return [[{ released: 1 }]];
+        },
+        release() {},
+      }),
+    },
     countWhere: async () => 0,
   };
 });
@@ -172,6 +192,17 @@ describe("resource write authorization", () => {
     db.patientThrows = false;
     db.careThrows = false;
     db.columnThrows = false;
+    db.hideUserId = false;
+    db.appointments = [
+      { id: 5, doctor_id: 31, patient_id: 77, user_id: null, status: "confirmed" },
+      { id: 8, doctor_id: 31, patient_id: 55, user_id: null, status: "confirmed" },
+      { id: 9, doctor_id: 31, patient_id: 77, user_id: 8, status: "confirmed" },
+    ];
+    db.instants = [
+      { id: 9, doctor_id: 31, patient_id: 55, user_id: null, status: "accepted" },
+      { id: 10, doctor_id: 31, patient_id: 77, user_id: null, status: "accepted" },
+      { id: 12, doctor_id: 31, patient_id: 55, user_id: 8, status: "accepted" },
+    ];
   });
 
   it("refuses a patient team create and allows an admin manager", async () => {
@@ -296,11 +327,159 @@ describe("resource write authorization", () => {
       hospital_id: 99,
     });
     expect(hospital.status).toBe(201);
-    expect(writes.at(-1).data).toMatchObject({ hospital_id: 4, patient_id: 55 });
+    expect(writes.at(-1).data).toMatchObject({ hospital_id: 4, patient_id: 77 });
     expect(writes.at(-1).data.hospital_id).not.toBe(99);
     writes.length = 0;
     const missing = await request(users.hospital, "POST", "/hospital/service-bookings", { patient_id: 999 });
     expect(missing.status).toBe(422);
     expect(writes).toEqual([]);
+  });
+
+  it("refuses an appointment alias and keeps the booking form's account id and doctor", async () => {
+    const alias = await request(users.patient, "POST", "/patient/my-visits", {
+      doctor_id: 31,
+      patient_id: 55,
+      appointment_date: "2026-12-01",
+      appointment_time: "09:00",
+    });
+    const quick = await request(users.patient, "POST", "/patient/quick", { doctor_id: 31 });
+    const records = await request(users.patient, "POST", "/patient/records/appointments", { doctor_id: 31 });
+    expect(alias.status).toBe(405);
+    expect(quick.status).toBe(405);
+    expect(records.status).toBe(405);
+    expect(writes).toEqual([]);
+    const booked = await request(users.patient, "POST", "/patient/appointments", {
+      doctor_id: 31,
+      patient_id: 55,
+      appointment_date: "2026-12-01",
+      appointment_time: "09:00",
+    });
+    expect(booked.status).toBe(201);
+    const created = writes.find((write) => write.op === "insert" && write.table === "appointments");
+    expect(created.data.patient_id).toBe(77);
+    expect(created.data.doctor_id).toBe(31);
+  });
+
+  it("keeps the visit target on the prescription and booking forms the UI actually posts", async () => {
+    writes.length = 0;
+    const fromAppointment = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      appointment_id: 5,
+      doctor_id: 99,
+      diagnosis: "malaria",
+      notes: "course",
+      items: [],
+    });
+    expect(fromAppointment.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({
+      patient_id: 55,
+      doctor_id: 31,
+      appointment_id: 5,
+      diagnosis: "malaria",
+    });
+    expect(writes.at(-1).data.patient_id).not.toBe(77);
+    writes.length = 0;
+    const fromInstant = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 9,
+      diagnosis: "follow-up",
+      items: [],
+    });
+    expect(fromInstant.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({ patient_id: 55, doctor_id: 31, instant_consultation_id: 9 });
+    writes.length = 0;
+    const contradicted = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      instant_consultation_id: 12,
+      diagnosis: "no",
+      items: [],
+    });
+    expect(contradicted.status).toBe(403);
+    expect(writes).toEqual([]);
+    const booked = await request(users.doctor, "POST", "/doctor/service-bookings", {
+      patient_id: 55,
+      hospital_id: 4,
+      hospital_service_id: 3,
+      preferred_date: "2026-12-02",
+      preferred_time: "10:00",
+      notes: "lab",
+      doctor_id: 99,
+    });
+    expect(booked.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({
+      patient_id: 77,
+      doctor_id: 31,
+      hospital_id: 4,
+      hospital_service_id: 3,
+      preferred_date: "2026-12-02",
+      preferred_time: "10:00",
+      notes: "lab",
+    });
+    writes.length = 0;
+    const badHospital = await request(users.doctor, "POST", "/doctor/service-bookings", {
+      patient_id: 55,
+      hospital_id: 99,
+      hospital_service_id: 3,
+      preferred_date: "2026-12-02",
+      preferred_time: "10:00",
+    });
+    expect(badHospital.status).toBe(422);
+    expect(writes).toEqual([]);
+    const patientBooking = await request(users.patient, "POST", "/patient/service-bookings", {
+      hospital_id: 4,
+      hospital_service_id: 3,
+      department_id: 2,
+      preferred_date: "2026-12-03",
+      preferred_time: "11:30",
+      notes: "scan",
+    });
+    expect(patientBooking.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({
+      patient_id: 77,
+      hospital_id: 4,
+      hospital_service_id: 3,
+      department_id: 2,
+      preferred_date: "2026-12-03",
+      preferred_time: "11:30",
+      notes: "scan",
+    });
+    expect(writes.at(-1).data.doctor_id).toBeUndefined();
+  });
+
+  it("does not grant a chart from a conflicting instant while a valid appointment exists", async () => {
+    db.appointments = [];
+    db.instants = [{ id: 12, doctor_id: 31, patient_id: 55, user_id: 8, status: "accepted" }];
+    const contradicted = await request(users.doctor, "PUT", "/doctor/patients/55/record", { known_allergies: "nuts" });
+    expect(contradicted.status).toBe(403);
+    db.instants = [{ id: 10, doctor_id: 31, patient_id: 77, user_id: null, status: "accepted" }];
+    const foreignProfile = await request(users.doctor, "PUT", "/doctor/patients/55/record", { known_allergies: "nuts" });
+    expect(foreignProfile.status).toBe(403);
+    db.instants = [{ id: 9, doctor_id: 31, patient_id: 55, user_id: 77, status: "accepted" }];
+    const linked = await request(users.doctor, "PUT", "/doctor/patients/55/record", { known_allergies: "nuts" });
+    expect(linked.status).toBe(200);
+    expect(writes.some((write) => JSON.stringify(write).includes("nuts"))).toBe(true);
+  });
+
+  it("still finds a care link when appointments have no user_id column", async () => {
+    db.hideUserId = true;
+    db.instants = [];
+    const allowed = await request(users.doctor, "PUT", "/doctor/patients/55/record", { known_allergies: "pollen" });
+    expect(allowed.status).toBe(200);
+  });
+
+  it("refuses a generic insert that cannot name an owner", async () => {
+    const result = await request(users.doctor, "POST", "/doctor/leaflets", { title: "Flu" });
+    expect(result.status).toBe(403);
+    expect(writes).toEqual([]);
+  });
+
+  it("hashes a password when an admin creates a user", async () => {
+    const result = await request(users.admin, "POST", "/admin/users", {
+      name: "New Admin",
+      email: "new-admin@example.com",
+      password: "a-real-password",
+    });
+    expect(result.status).toBe(201);
+    const created = writes.find((write) => write.op === "insert" && write.table === "users");
+    expect(created?.data?.password).toBeTruthy();
+    expect(created.data.password).not.toBe("a-real-password");
+    expect(created.data.email).toBe("new-admin@example.com");
   });
 });
