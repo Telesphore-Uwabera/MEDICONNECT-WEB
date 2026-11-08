@@ -1,42 +1,39 @@
 import { describe, expect, it } from "vitest";
 import en from "../locales/en/consult.json";
 import fr from "../locales/fr/consult.json";
-import rw from "../locales/rw/consult.json";
-import { formatQueueLine, queueFacts, type QueueCopy } from "./queue-status";
+import { formatQueueLine, queueCopy, readQueueFields } from "./queue-status";
 
-function copyOf(bundle: {
-  connect: { queue_position: string; queue_ahead_one: string; queue_ahead_other: string; queue_next: string };
-}): QueueCopy {
-  return {
-    place: bundle.connect.queue_position,
-    aheadOne: bundle.connect.queue_ahead_one,
-    aheadOther: bundle.connect.queue_ahead_other,
-    next: bundle.connect.queue_next,
-  };
-}
+const english = queueCopy("en");
+const french = queueCopy("fr");
 
-const english = copyOf(en);
-const french = copyOf(fr);
-
-describe("queue place and people ahead", () => {
-  it("shows place 25 and 7 people ahead as different facts", () => {
-    expect(queueFacts(25, 7)).toEqual({ place: 25, peopleAhead: 7, youAreNext: false });
-    expect(formatQueueLine(25, 7, english)).toBe("Your place 25 · 7 people ahead");
-    expect(formatQueueLine(25, 7, french)).toBe("Votre place 25 · 7 personnes devant vous");
-    expect(formatQueueLine(25, 7, english)).not.toContain("Position 7");
-    expect(formatQueueLine(25, 7, french)).not.toContain("Position 7");
+describe("queue place line", () => {
+  it("shows the current first place as next, and a later place as that one pair", () => {
+    expect(formatQueueLine(1, 0, english)).toBe("You're next");
+    expect(formatQueueLine(1, null, english)).toBe("You're next");
+    expect(formatQueueLine(1, 0, french)).toBe("Vous êtes le prochain");
+    expect(formatQueueLine(8, 7, english)).toBe("Your place 8, 7 people ahead");
+    expect(formatQueueLine(8, null, english)).toBe("Your place 8, 7 people ahead");
+    expect(formatQueueLine(2, 1, french)).toBe("Votre place 2, 1 personne devant vous");
+    expect(en.connect.queue_next).toBe("You're next");
+    expect(fr.connect.queue_next).toBe("Vous êtes le prochain");
   });
 
-  it("does not call a missing ahead-count next when the place is already 8", () => {
-    expect(queueFacts(8, null)).toEqual({ place: 8, peopleAhead: 7, youAreNext: false });
-    expect(formatQueueLine(8, null, english)).toBe("Your place 8 · 7 people ahead");
-    expect(formatQueueLine(1, 0, english)).toBe("Your place 1 · You're next");
-    expect(formatQueueLine(1, 0, french)).toBe("Votre place 1 · Vous êtes le prochain");
+  it("does not print a pair that is not one apart", () => {
+    const line = formatQueueLine(25, 7, english);
+    expect(line).toBe("Checking your place");
+    expect(line).not.toMatch(/\d/);
+    expect(formatQueueLine(25, 7, french)).toBe("Vérification de votre place");
+    expect(formatQueueLine(1, 4, english)).toBe("Checking your place");
   });
 
-  it("keeps one person ahead singular in English and French", () => {
-    expect(formatQueueLine(2, 1, english)).toBe("Your place 2 · 1 person ahead");
-    expect(formatQueueLine(2, 1, french)).toBe("Votre place 2 · 1 personne devant vous");
-    expect(formatQueueLine(3, 2, copyOf(rw))).toBe("Umwanya wawe 3 · 2 bakubanjirije");
+  it("does not pair a top-level place with people_ahead from the raw row", () => {
+    const fields = readQueueFields(
+      { queue_position: 8 },
+      { queue_position: 25, people_ahead: 7 },
+    );
+    expect(fields).toEqual({ position: 8, ahead: null });
+    expect(formatQueueLine(fields.position, fields.ahead, english)).toBe("Your place 8, 7 people ahead");
+    const staleOnly = readQueueFields(null, { queue_position: 3, people_ahead: 2 });
+    expect(formatQueueLine(staleOnly.position, staleOnly.ahead, english)).toBe("Your place 3, 2 people ahead");
   });
 });

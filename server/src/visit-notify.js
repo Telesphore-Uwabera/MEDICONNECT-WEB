@@ -1,11 +1,10 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { broadcast } from "./realtime.js";
-import { beginReadyMail, finishReadyMail } from "./ready-mail.js";
+import { beginReadyMail, finishReadyMail, renewReadyMail, READY_CLAIM_RENEW_MS, READY_MAIL_TIMEOUT_MS } from "./ready-mail.js";
 import { visitAwaitsPayment } from "./visit-rules.js";
 
 const reminded = new Set();
-const readyMailSent = new Set();
 
 // ─── In-app notification helper ───────────────────────────────────────────────
 async function notifyInApp(userId, title, message, type) {
@@ -19,7 +18,12 @@ async function notifyInApp(userId, title, message, type) {
   const now = new Date();
   if (await hasColumn("notifications", "created_at")) fields.created_at = now;
   if (await hasColumn("notifications", "updated_at")) fields.updated_at = now;
-  await insert("notifications", fields).catch(() => null);
+  try {
+    await insert("notifications", fields);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ─── Contact resolution helpers ───────────────────────────────────────────────
@@ -528,12 +532,34 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 //  notifyDoctorReady
 // ─────────────────────────────────────────────────────────────────────────────
 
+async function readyNotice(visitKey, patient, subject, text) {
+  if (!patient?.userId) return;
+  const noticeKey = `${visitKey}:notice`;
+  let claim;
+  try {
+    claim = await beginReadyMail(noticeKey);
+  } catch (error) {
+    console.error("Ready notice was not recorded:", error?.message || error);
+    return;
+  }
+  if (!claim.send) return;
+  const stored = await notifyInApp(patient.userId, subject, text, "visit.ready");
+  await finishReadyMail(noticeKey, claim.attempt, stored, stored ? "" : "notice was not stored");
+}
+
 export async function notifyDoctorReady(row) {
   const key = row?.id ? `instant:${row.id}` : "";
-  if (!key || visitAwaitsPayment(row) || readyMailSent.has(key)) return;
+  if (!key || visitAwaitsPayment(row)) return;
   const patient = await patientContact(row);
   if (!patient) return;
-  const claim = await beginReadyMail(key);
+  const mailKey = `${key}:mail`;
+  let claim;
+  try {
+    claim = await beginReadyMail(mailKey);
+  } catch (error) {
+    console.error("Ready mail was not sent:", error?.message || error);
+    throw error;
+  }
   if (!claim.send) return;
   const doctor = await doctorContact(row.doctor_id);
   const subject = `Your doctor is ready for consultation #${row.id}`;
@@ -559,17 +585,34 @@ export async function notifyDoctorReady(row) {
     `,
   });
 
+  const renew = setInterval(() => {
+    renewReadyMail(mailKey, claim.attempt).catch((error) => {
+      console.error("Ready mail lease renew failed:", error?.message || error);
+    });
+  }, READY_CLAIM_RENEW_MS);
   try {
-    const emailed = await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.ready" });
+    await readyNotice(key, patient, subject, text);
+    let emailed = true;
+    if (patient.email && patient.email.includes("@")) {
+      emailed = (await sendMail({
+        to: patient.email,
+        subject,
+        text,
+        html,
+        timeoutMs: READY_MAIL_TIMEOUT_MS,
+      })) !== false;
+    }
     if (!emailed) {
-      await finishReadyMail(key, claim.attempt, false, "mailer declined");
+      await finishReadyMail(mailKey, claim.attempt, false, "mailer declined");
       return;
     }
-    await finishReadyMail(key, claim.attempt, true);
-    if (claim.reason === "undurable") readyMailSent.add(key);
+    await finishReadyMail(mailKey, claim.attempt, true);
   } catch (error) {
-    await finishReadyMail(key, claim.attempt, false, error?.message || "send failed");
+    await finishReadyMail(mailKey, claim.attempt, false, error?.message || "send failed");
+    console.error("Ready mail was not sent:", error?.message || error);
     throw error;
+  } finally {
+    clearInterval(renew);
   }
 }
 

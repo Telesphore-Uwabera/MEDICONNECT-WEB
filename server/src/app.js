@@ -2176,7 +2176,9 @@ export function appRoutes(router) {
       const roomName = updated.daily_room_name || updated.room_name || `instant-${updated.id}`;
       const roomUrl = updated.daily_room_url || updated.room_url || `/consultation/${roomName}`;
       const doctorToken = instantDoctorToken(updated, roomName);
-      notifyDoctorReady(updated).catch(() => null);
+      notifyDoctorReady(updated).catch((error) => {
+        console.error("Ready mail was not sent:", error?.message || error);
+      });
       res.json({
         message: "Request accepted.",
         room_url: roomUrl,

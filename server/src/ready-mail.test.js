@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const database = new DatabaseSync(":memory:");
-const claimsOpen = { value: true };
+const claimsOpen = { value: true, readThrows: false };
 database.exec(`
   CREATE TABLE ready_mail_claims (
     claim_key TEXT PRIMARY KEY,
@@ -19,7 +19,10 @@ function sqlText(sql) {
 }
 
 vi.mock("./db.js", () => ({
-  tableExists: async (name) => name === "ready_mail_claims" && claimsOpen.value,
+  tableExists: async (name) => {
+    if (claimsOpen.readThrows) throw new Error("schema unreadable");
+    return name === "ready_mail_claims" && claimsOpen.value;
+  },
   one: async (sql, params = []) => database.prepare(sqlText(sql)).get(...params) ?? null,
   q: async (sql, params = []) => {
     const text = sqlText(sql);
@@ -29,12 +32,13 @@ vi.mock("./db.js", () => ({
   },
 }));
 
-const { beginReadyMail, finishReadyMail, READY_CLAIM_STALE_MS } = await import("./ready-mail.js");
+const { beginReadyMail, finishReadyMail, renewReadyMail, READY_CLAIM_STALE_MS } = await import("./ready-mail.js");
 
 describe("ready mail claims", () => {
   beforeEach(() => {
     database.exec("DELETE FROM ready_mail_claims");
     claimsOpen.value = true;
+    claimsOpen.readThrows = false;
   });
 
   it("records one send and ignores a later claim, including after the caller is new", async () => {
@@ -72,6 +76,24 @@ describe("ready mail claims", () => {
     await finishReadyMail("instant:9", busy.attempt, false, "old owner", later);
     const row = database.prepare("SELECT status, attempts FROM ready_mail_claims WHERE claim_key = ?").get("instant:9");
     expect(row).toMatchObject({ status: "sending", attempts: 2 });
+  });
+
+  it("keeps a renewed in-flight claim from being taken over after the stale window", async () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const held = await beginReadyMail("instant:12", now);
+    const later = new Date(now.getTime() + READY_CLAIM_STALE_MS + 5000);
+    expect(await renewReadyMail("instant:12", held.attempt, later)).toBe(true);
+    expect(await beginReadyMail("instant:12", later)).toMatchObject({ send: false, reason: "in-flight" });
+    const abandoned = await beginReadyMail("instant:13", now);
+    expect(await beginReadyMail("instant:13", later)).toMatchObject({ send: true, reason: "retry" });
+    expect(abandoned.attempt).toBe(1);
+  });
+
+  it("throws when the claims table cannot be read and does not record a delivery", async () => {
+    claimsOpen.readThrows = true;
+    await expect(beginReadyMail("instant:14", new Date("2026-11-08T10:00:00Z"))).rejects.toThrow(/could not be read/);
+    claimsOpen.readThrows = false;
+    expect(database.prepare("SELECT COUNT(*) AS total FROM ready_mail_claims").get().total).toBe(0);
   });
 
   it("sends without a durable row when the claims table is absent", async () => {

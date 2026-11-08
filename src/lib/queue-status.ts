@@ -3,58 +3,43 @@ import frConsult from "../locales/fr/consult.json";
 import rwConsult from "../locales/rw/consult.json";
 
 /**
- * Patient-facing queue copy.
+ * Patient queue line.
  *
- * `queue_position` is the 1-based arrival place for this doctor's open
- * requests (earlier created_at, then lower id). `people_ahead` is how many
- * of those requests are in front. A stored payload can carry both, and they
- * are not required to be one apart: the live status that showed "Position 7"
- * had people_ahead 7 and queue_position 25. The place label uses only
- * queue_position. Missing people_ahead is derived as place - 1, and that
- * missing value is not "you are next" unless the place is 1.
+ * `placeInQueue` and the patient list both set `people_ahead` to
+ * `queue_position - 1` on every response. The create body also returns the
+ * raw row as `data`. Reading `queue_position` from the top level and
+ * `people_ahead` from that row can pair a fresh place with a stored column.
+ * This helper reads one object only. A pair that is not exactly one apart is
+ * not shown; the status poll replaces that line when the next response agrees.
+ * The first place is 1 and 0, and that line is only the next sentence.
  */
 export type QueueCopy = {
-  place: string;
-  aheadOne: string;
-  aheadOther: string;
   next: string;
+  waitingOne: string;
+  waitingOther: string;
+  unknown: string;
 };
 
-export type QueueFacts = {
-  place: number;
-  peopleAhead: number;
-  youAreNext: boolean;
+export type QueueFields = {
+  position: unknown;
+  ahead: unknown;
 };
 
-export function queueFacts(position: unknown, ahead: unknown): QueueFacts {
-  const parsedPlace = Number(position);
-  const place = Number.isFinite(parsedPlace) && parsedPlace >= 1 ? Math.floor(parsedPlace) : 1;
-  let peopleAhead: number;
-  if (ahead == null || ahead === "") {
-    peopleAhead = Math.max(0, place - 1);
-  } else {
-    const parsedAhead = Number(ahead);
-    peopleAhead = Number.isFinite(parsedAhead) ? Math.max(0, Math.floor(parsedAhead)) : 0;
-  }
-  return {
-    place,
-    peopleAhead,
-    youAreNext: place === 1 && peopleAhead === 0,
+type QueueBundle = {
+  connect: {
+    queue_next: string;
+    queue_waiting_one: string;
+    queue_waiting_other: string;
+    queue_unknown: string;
   };
-}
+};
 
-function fill(template: string, values: Record<string, number>): string {
-  return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => String(values[key] ?? ""));
-}
-
-function bundleCopy(bundle: {
-  connect: { queue_position: string; queue_ahead_one: string; queue_ahead_other: string; queue_next: string };
-}): QueueCopy {
+function bundleCopy(bundle: QueueBundle): QueueCopy {
   return {
-    place: bundle.connect.queue_position,
-    aheadOne: bundle.connect.queue_ahead_one,
-    aheadOther: bundle.connect.queue_ahead_other,
     next: bundle.connect.queue_next,
+    waitingOne: bundle.connect.queue_waiting_one,
+    waitingOther: bundle.connect.queue_waiting_other,
+    unknown: bundle.connect.queue_unknown,
   };
 }
 
@@ -71,11 +56,41 @@ export function queueCopy(language: string | null | undefined): QueueCopy {
   return COPIES.en;
 }
 
+function hasValue(value: unknown): boolean {
+  return value != null && value !== "";
+}
+
+/** One source. A missing ahead count stays missing; it is not filled from another object. */
+export function readQueueFields(
+  primary: { queue_position?: unknown; people_ahead?: unknown } | null | undefined,
+  fallback?: { queue_position?: unknown; people_ahead?: unknown } | null,
+): QueueFields {
+  if (hasValue(primary?.queue_position) || hasValue(primary?.people_ahead)) {
+    return {
+      position: hasValue(primary?.queue_position) ? primary?.queue_position : null,
+      ahead: hasValue(primary?.people_ahead) ? primary?.people_ahead : null,
+    };
+  }
+  return {
+    position: fallback?.queue_position ?? null,
+    ahead: fallback?.people_ahead ?? null,
+  };
+}
+
+function fill(template: string, values: Record<string, number>): string {
+  return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => String(values[key] ?? ""));
+}
+
 export function formatQueueLine(position: unknown, ahead: unknown, copy: QueueCopy): string {
-  const facts = queueFacts(position, ahead);
-  const placeText = fill(copy.place, { position: facts.place });
-  const tail = facts.youAreNext
-    ? copy.next
-    : fill(facts.peopleAhead === 1 ? copy.aheadOne : copy.aheadOther, { count: facts.peopleAhead });
-  return `${placeText} · ${tail}`;
+  const parsedPlace = Number(position);
+  if (!Number.isFinite(parsedPlace) || parsedPlace < 1) return copy.unknown;
+  const place = Math.floor(parsedPlace);
+  let peopleAhead = place - 1;
+  if (hasValue(ahead)) {
+    const parsedAhead = Number(ahead);
+    if (!Number.isFinite(parsedAhead) || Math.floor(parsedAhead) !== place - 1) return copy.unknown;
+    peopleAhead = place - 1;
+  }
+  if (place === 1 && peopleAhead === 0) return copy.next;
+  return fill(peopleAhead === 1 ? copy.waitingOne : copy.waitingOther, { position: place, count: peopleAhead });
 }
