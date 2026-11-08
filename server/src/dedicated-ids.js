@@ -13,7 +13,7 @@ import {
   tableExists,
   update,
 } from "./db.js";
-import { stripClientOwners, visitBodyGuard } from "./visit-rules.js";
+import { patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
@@ -399,6 +399,8 @@ async function ownerWhere(scope, table, user) {
   }
   if (table === "users") return { sql: "`id` = ?", params: [user.id] };
   if (scope === "patient" && (await hasColumn(table, "patient_id"))) {
+    const typed = await patientOwnedWhere(table, user);
+    if (typed) return typed;
     return { sql: "(`patient_id` = ? OR `patient_id` = ?)", params: [user.id, ownerId ?? 0] };
   }
   if (await hasColumn(table, `${scope}_id`)) {

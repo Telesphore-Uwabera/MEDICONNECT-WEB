@@ -43,6 +43,7 @@ import {
   visitIsClosed,
   visitIsSettled,
   visitOpenTo,
+  visitReadWhere,
 } from "./visit-rules.js";
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
@@ -145,12 +146,11 @@ async function createProfile(user, role, body = {}) {
 }
 
 async function ownedFilter(req, table, scope) {
+  const visitWhere = await visitReadWhere(scope, table, req.user);
+  if (visitWhere) return visitWhere;
   if (scope === "admin" || scope === "notifications") return { sql: "1=1", params: [] };
   const profile = PROFILE_TABLE[scope];
   const ownerId = profile ? await loadOwnedId(req.user.id, profile) : null;
-  if (table === "appointments" && scope === "patient") {
-    return { sql: "(`patient_id` = ? OR `patient_id` = ?)", params: [req.user.id, ownerId ?? 0] };
-  }
   if (table === "referrals") {
     const clauses = [];
     const params = [];
