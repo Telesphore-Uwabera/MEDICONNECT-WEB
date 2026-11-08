@@ -88,6 +88,7 @@ describe("role and profile gates", () => {
       "POST",
       "/patient/not-a-real-route",
     );
-    expect(doctor.status).toBe(404);
+    expect(doctor.status).toBe(403);
+    expect(doctor.body.profile_complete).toBeUndefined();
   });
 });
