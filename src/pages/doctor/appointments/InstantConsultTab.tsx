@@ -232,10 +232,7 @@ export function InstantConsultTab() {
   const unpaidStatuses = ["pending", "queued", "waiting", "payment_pending"];
   const UNPAID_LIMIT_SEC = 15 * 60;
   const itemAgeSec = (item: InstantConsultQueueItem) => {
-    if (item.created_at) {
-      const t = new Date(item.created_at).getTime();
-      if (Number.isFinite(t)) return Math.max(0, Math.floor((Date.now() - t) / 1000));
-    }
+    if (typeof item.age_seconds === "number") return item.age_seconds;
     return Math.max(0, Number(item.waiting_seconds) || 0);
   };
   const isUnpaidOpen = (item: InstantConsultQueueItem) =>
@@ -846,7 +843,7 @@ export function InstantConsultTab() {
         <StatTile
           icon={<Clock3 className="h-5 w-5 text-primary" />}
           label={t("consult.bookings.avg_duration")}
-          value={stats ? stats.avg_duration : "—"}
+          value={stats?.avg_duration || t("consult.bookings.duration_unavailable", { defaultValue: "Unavailable" })}
           iconWrapCls="bg-accent"
         />
         <StatTile

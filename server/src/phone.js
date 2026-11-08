@@ -17,6 +17,26 @@ export function normalizeStoredPhone(phone, countryCode) {
   return { phone: digits, country_code: code, e164: digits ? `${code}${digits}` : "" };
 }
 
+/**
+ * Check a newly submitted number. Rwanda numbers must be 7[2389]XXXXXXX after
+ * the trunk 0 is removed. Other countries only need a plausible length.
+ * Existing stored numbers are not rejected by this check.
+ */
+export function validateIncomingPhone(phone, countryCode) {
+  const stored = normalizeStoredPhone(phone, countryCode);
+  if (!stored.phone) return { ok: false, message: "Phone number is required.", ...stored };
+  if (stored.country_code === "+250") {
+    if (!/^7[2389]\d{7}$/.test(stored.phone)) {
+      return { ok: false, message: "Enter a valid Rwandan phone number, for example 0781234567.", ...stored };
+    }
+    return { ok: true, ...stored };
+  }
+  if (stored.phone.length < 6 || stored.phone.length > 15) {
+    return { ok: false, message: "Enter a valid phone number.", ...stored };
+  }
+  return { ok: true, ...stored };
+}
+
 /** One-time tidy of numbers already stored with a trunk 0 or a repeated country code. */
 export async function normalizeStoredPhones() {
   if (!(await tableExists("users")) ) return 0;

@@ -194,7 +194,7 @@ if (form.password !== form.confirm)
       >
         {/* Role selector */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <label id="signup-role-label" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.role")}
           </label>
           <RadioGroup
@@ -208,12 +208,13 @@ if (form.password !== form.confirm)
               return (
                 <label
                   key={r}
+                  htmlFor={`signup-role-${r}`}
                   className={`flex items-center gap-2 rounded-[6px] px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${isSelected
                       ? `${config.color}`
                       : "border-border bg-muted/50 text-muted-foreground hover:border-border hover:bg-muted"
                     }`}
                 >
-                  <RadioGroupItem value={r} className="sr-only" />
+                  <RadioGroupItem id={`signup-role-${r}`} value={r} className="sr-only" />
                   <div className={`w-6 h-6 rounded-[6px] flex items-center justify-center ${isSelected ? "bg-card/60" : "bg-muted"}`}>
                     {config.icon}
                   </div>
@@ -238,23 +239,25 @@ if (form.password !== form.confirm)
 
         {/* Name */}
         <div className="space-y-1">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="signup-name" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.name")}
           </label>
           <div className="relative">
             <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input value={form.name} onChange={set("name")} className={inputCls} placeholder="ISHIMWE Jean" required />
+            <Input id="signup-name" name="name" autoComplete="name" value={form.name} onChange={set("name")} className={inputCls} placeholder="ISHIMWE Jean" required />
           </div>
         </div>
 
         {/* Email -- required for every role */}
         <div className="space-y-1">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="signup-email" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.email")}
           </label>
           <div className="relative">
             <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
+              id="signup-email"
+              name="email"
               type="text"
               inputMode="email"
               autoComplete="email"
@@ -279,7 +282,7 @@ if (form.password !== form.confirm)
 
         {/* Phone -- optional */}
         <div className="space-y-1">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <label htmlFor="signup-phone" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.phone")}
             <span className="ml-1 font-normal text-muted-foreground/70 normal-case tracking-normal">
               ({t("auth.optional", "optional")})
@@ -296,6 +299,9 @@ if (form.password !== form.confirm)
             <div className="relative flex-1">
               <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
+                id="signup-phone"
+                name="phone"
+                autoComplete="tel"
                 value={form.phone}
                 onChange={setPhone}
                 inputMode="numeric"
@@ -309,7 +315,7 @@ if (form.password !== form.confirm)
 
         {/* Gender selector */}
         <div className="space-y-1.5">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <label id="signup-gender-label" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.gender", "Gender")}
           </label>
           <RadioGroup
@@ -323,12 +329,13 @@ if (form.password !== form.confirm)
               return (
                 <label
                   key={g}
+                  htmlFor={`signup-gender-${g}`}
                   className={`flex items-center gap-2 rounded-[6px] px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${isSelected
                       ? config.color
                       : "border-border bg-muted/50 text-muted-foreground hover:border-border hover:bg-muted"
                     }`}
                 >
-                  <RadioGroupItem value={g} className="sr-only" />
+                  <RadioGroupItem id={`signup-gender-${g}`} value={g} className="sr-only" />
                   <div className={`w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 ${isSelected ? "bg-card/60" : "bg-muted"}`}>
                     {config.icon}
                   </div>
@@ -354,12 +361,14 @@ if (form.password !== form.confirm)
         {/* Password row */}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <label htmlFor="signup-password" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               {t("auth.password")}
             </label>
             <div className="relative">
               <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
+                id="signup-password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 value={form.password}
@@ -378,12 +387,14 @@ if (form.password !== form.confirm)
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <label htmlFor="signup-confirm" className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               {t("auth.confirm_password")}
             </label>
             <div className="relative">
               <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
+                id="signup-confirm"
+                name="confirm"
                 type={showConfirm ? "text" : "password"}
                 autoComplete="new-password"
                 value={form.confirm}

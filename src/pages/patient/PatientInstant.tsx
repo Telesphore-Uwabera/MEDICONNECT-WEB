@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useCallContext } from "@/context/CallContext";
@@ -37,6 +37,7 @@ import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
+import { useInstantConsultationPay } from "@/hooks/patient/use-instant-consultations";
 import { DoctorActionModals, useDoctorActions } from "@/components/useDoctorActions";
 import { resolveMediaUrl } from "@/lib/image-url";
 import { DateField } from "@/components/ui/date-field";
@@ -353,6 +354,68 @@ function AppointmentCardItem({
         </div>
       </div>
     </Card>
+  );
+}
+
+type OpenInstantRow = {
+  id: number;
+  status: string;
+  doctor_name: string | null;
+  amount: number;
+  currency: string;
+  queue_position: number;
+  you_are_next: boolean;
+  can_pay: boolean;
+  can_join: boolean;
+  room_url: string | null;
+};
+
+function OpenInstantRequests() {
+  const { t } = useTranslation();
+  const pay = useInstantConsultationPay();
+  const { data } = useQuery({
+    queryKey: ["patient", "instant-consultations"],
+    queryFn: () => apiFetch<{ data: OpenInstantRow[] }>("/patient/instant-consultations"),
+    refetchInterval: 15_000,
+  });
+  const rows = (data?.data ?? []).filter((row) =>
+    row.can_pay || row.can_join || ["pending", "queued", "waiting", "payment_pending", "confirmed", "accepted", "in_progress"].includes(row.status),
+  );
+  if (!rows.length) return null;
+  return (
+    <div className="px-5 pt-4 space-y-2">
+      {rows.map((row) => (
+        <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[6px] border border-border bg-card px-3 py-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Request #{row.id}</p>
+            <p className="text-xs text-muted-foreground">
+              {row.doctor_name || "Doctor"}
+              {" · "}
+              {row.amount} {row.currency}
+              {row.queue_position > 1
+                ? ` · ${t("consult.connect.queue_position", { position: row.queue_position })}`
+                : row.you_are_next
+                  ? ` · ${t("consult.connect.queue_next")}`
+                  : ""}
+            </p>
+          </div>
+          {row.can_join && row.room_url ? (
+            <Button asChild>
+              <Link to={row.room_url}>{t("consult.connect.join_call", { defaultValue: "Join" })}</Link>
+            </Button>
+          ) : row.can_pay ? (
+            <Button
+              disabled={pay.isPending}
+              onClick={() => pay.mutate(row.id, {
+                onError: (error) => toast.error(error instanceof Error ? error.message : "Payment could not start."),
+              })}
+            >
+              {t("consult.connect.pay_now", { defaultValue: "Pay" })} {row.amount} {row.currency}
+            </Button>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -740,6 +803,7 @@ const PatientInstant = () => {
         />
     
         <main className="flex-1 overflow-y-auto flex flex-col">
+          <OpenInstantRequests />
 
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between gap-3">

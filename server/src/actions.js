@@ -166,6 +166,12 @@ async function shapeOrder(order) {
   return { ...presented, total_amount: String(total), items: shaped };
 }
 
+function wholeQuantity(value) {
+  const raw = value == null || value === "" ? 1 : Number(value);
+  if (!Number.isInteger(raw) || raw < 1 || raw > 999) return null;
+  return raw;
+}
+
 async function findDraft(patientId, pharmacyId) {
   return one(
     "SELECT * FROM pharmacy_orders WHERE patient_id = ? AND pharmacy_id = ? AND status = 'draft' ORDER BY id DESC LIMIT 1",
@@ -186,6 +192,8 @@ async function handlePharmacyOrders(req, res, parts) {
     const pharmacyId = req.body?.pharmacy_id;
     const medicine = await one("SELECT * FROM pharmacy_medicines WHERE id = ? AND pharmacy_id = ?", [req.body?.medicine_id, pharmacyId]);
     if (!medicine) return res.status(404).json({ message: "Medicine not found." });
+    const quantity = wholeQuantity(req.body?.quantity);
+    if (!quantity) return res.status(422).json({ message: "Quantity must be a whole number of at least 1." });
     let order = await findDraft(patientId, pharmacyId);
     if (!order) {
       const id = await insert("pharmacy_orders", {
@@ -200,7 +208,6 @@ async function handlePharmacyOrders(req, res, parts) {
       });
       order = await one("SELECT * FROM pharmacy_orders WHERE id = ?", [id]);
     }
-    const quantity = Number(req.body?.quantity || 1);
     const unitPrice = Number(medicine.price || 0);
     await insert("pharmacy_order_items", {
       order_id: order.id,
@@ -227,7 +234,8 @@ async function handlePharmacyOrders(req, res, parts) {
     if (!item) return res.status(404).json({ message: "Item not found." });
     if (req.method === "DELETE") await pool.query("DELETE FROM pharmacy_order_items WHERE id = ?", [item.id]);
     else {
-      const quantity = Number(req.body?.quantity || 1);
+      const quantity = wholeQuantity(req.body?.quantity);
+      if (!quantity) return res.status(422).json({ message: "Quantity must be a whole number of at least 1." });
       await update("pharmacy_order_items", item.id, { quantity, total_price: Number(item.unit_price) * quantity });
     }
     const total = await one("SELECT COALESCE(SUM(total_price), 0) AS total FROM pharmacy_order_items WHERE order_id = ?", [order.id]);

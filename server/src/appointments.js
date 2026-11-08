@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, one, pool, presentRow, q, tableExists, update } from "./db.js";
 import { loadOwnedId } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
@@ -127,6 +127,12 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
       if (appointmentStartIsInPast(date, time)) {
         return res.status(422).json({ message: "Choose a time later today, or another day." });
       }
+      const lockName = `book:${doctorId}:${date}:${String(time).slice(0, 8)}`.slice(0, 64);
+      const [lockRows] = await pool.query("SELECT GET_LOCK(?, 5) AS locked", [lockName]);
+      if (Number(lockRows?.[0]?.locked) !== 1) {
+        return res.status(409).json({ message: "That slot is being booked. Try again." });
+      }
+      try {
       const taken = await appointmentCollision(doctorId, date, time);
       if (taken) {
         return res.status(409).json({ message: "That slot is already booked. Choose another time.", collision_id: taken.id });
@@ -170,6 +176,9 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         data: row,
         ...(row ?? {}),
       });
+      } finally {
+        await pool.query("SELECT RELEASE_LOCK(?)", [lockName]).catch(() => null);
+      }
     } catch (error) {
       next(error);
     }

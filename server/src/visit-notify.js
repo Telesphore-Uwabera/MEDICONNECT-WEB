@@ -394,7 +394,7 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 
   // ── Patient ──
   if (patient.email || patient.userId) {
-    const subject = "Your MediConnect consultation is complete";
+    const subject = `Your MediConnect consultation #${row?.id ?? ""} is complete`;
     const text = `Your ${kindLabel}${doctor?.name ? ` with ${doctor.name}` : ""} is complete. Sign in to view notes, prescriptions, or book a follow-up.`;
 
     const html = buildEmailHtml({
@@ -424,7 +424,7 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 
   // ── Doctor ──
   if (doctor?.email || doctor?.user_id) {
-    const subject = "Consultation marked complete";
+    const subject = `Consultation #${row?.id ?? ""} marked complete`;
     const text = `${patient.name}'s ${kindLabel} is marked complete.`;
 
     const html = buildEmailHtml({
@@ -446,7 +446,12 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyDoctorReady
 // ─────────────────────────────────────────────────────────────────────────────
+const readyMailSent = new Set();
+
 export async function notifyDoctorReady(row) {
+  const key = String(row?.id || "");
+  if (!key || readyMailSent.has(key)) return;
+  readyMailSent.add(key);
   const patient = await patientContact(row);
   const doctor = await doctorContact(row.doctor_id);
   const subject = "Your doctor is ready — join now!";

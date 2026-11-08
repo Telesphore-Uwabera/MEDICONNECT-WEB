@@ -21,7 +21,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
-  const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
+  const wantsSignup = location.pathname === "/auth/register" || params.get("mode") === "signup";
+  const initialTab = wantsSignup ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
   // Show idle-timeout banner when redirected here automatically
   const sessionReason =
@@ -34,8 +35,8 @@ const Auth = () => {
         : "You were logged out after 1 hour of inactivity."))
     : null;
   useEffect(() => {
-  setTab(params.get("mode") === "signup" ? "signup" : "signin");
-}, [params]);
+  setTab(location.pathname === "/auth/register" || params.get("mode") === "signup" ? "signup" : "signin");
+}, [params, location.pathname]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;

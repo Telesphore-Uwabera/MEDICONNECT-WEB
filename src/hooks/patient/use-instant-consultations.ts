@@ -29,7 +29,7 @@ export interface InstantConsultationRequestResponse {
   is_existing?: boolean;
   guest_token: string;
   queue_position: number;
-  people_ahead: number;
+  people_ahead: number | null;
   id: number;
   amount: number;
   payment_status: string;
@@ -46,6 +46,7 @@ export type ConsultationStatus =
   | "declined"
   | "withdrawn"
   | "expired"
+  | "payment_expired"
   | "completed"
   | "confirmed"
   | "in_progress"
@@ -55,7 +56,7 @@ export type ConsultationStatus =
 export interface InstantConsultationStatusResponse {
   status: ConsultationStatus;
   queue_position: number;
-  people_ahead: number;
+  people_ahead: number | null;
   payment_status?: string | null;
   doctor_busy?: boolean;
   message?: string | null;
@@ -168,13 +169,16 @@ export function useInstantConsultationStatus(
  * POST /public/instant-consultations/pay/:id
  */
 export function useInstantConsultationPay() {
-  return useMutation<InstantConsultationPayResponse, Error, number>({
+  return useMutation<InstantConsultationPayResponse, Error, number | { id: number; guest_token?: string | null }>({
     mutationKey: ["instant-consultation-pay"],
-    mutationFn: (id: number) =>
-      apiFetch<InstantConsultationPayResponse>(
+    mutationFn: (input) => {
+      const id = typeof input === "number" ? input : input.id;
+      const guestToken = typeof input === "number" ? undefined : input.guest_token;
+      return apiFetch<InstantConsultationPayResponse>(
         `/public/instant-consultations/pay/${id}`,
-        { method: "POST" },
-      ),
+        { method: "POST", body: guestToken ? { guest_token: guestToken } : {} },
+      );
+    },
   });
 }
 
