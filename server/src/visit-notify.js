@@ -1,6 +1,7 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { broadcast } from "./realtime.js";
+import { visitAwaitsPayment } from "./visit-rules.js";
 
 const reminded = new Set();
 
@@ -45,25 +46,49 @@ async function instantAvailableDoctors(limit = 50) {
   ).catch(() => []);
 }
 
+async function accountContact(userId, fallback) {
+  const user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [userId]).catch(() => null);
+  return {
+    userId,
+    name: fallback.name || user?.name || "Patient",
+    email: fallback.email || user?.email || "",
+    phone: fallback.phone || user?.phone || "",
+  };
+}
+
 async function patientContact(row) {
   const email = String(row?.guest_email || row?.email || row?.patient_email || "").trim();
   const phone = String(row?.guest_phone || row?.phone || row?.patient_phone || "").trim();
-  const name = String(row?.guest_name || row?.patient_name || row?.name || "Patient").trim();
-  let userId = row?.user_id || null;
-  if (!userId && row?.patient_id) {
-    const user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [row.patient_id]).catch(() => null);
-    if (user) return { userId: user.id, name: name || user.name || "Patient", email: email || user.email || "", phone: phone || user.phone || "" };
-    if (await tableExists("patients")) {
-      const patient = await one("SELECT user_id, name, email, phone FROM patients WHERE id = ? LIMIT 1", [row.patient_id]).catch(() => null);
-      userId = patient?.user_id || null;
-      if (!userId) return { userId: null, name: name || patient?.name || "Patient", email: email || patient?.email || "", phone: phone || patient?.phone || "" };
+  const name = String(row?.guest_name || row?.patient_name || row?.name || "").trim();
+  const fallback = { name, email, phone };
+  const explicitUserId = Number(row?.user_id) || null;
+  if (explicitUserId) return accountContact(explicitUserId, fallback);
+  const patientId = Number(row?.patient_id) || null;
+  if (patientId && await tableExists("patients")) {
+    const profile = await one(
+      "SELECT user_id, name, email, phone FROM patients WHERE id = ? LIMIT 1",
+      [patientId],
+    ).catch(() => null);
+    if (profile) {
+      const ownerId = Number(profile.user_id) || null;
+      if (!ownerId) {
+        return {
+          userId: null,
+          name: name || profile.name || "Patient",
+          email: email || profile.email || "",
+          phone: phone || profile.phone || "",
+        };
+      }
+      return accountContact(ownerId, {
+        name: name || profile.name || "",
+        email: email || profile.email || "",
+        phone: phone || profile.phone || "",
+      });
     }
   }
-  if (userId) {
-    const user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [userId]).catch(() => null);
-    return { userId, name: name || user?.name || "Patient", email: email || user?.email || "", phone: phone || user?.phone || "" };
-  }
-  return { userId: null, name, email, phone };
+  // No profile uses this integer, so an appointment may have stored the account id.
+  if (patientId) return accountContact(patientId, fallback);
+  return { userId: null, name: name || "Patient", email, phone };
 }
 
 // ─── Deliver: in-app + email ──────────────────────────────────────────────────
@@ -76,7 +101,9 @@ async function deliver({ userId, email, subject, text, html, type }) {
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
 function greeting(name) {
-  const first = String(name || "").split(" ")[0] || "there";
+  const parts = String(name || "").replace(/\s+/g, " ").trim().split(" ").filter((part) => part && !/^dr\.?$/i.test(part));
+  const first = parts[0] || "";
+  if (!first || first.toLowerCase() === "patient" || first.includes("@")) return "Hello!";
   return `Hello, ${first}!`;
 }
 
@@ -105,8 +132,8 @@ export async function notifyPaidVisit(payment, account = null) {
   // ── Doctor notification ──
   if (doctor?.email || doctor?.user_id) {
     const subjectDoctor = instant
-      ? "New instant consultation — patient is ready"
-      : "New paid appointment awaiting your confirmation";
+      ? `New instant consultation #${payableId} — patient is ready`
+      : `New paid appointment #${payableId} awaiting your confirmation`;
     const textDoctor = instant
       ? `${patient.name} paid for an instant consultation${amountStr ? ` (${amountStr})` : ""}. Open your MediConnect dashboard to accept and join.`
       : `${patient.name} paid for an appointment on ${when}. Open your appointments, review their details, and confirm the visit.`;
@@ -143,8 +170,8 @@ export async function notifyPaidVisit(payment, account = null) {
   // ── Patient notification ──
   if (patient.email || patient.userId) {
     const subjectPatient = instant
-      ? "Payment confirmed — your consultation is ready"
-      : "Payment received for your appointment";
+      ? `Payment confirmed — consultation #${payableId} is ready`
+      : `Payment received for appointment #${payableId}`;
     const textPatient = instant
       ? `Your payment is confirmed${doctor?.name ? ` with ${doctor.name}` : ""}. Sign in to join when the doctor is ready.`
       : `Your payment${amountStr ? ` of ${amountStr}` : ""} was received${doctor?.name ? ` for your appointment with Dr. ${doctor.name}` : ""}. The doctor will confirm your appointment shortly.`;
@@ -242,8 +269,8 @@ export async function notifyBookedVisit(row) {
 
   // ── Patient notification ──
   if (patient.email || patient.userId) {
-    const subject = "Pay to secure your MediConnect appointment";
-    const text = `Your appointment${doctor?.name ? ` with ${doctor.name}` : ""} is reserved for ${when}. Pay ${amountStr} at ${payUrl} before the doctor can confirm it.`;
+    const subject = `Pay to secure appointment #${row?.id ?? ""}`.trim();
+    const text = `Appointment #${row?.id ?? ""}${doctor?.name ? ` with ${doctor.name}` : ""} is reserved for ${when}. Pay ${amountStr} at ${payUrl} before the doctor can confirm it.`;
 
     const html = buildEmailHtml({
       title: "Your appointment is reserved",
@@ -449,13 +476,13 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 const readyMailSent = new Set();
 
 export async function notifyDoctorReady(row) {
-  const key = String(row?.id || "");
-  if (!key || readyMailSent.has(key)) return;
+  const key = row?.id ? `instant:${row.id}` : "";
+  if (!key || visitAwaitsPayment(row) || readyMailSent.has(key)) return;
   readyMailSent.add(key);
   const patient = await patientContact(row);
   const doctor = await doctorContact(row.doctor_id);
-  const subject = "Your doctor is ready — join now!";
-  const text = `${doctor?.name || "Your doctor"} is in the video consultation and waiting for you. Open MediConnect and join now.`;
+  const subject = `Your doctor is ready for consultation #${row.id}`;
+  const text = `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`;
 
   const html = buildEmailHtml({
     title: "Your doctor is ready!",
@@ -511,14 +538,19 @@ export async function remindUpcomingVisits() {
 
     const doctor = await doctorContact(row.doctor_id);
     const patient = await patientContact(row);
+    const unpaid = visitAwaitsPayment(row);
 
     // ── 1-hour reminder ──────────────────────────────────────────────────
     if (want60 && !reminded.has(`appt-60-${row.id}`)) {
       reminded.add(`appt-60-${row.id}`);
 
       if (patient.email || patient.userId) {
-        const subject = "Reminder: your appointment starts in 1 hour";
-        const text = `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in to join.`;
+        const subject = unpaid
+          ? `Payment still due for appointment #${row.id}`
+          : "Reminder: your appointment starts in 1 hour";
+        const text = unpaid
+          ? `Appointment #${row.id} at ${time} is still unpaid. Pay before the doctor can confirm it.`
+          : `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in to join.`;
         const html = buildEmailHtml({
           title: "Appointment in 1 hour",
           preheader: text,
@@ -532,13 +564,17 @@ export async function remindUpcomingVisits() {
                 </td>
               </tr>
             </table>
-            ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is scheduled at <strong>${time}</strong> today.`)}
-            ${emailP("Please make sure you have a stable internet connection and your camera and microphone are ready.")}
+            ${emailHtml(unpaid
+              ? `Appointment <strong>#${row.id}</strong> at <strong>${time}</strong> is still unpaid. The doctor cannot confirm it until payment is received.`
+              : `Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is scheduled at <strong>${time}</strong> today.`)}
+            ${emailP(unpaid
+              ? "This reminder is about payment, not a live visit."
+              : "Please make sure you have a stable internet connection and your camera and microphone are ready.")}
             ${emailInfoBox([
               doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
               ["Time", time],
             ].filter(Boolean), "#0BA59B")}
-            ${emailBtn("View My Appointments", "https://mediconnect.rw/patient/appointments", "#0BA59B")}
+            ${emailBtn(unpaid ? "Review payment" : "View My Appointments", "https://mediconnect.rw/patient/appointments", "#0BA59B")}
           `,
         });
         await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.reminder" });
@@ -571,8 +607,12 @@ export async function remindUpcomingVisits() {
       reminded.add(`appt-30-${row.id}`);
 
       if (patient.email || patient.userId) {
-        const subject = "Reminder: your appointment starts in 30 minutes";
-        const text = `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in and get ready.`;
+        const subject = unpaid
+          ? `Payment still due for appointment #${row.id}`
+          : "Reminder: your appointment starts in 30 minutes";
+        const text = unpaid
+          ? `Appointment #${row.id} at ${time} is still unpaid. Pay before the doctor can confirm it.`
+          : `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in and get ready.`;
         const html = buildEmailHtml({
           title: "Appointment in 30 minutes",
           preheader: text,
@@ -586,9 +626,13 @@ export async function remindUpcomingVisits() {
                 </td>
               </tr>
             </table>
-            ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is starting at <strong>${time}</strong> — in about 30 minutes.`)}
-            ${emailP("Please ensure you have a stable internet connection and your camera/microphone are working.")}
-            ${emailBtn("Join Appointment Now", "https://mediconnect.rw/patient/appointments", "#d97706")}
+            ${emailHtml(unpaid
+              ? `Appointment <strong>#${row.id}</strong> at <strong>${time}</strong> is still unpaid.`
+              : `Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is starting at <strong>${time}</strong> — in about 30 minutes.`)}
+            ${emailP(unpaid
+              ? "This reminder is about payment, not a live visit."
+              : "Please ensure you have a stable internet connection and your camera/microphone are working.")}
+            ${emailBtn(unpaid ? "Review payment" : "Join Appointment Now", "https://mediconnect.rw/patient/appointments", "#d97706")}
           `,
         });
         await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.reminder" });
