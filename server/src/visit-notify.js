@@ -46,49 +46,100 @@ async function instantAvailableDoctors(limit = 50) {
   ).catch(() => []);
 }
 
-async function accountContact(userId, fallback) {
-  const user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [userId]).catch(() => null);
+function cleanContact(value) {
+  return String(value || "").trim();
+}
+
+function sameContact(left, right, phone = false) {
+  const a = cleanContact(left);
+  const b = cleanContact(right);
+  if (!a || !b) return a || b;
+  if (phone) {
+    const digits = (value) => String(value).replace(/[+\s\-()]/g, "");
+    return digits(a) === digits(b) ? a : null;
+  }
+  return a.toLowerCase() === b.toLowerCase() ? a : null;
+}
+
+/** Null when two stored copies of the same channel disagree. */
+function agreed(primary, secondary, phone = false) {
+  const a = cleanContact(primary);
+  const b = cleanContact(secondary);
+  if (a && b && sameContact(a, b, phone) == null) return null;
+  return a || b;
+}
+
+async function provenAccount(userId) {
+  let user;
+  try {
+    user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [userId]);
+  } catch {
+    return null;
+  }
+  if (!user || !Number(user.id)) return null;
   return {
-    userId,
-    name: fallback.name || user?.name || "Patient",
-    email: fallback.email || user?.email || "",
-    phone: fallback.phone || user?.phone || "",
+    userId: Number(user.id),
+    name: cleanContact(user.name) || "Patient",
+    email: cleanContact(user.email),
+    phone: cleanContact(user.phone),
   };
 }
 
-async function patientContact(row) {
-  const email = String(row?.guest_email || row?.email || row?.patient_email || "").trim();
-  const phone = String(row?.guest_phone || row?.phone || row?.patient_phone || "").trim();
-  const name = String(row?.guest_name || row?.patient_name || row?.name || "").trim();
-  const fallback = { name, email, phone };
-  const explicitUserId = Number(row?.user_id) || null;
-  if (explicitUserId) return accountContact(explicitUserId, fallback);
-  const patientId = Number(row?.patient_id) || null;
-  if (patientId && await tableExists("patients")) {
+/** `unknown` means the patients table could not be read. That is not "no profile". */
+async function lookupProfile(patientId) {
+  try {
+    if (!(await tableExists("patients"))) return { status: "unknown" };
+  } catch {
+    return { status: "unknown" };
+  }
+  try {
     const profile = await one(
       "SELECT user_id, name, email, phone FROM patients WHERE id = ? LIMIT 1",
       [patientId],
-    ).catch(() => null);
-    if (profile) {
-      const ownerId = Number(profile.user_id) || null;
-      if (!ownerId) {
-        return {
-          userId: null,
-          name: name || profile.name || "Patient",
-          email: email || profile.email || "",
-          phone: phone || profile.phone || "",
-        };
-      }
-      return accountContact(ownerId, {
-        name: name || profile.name || "",
-        email: email || profile.email || "",
-        phone: phone || profile.phone || "",
-      });
-    }
+    );
+    return { status: "ok", profile: profile || null };
+  } catch {
+    return { status: "unknown" };
   }
-  // No profile uses this integer, so an appointment may have stored the account id.
-  if (patientId) return accountContact(patientId, fallback);
-  return { userId: null, name: name || "Patient", email, phone };
+}
+
+async function patientNotice(row) {
+  return await patientContact(row) || { userId: null, name: "Patient", email: "", phone: "" };
+}
+
+async function patientContact(row) {
+  const userId = Number(row?.user_id) || null;
+  const patientId = Number(row?.patient_id) || null;
+  // Appointment rows copy the account id into patient_id. A different patient_id
+  // is a profile id and must name that same account.
+  if (userId && patientId && patientId !== userId) {
+    const found = await lookupProfile(patientId);
+    if (found.status !== "ok") return null;
+    const ownerId = Number(found.profile?.user_id) || null;
+    if (!found.profile || ownerId !== userId) return null;
+    return provenAccount(userId);
+  }
+  if (userId) return provenAccount(userId);
+  if (patientId) {
+    const found = await lookupProfile(patientId);
+    if (found.status !== "ok" || !found.profile) return null;
+    const ownerId = Number(found.profile.user_id) || null;
+    if (ownerId) return provenAccount(ownerId);
+    const email = cleanContact(found.profile.email);
+    const phone = cleanContact(found.profile.phone);
+    if (!email && !phone) return null;
+    return { userId: null, name: cleanContact(found.profile.name) || "Patient", email, phone };
+  }
+  const email = agreed(row?.guest_email, row?.email);
+  const phone = agreed(row?.guest_phone, row?.phone, true);
+  if (email == null || phone == null) return null;
+  if (!email && !phone) return null;
+  return {
+    userId: null,
+    name: cleanContact(row?.guest_name || row?.patient_name || row?.name) || "Patient",
+    email,
+    phone,
+  };
 }
 
 // ─── Deliver: in-app + email ──────────────────────────────────────────────────
@@ -124,7 +175,7 @@ export async function notifyPaidVisit(payment, account = null) {
   if (!row) return;
 
   const doctor = await doctorContact(row.doctor_id);
-  const patient = await patientContact(row);
+  const patient = await patientNotice(row);
   const when = [row.appointment_date, row.appointment_time].filter(Boolean).join(" at ") || "your scheduled time";
   const amount = Number(payment?.amount || row.patient_pays || row.consultation_fee || 0);
   const amountStr = amount > 0 ? `${amount.toLocaleString()} RWF` : null;
@@ -261,7 +312,7 @@ export async function notifyPaidVisit(payment, account = null) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function notifyBookedVisit(row) {
   const doctor = await doctorContact(row?.doctor_id);
-  const patient = await patientContact(row);
+  const patient = await patientNotice(row);
   const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" at ") || "the scheduled time";
   const amount = Number(row?.patient_pays || row?.consultation_fee || row?.amount || 0);
   const amountStr = amount > 0 ? `${amount.toLocaleString()} RWF` : "the consultation fee";
@@ -324,7 +375,7 @@ export async function notifyBookedVisit(row) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function notifyAppointmentConfirmed(row) {
   const doctor = await doctorContact(row?.doctor_id);
-  const patient = await patientContact(row);
+  const patient = await patientNotice(row);
   const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" at ") || "your scheduled time";
 
   // ── Patient ──
@@ -386,7 +437,7 @@ export async function notifyAppointmentConfirmed(row) {
 
 export async function notifyAppointmentRescheduled(row) {
   const doctor = await doctorContact(row?.doctor_id);
-  const patient = await patientContact(row);
+  const patient = await patientNotice(row);
   const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" at ") || "the new scheduled time";
 
   if (patient.email || patient.userId) {
@@ -416,7 +467,7 @@ export async function notifyAppointmentRescheduled(row) {
 // ─────────────────────────────────────────────────────────────────────────────
 export async function notifyVisitCompleted(row, kind = "consultation") {
   const doctor = await doctorContact(row?.doctor_id);
-  const patient = await patientContact(row);
+  const patient = await patientNotice(row);
   const kindLabel = kind === "appointment" ? "appointment" : "instant consultation";
 
   // ── Patient ──
@@ -478,8 +529,9 @@ const readyMailSent = new Set();
 export async function notifyDoctorReady(row) {
   const key = row?.id ? `instant:${row.id}` : "";
   if (!key || visitAwaitsPayment(row) || readyMailSent.has(key)) return;
-  readyMailSent.add(key);
   const patient = await patientContact(row);
+  if (!patient) return;
+  readyMailSent.add(key);
   const doctor = await doctorContact(row.doctor_id);
   const subject = `Your doctor is ready for consultation #${row.id}`;
   const text = `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`;
@@ -537,7 +589,7 @@ export async function remindUpcomingVisits() {
     if (!want60 && !want30) continue;
 
     const doctor = await doctorContact(row.doctor_id);
-    const patient = await patientContact(row);
+    const patient = await patientNotice(row);
     const unpaid = visitAwaitsPayment(row);
 
     // ── 1-hour reminder ──────────────────────────────────────────────────

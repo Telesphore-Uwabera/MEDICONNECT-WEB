@@ -9,8 +9,12 @@ const db = {
     { id: 9, name: "Stranger Account", email: "stranger@example.com", phone: "788000009" },
     { id: 77, name: "Amina Uwase", email: "owner@example.com", phone: "788000077" },
     { id: 31, name: "Dr. Jane Doe", email: "doctor@example.com", phone: "788000001" },
+    { id: 8, name: "Other Profile", email: "other-profile@example.com", phone: "788000008" },
   ],
   appointments: [],
+  patientsAvailable: true,
+  profileThrows: false,
+  userThrows: false,
 };
 
 vi.mock("./mail.js", async (importOriginal) => {
@@ -32,7 +36,10 @@ vi.mock("./db.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    tableExists: async (name) => ["patients", "users", "doctors", "notifications", "appointments"].includes(name),
+    tableExists: async (name) => {
+      if (name === "patients") return db.patientsAvailable;
+      return ["users", "doctors", "notifications", "appointments"].includes(name);
+    },
     hasColumn: async () => true,
     insert: async (table, fields) => {
       notes.push({ table, fields });
@@ -43,9 +50,15 @@ vi.mock("./db.js", async (importOriginal) => {
     one: async (sql, params) => {
       const text = String(sql);
       const id = Number(params?.[0]);
+      if (text.includes("FROM patients")) {
+        if (db.profileThrows) throw new Error("patients unreadable");
+        return db.patients.find((row) => row.id === id) || null;
+      }
+      if (text.includes("FROM users")) {
+        if (db.userThrows) throw new Error("users unreadable");
+        return db.users.find((row) => row.id === id) || null;
+      }
       if (text.includes("FROM doctors")) return db.doctors.find((row) => row.id === id) || null;
-      if (text.includes("FROM patients")) return db.patients.find((row) => row.id === id) || null;
-      if (text.includes("FROM users")) return db.users.find((row) => row.id === id) || null;
       return null;
     },
   };
@@ -66,6 +79,10 @@ describe("visit notifications", () => {
     sent.length = 0;
     notes.length = 0;
     db.appointments = [];
+    db.patients = [{ id: 9, user_id: 77, name: "Amina Uwase", email: "owner@example.com", phone: "788000077" }];
+    db.patientsAvailable = true;
+    db.profileThrows = false;
+    db.userThrows = false;
   });
 
   it("addresses the profile owner and cites the consultation, once", async () => {
@@ -119,5 +136,76 @@ describe("visit notifications", () => {
     expect(unpaid.text).not.toMatch(/join/i);
     expect(unpaid.html).not.toContain("Join");
     expect(confirmed.text).toMatch(/join/i);
+  });
+
+  it("does not guess an owner when the profile lookup fails or the integer is unused", async () => {
+    db.profileThrows = true;
+    await notifyDoctorReady({ id: 40, patient_id: 9, doctor_id: 31, status: "accepted", guest_email: "stranger@example.com" });
+    db.profileThrows = false;
+    db.patientsAvailable = false;
+    await notifyDoctorReady({ id: 41, patient_id: 9, doctor_id: 31, status: "accepted", guest_email: "stranger@example.com" });
+    db.patientsAvailable = true;
+    await notifyDoctorReady({ id: 42, patient_id: 77, doctor_id: 31, status: "accepted", guest_email: "owner@example.com" });
+    db.userThrows = true;
+    await notifyDoctorReady({ id: 46, user_id: 77, doctor_id: 31, status: "accepted", guest_email: "stranger@example.com" });
+    expect(sent).toEqual([]);
+    expect(notes).toEqual([]);
+  });
+
+  it("drops a row whose account and profile name different people", async () => {
+    db.patients = [{ id: 9, user_id: 8, name: "Other Profile", email: "other-profile@example.com", phone: "788000008" }];
+    await notifyBookedVisit({
+      id: 13,
+      user_id: 77,
+      patient_id: 9,
+      doctor_id: 31,
+      guest_email: "stranger@example.com",
+      appointment_date: "2026-11-09",
+      appointment_time: "09:00",
+      patient_pays: 10,
+      status: "pending",
+    });
+    expect(sent.map((message) => message.to)).toEqual(["doctor@example.com"]);
+    expect(JSON.stringify(sent)).not.toContain("stranger@example.com");
+    expect(JSON.stringify(sent)).not.toContain("other-profile@example.com");
+    expect(JSON.stringify(sent)).not.toContain("owner@example.com");
+    expect(notes.map((note) => note.fields.notifiable_id)).toEqual([31]);
+  });
+
+  it("uses the account contact when the row carries a different email", async () => {
+    await notifyDoctorReady({
+      id: 43,
+      user_id: 77,
+      patient_id: 77,
+      doctor_id: 31,
+      status: "accepted",
+      guest_email: "stranger@example.com",
+      guest_name: "Stranger Account",
+    });
+    expect(sent.map((message) => message.to)).toEqual(["owner@example.com"]);
+    expect(sent[0].html).toContain("Hello, Amina!");
+    expect(JSON.stringify(sent)).not.toContain("stranger@example.com");
+    expect(notes.map((note) => note.fields.notifiable_id)).toEqual([77]);
+  });
+
+  it("emails a guest only when the row has no account id and the contacts agree", async () => {
+    await notifyDoctorReady({
+      id: 44,
+      doctor_id: 31,
+      status: "accepted",
+      guest_name: "Keza",
+      guest_email: "keza@example.com",
+      guest_phone: "788111222",
+    });
+    await notifyDoctorReady({
+      id: 45,
+      doctor_id: 31,
+      status: "accepted",
+      guest_email: "one@example.com",
+      email: "two@example.com",
+    });
+    expect(sent.map((message) => message.to)).toEqual(["keza@example.com"]);
+    expect(sent[0].html).toContain("Hello, Keza!");
+    expect(notes).toEqual([]);
   });
 });
