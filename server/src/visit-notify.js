@@ -547,24 +547,10 @@ async function readyNotice(visitKey, patient, subject, text) {
   await finishReadyMail(noticeKey, claim.attempt, stored, stored ? "" : "notice was not stored");
 }
 
-export async function notifyDoctorReady(row) {
-  const key = row?.id ? `instant:${row.id}` : "";
-  if (!key || visitAwaitsPayment(row)) return;
-  const patient = await patientContact(row);
-  if (!patient) return;
-  const mailKey = `${key}:mail`;
-  let claim;
-  try {
-    claim = await beginReadyMail(mailKey);
-  } catch (error) {
-    console.error("Ready mail was not sent:", error?.message || error);
-    throw error;
-  }
-  if (!claim.send) return;
+async function composeReadyMessage(row, patient) {
   const doctor = await doctorContact(row.doctor_id);
   const subject = `Your doctor is ready for consultation #${row.id}`;
   const text = `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`;
-
   const html = buildEmailHtml({
     title: "Your doctor is ready!",
     preheader: text,
@@ -584,21 +570,49 @@ export async function notifyDoctorReady(row) {
       ${emailP("If you have trouble joining, please contact us at admin@mediconnect.rw.", "font-size:12px;color:#9ca3af;")}
     `,
   });
+  return { subject, text, html };
+}
 
-  const renew = setInterval(() => {
-    renewReadyMail(mailKey, claim.attempt).catch((error) => {
-      console.error("Ready mail lease renew failed:", error?.message || error);
-    });
-  }, READY_CLAIM_RENEW_MS);
+export async function notifyDoctorReady(row) {
+  const key = row?.id ? `instant:${row.id}` : "";
+  if (!key || visitAwaitsPayment(row)) return;
+  const patient = await patientContact(row);
+  if (!patient) return;
+  const mailKey = `${key}:mail`;
+  let claim;
   try {
-    await readyNotice(key, patient, subject, text);
+    claim = await beginReadyMail(mailKey);
+  } catch (error) {
+    console.error("Ready mail was not sent:", error?.message || error);
+    throw error;
+  }
+  if (!claim.send) {
+    if (claim.reason === "sent" || claim.reason === "local-sent") {
+      try {
+        const message = await composeReadyMessage(row, patient);
+        await readyNotice(key, patient, message.subject, message.text);
+      } catch (error) {
+        console.error("Ready notice was not recorded:", error?.message || error);
+      }
+    }
+    return;
+  }
+  let renew;
+  try {
+    renew = setInterval(() => {
+      renewReadyMail(mailKey, claim.attempt).catch((error) => {
+        console.error("Ready mail lease renew failed:", error?.message || error);
+      });
+    }, READY_CLAIM_RENEW_MS);
+    const message = await composeReadyMessage(row, patient);
+    await readyNotice(key, patient, message.subject, message.text);
     let emailed = true;
     if (patient.email && patient.email.includes("@")) {
       emailed = (await sendMail({
         to: patient.email,
-        subject,
-        text,
-        html,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
         timeoutMs: READY_MAIL_TIMEOUT_MS,
       })) !== false;
     }
@@ -612,7 +626,7 @@ export async function notifyDoctorReady(row) {
     console.error("Ready mail was not sent:", error?.message || error);
     throw error;
   } finally {
-    clearInterval(renew);
+    if (renew) clearInterval(renew);
   }
 }
 

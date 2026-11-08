@@ -35,12 +35,18 @@ const db = {
   mailAttempts: 0,
   claimReadThrows: false,
   lastMail: null,
+  noticeFails: false,
+  templateThrows: false,
 };
 
 vi.mock("./mail.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
+    buildEmailHtml: (opts) => {
+      if (db.templateThrows) throw new Error("template failed");
+      return actual.buildEmailHtml(opts);
+    },
     sendMail: async (message) => {
       db.mailAttempts += 1;
       db.lastMail = message;
@@ -68,6 +74,7 @@ vi.mock("./db.js", async (importOriginal) => {
     },
     hasColumn: async () => true,
     insert: async (table, fields) => {
+      if (db.noticeFails && table === "notifications") throw new Error("notice unreadable");
       notes.push({ table, fields });
       return notes.length;
     },
@@ -129,6 +136,8 @@ describe("visit notifications", () => {
     db.mailAttempts = 0;
     db.claimReadThrows = false;
     db.lastMail = null;
+    db.noticeFails = false;
+    db.templateThrows = false;
     claims.exec("DELETE FROM ready_mail_claims");
   });
 
@@ -378,5 +387,54 @@ describe("visit notifications", () => {
       db.mailGate = null;
       vi.useRealTimers();
     }
+  });
+
+  it("retries a failed in-app notice after the email is already complete", async () => {
+    db.noticeFails = true;
+    const row = { id: 81, patient_id: 9, doctor_id: 31, status: "accepted" };
+    await notifyDoctorReady(row);
+    expect(sent).toHaveLength(1);
+    expect(notes.filter((note) => note.fields.type === "visit.ready")).toHaveLength(0);
+    db.noticeFails = false;
+    await notifyDoctorReady(row);
+    expect(sent).toHaveLength(1);
+    expect(notes.filter((note) => note.fields.type === "visit.ready")).toHaveLength(1);
+    const owner = db.users.find((user) => user.id === 77);
+    const previousEmail = owner.email;
+    owner.email = "";
+    db.noticeFails = true;
+    notes.length = 0;
+    sent.length = 0;
+    try {
+      const quiet = { id: 82, patient_id: 9, doctor_id: 31, status: "accepted" };
+      await notifyDoctorReady(quiet);
+      expect(sent).toEqual([]);
+      expect(notes.filter((note) => note.fields.type === "visit.ready")).toHaveLength(0);
+      db.noticeFails = false;
+      await notifyDoctorReady(quiet);
+      expect(sent).toEqual([]);
+      expect(notes.filter((note) => note.fields.type === "visit.ready")).toHaveLength(1);
+    } finally {
+      owner.email = previousEmail;
+    }
+  });
+
+  it("releases the in-process mail claim when preparation throws, then one later send proceeds", async () => {
+    db.claimsTable = false;
+    db.templateThrows = true;
+    const row = { id: 83, patient_id: 9, doctor_id: 31, status: "accepted" };
+    await expect(notifyDoctorReady(row)).rejects.toThrow(/template failed/);
+    expect(sent).toEqual([]);
+    db.templateThrows = false;
+    let release;
+    db.mailGate = new Promise((resolve) => {
+      release = resolve;
+    });
+    const first = notifyDoctorReady(row);
+    const second = notifyDoctorReady(row);
+    await vi.waitFor(() => expect(db.mailAttempts).toBe(1));
+    release();
+    await Promise.all([first, second]);
+    expect(sent).toHaveLength(1);
   });
 });
