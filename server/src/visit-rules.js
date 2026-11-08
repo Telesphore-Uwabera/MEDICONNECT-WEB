@@ -148,6 +148,167 @@ export async function visitOpenTo(scope, table, row, user) {
   return true;
 }
 
+const ADMIN_ROLES = ["admin", "moderator", "finance", "help_desk"];
+const PROFILE_TABLE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
+const CLINICAL_TABLES = new Set(["prescriptions", "consultation_summaries", "prescription_requests"]);
+const OWNER_KEYS = ["doctor_id", "patient_id", "user_id", "hospital_id", "pharmacy_id", "prescriber_id", "notifiable_id"];
+
+/** Same scope rule as the generic list: the active role must be the area being written. */
+export function scopeRoleAllowed(user, scope) {
+  if (!user) return false;
+  const role = user.active_role || user.role;
+  if (scope === "admin") return ADMIN_ROLES.includes(role);
+  return role === scope;
+}
+
+export function stripClientOwners(body, { keep = false } = {}) {
+  const safe = { ...(body ?? {}) };
+  delete safe.password;
+  delete safe.id;
+  if (!keep) {
+    for (const key of OWNER_KEYS) delete safe[key];
+  }
+  return safe;
+}
+
+async function profileId(user, scope) {
+  const table = PROFILE_TABLE[scope];
+  if (!table) return null;
+  return loadOwnedId(user.id, table);
+}
+
+async function columnMatches(scope, table, row, user) {
+  const column = `${scope}_id`;
+  let present = false;
+  try {
+    present = await hasColumn(table, column);
+  } catch {
+    return false;
+  }
+  if (present) {
+    const ownerId = await profileId(user, scope);
+    return Boolean(ownerId) && Number(row[column]) === Number(ownerId);
+  }
+  try {
+    if (await hasColumn(table, "user_id")) return Number(row.user_id) === Number(user.id);
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+async function patientPointerIds(user) {
+  const ids = new Set([Number(user.id)].filter((id) => id > 0));
+  const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [user.id]);
+  for (const profile of profiles) {
+    const id = Number(profile.id);
+    if (id > 0) ids.add(id);
+  }
+  return ids;
+}
+
+async function clinicalRowOpen(scope, table, row, user) {
+  if (scope === "doctor") {
+    const doctorId = await profileId(user, "doctor");
+    if (!doctorId) return false;
+    return Number(row.doctor_id || row.prescriber_id) === Number(doctorId);
+  }
+  if (scope === "patient") {
+    const ids = await patientPointerIds(user);
+    return ids.has(Number(row.patient_id));
+  }
+  if (scope === "pharmacy") {
+    const pharmacyId = await profileId(user, "pharmacy");
+    if (!pharmacyId) return false;
+    if (Number(row.pharmacy_id) === Number(pharmacyId)) return true;
+    if (!(await tableExists("pharmacy_prescription_requests"))) return false;
+    const link = await one(
+      "SELECT id FROM pharmacy_prescription_requests WHERE prescription_id = ? AND pharmacy_id = ? LIMIT 1",
+      [row.id, pharmacyId],
+    );
+    return Boolean(link);
+  }
+  return columnMatches(scope, table, row, user);
+}
+
+/**
+ * Write gate for generic and alias record routes.
+ * A missing ownership column, or a lookup that throws, is not access.
+ * Admin catalog managers may write after the scope role check. Hospital and
+ * pharmacy do not inherit visit rows unless the row names their own profile.
+ */
+export async function mayWriteRow(scope, table, row, user) {
+  if (!scopeRoleAllowed(user, scope) || !table || !row) return false;
+  if (scope === "admin") return true;
+  try {
+    if (VISIT_TABLES.has(table)) {
+      if (scope === "patient") {
+        return (await patientOwnsAppointment(row, user)) || (await patientOwnsInstant(row, user));
+      }
+      if (scope === "doctor") return doctorOwnsVisit(row, user);
+      return columnMatches(scope, table, row, user);
+    }
+    if (CLINICAL_TABLES.has(table)) return clinicalRowOpen(scope, table, row, user);
+    return columnMatches(scope, table, row, user);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A doctor may write a chart only when an appointment or instant row already
+ * names both this doctor profile and this patient. Appointments store the
+ * account id. Instant rows store the patient profile id or user_id.
+ */
+export async function doctorHasCareLink(user, patient) {
+  if (!user?.id || !patient?.id) return false;
+  let doctorId;
+  try {
+    doctorId = await loadOwnedId(user.id, "doctors");
+  } catch {
+    return false;
+  }
+  if (!doctorId) return false;
+  const accountId = Number(patient.user_id) || null;
+  const profileId = Number(patient.id);
+  try {
+    if (await tableExists("appointments") && accountId) {
+      const booked = await one(
+        "SELECT id FROM appointments WHERE doctor_id = ? AND patient_id = ? LIMIT 1",
+        [doctorId, accountId],
+      );
+      if (booked?.id) return true;
+    }
+  } catch {
+    return false;
+  }
+  let instantTable = null;
+  try {
+    if (await tableExists("instant_consultation_requests")) instantTable = "instant_consultation_requests";
+    else if (await tableExists("instant_consultations")) instantTable = "instant_consultations";
+  } catch {
+    return false;
+  }
+  if (!instantTable) return false;
+  try {
+    const byProfile = await one(
+      `SELECT id FROM \`${instantTable}\` WHERE doctor_id = ? AND patient_id = ? LIMIT 1`,
+      [doctorId, profileId],
+    );
+    if (byProfile?.id) return true;
+    if (accountId && await hasColumn(instantTable, "user_id")) {
+      const byAccount = await one(
+        `SELECT id FROM \`${instantTable}\` WHERE doctor_id = ? AND user_id = ? LIMIT 1`,
+        [doctorId, accountId],
+      );
+      if (byAccount?.id) return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
 /** Fields no caller may set on a visit with a plain record update. */
 export function visitBodyGuard(scope, table, body) {
   if (!VISIT_TABLES.has(table) || !["patient", "doctor"].includes(scope)) return body;

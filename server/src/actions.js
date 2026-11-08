@@ -5,7 +5,7 @@ import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, prese
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
-import { DOCTOR_WORK_STATUSES, VISIT_TABLES, releaseSlot, visitAwaitsPayment, visitBodyGuard, visitOpenTo } from "./visit-rules.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, mayWriteRow, releaseSlot, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -684,15 +684,24 @@ async function fillGap(req, res, parts) {
 
   // One ownership check for every id-based shape below: read, join, reschedule,
   // status change, update or delete.
-  const current = id
-    ? await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => null)
-    : null;
-  if (id && current && !(await visitOpenTo(parts[0], table, current, req.user))) {
-    res.status(403).json({
-      message: parts[0] === "patient"
-        ? "This record belongs to another patient."
-        : "This record belongs to another doctor.",
-    });
+  let current = null;
+  if (id) {
+    try {
+      current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+    } catch {
+      res.status(403).json({ message: "You do not have access to this record." });
+      return true;
+    }
+    if (!current) {
+      res.status(404).json({ message: "Record not found." });
+      return true;
+    }
+    if (!(await mayWriteRow(parts[0], table, current, req.user))) {
+      res.status(403).json({ message: "You do not have access to this record." });
+      return true;
+    }
+  } else if (!scopeRoleAllowed(req.user, parts[0])) {
+    res.status(403).json({ message: "You do not have access to this area." });
     return true;
   }
 
@@ -812,10 +821,11 @@ async function fillGap(req, res, parts) {
 
   if (!id && req.method === "POST") {
     const extra = await ownedExtra(parts[0], req.user.id, table);
-    const body = table === "consultation_summaries"
+    const raw = table === "consultation_summaries"
       ? await fillConsultationSummaryBody(req.body ?? {})
       : (req.body ?? {});
-    const newId = await insert(table, { ...body, ...extra });
+    const body = { ...stripClientOwners(raw, { keep: parts[0] === "admin" }), ...extra };
+    const newId = await insert(table, body);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);
@@ -832,9 +842,10 @@ async function fillGap(req, res, parts) {
   if (id && ["PUT", "PATCH", "POST"].includes(req.method)) {
     // Neither side of a visit may buy its way to "paid" or reassign itself with a
     // plain field update; payment moves status through the payment routes only.
-    const body = table === "consultation_summaries"
+    const raw = table === "consultation_summaries"
       ? await fillConsultationSummaryBody(req.body ?? {})
       : (req.body ?? {});
+    const body = stripClientOwners(raw, { keep: parts[0] === "admin" });
     await update(table, id, visitBodyGuard(parts[0], table, body));
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     stored = await afterResourceSaved(table, stored, req);

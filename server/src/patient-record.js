@@ -4,6 +4,7 @@ import multer from "multer";
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { plausibleDateOfBirth, sniffedUploadExtension } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
+import { doctorHasCareLink } from "./visit-rules.js";
 
 const MEDICAL_TABLES = [
   "patient_medical_infos",
@@ -41,6 +42,34 @@ export async function resolvePatientByAnyId(rawId) {
   const id = Number(rawId);
   if (!id) return null;
   return one("SELECT * FROM patients WHERE id = ? OR user_id = ? ORDER BY id DESC LIMIT 1", [id, id]).catch(() => null);
+}
+
+/** Chart writes use the profile id first. A lookup error is not "no such patient". */
+async function patientForChart(rawId) {
+  const id = Number(rawId);
+  if (!id) return { patient: null, unreadable: false };
+  try {
+    const byId = await one("SELECT * FROM patients WHERE id = ? LIMIT 1", [id]);
+    if (byId) return { patient: byId, unreadable: false };
+    const byAccount = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [id]);
+    return { patient: byAccount || null, unreadable: false };
+  } catch {
+    return { patient: null, unreadable: true };
+  }
+}
+
+async function assertCareLink(res, user, patient) {
+  let linked = false;
+  try {
+    linked = await doctorHasCareLink(user, patient);
+  } catch {
+    linked = false;
+  }
+  if (!linked) {
+    res.status(403).json({ message: "You do not have access to this record." });
+    return false;
+  }
+  return true;
 }
 
 async function medicalRow(patient) {
@@ -208,8 +237,11 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.put("/doctor/patients/:patientId/record", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
-      const patient = await resolvePatientByAnyId(req.params.patientId);
+      const found = await patientForChart(req.params.patientId);
+      if (found.unreadable) return res.status(403).json({ message: "You do not have access to this record." });
+      const patient = found.patient;
       if (!patient) return res.status(404).json({ message: "Patient not found." });
+      if (!(await assertCareLink(res, req.user, patient))) return;
       const { table, row } = await medicalRow(patient);
       if (!table) return res.status(422).json({ message: "Medical records are not available yet." });
       const body = req.body || {};
@@ -268,8 +300,11 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
 
   router.post("/doctor/patients/:patientId/files", requireAuth, requireRole("doctor"), upload.any(), async (req, res, next) => {
     try {
-      const patient = await resolvePatientByAnyId(req.params.patientId);
+      const found = await patientForChart(req.params.patientId);
+      if (found.unreadable) return res.status(403).json({ message: "You do not have access to this record." });
+      const patient = found.patient;
       if (!patient) return res.status(404).json({ message: "Patient not found." });
+      if (!(await assertCareLink(res, req.user, patient))) return;
       let table = await firstTable(FILE_TABLES);
       if (!table) {
         await q(`

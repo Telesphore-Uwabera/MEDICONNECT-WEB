@@ -31,9 +31,12 @@ import {
   appointmentStartIsInPast,
   bookableSlot,
   claimSlot,
+  mayWriteRow,
   patientOwnsAppointment,
   patientOwnsInstant,
   releaseSlot,
+  scopeRoleAllowed,
+  stripClientOwners,
   visitAwaitsPayment,
   visitBodyGuard,
   visitIsClosed,
@@ -2902,6 +2905,7 @@ export function appRoutes(router) {
   }
 
   const teamUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
+  const requireTeamManager = requireRole("admin", "moderator", "finance", "help_desk");
 
   function saveTeamImage(file, prefix) {
     const dir = path.join(process.env.UPLOAD_DIR || path.join(path.dirname(new URL(import.meta.url).pathname), "..", "storage"), "doctors-webp");
@@ -2925,7 +2929,7 @@ export function appRoutes(router) {
     return withTeamPhoto(await presentRow("team_members", await one("SELECT * FROM team_members WHERE id = ?", [id])));
   }
 
-  router.post("/admin/team", requireAuth, teamUpload.fields([{ name: "photo", maxCount: 1 }, { name: "icon", maxCount: 1 }]), async (req, res, next) => {
+  router.post("/admin/team", requireAuth, requireTeamManager, teamUpload.fields([{ name: "photo", maxCount: 1 }, { name: "icon", maxCount: 1 }]), async (req, res, next) => {
     try {
       const id = await insert("team_members", teamFields(req.body, req.files));
       const member = await teamMember(id);
@@ -2935,7 +2939,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/admin/team/:id/photo", requireAuth, teamUpload.single("photo"), async (req, res, next) => {
+  router.post("/admin/team/:id/photo", requireAuth, requireTeamManager, teamUpload.single("photo"), async (req, res, next) => {
     try {
       if (!req.file) return res.status(422).json({ message: "Photo is required." });
       const photo = saveTeamImage(req.file, `team_${req.params.id}`);
@@ -2948,7 +2952,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/admin/team/:id/icon", requireAuth, teamUpload.single("icon"), async (req, res, next) => {
+  router.post("/admin/team/:id/icon", requireAuth, requireTeamManager, teamUpload.single("icon"), async (req, res, next) => {
     try {
       if (!req.file) return res.status(422).json({ message: "Icon is required." });
       const icon = saveTeamImage(req.file, `team_icon_${req.params.id}`);
@@ -2961,7 +2965,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.patch("/admin/team/:id/toggle-active", requireAuth, async (req, res, next) => {
+  router.patch("/admin/team/:id/toggle-active", requireAuth, requireTeamManager, async (req, res, next) => {
     try {
       const row = await one("SELECT id, is_active FROM team_members WHERE id = ?", [req.params.id]);
       if (!row) return res.status(404).json({ message: "Member not found." });
@@ -2973,7 +2977,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/admin/team/:id", requireAuth, teamUpload.fields([{ name: "photo", maxCount: 1 }, { name: "icon", maxCount: 1 }]), async (req, res, next) => {
+  router.post("/admin/team/:id", requireAuth, requireTeamManager, teamUpload.fields([{ name: "photo", maxCount: 1 }, { name: "icon", maxCount: 1 }]), async (req, res, next) => {
     try {
       await update("team_members", req.params.id, teamFields(req.body, req.files));
       const member = await teamMember(req.params.id);
@@ -3444,13 +3448,33 @@ export function appRoutes(router) {
   router.post("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
       if (isDedicatedResource(req.params.resource)) return next();
+      if (!scopeRoleAllowed(req.user, req.params.scope)) {
+        return res.status(403).json({ message: "You do not have access to this area." });
+      }
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
-      const owned = await ownedFilter(req, table, req.params.scope);
-      const extra = {};
-      if (owned.sql.includes("_id")) extra[owned.sql.split("`")[1]] = owned.params[0];
-      if (req.body?.password) req.body.password = await hashPassword(req.body.password);
-      const id = await insert(table, { ...req.body, ...extra });
+      const body = stripClientOwners(req.body, { keep: req.params.scope === "admin" });
+      let stamp = {};
+      if (req.params.scope !== "admin") {
+        try {
+          const column = `${req.params.scope}_id`;
+          if (await hasColumn(table, column)) {
+            const ownerId = await loadOwnedId(req.user.id, PROFILE_TABLE[req.params.scope]);
+            if (!ownerId) return res.status(403).json({ message: "You do not have access to this area." });
+            stamp = { [column]: ownerId };
+          } else if (req.params.scope === "patient" && await hasColumn(table, "patient_id")) {
+            const ownerId = await loadOwnedId(req.user.id, "patients");
+            stamp = { patient_id: ownerId || req.user.id };
+          } else if (await hasColumn(table, "user_id")) {
+            stamp = { user_id: req.user.id };
+          } else {
+            return res.status(403).json({ message: "You do not have access to this record." });
+          }
+        } catch {
+          return res.status(403).json({ message: "You do not have access to this record." });
+        }
+      }
+      const id = await insert(table, { ...body, ...stamp });
       let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
       stored = await afterResourceSaved(table, stored, req);
       res.status(201).json({ message: "Saved.", data: await presentRow(table, stored) });
@@ -3466,10 +3490,19 @@ export function appRoutes(router) {
   router.delete("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
       if (isDedicatedResource(req.params.resource)) return next();
+      if (!scopeRoleAllowed(req.user, req.params.scope)) {
+        return res.status(403).json({ message: "You do not have access to this area." });
+      }
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
-      const current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
-      if (!(await visitOpenTo(req.params.scope, table, current, req.user))) {
+      let current;
+      try {
+        current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      } catch {
+        return res.status(403).json({ message: "You do not have access to this record." });
+      }
+      if (!current) return res.status(404).json({ message: "Record not found." });
+      if (!(await mayWriteRow(req.params.scope, table, current, req.user))) {
         return res.status(403).json({ message: "You do not have access to this record." });
       }
       if (await hasColumn(table, "deleted_at")) await update(table, req.params.id, { deleted_at: new Date() });
@@ -3878,14 +3911,26 @@ export function appRoutes(router) {
 async function updateResource(req, res, next) {
   try {
     if (isDedicatedResource(req.params.resource)) return next();
+    if (!scopeRoleAllowed(req.user, req.params.scope)) {
+      return res.status(403).json({ message: "You do not have access to this area." });
+    }
     const table = await resolveResourceTable(req.params.scope, req.params.resource);
     if (!table) return next();
-    const current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]).catch(() => null);
-    if (!(await visitOpenTo(req.params.scope, table, current, req.user))) {
+    let current;
+    try {
+      current = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+    } catch {
       return res.status(403).json({ message: "You do not have access to this record." });
     }
-    const body = visitBodyGuard(req.params.scope, table, { ...(req.body ?? {}) });
-    delete body.password;
+    if (!current) return res.status(404).json({ message: "Record not found." });
+    if (!(await mayWriteRow(req.params.scope, table, current, req.user))) {
+      return res.status(403).json({ message: "You do not have access to this record." });
+    }
+    const body = visitBodyGuard(
+      req.params.scope,
+      table,
+      stripClientOwners(req.body, { keep: req.params.scope === "admin" }),
+    );
     await update(table, req.params.id, body);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
     stored = await afterResourceSaved(table, stored, req);

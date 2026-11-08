@@ -13,7 +13,7 @@ import {
   tableExists,
   update,
 } from "./db.js";
-import { visitBodyGuard } from "./visit-rules.js";
+import { stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
@@ -667,9 +667,7 @@ async function updateDedicated(req, res, next, scope, spec) {
     const { table, row } = await loadOwnedRow(scope, spec, req.user, recordId);
     if (!table) return next();
     if (!row) return res.status(404).json({ message: "Record not found." });
-    const body = visitBodyGuard(scope, table, { ...(req.body ?? {}) });
-    delete body.password;
-    delete body.id;
+    const body = visitBodyGuard(scope, table, stripClientOwners(req.body, { keep: scope === "admin" }));
     delete body[spec.idName];
     await update(table, row.id, body);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
