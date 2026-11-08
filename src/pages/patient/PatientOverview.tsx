@@ -138,7 +138,14 @@ const PatientOverview = () => {
   const { data: appointmentsData, isLoading: appointmentsLoading } =
     useGetPatientAppointments({ per_page: 50 });
 
-  const appointmentRows = listFrom(appointmentsData);
+  const appointmentRows = listFrom<{
+    id: number;
+    status?: string;
+    appointment_date?: string;
+    appointment_time?: string;
+    type?: string;
+    doctor?: { name?: string; designations?: string; specialization?: string; user?: { name?: string } };
+  }>(appointmentsData);
   const upcomingAppointments = appointmentRows
     .filter((a) =>
       UPCOMING_STATUSES.includes(
@@ -147,8 +154,8 @@ const PatientOverview = () => {
     )
     .sort(
       (a, b) =>
-        new Date(a.appointment_date).getTime() -
-        new Date(b.appointment_date).getTime(),
+        new Date(a.appointment_date || 0).getTime() -
+        new Date(b.appointment_date || 0).getTime(),
     )
     .slice(0, 3);
   const dashToday = (dash as { today?: { confirmed?: number; instant_active?: number } } | undefined)?.today;

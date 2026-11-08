@@ -32,8 +32,20 @@ export default function PatientDocuments() {
 
   const visitRows = visits.data ?? [];
   const fileRows = files.data ?? [];
-  const rxRows = listFrom(prescriptions.data, "prescriptions");
-  const certRows = listFrom(certificates.data, "certificates");
+  const rxRows = listFrom<{
+    id: number;
+    prescription_number?: string;
+    diagnosis?: string;
+    status?: string;
+    created_at?: string;
+  }>(prescriptions.data, "prescriptions");
+  const certRows = listFrom<{
+    id: number;
+    certificate_number?: string;
+    purpose?: string;
+    status?: string;
+    created_at?: string;
+  }>(certificates.data, "certificates");
 
   const rows = useMemo<HubRow[]>(() => {
     const items: HubRow[] = [

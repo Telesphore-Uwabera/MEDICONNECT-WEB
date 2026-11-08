@@ -516,7 +516,7 @@ export interface AppointmentContext {
   speciality: string;
   date: string;
   time: string;
-  type: "video" | "in-person";
+  type: string;
 }
 
 interface CallState {

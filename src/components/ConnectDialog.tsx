@@ -586,8 +586,9 @@ export const ConnectDialogContent = ({
   // ── Poll handler ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!statusData || phase !== "polling") return;
-    setQueueInfo({ position: Number(statusData.queue_position), ahead: statusData.people_ahead });
-    console.info("[Poll] statusData:", JSON.stringify(statusData));
+    const position = Number(statusData.queue_position) || 1;
+    const ahead = statusData.people_ahead == null ? Math.max(0, position - 1) : Number(statusData.people_ahead);
+    setQueueInfo({ position, ahead });
 
     setDoctorBusy(Boolean(statusData.doctor_busy));
     if (statusData.status === "accepted" || statusData.status === "in_progress") {
@@ -807,8 +808,6 @@ export const ConnectDialogContent = ({
         };
         res = await requestMutation.mutateAsync(payload);
       }
-      console.info("[Request] response:", JSON.stringify(res));
-
       const attemptedPassword = override?.password ?? guestPassword;
       if (res.token && res.user) {
         setAuthToken(res.token);
@@ -837,9 +836,11 @@ export const ConnectDialogContent = ({
       setConsultationId(extractedId);
 
 
+      const position = Number(res.queue_position ?? responseData?.queue_position ?? 1);
+      const aheadRaw = res.people_ahead ?? responseData?.people_ahead;
       setQueueInfo({
-        position: Number(res.queue_position ?? responseData?.queue_position ?? 1),
-        ahead: res.people_ahead ?? responseData?.people_ahead ?? 0,
+        position,
+        ahead: aheadRaw == null ? Math.max(0, position - 1) : Number(aheadRaw),
       });
 
       if (
@@ -868,19 +869,18 @@ export const ConnectDialogContent = ({
         }
       }
       setPaymentInfo({ amount, currency: "RWF" });
-      if (busy) {
-        session.save(guestToken, name, phone, extractedId);
-        setDoctorBusy(true);
-        setPhase("polling");
-        return;
-      }
-
-      // Payment required — save session with pendingPayment so that if the
-      // user closes before paying, reopening resumes at the payment step
+      setDoctorBusy(busy);
       session.saveWithPendingPayment(guestToken, name, phone, extractedId, amount, "RWF");
       setPhase("payment");
     } catch (err: unknown) {
       // Wrong-role rejection → offer a one-click switch to patient.
+      if ((err as { status?: number })?.status === 403 && /profile/i.test(err instanceof Error ? err.message : "")) {
+        toast.message(t("consult.connect.profile_required", { defaultValue: "Complete your profile first" }), {
+          description: err instanceof Error ? err.message : undefined,
+        });
+        setPhase("idle");
+        return;
+      }
       if ((err as { status?: number })?.status === 403) {
         toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
           description: t("header.login_as_patient_hint", {
@@ -902,17 +902,15 @@ export const ConnectDialogContent = ({
   // ── Pay ───────────────────────────────────────────────────────────────────
   const handlePay = useCallback(async () => {
     if (!consultationId || !paymentInfo) return;
-    console.info("[Pay] initiating for consultationId:", consultationId);
     setPaymentLoading(true);
     setErrorMsg(null);
 
     try {
-      const payRes = await payMutation.mutateAsync(consultationId);
-      console.info("[Pay] payRes:", JSON.stringify({
-        ...payRes,
-        public_key: payRes?.public_key ? "[set]" : "",
-        payment_uuid: payRes?.payment_uuid ? "[set]" : null,
-      }));
+      const payRes = await payMutation.mutateAsync(
+        signedInRef.current || !consultationToken
+          ? consultationId
+          : { id: consultationId, guest_token: consultationToken },
+      );
 
       const finishPaid = (result?: { account_created?: boolean; account_email?: string | null; temp_password?: string | null; consultation?: { status: string; payment_status: string | null; room_url: string; daily_guest_token: string } | null }) => {
         const name = me?.name ?? guestName;
@@ -1439,7 +1437,7 @@ export const ConnectDialogContent = ({
             {queueInfo && phase === "polling" && (
               <p className="text-sm text-muted-foreground mt-0.5">
                 {t("consult.connect.queue_position", { position: queueInfo.position })} ·{" "}
-                {queueInfo.ahead === 0
+                {queueInfo.position <= 1 && queueInfo.ahead === 0
                   ? t("consult.connect.queue_next")
                   : t("consult.connect.queue_ahead", { count: queueInfo.ahead })}
               </p>
@@ -1907,11 +1905,11 @@ export const ConnectDialogContent = ({
               {doctorBusy && (
                 <div className="p-3 rounded-[6px] bg-amber-500/10 border border-amber-500/30 text-sm text-amber-800 dark:text-amber-200">
                   {t("consult.connect.doctor_busy_queue", {
-                    defaultValue: "The doctor is in another consultation. You stay in the queue and can pay when they are free.",
+                    defaultValue: "The doctor is in another consultation. You stay in the queue. You can pay now; the visit starts when the doctor is free.",
                   })}
                 </div>
               )}
-              {!doctorBusy && statusData?.payment_status !== "paid" && paymentInfo && (
+              {statusData?.payment_status !== "paid" && paymentInfo && (
                 <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
                   className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                   {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
@@ -1954,6 +1952,13 @@ export const ConnectDialogContent = ({
               {errorMsg && (
                 <div className="p-3 rounded-[6px] bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{errorMsg}
+                </div>
+              )}
+              {doctorBusy && (
+                <div className="p-3 rounded-[6px] bg-amber-500/10 border border-amber-500/30 text-sm text-amber-800 dark:text-amber-200">
+                  {t("consult.connect.doctor_busy_queue", {
+                    defaultValue: "The doctor is in another consultation. You stay in the queue. You can pay now; the visit starts when the doctor is free.",
+                  })}
                 </div>
               )}
               {Number(paymentInfo?.amount) > 0 ? (

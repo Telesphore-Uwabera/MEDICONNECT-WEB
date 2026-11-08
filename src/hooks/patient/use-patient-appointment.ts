@@ -42,6 +42,7 @@ export interface ApiAppointment {
       avatar: string | null;
     };
   } | null;
+  clinic?: string | { name?: string | null } | null;
   hospital: {
     id: number;
     name_en: string;
@@ -110,7 +111,7 @@ export function useGetPatientAppointments(
 export function useGetPatientAppointment(appointmentId: string) {
   return useQuery({
     queryKey: ["patient-appointment", appointmentId],
-    queryFn: () => apiFetch(`${BASE}/${appointmentId}`),
+    queryFn: () => apiFetch<ApiAppointment>(`${BASE}/${appointmentId}`),
     enabled: !!appointmentId,
   });
 }

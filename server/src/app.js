@@ -42,7 +42,10 @@ import {
 } from "./visit-rules.js";
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
-import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
+import { withTeamPhoto, expireUnpaidPayments, consultationAmount } from "./public.js";
+import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
+import { plausibleDateOfBirth } from "./input-checks.js";
+import { clientMayClaimEmail, isServerGuestAccount } from "./guest-account.js";
 import { checkSocialLink } from "./social-links.js";
 import {
   countWhere,
@@ -471,7 +474,7 @@ export function appRoutes(router) {
       const user = req.user;
       if (!user || user.profile_complete !== false) return next();
       if ((user.active_role || user.role) !== "patient") return next();
-      if (String(user.email || "").endsWith("@mediconnect.local")) return next();
+      if (isServerGuestAccount(user.email)) return next();
       if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
       const path = req.path || "";
       const allowed = PATIENT_PROFILE_WRITE_OK.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -536,6 +539,9 @@ export function appRoutes(router) {
       const body = req.body ?? {};
       if (!body.email || !body.password || !body.name) {
         return res.status(422).json({ message: "Name, email, and password are required.", errors: { email: ["Name, email, and password are required."] } });
+      }
+      if (!clientMayClaimEmail(body.email)) {
+        return res.status(422).json({ message: "Choose a different email address.", errors: { email: ["Choose a different email address."] } });
       }
       if (body.password !== body.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match.", errors: { password: ["Password confirmation does not match."] } });
@@ -647,7 +653,7 @@ export function appRoutes(router) {
       // Always return the same message so we don't leak whether the account exists.
       if (!row) return res.json({ message: "If that account exists, a reset code has been sent." });
 
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const code = String(crypto.randomInt(100000, 1000000));
       await insert("otps", {
         email: row.email ?? req.body?.email ?? null,
         phone: row.phone ?? req.body?.phone ?? null,
@@ -729,7 +735,7 @@ export function appRoutes(router) {
 
   router.post("/auth/send-otp", async (req, res, next) => {
     try {
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const code = String(crypto.randomInt(100000, 1000000));
       await insert("otps", {
         email: req.body?.email,
         phone: req.body?.phone,
@@ -765,6 +771,9 @@ export function appRoutes(router) {
       );
       if (!row) return res.status(422).json({ message: "That code is not valid." });
       let user = await findUserByLogin(req.body ?? {});
+      if (!user && req.body?.email && !clientMayClaimEmail(req.body.email)) {
+        return res.status(422).json({ message: "Choose a different email address." });
+      }
       if (!user && req.body?.email) {
         const id = await insert("users", {
           name: req.body.email,
@@ -787,7 +796,18 @@ export function appRoutes(router) {
   });
 
   router.post("/broadcasting/auth", requireAuth, (req, res) => {
-    res.json({ auth: `${process.env.REVERB_APP_KEY || "mediconnect-staging-key"}:local` });
+    const secret = String(process.env.REVERB_APP_SECRET || "").trim();
+    const key = String(process.env.REVERB_APP_KEY || "").trim();
+    if (!secret || !key) {
+      return res.status(503).json({ message: "Realtime auth is not configured." });
+    }
+    const socketId = String(req.body?.socket_id || "");
+    const channel = String(req.body?.channel_name || "");
+    if (!socketId || !channel) {
+      return res.status(422).json({ message: "socket_id and channel_name are required." });
+    }
+    const signature = crypto.createHmac("sha256", secret).update(`${socketId}:${channel}`).digest("hex");
+    res.json({ auth: `${key}:${signature}` });
   });
 
   router.post("/auth/guest", async (req, res, next) => {
@@ -821,6 +841,9 @@ export function appRoutes(router) {
         ? await one("SELECT tokenable_id FROM personal_access_tokens WHERE token = ? LIMIT 1", [crypto.createHash("sha256").update(plain).digest("hex")])
         : null;
       if (!row) return res.status(422).json({ message: "Guest session was not found." });
+      if (req.body?.email && !clientMayClaimEmail(req.body.email)) {
+        return res.status(422).json({ message: "Choose a different email address." });
+      }
       await update("users", row.tokenable_id, {
         name: req.body?.name,
         phone: req.body?.phone,
@@ -1200,13 +1223,15 @@ export function appRoutes(router) {
       if (!fullName || !relationship) {
         return res.status(422).json({ message: "Name and relationship are required." });
       }
+      const birth = plausibleDateOfBirth(req.body.date_of_birth);
+      if (!birth.ok) return res.status(422).json({ message: birth.message });
       const patientId = await loadOwnedId(req.user.id, "patients");
       const id = await insert("patient_dependents", {
         user_id: req.user.id,
         patient_id: patientId,
         full_name: fullName,
         relationship,
-        date_of_birth: req.body.date_of_birth || null,
+        date_of_birth: birth.value,
         phone: req.body.phone || null,
         notes: req.body.notes || null,
       });
@@ -1225,10 +1250,12 @@ export function appRoutes(router) {
       const id = Number(req.params.id);
       const row = await one("SELECT * FROM patient_dependents WHERE id = ? AND user_id = ?", [id, req.user.id]);
       if (!row) return res.status(404).json({ message: "Dependent not found." });
+      const birth = plausibleDateOfBirth(req.body.date_of_birth ?? row.date_of_birth);
+      if (!birth.ok) return res.status(422).json({ message: birth.message });
       await update("patient_dependents", id, {
         full_name: String(req.body.full_name || req.body.name || row.full_name).trim(),
         relationship: String(req.body.relationship || row.relationship).trim(),
-        date_of_birth: req.body.date_of_birth ?? row.date_of_birth,
+        date_of_birth: birth.value,
         phone: req.body.phone ?? row.phone,
         notes: req.body.notes ?? row.notes,
       });
@@ -2091,21 +2118,20 @@ export function appRoutes(router) {
           params,
         ).catch(() => []);
         active = await doctorActiveInstant(doctorId);
-        queue = rows.map((row, index) => {
-          const created = row.created_at ? new Date(row.created_at).getTime() : NaN;
-          const waitingSeconds = Number.isFinite(created)
-            ? Math.max(0, Math.floor((Date.now() - created) / 1000))
-            : 0;
+        const named = rows.filter((row) => Number(row.doctor_id) === Number(doctorId));
+        queue = rows.map((row) => {
+          const waitingSeconds = ageSeconds(row.created_at) ?? 0;
+          const place = placeInQueue(row, named.length ? named : [row]);
           return {
           id: row.id,
+          doctor_id: row.doctor_id || null,
           guest_name: row.guest_name || row.patient_name || "",
           guest_phone: row.guest_phone || row.phone || "",
           description: row.description || row.reason || null,
           status: row.status || "pending",
-          // 'confirmed' is only reachable by paying, so report it as paid even
-          // where the column is absent or was never written.
           payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
-          queue_position: index + 1,
+          queue_position: Number(row.doctor_id) === Number(doctorId) ? place.queue_position : null,
+          age_seconds: waitingSeconds,
           waiting_seconds: waitingSeconds,
           waiting_label: waitingSeconds >= 3600
             ? `${Math.floor(waitingSeconds / 3600)}h`
@@ -2126,12 +2152,19 @@ export function appRoutes(router) {
           owner.includes("?") ? [doctorId] : [],
         ).catch(() => ({ total: 0 })))?.total ?? 0);
       }
+      const liveQueue = queue.filter((item) => {
+        if (Number(item.doctor_id) !== Number(doctorId)) return false;
+        const paid = item.payment_status === "paid" || item.status === "confirmed";
+        const unpaidOpen = ["pending", "queued", "waiting", "payment_pending"].includes(item.status) && !paid;
+        if (unpaidOpen) return (item.age_seconds ?? 0) < 15 * 60;
+        return ["pending", "queued", "waiting", "confirmed"].includes(item.status);
+      });
       res.json({
         queue,
         stats: {
-          in_queue: queue.filter((item) => ["pending", "queued", "waiting", "confirmed"].includes(item.status)).length,
+          in_queue: liveQueue.length,
           seen_today: seenToday,
-          avg_duration: "0 min",
+          avg_duration: null,
           resolved,
           is_online: Boolean(Number(doctor?.instant_consultation ?? 0)),
           doctor_busy: Boolean(active),
@@ -2236,7 +2269,6 @@ export function appRoutes(router) {
       if (await hasColumn(table, "daily_doctor_token")) patch.daily_doctor_token = doctorToken;
       await update(table, row.id, patch);
       const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
-      notifyDoctorReady(updated || row).catch(() => null);
       res.json({
         message: "Session ready.",
         room_url: roomUrl,
@@ -2273,6 +2305,84 @@ export function appRoutes(router) {
       const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
       notifyVisitCompleted(updated || row, "instant consultation").catch(() => null);
       res.json({ message: "Session completed.", data: await presentRow(table, updated || row) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/patient/instant-consultations", requireAuth, requireRole("patient"), async (req, res, next) => {
+    try {
+      const table = await instantTable();
+      if (!table) return res.json({ data: [] });
+      const profiles = await tableExists("patients")
+        ? await q("SELECT id FROM patients WHERE user_id = ?", [req.user.id]).catch(() => [])
+        : [];
+      const identity = {
+        userId: req.user.id,
+        patientIds: profiles.map((profile) => profile.id),
+        email: req.user.email,
+        phone: req.user.phone,
+      };
+      const clauses = [];
+      const params = [];
+      if (await hasColumn(table, "user_id")) {
+        clauses.push("user_id = ?");
+        params.push(req.user.id);
+      }
+      if (identity.patientIds.length && await hasColumn(table, "patient_id")) {
+        clauses.push(`patient_id IN (${identity.patientIds.map(() => "?").join(",")})`);
+        params.push(...identity.patientIds);
+      }
+      if (req.user.email && await hasColumn(table, "guest_email")) {
+        clauses.push("guest_email = ?");
+        params.push(req.user.email);
+      }
+      if (req.user.phone && await hasColumn(table, "guest_phone")) {
+        clauses.push("guest_phone = ?");
+        params.push(req.user.phone);
+      }
+      if (!clauses.length) return res.json({ data: [] });
+      const rows = await q(
+        `SELECT * FROM \`${table}\` WHERE ${clauses.join(" OR ")} ORDER BY id DESC LIMIT 50`,
+        params,
+      ).catch(() => []);
+      const data = [];
+      for (const row of rows.filter((item) => ownsInstant(item, identity))) {
+        const doctor = row.doctor_id
+          ? await one(
+            "SELECT u.name AS name FROM doctors d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ? LIMIT 1",
+            [row.doctor_id],
+          ).catch(() => null)
+          : null;
+        const peers = await q(
+          `SELECT id, doctor_id, status, created_at FROM \`${table}\`
+           WHERE ${row.doctor_id == null ? "doctor_id IS NULL" : "doctor_id = ?"}
+             AND status IN ('pending','queued','waiting','payment_pending','confirmed','accepted','in_progress')
+           ORDER BY id ASC LIMIT 100`,
+          row.doctor_id == null ? [] : [row.doctor_id],
+        ).catch(() => []);
+        const place = placeInQueue(row, peers.length ? peers : [row]);
+        const amount = await consultationAmount({ doctor_id: row.doctor_id, amount: row.amount });
+        const canJoin = canJoinInstant(row);
+        data.push({
+          id: row.id,
+          status: row.status || "pending",
+          payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
+          doctor_id: row.doctor_id || null,
+          doctor_name: doctor?.name || null,
+          amount,
+          currency: row.currency || "RWF",
+          created_at: row.created_at || null,
+          age_seconds: ageSeconds(row.created_at),
+          ...place,
+          can_pay: canPayInstant(row) && amount > 0,
+          can_join: canJoin,
+          room_url: canJoin
+            ? (row.daily_room_url || row.room_url || `/consultation/${row.daily_room_name || row.room_name || `instant-${row.id}`}`)
+            : null,
+        });
+      }
+      res.json({ data });
     } catch (error) {
       next(error);
     }
@@ -3620,6 +3730,9 @@ export function appRoutes(router) {
       const userPatch = {};
       for (const field of ["name", "email", "phone", "gender", "preferred_language"]) {
         if (patch[field] != null) userPatch[field] = patch[field];
+      }
+      if (userPatch.email && !clientMayClaimEmail(userPatch.email)) {
+        return res.status(422).json({ message: "Choose a different email address." });
       }
       if (Object.keys(userPatch).length) await update("users", found.user.id, userPatch);
       if (await tableExists(table)) {

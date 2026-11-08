@@ -1900,7 +1900,7 @@ function EmptyHospital({ onCreate }: { onCreate: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Re-export the response type for use in this file
 // ─────────────────────────────────────────────────────────────────────────────
-type HospitalProfileResponse = import("@/hooks/useHospitalProfile").HospitalProfileResponse;
+type HospitalProfileResponse = import("@/hooks/hospital/use-hospital-profile").HospitalProfileResponse;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page

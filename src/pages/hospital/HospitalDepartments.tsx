@@ -77,10 +77,10 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 // ─── Icon map (API returns icon name as string) ────────────────────────────────
 
-function DeptIcon({ icon, className }: { icon: string | null; className?: string }) {
+function DeptIcon({ icon, className, style }: { icon: string | null; className?: string; style?: { color?: string } }) {
   // Render a colored dot as fallback for unknown icons — avoids crashing
   return (
-    <Stethoscope className={cn("w-4 h-4", className)} />
+    <Stethoscope className={cn("w-4 h-4", className)} style={style} />
   );
 }
 

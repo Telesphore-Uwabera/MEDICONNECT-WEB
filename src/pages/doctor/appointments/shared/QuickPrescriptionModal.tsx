@@ -514,6 +514,9 @@ function PharmacyStep({
     match_count?: number;
     province?: string | null;
     address?: string | null;
+    coverage_percentage?: number | string | null;
+    eligible?: boolean;
+    missing_items?: string[];
   };
 
   const [query, setQuery] = useState("");

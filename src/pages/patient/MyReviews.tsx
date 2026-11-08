@@ -340,7 +340,7 @@ function AppointmentSearchSelect({
       const doctorName = appt.doctor?.user?.name?.toLowerCase() ?? "";
       const spec = appt.doctor?.specialization?.toLowerCase() ?? "";
       const desig = appt.doctor?.designations?.toLowerCase() ?? "";
-      const clinic = appt.clinic?.name?.toLowerCase() ?? "";
+      const clinic = (typeof appt.clinic === "string" ? appt.clinic : appt.clinic?.name)?.toLowerCase() ?? "";
       return (
         doctorName.includes(q) ||
         spec.includes(q) ||
@@ -353,7 +353,7 @@ function AppointmentSearchSelect({
   const doctorName = (a: ApiAppointment) => a.doctor?.user?.name ?? t("pages.patient.rev_unknown_doctor");
   const doctorDesig = (a: ApiAppointment) => a.doctor?.designations ?? "";
   const doctorSpec = (a: ApiAppointment) => a.doctor?.specialization ?? "";
-  const clinicName = (a: ApiAppointment) => a.clinic?.name ?? "";
+  const clinicName = (a: ApiAppointment) => (typeof a.clinic === "string" ? a.clinic : a.clinic?.name) ?? "";
 
   const handleToggle = () => {
     updatePosition();

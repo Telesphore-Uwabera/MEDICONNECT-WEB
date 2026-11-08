@@ -574,7 +574,7 @@ function ConsultTableRow({
           <TypeBadge summary={row.summary} />
           {flagged && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
           {parseProofsFromHtml(summaryFieldText(row.summary.attachments)).length > 0 && (
-            <Paperclip className="h-3.5 w-3.5 text-muted-foreground" title="Illness proofs" />
+            <Paperclip className="h-3.5 w-3.5 text-muted-foreground" aria-label="Illness proofs" />
           )}
         </div>
       </td>

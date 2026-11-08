@@ -36,7 +36,7 @@ export const COMMON_SPECIALITIES = [
 ];
 
 export const SOCIAL_PLATFORMS: Array<{
-  key: keyof SocialLinksInfo;
+  key: "linkedin" | "twitter" | "facebook" | "instagram";
   label: string;
   placeholder: string;
 }> = [

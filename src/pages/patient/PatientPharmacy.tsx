@@ -100,8 +100,8 @@ function sortPharmacies(pharmacies: Pharmacy[], sort: SortOption): Pharmacy[] {
         return da - db;
       }
       case "fee-asc": {
-        const fa = a.delivery_fee ?? Infinity;
-        const fb = b.delivery_fee ?? Infinity;
+        const fa = Number(a.delivery_fee ?? Infinity);
+        const fb = Number(b.delivery_fee ?? Infinity);
         return fa - fb;
       }
       default: return a.name.localeCompare(b.name);

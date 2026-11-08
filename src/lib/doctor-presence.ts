@@ -154,7 +154,7 @@ export function instantConsultationOn(value: unknown): boolean {
  * doctor turns it off themselves (including on logout).
  */
 export function doctorOffersInstant(
-  doctor: { instant_consultation?: unknown } | null | undefined,
+  doctor: { instant_consultation?: unknown; bookings_paused?: boolean } | null | undefined,
   _schedule?: PublicDoctorSchedule,
   _now = new Date(),
 ) {

@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
+import { plausibleDateOfBirth, sniffedUploadExtension } from "./input-checks.js";
+import { validateIncomingPhone } from "./phone.js";
 
 const MEDICAL_TABLES = [
   "patient_medical_infos",
@@ -20,15 +22,12 @@ function saveFile(file, prefix) {
     ? path.join(process.env.UPLOAD_DIR, "doctors-webp")
     : path.resolve("storage", "doctors-webp");
   fs.mkdirSync(dir, { recursive: true });
-  const rawExt = path.extname(String(file.originalname || "")).toLowerCase();
-  const ext = [".pdf", ".png", ".jpg", ".jpeg", ".webp"].includes(rawExt)
-    ? rawExt
-    : file.mimetype === "application/pdf"
-      ? ".pdf"
-      : ".webp";
+  const sniffed = sniffedUploadExtension(file.buffer);
+  if (!sniffed) return { error: "Upload a PDF or an image (PNG, JPG, or WEBP)." };
+  const ext = sniffed === ".jpg" ? ".jpg" : sniffed;
   const filename = `${prefix}_${Date.now()}${ext}`;
   fs.writeFileSync(path.join(dir, filename), file.buffer);
-  return `https://mediconnect.rw/api/v1/media/${filename}`;
+  return { url: `https://mediconnect.rw/api/v1/media/${filename}` };
 }
 
 async function firstTable(names) {
@@ -132,12 +131,16 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
       const name = String(body.full_name || body.name || "").trim();
       const phone = String(body.phone || "").trim();
       if (!name || !phone) return res.status(422).json({ message: "Name and phone are required." });
+      const phoneCheck = validateIncomingPhone(phone, body.country_code || "+250");
+      if (!phoneCheck.ok) return res.status(422).json({ message: phoneCheck.message });
+      const birth = plausibleDateOfBirth(body.date_of_birth);
+      if (!birth.ok) return res.status(422).json({ message: birth.message });
       const payload = {
         name,
         name_en: name,
-        phone,
+        phone: phoneCheck.phone,
         email: body.email || null,
-        date_of_birth: body.date_of_birth || null,
+        date_of_birth: birth.value,
         gender: body.gender || null,
         national_id: body.national_id || null,
         address: body.address || null,
@@ -288,8 +291,9 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         table = "patient_files";
       }
       const file = req.files?.[0];
-      const url = saveFile(file, `patient_${patient.id}`);
-      if (!url) return res.status(422).json({ message: "Choose a file to upload." });
+      const saved = saveFile(file, `patient_${patient.id}`);
+      if (!saved?.url) return res.status(422).json({ message: saved?.error || "Choose a file to upload." });
+      const url = saved.url;
       const id = await insert(table, {
         patient_id: patient.id,
         visit_type: req.body?.visit_type || null,

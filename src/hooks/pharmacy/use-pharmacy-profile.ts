@@ -275,6 +275,12 @@ export interface ProfilePayload {
   phone?: string;
   email?: string;
   website?: string;
+  social_links?: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+  };
   opens_at?: string;
   closes_at?: string;
   is_open_24h?: boolean;

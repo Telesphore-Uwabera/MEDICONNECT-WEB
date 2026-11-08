@@ -43,8 +43,20 @@ export default function DoctorEarnings() {
   const currency = String(wallet?.currency ?? "RWF");
   const balance = Number(wallet?.balance ?? 0);
   const summary = earnings?.summary;
-  const earningRows = listFrom(earnings?.breakdown);
-  const payoutRows = listFrom(withdrawals);
+  const earningRows = listFrom<{
+    id: number;
+    consultation_fee?: number | string;
+    amount?: number | string;
+    status?: string;
+    completed_at?: string;
+  }>(earnings?.breakdown);
+  const payoutRows = listFrom<{
+    id: number;
+    amount?: number | string;
+    method?: string;
+    created_at?: string;
+    status?: string;
+  }>(withdrawals);
   const paged = paginateRows(earningRows, page);
   const lastPage = tablePageCount(earningRows.length);
 

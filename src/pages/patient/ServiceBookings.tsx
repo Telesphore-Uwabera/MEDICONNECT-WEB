@@ -525,7 +525,7 @@ function BookingDetailDrawer({
                   <DetailRow
                     icon={Receipt}
                     label="Platform booking fee"
-                    value={formatPrice(booking.booking_fee, booking.booking_fee_currency ?? "RWF")}
+                    value={formatPrice(String(booking.booking_fee), booking.booking_fee_currency ?? "RWF")}
                   />
                 )}
                 {booking.insurance_covered && parseFloat(booking.insurance_covered) > 0 && (

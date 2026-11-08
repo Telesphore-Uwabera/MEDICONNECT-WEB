@@ -409,7 +409,7 @@ export function LegalDocumentsManager() {
           </div>
 
           <div className="grid gap-4">
-            <Field label="English content"/>
+            <Field label="English content">
               <RichTextarea
                 value={form.content_en}
                 onChange={(value) => setField("content_en", value)}
@@ -417,22 +417,25 @@ export function LegalDocumentsManager() {
                  minHeight={220}
                    maxHeight={450}
                  />
-            <Field label="French content"/>
+            </Field>
+            <Field label="French content">
               <RichTextarea
                 value={form.content_fr}
                 onChange={(value) => setField("content_fr", value)}
                 placeholder="Write the French legal content..."
                 minHeight={220}
                 maxHeight={450}
-              /> 
-            <Field label="Kinyarwanda content" />
+              />
+            </Field>
+            <Field label="Kinyarwanda content">
               <RichTextarea
                 value={form.content_kiny}
                 onChange={(value) => setField("content_kiny", value)}
                 placeholder="Write the Kinyarwanda legal content..."
                 minHeight={220}
                 maxHeight={450}
-              /> 
+              />
+            </Field>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">

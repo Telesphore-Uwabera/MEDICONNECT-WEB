@@ -167,7 +167,7 @@ export function ActiveCallPanel() {
 
   const chatColumn = chatOpen ? (
     <div className="w-72 flex-shrink-0 flex flex-col bg-[#161616] border-l border-white/8 overflow-hidden">
-      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={chatAvatar} doctorName={chatName} />
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={chatAvatar} consultationId={null} isOwner />
     </div>
   ) : null;
 

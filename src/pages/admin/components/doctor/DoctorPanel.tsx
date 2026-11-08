@@ -2306,7 +2306,7 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
                               ...(feeOptions
                                 ?.filter((f) => f.is_active)
                                 .map((f) => ({
-                                  value: f.id,
+                                  value: String(f.id),
                                   label: `${f.specialization} — ${Number(f.online_fee).toLocaleString()} / ${Number(f.in_person_fee).toLocaleString()} RWF`,
                                 })) ?? []),
                             ]}

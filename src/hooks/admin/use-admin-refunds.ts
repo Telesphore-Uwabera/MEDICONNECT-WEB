@@ -14,7 +14,6 @@ export interface AdminRefund extends PatientRefund {
   requestedBy?: RefundUser | null;
   requested_by?: RefundUser | null;
   payment?: RefundPayment | null;
-  status: RefundStatus;
 }
 
 export interface AdminRefundsResponse {

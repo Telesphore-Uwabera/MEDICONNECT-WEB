@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ApiDoctor } from "@/hooks/admin/use-admin-doctors";
+import { type ApiDoctor } from "@/hooks/admin/use-admin-doctors";
 import { formatDateOnly } from "@/lib/date";
 import{  getInitials,
   statusStyle,

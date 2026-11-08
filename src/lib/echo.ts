@@ -89,8 +89,8 @@ const pusher = canUseWebsocket()
           if (!response.ok) throw new Error("Auth failed");
           return response.json();
         })
-        .then((data) => callback(false, data))
-        .catch((error) => callback(true, error));
+        .then((data) => callback(null, data))
+        .catch((error: unknown) => callback(error instanceof Error ? error : new Error("Auth failed"), null));
     },
   }),
 })

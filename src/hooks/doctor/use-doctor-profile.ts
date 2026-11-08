@@ -136,6 +136,7 @@ export interface UpsertProfilePayload {
   sub_specialization?: string | null;   // "other" for a custom speciality
   sub_specializations?: { id: number }[]; // specialist sub-types: [{ id }, …]
   years_of_experience?: number;
+  designations?: string;
 }
 
 export interface AddEducationPayload {

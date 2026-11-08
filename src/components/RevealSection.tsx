@@ -12,7 +12,6 @@ interface RevealSectionProps {
   duration?: number;     // ms
   distance?: number;     // px — how far to slide from
   threshold?: number;
-  as?: keyof JSX.IntrinsicElements;
 }
 
 const TRANSLATE: Record<Direction, string> = {
@@ -40,7 +39,6 @@ export function RevealSection({
   duration = 600,
   distance = 36,
   threshold = 0.1,
-  as: Tag = "div",
 }: RevealSectionProps) {
   const { ref, isVisible } = useScrollReveal<HTMLDivElement>({ threshold });
   const [settled, setSettled] = useState(false);
@@ -58,8 +56,7 @@ export function RevealSection({
   const hiddenTransform = TRANSLATE[direction].replace("VAR", `${distance}px`);
 
   return (
-    <Tag
-      // @ts-expect-error — generic ref works at runtime
+    <div
       ref={ref}
       className={cn(className)}
       style={{
@@ -72,6 +69,6 @@ export function RevealSection({
       }}
     >
       {children}
-    </Tag>
+    </div>
   );
 }

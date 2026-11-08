@@ -10,6 +10,10 @@ import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certi
 import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { releaseSlot } from "./visit-rules.js";
+import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
+import { validateIncomingPhone } from "./phone.js";
+import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
+import { withNamedLock } from "./named-lock.js";
 
 function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -100,7 +104,7 @@ function kigaliDay(isoDate) {
   };
 }
 
-async function consultationAmount(row) {
+export async function consultationAmount(row) {
   const stored = Number(row?.amount || 0);
   if (stored > 0) return stored;
   const doctorId = Number(row?.doctor_id) || null;
@@ -246,10 +250,11 @@ async function iremboInvoiceStatus(invoiceNumber) {
     paidAt: data.paidAt || null,
     paymentMethod: data.paymentMethod || null,
     paymentReference: data.paymentReference || null,
+    amount: data.amount != null ? Number(data.amount) : (data.totalAmount != null ? Number(data.totalAmount) : null),
   };
 }
 
-const DOCTOR_BUSY_MESSAGE = "The doctor is in another consultation. You stay in the queue and can pay when they are free.";
+const DOCTOR_BUSY_MESSAGE = "The doctor is in another consultation. You stay in the queue. You can pay now; the visit starts when the doctor is free.";
 
 async function doctorBusyInstant(doctorId, exceptId = null) {
   if (!doctorId) return null;
@@ -331,12 +336,10 @@ async function paymentIsDue(payment) {
   const due = await one(
     `SELECT
        (
-         (expires_at IS NOT NULL AND (expires_at < UTC_TIMESTAMP() OR expires_at < NOW()))
+         (expires_at IS NOT NULL AND expires_at < UTC_TIMESTAMP())
          OR (
-           created_at IS NOT NULL AND (
-             created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
-             OR created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
-           )
+           created_at IS NOT NULL
+           AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
          )
        ) AS due
      FROM payments WHERE id = ?`,
@@ -445,7 +448,7 @@ async function expireStaleUnpaidVisits() {
   const notPaid = paidCol
     ? "AND (payment_status IS NULL OR LOWER(payment_status) NOT IN ('paid','completed','success','successful'))"
     : "";
-  const staleClock = `(created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE) OR created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE))`;
+  const staleClock = `created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)`;
   const rows = await q(
     `SELECT id, status${paidCol ? ", payment_status" : ""} FROM \`${table}\`
      WHERE ${unpaidStatus}
@@ -471,11 +474,8 @@ export async function expireUnpaidPayments() {
     `SELECT * FROM payments
      WHERE LOWER(status) IN (${unpaidHolders})
        AND (
-         (expires_at IS NOT NULL AND (expires_at < UTC_TIMESTAMP() OR expires_at < NOW()))
-         OR (expires_at IS NULL AND created_at IS NOT NULL AND (
-           created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
-           OR created_at < DATE_SUB(NOW(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE)
-         ))
+         (expires_at IS NOT NULL AND expires_at < UTC_TIMESTAMP())
+         OR (expires_at IS NULL AND created_at IS NOT NULL AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ${UNPAID_VISIT_MINUTES} MINUTE))
        )
      ORDER BY id ASC LIMIT 200`,
     UNPAID_PAYMENT,
@@ -580,6 +580,10 @@ async function attachPayerAccount(payment) {
   let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
   let created = false;
   let plain = cached?.tempPassword || null;
+
+  if (!user && isReservedAccountEmail(email)) {
+    return { created: false, email: null, plain: null };
+  }
 
   if (!user) {
     plain = temporaryPassword();
@@ -1431,11 +1435,83 @@ export function publicRoutes(router) {
     res.json({ message: "Message received." });
   });
 
+  async function instantOwnerIdentity(req) {
+    const patientIds = [];
+    if (req.user?.id && await tableExists("patients")) {
+      const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [req.user.id]).catch(() => []);
+      for (const profile of profiles) patientIds.push(profile.id);
+    }
+    return {
+      userId: req.user?.id,
+      patientIds,
+      email: req.user?.email,
+      phone: req.user?.phone,
+    };
+  }
+
+  async function instantRequestTable() {
+    if (await tableExists("instant_consultation_requests")) return "instant_consultation_requests";
+    if (await tableExists("instant_consultations")) return "instant_consultations";
+    return null;
+  }
+
+  async function queuePeers(table, doctorId) {
+    if (!table) return [];
+    if (!doctorId) {
+      return q(
+        `SELECT id, doctor_id, status, created_at FROM \`${table}\`
+         WHERE doctor_id IS NULL AND status IN ('pending','queued','waiting','payment_pending','confirmed','accepted','in_progress')
+         ORDER BY id ASC LIMIT 100`,
+      ).catch(() => []);
+    }
+    return q(
+      `SELECT id, doctor_id, status, created_at FROM \`${table}\`
+       WHERE doctor_id = ? AND status IN ('pending','queued','waiting','payment_pending','confirmed','accepted','in_progress')
+       ORDER BY id ASC LIMIT 100`,
+      [doctorId],
+    ).catch(() => []);
+  }
+
+  async function findOpenInstant(table, doctorId, identity) {
+    if (!table || !identity) return null;
+    const rows = await q(
+      `SELECT * FROM \`${table}\`
+       WHERE status IN ('pending','queued','waiting','payment_pending','confirmed','accepted','in_progress')
+       ORDER BY id DESC LIMIT 100`,
+    ).catch(() => []);
+    return rows.find((row) => {
+      const rowDoctor = row.doctor_id == null || row.doctor_id === "" ? null : Number(row.doctor_id);
+      if (doctorId && rowDoctor && rowDoctor !== Number(doctorId)) return false;
+      return ownsInstant(row, identity);
+    }) || null;
+  }
+
+  function instantPayload(row, place, { amount, doctorBusy, created = false, message }) {
+    return {
+      message,
+      is_existing: !created,
+      doctor_busy: doctorBusy,
+      guest_token: row.guest_token || null,
+      queue_position: place.queue_position,
+      people_ahead: place.people_ahead,
+      you_are_next: place.you_are_next,
+      id: row.id,
+      amount,
+      currency: row.currency || "RWF",
+      payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
+      status: row.status || "pending",
+      can_pay: canPayInstant(row),
+      can_join: canJoinInstant(row),
+      data: row,
+    };
+  }
+
   router.post(["/public/instant-consultations/request", "/public/instant-consultations/request-any"], async (req, res, next) => {
     try {
       const body = { ...(req.body ?? {}) };
       delete body.password;
       delete body.token;
+      delete body.amount;
       const doctorId = Number(body.doctor_id) || null;
       const doctor = doctorId ? await one("SELECT * FROM doctors WHERE id = ?", [doctorId]) : null;
       if (doctor && !doctorIsApproved(doctor.status)) {
@@ -1446,54 +1522,85 @@ export function publicRoutes(router) {
           message: "This doctor is not offering instant consultations right now.",
         });
       }
+      const role = req.user?.active_role || req.user?.role;
+      const accountEmail = String(req.user?.email || "");
+      if (req.user && role === "patient" && !isServerGuestAccount(accountEmail) && req.user.profile_complete === false) {
+        return res.status(403).json({
+          message: "Complete your profile before requesting an instant consultation.",
+          profile_complete: false,
+        });
+      }
+      const rawPhone = body.phone || body.guest_phone || req.user?.phone || "";
+      const rawCode = body.country_code || req.user?.country_code || "+250";
+      let phone = rawPhone;
+      if (rawPhone) {
+        const checked = validateIncomingPhone(rawPhone, rawCode);
+        if (!checked.ok) return res.status(422).json({ message: checked.message });
+        phone = checked.phone;
+        body.country_code = checked.country_code;
+      }
 
-      const amount = await consultationAmount({
-        amount: body.amount,
-        doctor_id: doctorId,
-      });
+      const requestedEmail = body.email || body.guest_email || "";
+      if (requestedEmail && !clientMayClaimEmail(requestedEmail)) {
+        return res.status(422).json({ message: "Choose a different email address." });
+      }
+      const identity = await instantOwnerIdentity(req);
+      if (phone) identity.phone = identity.phone || phone;
+      const email = requestedEmail || req.user?.email || "";
+      if (email) identity.email = identity.email || email;
+      const table = await instantRequestTable();
+      if (!table) return res.status(503).json({ message: "Instant consultations are not available." });
+      const ownerKey = req.user?.id ? `u${req.user.id}` : `g${phone || email || "anon"}`;
+      await withNamedLock(pool, `ic:${doctorId || 0}:${ownerKey}`, async () => {
+      const existing = await findOpenInstant(table, doctorId, identity);
+      if (existing) {
+        const place = placeInQueue(existing, await queuePeers(table, existing.doctor_id));
+        const amount = await consultationAmount({ doctor_id: existing.doctor_id, amount: existing.amount });
+        const doctorBusy = Boolean(await doctorBusyInstant(existing.doctor_id, existing.id));
+        return res.status(200).json(instantPayload(existing, place, {
+          amount,
+          doctorBusy,
+          created: false,
+          message: doctorBusy ? DOCTOR_BUSY_MESSAGE : "You already have an open request.",
+        }));
+      }
 
+      const amount = await consultationAmount({ doctor_id: doctorId });
       let patientId = Number(body.patient_id) || null;
       if (!patientId && req.user?.id && await tableExists("patients")) {
         const patient = await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [req.user.id]).catch(() => null);
         patientId = patient?.id ?? null;
       }
-
-      const ahead = await countWhere(
-        "instant_consultation_requests",
-        "WHERE status IN ('pending','queued','waiting')" + (doctorId ? " AND (doctor_id = ? OR doctor_id IS NULL)" : ""),
-        doctorId ? [doctorId] : [],
-      ).catch(() => 0);
       const guestToken = crypto.randomBytes(24).toString("hex");
-
-      const id = await insert("instant_consultation_requests", {
+      const id = await insert(table, {
         ...body,
         ...(doctorId ? { doctor_id: doctorId } : {}),
         ...(patientId ? { patient_id: patientId } : {}),
+        ...(req.user?.id ? { user_id: req.user.id } : {}),
         guest_name: body.name || body.guest_name || req.user?.name,
-        guest_email: body.email || body.guest_email || req.user?.email,
-        guest_phone: body.phone || body.guest_phone || req.user?.phone,
+        guest_email: email || null,
+        guest_phone: phone || null,
         guest_token: guestToken,
         status: "pending",
         payment_status: "pending",
         amount,
-        queue_position: Number(ahead) + 1,
-        people_ahead: Number(ahead),
+        currency: "RWF",
       });
-      const request = await presentRow("instant_consultation_requests", await one("SELECT * FROM instant_consultation_requests WHERE id = ?", [id]));
+      const request = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
+      const place = placeInQueue(request, await queuePeers(table, doctorId));
       const doctorBusy = Boolean(await doctorBusyInstant(doctorId, id));
-      res.status(201).json({
-        message: doctorBusy ? DOCTOR_BUSY_MESSAGE : "Request received.",
-        doctor_busy: doctorBusy,
-        guest_token: request?.guest_token || guestToken,
-        queue_position: Number(request?.queue_position ?? Number(ahead) + 1),
-        people_ahead: Number(request?.people_ahead ?? ahead),
-        id,
+      const presented = await presentRow(table, request);
+      res.status(201).json(instantPayload(presented || request, place, {
         amount: Number(request?.amount ?? amount),
-        payment_status: request?.payment_status || "pending",
-        status: request?.status || "pending",
-        data: request,
+        doctorBusy,
+        created: true,
+        message: doctorBusy ? DOCTOR_BUSY_MESSAGE : "Request received.",
+      }));
       });
     } catch (error) {
+      if (error?.status === 409 && !res.headersSent) {
+        return res.status(409).json({ message: error.message });
+      }
       next(error);
     }
   });
@@ -1546,6 +1653,9 @@ export function publicRoutes(router) {
         [req.params.token],
       ).catch(() => null);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
+      if (req.user && !ownsInstant(row, await instantOwnerIdentity(req))) {
+        return res.status(404).json({ message: "Consultation not found." });
+      }
       const payment = await one(
         "SELECT * FROM payments WHERE payable_id = ? AND payable_type LIKE '%instant%' ORDER BY id DESC LIMIT 1",
         [row.id],
@@ -1575,40 +1685,47 @@ export function publicRoutes(router) {
           await expirePaymentRecord(payment).catch(() => null);
         }
       } else {
-        const createdAt = row.created_at ? new Date(row.created_at).getTime() : 0;
+        const age = ageSeconds(row.created_at);
         const waiting = ["pending", "queued", "waiting", "payment_pending"].includes(String(row.status || "").toLowerCase());
         const unpaid = !row.payment_status || UNPAID_PAYMENT.includes(String(row.payment_status).toLowerCase());
-        if (waiting && unpaid && createdAt && Date.now() - createdAt > 30 * 60 * 1000) {
+        if (waiting && unpaid && age != null && age > 30 * 60) {
           await ensureEnumValue(table, "status", "expired").catch(() => null);
           await update(table, row.id, { status: "expired", payment_status: "expired" }).catch(() => null);
         }
       }
       const fresh = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]).catch(() => row) || row;
-      const ownCall = ["accepted", "in_progress"].includes(String(fresh.status || ""));
+      const ownCall = canJoinInstant(fresh);
       const doctorBusy = !ownCall && Boolean(await doctorBusyInstant(fresh.doctor_id, fresh.id));
       const roomName = fresh.daily_room_name || fresh.room_name || `instant-${fresh.id}`;
-      const guestToken = withLiveIce(fresh.daily_guest_token) || callToken({
-        room: roomName,
-        role: "patient",
-        consultationId: fresh.id,
-        name: fresh.guest_name || "Patient",
-      });
+      const guestToken = ownCall
+        ? (withLiveIce(fresh.daily_guest_token) || callToken({
+          room: roomName,
+          role: "patient",
+          consultationId: fresh.id,
+          name: fresh.guest_name || "Patient",
+        }))
+        : null;
+      const place = placeInQueue(fresh, await queuePeers(table, fresh.doctor_id));
+      const amount = await consultationAmount({ doctor_id: fresh.doctor_id, amount: fresh.amount });
       res.json({
         id: fresh.id,
         status: fresh.status || "pending",
-        // status='confirmed' only happens once the money is in, so report it as
-        // paid even when the table has no payment_status column to store it in.
         payment_status: fresh.payment_status || (fresh.status === "confirmed" ? "paid" : null),
-        queue_position: Number(fresh.queue_position || 1),
-        people_ahead: Number(fresh.people_ahead || 0),
+        queue_position: place.queue_position,
+        people_ahead: place.people_ahead,
+        you_are_next: place.you_are_next,
+        age_seconds: ageSeconds(fresh.created_at),
+        can_pay: canPayInstant(fresh),
+        can_join: ownCall,
         doctor_busy: doctorBusy,
-        message: fresh.status === "expired"
+        message: fresh.status === "expired" || fresh.status === "payment_expired"
           ? "This payment expired because it was not completed."
           : (doctorBusy ? DOCTOR_BUSY_MESSAGE : null),
-        room_url: fresh.daily_room_url || fresh.room_url || `/consultation/${roomName}`,
-        daily_room_name: roomName,
+        room_url: ownCall ? (fresh.daily_room_url || fresh.room_url || `/consultation/${roomName}`) : null,
+        daily_room_name: ownCall ? roomName : null,
         daily_guest_token: guestToken,
-        amount: Number(fresh.amount || 0),
+        amount,
+        currency: fresh.currency || "RWF",
       });
     } catch (error) {
       next(error);
@@ -1620,15 +1737,14 @@ export function publicRoutes(router) {
       const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
       const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
-      const busy = await doctorBusyInstant(row.doctor_id, row.id);
-      if (busy) {
-        return res.status(409).json({
-          message: DOCTOR_BUSY_MESSAGE,
-          doctor_busy: true,
-          stays_in_queue: true,
-        });
+      if (req.user) {
+        if (!ownsInstant(row, await instantOwnerIdentity(req))) {
+          return res.status(404).json({ message: "Consultation not found." });
+        }
+      } else if (!req.body?.guest_token || req.body.guest_token !== row.guest_token) {
+        return res.status(404).json({ message: "Consultation not found." });
       }
-      const amount = await consultationAmount(row);
+      const amount = await consultationAmount({ doctor_id: row.doctor_id, amount: row.amount });
       if (!(amount > 0)) {
         return res.status(422).json({ message: "This consultation has no payable fee." });
       }
@@ -1834,78 +1950,49 @@ export function publicRoutes(router) {
   //
   // Signature verification: IremboPay sends an HMAC-SHA256 signature in the
   // `irembopay-signature` header, computed over the raw request body using the
-  // PAYMENT_SECRET_KEY. A valid signature is accepted as proof of payment; a
-  // missing one is not — then the invoice is re-queried from IremboPay and only
-  // a PAID answer settles the visit.
+  // PAYMENT_SECRET_KEY. A wrong signature is rejected. A configured secret
+  // always re-queries IremboPay, and only a PAID invoice whose amount matches
+  // the stored payment settles the visit. A missing secret does not settle.
   router.post("/public/payment/webhook", async (req, res, next) => {
     try {
       const secret = paymentSecretKey();
+      if (!secret) {
+        return res.status(503).json({ message: "Payment webhook is not configured." });
+      }
       const sigHeader = String(req.headers["irembopay-signature"] || req.headers["x-irembopay-signature"] || "");
-
-      // A signature that is present but wrong is a forgery: refuse outright.
-      // A missing signature is merely untrusted, and falls through to the
-      // IremboPay re-check below, so real webhooks keep working whether or not
-      // the dashboard is configured to sign them.
-      const signed = secret && sigHeader ? webhookSignatureOk(req, secret, sigHeader) : false;
-      if (secret && sigHeader && !signed) {
+      if (sigHeader && !webhookSignatureOk(req, secret, sigHeader)) {
         return res.status(401).json({ message: "Webhook signature mismatch." });
       }
 
       const payload = req.body ?? {};
-      // IremboPay webhook payload shape (v2):
-      // { invoiceNumber, transactionId, paymentStatus, paidAt, paymentMethod, paymentReference, ... }
       const invoiceNumber = payload.invoiceNumber || payload.invoice_number || payload.invoice || null;
-      const paymentStatus = String(payload.paymentStatus || payload.payment_status || payload.status || "").toUpperCase();
-
       if (!invoiceNumber) {
-        // Acknowledge but do nothing — not a payment notification we can handle
         return res.json({ received: true, processed: false });
       }
 
-      // Only process confirmed payments
-      if (paymentStatus !== "PAID" && paymentStatus !== "SUCCESS" && paymentStatus !== "SUCCESSFUL" && paymentStatus !== "COMPLETED") {
-        return res.json({ received: true, processed: false, status: paymentStatus });
-      }
-
-      // Find the payment record by invoice number
       const payment = await one(
         "SELECT * FROM payments WHERE invoice_number = ? OR transaction_id = ? ORDER BY id DESC LIMIT 1",
         [invoiceNumber, payload.transactionId || invoiceNumber],
       ).catch(() => null);
 
       if (!payment) {
-        // Payment not in our DB yet — acknowledge IremboPay and let the next poll handle it
         return res.json({ received: true, processed: false, reason: "invoice_not_found" });
       }
 
       if (String(payment.status).toLowerCase() === "paid") {
-        // Already confirmed — idempotent acknowledgement
         return res.json({ received: true, processed: false, reason: "already_paid" });
       }
 
-      const claimedAmount = Number(payload.amount ?? payload.totalAmount ?? 0);
-      if (claimedAmount > 0 && Number(payment.amount) > 0 && claimedAmount !== Number(payment.amount)) {
+      const proof = isLocalInvoiceNumber(invoiceNumber)
+        ? null
+        : await iremboInvoiceStatus(invoiceNumber).catch(() => null);
+      if (proof?.paymentStatus !== "PAID") {
+        return res.status(202).json({ received: true, processed: false, reason: "provider_unverified" });
+      }
+      if (proof.amount != null && Number(payment.amount) > 0 && Number(proof.amount) !== Number(payment.amount)) {
         return res.status(400).json({ received: true, processed: false, reason: "amount_mismatch" });
       }
-
-      // Confirm the payment, update statuses, and notify
-      let remote = {
-        paymentStatus: "PAID",
-        paidAt: payload.paidAt || payload.paid_at || null,
-        paymentMethod: payload.paymentMethod || payload.payment_method || null,
-        paymentReference: payload.paymentReference || payload.payment_reference || null,
-      };
-      if (!signed) {
-        // No usable signature: only IremboPay itself may settle this visit.
-        const proof = isLocalInvoiceNumber(invoiceNumber)
-          ? null
-          : await iremboInvoiceStatus(invoiceNumber).catch(() => null);
-        if (proof?.paymentStatus !== "PAID") {
-          // 202 leaves IremboPay retrying while the normal invoice poll settles it.
-          return res.status(202).json({ received: true, processed: false, reason: "provider_unverified" });
-        }
-        remote = proof;
-      }
+      const remote = proof;
       const confirmed = await confirmPaidInvoice(payment, remote, { notify: false });
       const account = await attachPayerAccount(confirmed).catch(() => null);
       // Notify with the account so a new guest's email actually carries their credentials.

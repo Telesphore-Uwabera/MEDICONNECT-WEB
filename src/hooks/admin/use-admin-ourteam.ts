@@ -28,8 +28,9 @@ export interface TeamApiResponse {
   total: number;
 }
 
-export interface TeamMemberResponse {
-  member: ApiTeamMember;
+export interface TeamMemberResponse extends Partial<ApiTeamMember> {
+  member?: ApiTeamMember;
+  data?: ApiTeamMember;
 }
 
 export interface GetTeamParams {

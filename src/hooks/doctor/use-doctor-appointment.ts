@@ -437,7 +437,8 @@ export interface InstantConsultQueueItem {
     user_id?: number | null;
     status: "pending" | "confirmed" | "accepted" | "in_progress" | "declined" | "withdrawn" | "expired" | "payment_expired" | "completed";
     payment_status?: string | null;
-    queue_position: number;
+    queue_position: number | null;
+    age_seconds?: number | null;
     waiting_seconds: number;
     waiting_label: string;
     created_at?: string | null;
@@ -446,7 +447,7 @@ export interface InstantConsultQueueItem {
 export interface InstantConsultStats {
     in_queue: number;
     seen_today: number;
-    avg_duration: string;
+    avg_duration: string | null;
     resolved: number;
     is_online: boolean;
     doctor_busy?: boolean;

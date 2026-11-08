@@ -151,7 +151,6 @@ export interface WithdrawalRequest {
   doctor?: DoctorNested | null;
   doctor_name: string;
   doctor_email: string;
-  [key: string]: unknown;
 }
 
 type RawWithdrawalRequest = Omit<WithdrawalRequest, "doctor_name" | "doctor_email">;

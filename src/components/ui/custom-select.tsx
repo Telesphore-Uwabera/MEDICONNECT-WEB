@@ -46,6 +46,8 @@ export interface CustomSelectProps<T extends string = string> {
   onChange: (value: T) => void;
   /** Accessible label forwarded to aria-label */
   label?: string;
+  /** Shown when the current value is not in the option list */
+  placeholder?: string;
   disabled?: boolean;
   className?: string;
   triggerClassName?: string;
@@ -60,6 +62,7 @@ export function CustomSelect<T extends string = string>({
   options,
   onChange,
   label,
+  placeholder,
   disabled = false,
   className,
   triggerClassName,
@@ -76,7 +79,7 @@ export function CustomSelect<T extends string = string>({
   const [dropStyle, setDropStyle] = useState<React.CSSProperties>({});
 
   const selectedOption = options.find((o) => o.value === value);
-  const displayLabel = selectedOption?.label ?? label ?? "Select…";
+  const displayLabel = selectedOption?.label ?? placeholder ?? label ?? "Select…";
 
   const calcPosition = () => {
     if (!containerRef.current) return;

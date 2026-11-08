@@ -1,10 +1,11 @@
 import crypto from "crypto";
-import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, one, pool, presentRow, q, tableExists, update } from "./db.js";
 import { loadOwnedId } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
 import { notifyAppointmentConfirmed, notifyBookedVisit } from "./visit-notify.js";
 import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot } from "./visit-rules.js";
+import { withNamedLock } from "./named-lock.js";
 
 export async function doctorOnlineFee(doctorId) {
   const doctor = await one(
@@ -127,6 +128,7 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
       if (appointmentStartIsInPast(date, time)) {
         return res.status(422).json({ message: "Choose a time later today, or another day." });
       }
+      await withNamedLock(pool, `book:${doctorId}:${date}:${String(time).slice(0, 8)}`, async () => {
       const taken = await appointmentCollision(doctorId, date, time);
       if (taken) {
         return res.status(409).json({ message: "That slot is already booked. Choose another time.", collision_id: taken.id });
@@ -170,7 +172,11 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         data: row,
         ...(row ?? {}),
       });
+      });
     } catch (error) {
+      if (error?.status === 409 && !res.headersSent) {
+        return res.status(409).json({ message: error.message });
+      }
       next(error);
     }
   });

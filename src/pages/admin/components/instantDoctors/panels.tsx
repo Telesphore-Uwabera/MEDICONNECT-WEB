@@ -42,6 +42,7 @@ import {
 } from "@/hooks/admin/use-admin-doctors";
 import {
   useGetAdminDoctors,
+  specializationLabel,
   type ApiDoctor,
 } from "@/hooks/admin/use-admin-doctors";
 import { useGetSpecialityFees } from "@/hooks/admin/use-admin-doctors";
@@ -305,7 +306,7 @@ function DoctorEnrichedDetails({
   const latestAppointment = doctor.appointments?.[0] ?? null;
   const sortedAvailabilities = [...(doctor.availabilities ?? [])].sort(
     (a, b) =>
-      DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week),
+      DAY_ORDER.indexOf(a.day_of_week || a.day) - DAY_ORDER.indexOf(b.day_of_week || b.day),
   );
   const socialEntries = doctor.social_links
     ? (["facebook", "twitter", "linkedin", "instagram", "website"] as const)
@@ -422,7 +423,7 @@ function DoctorEnrichedDetails({
       </div>
 
       {/* ── Fees ── */}
-      {doctor.consultation_fee && (
+      {doctor.consultation_fee && typeof doctor.consultation_fee === "object" && (
         <div>
           <SectionLabel
             icon={<CreditCard className="w-3 h-3" />}
@@ -448,7 +449,7 @@ function DoctorEnrichedDetails({
             {doctor.consultation_fee.specialization_fee && (
               <Tile label="Fee tier" span2>
                 <span className="text-muted-foreground/70">
-                  {doctor.consultation_fee.specialization_fee.specialization}
+                  {specializationLabel(doctor.consultation_fee.specialization_fee.specialization)}
                 </span>
               </Tile>
             )}
@@ -1257,8 +1258,8 @@ export function AssignPanel({
                   {selectedDoctor.user.name}
                 </p>
                 <p className="text-[10px] text-muted-foreground/60">
-                  {selectedDoctor.specialization ??
-                    selectedDoctor.user.email ??
+                  {specializationLabel(selectedDoctor.specialization) ||
+                    selectedDoctor.user?.email ||
                     "—"}
                 </p>
               </div>
@@ -1315,7 +1316,7 @@ export function AssignPanel({
                             {d.user.name}
                           </p>
                           <p className="text-[10px] text-muted-foreground/60 truncate">
-                            {d.specialization ?? d.user.email ?? "—"}
+                            {specializationLabel(d.specialization) || d.user?.email || "—"}
                           </p>
                         </div>
                       </button>
@@ -1471,8 +1472,8 @@ export function ConsultationPanel({
   const doctorName = singleDoctor?.user?.name ?? "";
   const doctorImage = singleDoctor?.image ?? null;
   const doctorSpec =
-    singleDoctor?.primary_specialization ??
-    singleDoctor?.specialization ??
+    specializationLabel(singleDoctor?.primary_specialization) ||
+    specializationLabel(singleDoctor?.specialization) ||
     "No speciality";
   const doctorIsActive =
     singleDoctor?.is_active ?? consultation?.is_active ?? false;

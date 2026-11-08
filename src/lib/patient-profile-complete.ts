@@ -1,3 +1,8 @@
+/** Matches the guest address the API mints. A typed @mediconnect.local address is not exempt. */
+export function isServerGuestAccount(email: string | null | undefined) {
+  return /^guest-\d+@mediconnect\.local$/i.test(String(email || "").trim());
+}
+
 /** Fields the patient profile form treats as required before the account can be used. */
 const REQUIRED_PROFILE_FIELDS = [
   "date_of_birth",
@@ -20,9 +25,8 @@ function filled(value: unknown, field: string) {
   return true;
 }
 
-export function isPatientRecordComplete(
-  profile: Record<string, unknown> | null | undefined,
-) {
+export function isPatientRecordComplete(profile: object | null | undefined) {
   if (!profile) return false;
-  return REQUIRED_PROFILE_FIELDS.every((field) => filled(profile[field], field));
+  const record = profile as Record<string, unknown>;
+  return REQUIRED_PROFILE_FIELDS.every((field) => filled(record[field], field));
 }

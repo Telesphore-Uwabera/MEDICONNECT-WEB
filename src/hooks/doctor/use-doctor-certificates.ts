@@ -46,7 +46,7 @@ export type CertDecision =
   message?: string;
 }
 export interface Certificate {
-  patient_id: ReactI18NextChildren | Iterable<ReactI18NextChildren>;
+  patient_id: number | string;
   confirmation_session: any;
   confirmation_requested_at: any;
   id: number;

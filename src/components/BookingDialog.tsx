@@ -49,7 +49,7 @@ export interface Doctor {
   doctor_degree: string;
   consultation_fee: string | number;
   currency?: string;
-  consultation_type?: "online" | "in_person" | "both";
+  consultation_type?: "online" | "in_person" | "both" | "instant" | "booking";
   image?: string | null;
   user: {
     id: number;
@@ -77,7 +77,9 @@ function mapSlots(slots: ApiSlot[]) {
   }));
 }
 
-type MappedSlot = ReturnType<typeof mapSlots>[number];
+type MappedSlot = Omit<ReturnType<typeof mapSlots>[number], "status"> & {
+  status: ReturnType<typeof mapSlots>[number]["status"] | "past";
+};
 
 // ─── MiniCalendar ──────────────────────────────────────────────────────────────
 

@@ -105,10 +105,10 @@ export function useGetMySettings() {
       if (body?.data?.email || body?.data?.id) return body;
       if (body?.email || body?.id) return withData(body as MySettings);
       const me = await apiFetch<{ user?: Record<string, unknown> } | Record<string, unknown>>("/auth/me");
-      const user = me && typeof me === "object" && "user" in me && me.user
-        ? me.user
-        : (me as Record<string, unknown>);
-      return withData(settingsFromUser(user ?? {}));
+      const record = me && typeof me === "object" ? me as Record<string, unknown> : {};
+      const nested = record.user;
+      const user = nested && typeof nested === "object" ? nested as Record<string, unknown> : record;
+      return withData(settingsFromUser(user));
     },
   });
 }

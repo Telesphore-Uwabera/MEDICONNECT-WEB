@@ -302,14 +302,14 @@ function NotesContent({ notes }: { notes: unknown }) {
 
   const n = notes as Record<string, unknown>;
   const str = (v: unknown) => (v == null ? "" : String(v));
-  const textFields: Array<[string, unknown]> = [
+  const textFields = ([
     [t("consult.appointment_detail.chief_complaint"), n.chief_complaint],
     [t("consult.appointment_detail.diagnosis"), n.diagnosis],
     [t("consult.appointment_detail.treatment_plan"), n.treatment_plan],
     [t("consult.appointment_detail.recommendations"), n.recommendations],
     [t("consult.appointment_detail.additional_notes"), n.additional_notes],
     [t("consult.appointment_detail.follow_up_notes"), n.follow_up_notes],
-  ].filter(([, v]) => str(v).trim());
+  ] as Array<[string, unknown]>).filter((pair): pair is [string, unknown] => str(pair[1]).trim().length > 0);
 
   const vitals = [
     n.blood_pressure && t("consult.appointment_detail.vital_bp", { value: str(n.blood_pressure) }),

@@ -69,8 +69,24 @@ export interface WithdrawalResponse {
   [key: string]: unknown;
 }
 
-const unwrapWallet = (res: { wallet?: DoctorWallet } | DoctorWallet): DoctorWallet =>
-  "wallet" in res && res.wallet ? res.wallet : res;
+function isDoctorWallet(value: unknown): value is DoctorWallet {
+  return Boolean(value && typeof value === "object" && "id" in value && "balance" in value && "doctor_id" in value);
+}
+
+const unwrapWallet = (res: { wallet?: DoctorWallet } | DoctorWallet): DoctorWallet => {
+  if ("wallet" in res && res.wallet && isDoctorWallet(res.wallet)) return res.wallet;
+  if (isDoctorWallet(res)) return res;
+  return {
+    id: 0,
+    doctor_id: 0,
+    balance: "0",
+    last_withdrawn: null,
+    last_topup: null,
+    doctor: { user: { id: 0, name: "", email: "", phone: "" } },
+    doctor_name: "",
+    doctor_email: "",
+  };
+};
 
 export function useDoctorWallet() {
   return useQuery({
