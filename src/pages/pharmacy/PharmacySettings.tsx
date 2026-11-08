@@ -1162,7 +1162,7 @@ function PharmacySettings() {
                             type="tel"
                             value={phoneForm.phone}
                             onChange={(e) => setPhoneForm((p) => ({ ...p, phone: e.target.value }))}
-                            placeholder="0781234567"
+                            placeholder={phoneForm.country_code === "+250" ? "781234567" : undefined}
                             className={inputCls}
                             disabled={phoneOtpStep}
                             autoFocus

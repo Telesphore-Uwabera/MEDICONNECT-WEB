@@ -45,20 +45,20 @@ import { SkeletonRows } from "./components/doctor/Skeletonrows";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
 import { TablePager } from "@/components/TablePager";
 import {
-  SpecializationSelect,
-  type SpecializationValue,
-} from "../patient/components/SpecializationSelect";
+  SpecialitySelect,
+  type SpecialityValue,
+} from "../patient/components/SpecialitySelect";
 
 // ─── Initial spec constant ────────────────────────────────────────────────────
 
-const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
+const INITIAL_SPEC: SpecialityValue = { specialization: null, fee: null };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageDoctors() {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
+  const [spec, setSpec] = useState<SpecialityValue>(INITIAL_SPEC);
   const [selected, setSelected] = useState<ApiDoctor | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   
@@ -254,10 +254,10 @@ function ManageDoctors() {
     {
       type: "custom" as const,
       key: "specialization",
-      label: "Specialization",
+      label: "Speciality",
       render: () => (
         <div className="flex flex-col gap-2">
-          <SpecializationSelect value={spec} onChange={setSpec} />
+          <SpecialitySelect value={spec} onChange={setSpec} />
           {spec.specialization && (
             <div className="flex flex-wrap gap-1">
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
@@ -438,7 +438,7 @@ function ManageDoctors() {
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                        <th className="text-left px-4 py-3 font-semibold">Specialization</th>
+                        <th className="text-left px-4 py-3 font-semibold">Speciality</th>
                         <th className="text-left px-4 py-3 font-semibold">Consultation</th>
                         <th className="text-left px-4 py-3 font-semibold">Status</th>
                         <th className="text-left px-4 py-3 font-semibold">Joined</th>

@@ -130,7 +130,7 @@ function getDoctorAvatar(appt: ApiAppointment) {
   return appt.doctor?.image ?? appt.doctor?.user.avatar ?? null;
 }
 
-function getSpecialty(appt: ApiAppointment) {
+function getSpeciality(appt: ApiAppointment) {
   if (appt.doctor) return appt.doctor.specialization || appt.doctor.doctor_degree || "—";
   if (appt.hospital) return [appt.hospital.city, appt.hospital.address].filter(Boolean).join(" · ");
   return "—";
@@ -276,7 +276,7 @@ function AppointmentCardItem({
               {getDoctorName(appt)}
             </h3>
             <p className="text-[13px] font-medium text-muted-foreground mt-1 truncate">
-              {getSpecialty(appt)}
+              {getSpeciality(appt)}
             </p>
           </div>
         </div>
@@ -757,7 +757,7 @@ const PatientAppointments = () => {
                     <tr>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_doctor_hospital")}</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground/60">#ID</th>
-                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_specialty")}</th>
+                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_speciality")}</th>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_datetime")}</th>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_filter_type_label")}</th>
                       <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_filter_status_label")}</th>
@@ -790,7 +790,7 @@ const PatientAppointments = () => {
                               #{a.id}
                             </span>
                           </td>
-                          <td className="px-5 py-4 text-muted-foreground/80">{getSpecialty(a)}</td>
+                          <td className="px-5 py-4 text-muted-foreground/80">{getSpeciality(a)}</td>
                           <td className="px-5 py-4 whitespace-nowrap">
                             <div className="flex flex-col gap-1">
                               <span className="flex items-center gap-1.5 font-medium text-foreground">

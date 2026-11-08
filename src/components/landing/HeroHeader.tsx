@@ -33,9 +33,9 @@ import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import type { PublicGeneralSettings } from "@/hooks/use-public-settings"; 
 import {
-  SpecializationSelect,
-  SpecializationValue,
-} from "@/pages/patient/components/SpecializationSelect";
+  SpecialitySelect,
+  SpecialityValue,
+} from "@/pages/patient/components/SpecialitySelect";
 import { doctorSearchForDisease, suggestDiseases } from "@/lib/disease-search";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useGetSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
@@ -99,8 +99,8 @@ export function HeroHeader({
     setActiveSuggestion(-1);
   }, [facilityQuery]);
   const [mobileQuickAccessOpen, setMobileQuickAccessOpen] = useState(false);
-  const [selectedSpecialization, setSelectedSpecialization] =
-    useState<SpecializationValue>({ specialization: null, fee: null });
+  const [selectedSpeciality, setSelectedSpeciality] =
+    useState<SpecialityValue>({ specialization: null, fee: null });
   const { data: user } = useMe();
   const logout = useLogout();
 
@@ -556,7 +556,7 @@ export function HeroHeader({
           {facilitySearch(desktopSearchRef)}
         </nav>
 
-        {/* Specialization search — desktop */}
+        {/* Speciality search — desktop */}
         {/* <div
           className="hidden lg:block lg:flex-1 lg:max-w-[260px] xl:max-w-[320px]"
           style={{
@@ -564,9 +564,9 @@ export function HeroHeader({
           }}
         >
           <div className="[&_button]:!h-10 [&_input]:!h-10 [&_[role=combobox]]:!h-10 [&_[data-radix-popper-content-wrapper]]:!min-w-[420px] [&_[data-radix-select-content]]:!min-w-[420px] [&_.spec-dropdown]:!min-w-[420px]">
-            <SpecializationSelect
-              value={selectedSpecialization}
-              onChange={setSelectedSpecialization}
+            <SpecialitySelect
+              value={selectedSpeciality}
+              onChange={setSelectedSpeciality}
             />
           </div>
         </div> */}
@@ -696,11 +696,11 @@ export function HeroHeader({
           >
             <div className="max-h-[calc(100vh-56px)] overflow-y-auto">
 
-              {/* Specialization search */}
+              {/* Speciality search */}
               <div className="px-4 sm:px-6 pt-3 pb-1 [&_button]:!h-10 [&_input]:!h-10 [&_[role=combobox]]:!h-10 [&_[data-radix-popper-content-wrapper]]:!min-w-[min(420px,90vw)] [&_[data-radix-select-content]]:!min-w-[min(420px,90vw)] [&_.spec-dropdown]:!min-w-[min(420px,90vw)]">
-                <SpecializationSelect
-                  value={selectedSpecialization}
-                  onChange={setSelectedSpecialization}
+                <SpecialitySelect
+                  value={selectedSpeciality}
+                  onChange={setSelectedSpeciality}
                 />
               </div>
 

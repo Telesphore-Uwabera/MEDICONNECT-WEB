@@ -26,7 +26,7 @@ import {
   type DoctorSearchParams,
 } from "@/hooks/patient/use-patient-doctor";
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
-import { SpecializationSelect, type SpecializationValue } from "./components/SpecializationSelect";
+import { SpecialitySelect, type SpecialityValue } from "./components/SpecialitySelect";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -148,9 +148,9 @@ function DoctorDateFilter({
   );
 }
 
-const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
+const INITIAL_SPEC: SpecialityValue = { specialization: null, fee: null };
 
-const GENERAL_PRACTITIONER_SPEC: SpecializationValue = {
+const GENERAL_PRACTITIONER_SPEC: SpecialityValue = {
   specialization: {
     id: 0,
     name: "General Practitioner",
@@ -179,12 +179,12 @@ const VISIBLE_STEP = 3;
 
 function buildApiParams(
   filters: FilterState,
-  spec: SpecializationValue,
+  spec: SpecialityValue,
 ): DoctorSearchParams {
   const params: DoctorSearchParams = { page: 1, per_page: 100 };
   if (filters.q.trim().length >= 2) params.q = filters.q.trim();
 
-  // Specialization: pass name; if sub-spec (fee) selected, also pass its id
+  // Speciality: pass name; if sub-spec (fee) selected, also pass its id
   if (spec.specialization) {
     params.specialization = spec.specialization.name;
     if (spec.fee?.id) {
@@ -252,17 +252,17 @@ function readInitialFilters(searchParams: URLSearchParams): FilterState {
   };
 }
 
-function readInitialSpec(searchParams: URLSearchParams): SpecializationValue {
+function readInitialSpec(searchParams: URLSearchParams): SpecialityValue {
   const specialization = searchParams.get("specialization");
-  const specializationId = Number(searchParams.get("specialization_id") ?? 0);
+  const specialityId = Number(searchParams.get("specialization_id") ?? 0);
   const feeId = Number(searchParams.get("specialization_fee_id") ?? 0);
 
-  if (!specialization && !specializationId && !feeId) return INITIAL_SPEC;
+  if (!specialization && !specialityId && !feeId) return INITIAL_SPEC;
 
   return {
     specialization: specialization
       ? {
-        id: Number.isFinite(specializationId) && specializationId > 0 ? specializationId : 0,
+        id: Number.isFinite(specialityId) && specialityId > 0 ? specialityId : 0,
         name: specialization,
         name_fr: specialization,
         name_kiny: null,
@@ -273,8 +273,8 @@ function readInitialSpec(searchParams: URLSearchParams): SpecializationValue {
       Number.isFinite(feeId) && feeId > 0
         ? {
           id: feeId,
-          specialization_id: Number.isFinite(specializationId) ? specializationId : 0,
-          sub_specialization: searchParams.get("sub_specialization") ?? "Selected sub-specialization",
+          specialization_id: Number.isFinite(specialityId) ? specialityId : 0,
+          sub_specialization: searchParams.get("sub_specialization") ?? "Selected sub-speciality",
           sub_specialization_fr: "",
           sub_specialization_kiny: null,
           tier_name: searchParams.get("tier_name") ?? "",
@@ -635,8 +635,8 @@ function SearchStats({
 const PatientDoctors = () => {
   // const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [searchParams, setSearchParams] = useSearchParams();
-  // Specialization lives separately so SpecializationSelect owns its full shape
-  const [spec, setSpec] = useState<SpecializationValue>(() => readInitialSpec(searchParams));
+  // Speciality lives separately so SpecialitySelect owns its full shape
+  const [spec, setSpec] = useState<SpecialityValue>(() => readInitialSpec(searchParams));
 
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
@@ -735,39 +735,39 @@ const PatientDoctors = () => {
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE);
   }, [rotationSlot]);
-  const requestedSpecialization = searchParams.get("specialization") || "";
+  const requestedSpeciality = searchParams.get("specialization") || "";
   const [fellBackFrom, setFellBackFrom] = useState("");
   const [fellBackToGp, setFellBackToGp] = useState(false);
   const showingGeneralPractitioner =
     spec.fee?.id === 1 || spec.specialization?.name === "General Practitioner";
-  const hasSpecialty = Boolean(spec.specialization || spec.fee);
+  const hasSpeciality = Boolean(spec.specialization || spec.fee);
 
   useEffect(() => {
     if (
-      requestedSpecialization &&
-      requestedSpecialization !== "General Practitioner" &&
-      requestedSpecialization !== fellBackFrom
+      requestedSpeciality &&
+      requestedSpeciality !== "General Practitioner" &&
+      requestedSpeciality !== fellBackFrom
     ) {
-      setFellBackFrom(requestedSpecialization);
+      setFellBackFrom(requestedSpeciality);
       setFellBackToGp(false);
     }
-  }, [fellBackFrom, requestedSpecialization]);
+  }, [fellBackFrom, requestedSpeciality]);
 
   useEffect(() => {
     if (searchParams.get("disease") !== "1") return;
-    if (!hasSpecialty || isLoading || fellBackToGp || showingGeneralPractitioner) return;
+    if (!hasSpeciality || isLoading || fellBackToGp || showingGeneralPractitioner) return;
     if (!isError && !data) return;
     if (!isError && (data?.total ?? 0) > 0) return;
-    setFellBackFrom(spec.specialization?.name || requestedSpecialization);
+    setFellBackFrom(spec.specialization?.name || requestedSpeciality);
     setFellBackToGp(true);
     setSpec(GENERAL_PRACTITIONER_SPEC);
   }, [
     data,
     fellBackToGp,
-    hasSpecialty,
+    hasSpeciality,
     isError,
     isLoading,
-    requestedSpecialization,
+    requestedSpeciality,
     searchParams,
     showingGeneralPractitioner,
     spec.specialization?.name,
@@ -1024,15 +1024,15 @@ const PatientDoctors = () => {
             ]}
             extraSlot={
               <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">{t("pages.patient.specialization_label")}</p>
-                <SpecializationSelect value={spec} onChange={setSpec} />
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">{t("pages.patient.speciality_label")}</p>
+                <SpecialitySelect value={spec} onChange={setSpec} />
                 {spec.specialization && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
                       {spec.specialization.name}
                       {spec.fee?.sub_specialization &&
                         spec.fee.sub_specialization !== spec.specialization.name &&
-                        spec.fee.sub_specialization !== "Selected sub-specialization" && (
+                        spec.fee.sub_specialization !== "Selected sub-speciality" && (
                         <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
                       )}
                       <button

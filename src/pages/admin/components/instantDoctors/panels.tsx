@@ -44,7 +44,7 @@ import {
   useGetAdminDoctors,
   type ApiDoctor,
 } from "@/hooks/admin/use-admin-doctors";
-import { useGetSpecializationFees } from "@/hooks/admin/use-admin-doctors";
+import { useGetSpecialityFees } from "@/hooks/admin/use-admin-doctors";
 import { TablePager } from "@/components/TablePager";
 import { cn } from "@/lib/utils";
 import {
@@ -1170,7 +1170,7 @@ export function AssignPanel({
   });
   const doctors = doctorData?.data ?? [];
 
-  const { data: feesData, isLoading: feesLoading } = useGetSpecializationFees();
+  const { data: feesData, isLoading: feesLoading } = useGetSpecialityFees();
   const activeFees = (feesData ?? []).filter((f) => f.is_active);
   const selectedFee = activeFees.find((f) => f.id === selectedFeeId) ?? null;
 
@@ -1202,7 +1202,7 @@ export function AssignPanel({
       return;
     }
     if (!primarySpec.trim()) {
-      sonnerToast.error("Primary specialization is required");  
+      sonnerToast.error("Primary speciality is required");  
       return;
     }
     try {
@@ -1341,7 +1341,7 @@ export function AssignPanel({
             <div className="flex items-start gap-2 p-3 rounded-[5px] border border-border/60 bg-secondary/20 text-[11px] text-muted-foreground">
               <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <span>
-                No active fee tiers. Create one in Specialization Fees first.
+                No active fee tiers. Create one in Speciality Fees first.
               </span>
             </div>
           ) : (
@@ -1386,7 +1386,7 @@ export function AssignPanel({
 
         <div>
           <label className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
-            Primary Specialization <span className="text-red-500">*</span>
+            Primary Speciality <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -1399,7 +1399,7 @@ export function AssignPanel({
 
         <div>
           <label className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
-            Secondary Specialization{" "}
+            Secondary Speciality{" "}
             <span className="ml-1 normal-case text-muted-foreground/50 font-normal">
               (optional)
             </span>
@@ -1473,7 +1473,7 @@ export function ConsultationPanel({
   const doctorSpec =
     singleDoctor?.primary_specialization ??
     singleDoctor?.specialization ??
-    "No specialization";
+    "No speciality";
   const doctorIsActive =
     singleDoctor?.is_active ?? consultation?.is_active ?? false;
   const doctorDesignation = singleDoctor?.designations;

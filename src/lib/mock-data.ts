@@ -4,7 +4,7 @@ export type DoctorStatus = "online" | "busy" | "offline";
 export interface Doctor {
   id: string;
   name: string;
-  specialty: string;
+  speciality: string;
   hospital: string;
   rating: number;
   reviews: number;
@@ -16,20 +16,20 @@ export interface Doctor {
 }
 
 export const doctors: Doctor[] = [
-  { id: "d1", name: "Dr. Elena Vance", specialty: "Cardiology", hospital: "King Faisal Hospital", rating: 4.9, reviews: 248, experience: 12, status: "online", instantAvailable: true, fee: 45, avatar: "EV" },
-  { id: "d2", name: "Dr. Marcus Thorne", specialty: "General Practice", hospital: "Kigali Medical Center", rating: 4.8, reviews: 412, experience: 9, status: "online", instantAvailable: true, fee: 25, avatar: "MT" },
-  { id: "d3", name: "Dr. Anya Sharma", specialty: "Dermatology", hospital: "Rwanda Health Clinic", rating: 4.95, reviews: 189, experience: 8, status: "busy", instantAvailable: false, fee: 35, avatar: "AS" },
-  { id: "d4", name: "Dr. Jamal Okafor", specialty: "Pediatrics", hospital: "King Faisal Hospital", rating: 4.85, reviews: 356, experience: 15, status: "online", instantAvailable: true, fee: 30, avatar: "JO" },
-  { id: "d5", name: "Dr. Sofia Reyes", specialty: "Neurology", hospital: "Kigali Medical Center", rating: 4.92, reviews: 167, experience: 18, status: "offline", instantAvailable: false, fee: 60, avatar: "SR" },
-  { id: "d6", name: "Dr. Liam Chen", specialty: "Orthopedics", hospital: "Rwanda Health Clinic", rating: 4.78, reviews: 223, experience: 11, status: "online", instantAvailable: false, fee: 50, avatar: "LC" },
+  { id: "d1", name: "Dr. Elena Vance", speciality: "Cardiology", hospital: "King Faisal Hospital", rating: 4.9, reviews: 248, experience: 12, status: "online", instantAvailable: true, fee: 45, avatar: "EV" },
+  { id: "d2", name: "Dr. Marcus Thorne", speciality: "General Practice", hospital: "Kigali Medical Center", rating: 4.8, reviews: 412, experience: 9, status: "online", instantAvailable: true, fee: 25, avatar: "MT" },
+  { id: "d3", name: "Dr. Anya Sharma", speciality: "Dermatology", hospital: "Rwanda Health Clinic", rating: 4.95, reviews: 189, experience: 8, status: "busy", instantAvailable: false, fee: 35, avatar: "AS" },
+  { id: "d4", name: "Dr. Jamal Okafor", speciality: "Pediatrics", hospital: "King Faisal Hospital", rating: 4.85, reviews: 356, experience: 15, status: "online", instantAvailable: true, fee: 30, avatar: "JO" },
+  { id: "d5", name: "Dr. Sofia Reyes", speciality: "Neurology", hospital: "Kigali Medical Center", rating: 4.92, reviews: 167, experience: 18, status: "offline", instantAvailable: false, fee: 60, avatar: "SR" },
+  { id: "d6", name: "Dr. Liam Chen", speciality: "Orthopedics", hospital: "Rwanda Health Clinic", rating: 4.78, reviews: 223, experience: 11, status: "online", instantAvailable: false, fee: 50, avatar: "LC" },
 ];
 
-export const specialties = ["All", "Cardiology", "General Practice", "Dermatology", "Pediatrics", "Neurology", "Orthopedics"];
+export const specialities = ["All", "Cardiology", "General Practice", "Dermatology", "Pediatrics", "Neurology", "Orthopedics"];
 
 export interface Appointment {
   id: string;
   doctorName: string;
-  specialty: string;
+  speciality: string;
   date: string;      // display string: "May 02, 2026"
   rawDate: string;   // ISO string for sorting: "2026-05-02"
   time: string;
@@ -38,10 +38,10 @@ export interface Appointment {
 }
 
 export const appointments: Appointment[] = [
-  { id: "a1", doctorName: "Dr. Elena Vance",   specialty: "Cardiology",       date: "May 02, 2026", rawDate: "2026-05-02", time: "10:30", status: "upcoming",   type: "video"     },
-  { id: "a2", doctorName: "Dr. Anya Sharma",   specialty: "Dermatology",      date: "May 05, 2026", rawDate: "2026-05-05", time: "14:00", status: "upcoming",   type: "in-person" },
-  { id: "a3", doctorName: "Dr. Marcus Thorne", specialty: "General Practice", date: "Apr 22, 2026", rawDate: "2026-04-22", time: "09:00", status: "completed",  type: "video"     },
-  { id: "a4", doctorName: "Dr. Jamal Okafor",  specialty: "Pediatrics",       date: "Apr 18, 2026", rawDate: "2026-04-18", time: "11:30", status: "completed",  type: "in-person" },
+  { id: "a1", doctorName: "Dr. Elena Vance",   speciality: "Cardiology",       date: "May 02, 2026", rawDate: "2026-05-02", time: "10:30", status: "upcoming",   type: "video"     },
+  { id: "a2", doctorName: "Dr. Anya Sharma",   speciality: "Dermatology",      date: "May 05, 2026", rawDate: "2026-05-05", time: "14:00", status: "upcoming",   type: "in-person" },
+  { id: "a3", doctorName: "Dr. Marcus Thorne", speciality: "General Practice", date: "Apr 22, 2026", rawDate: "2026-04-22", time: "09:00", status: "completed",  type: "video"     },
+  { id: "a4", doctorName: "Dr. Jamal Okafor",  speciality: "Pediatrics",       date: "Apr 18, 2026", rawDate: "2026-04-18", time: "11:30", status: "completed",  type: "in-person" },
 ];
 
 export interface Prescription {

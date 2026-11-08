@@ -44,7 +44,7 @@
 // export interface AppointmentContext {
 //   id: string;
 //   patientLabel: string; // e.g. "Patient"
-//   specialty: string;
+//   speciality: string;
 //   date: string;
 //   time: string;
 //   type: "video" | "in-person";
@@ -267,7 +267,7 @@
 //           {
 //             id: crypto.randomUUID(),
 //             from: "doctor",
-//             text: `Hello! Starting your ${appt.specialty} consultation. How are you doing today?`,
+//             text: `Hello! Starting your ${appt.speciality} consultation. How are you doing today?`,
 //             timestamp: Date.now(),
 //           },
 //         ],
@@ -513,7 +513,7 @@ export interface IncomingRequest {
 export interface AppointmentContext {
   id: string;
   patientLabel: string;
-  specialty: string;
+  speciality: string;
   date: string;
   time: string;
   type: "video" | "in-person";
@@ -736,7 +736,7 @@ export const CallStoreProvider = ({ children }: { children: ReactNode }) => {
           {
             id: crypto.randomUUID(),
             from: "doctor",
-            text: `Hello! Starting your ${appt.specialty} consultation. How are you doing today?`,
+            text: `Hello! Starting your ${appt.speciality} consultation. How are you doing today?`,
             timestamp: Date.now(),
           },
         ],

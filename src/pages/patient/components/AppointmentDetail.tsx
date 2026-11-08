@@ -1113,7 +1113,7 @@ export function AppointmentDetailContent({
                 />
                 <InfoRow
                   icon={FileText}
-                  label={t("consult.appointment_detail.specialization")}
+                  label={t("consult.appointment_detail.speciality")}
                   value={doctor.specialization ?? "—"}
                 />
                 <InfoRow

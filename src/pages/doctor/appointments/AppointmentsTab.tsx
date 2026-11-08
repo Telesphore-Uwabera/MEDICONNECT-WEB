@@ -38,7 +38,7 @@ import {
   INITIAL_FILTERS, STATUS_STYLES, STATUS_DOT,
 } from "./shared/types";
 import {
-  fmtDate, fmtTime, apptLabel, apptSpecialty,
+  fmtDate, fmtTime, apptLabel, apptSpeciality,
   statusLabel, getErrMsg,
 } from "./shared/helpers";
 import { SkeletonRow } from "./shared/Skeletonrow";
@@ -47,7 +47,7 @@ import { TABLE_PAGE_SIZE, TablePager, tablePageCount } from "@/components/TableP
 
  
 const MOCK_DOCTOR = {
-  id: "mock", name: "Dr. (Scheduled)", specialty: "General", hospital: "",
+  id: "mock", name: "Dr. (Scheduled)", speciality: "General", hospital: "",
   avatar: "DR", status: "online" as const, rating: 5, reviews: 0,
   experience: 10, instantAvailable: true, fee: 0,
 };
@@ -229,7 +229,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       const apptCtx: AppointmentContext = {
         id: String(appt.id),
         patientLabel: appt.patient?.name ?? t("pages.doctor.patient"),
-        specialty: apptSpecialty(appt),
+        speciality: apptSpeciality(appt),
         date: appt.appointment_date,
         time: appt.appointment_time,
         type: appt.type === "online" ? t("pages.doctor.video") : t("pages.doctor.in_person"),

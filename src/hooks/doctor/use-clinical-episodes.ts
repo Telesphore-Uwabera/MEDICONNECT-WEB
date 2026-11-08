@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
 export interface EpisodeTask {
@@ -21,6 +21,7 @@ export interface ClinicalEpisode {
   episode_status: string;
   note_finalized_at?: string | null;
   closed_at?: string | null;
+  payment_hold?: boolean;
   tasks?: EpisodeTask[];
   pending_count?: number;
   next_action?: { task_type: string; assigned_role?: string | null; subject_id?: number | null } | null;
@@ -34,6 +35,17 @@ export function useDoctorEpisodes(status?: string) {
       const qs = status ? `?status=${encodeURIComponent(status)}` : "";
       const res = await apiFetch<{ episodes?: ClinicalEpisode[]; data?: ClinicalEpisode[] }>(`/doctor/episodes${qs}`);
       return Array.isArray(res.episodes) ? res.episodes : Array.isArray(res.data) ? res.data : [];
+    },
+  });
+}
+
+export function useCloseEpisode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (episodeId: number) =>
+      apiFetch<{ message?: string }>(`/doctor/episodes/${episodeId}/close`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["doctor-episodes"] });
     },
   });
 }

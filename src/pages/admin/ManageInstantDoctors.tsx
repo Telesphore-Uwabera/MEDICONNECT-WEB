@@ -160,7 +160,7 @@ function ManageInstantDoctors() {
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
               <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search name, specialization, phone…"
+                placeholder="Search name, speciality, phone…"
                 className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
               {searchInput && (
                 <button onClick={() => setSearchInput("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
@@ -193,7 +193,7 @@ function ManageInstantDoctors() {
               <div className="relative hidden sm:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                 <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search name, specialization…"
+                  placeholder="Search name, speciality…"
                   className="w-32 md:w-40 lg:w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
               </div>
               <CustomSelect
@@ -252,13 +252,13 @@ function ManageInstantDoctors() {
               </div>
             ) : (
               <>
-                {/* Desktop / tablet table — Specialization & In-Person Fee collapse below lg, table scrolls horizontally as a fallback rather than clipping */}
+                {/* Desktop / tablet table — Speciality & In-Person Fee collapse below lg, table scrolls horizontally as a fallback rather than clipping */}
                 <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-x-auto shadow-sm">
                   <table className="w-full text-[11px] min-w-[640px] lg:min-w-0">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-3 lg:px-4 py-3 font-semibold">Doctor</th>
-                        <th className="hidden lg:table-cell text-left px-4 py-3 font-semibold">Specialization</th>
+                        <th className="hidden lg:table-cell text-left px-4 py-3 font-semibold">Speciality</th>
                         <th className="text-left px-3 lg:px-4 py-3 font-semibold">Online Fee</th>
                         <th className="hidden lg:table-cell text-left px-4 py-3 font-semibold">In-Person Fee</th>
                         <th className="text-left px-3 lg:px-4 py-3 font-semibold">Instant</th>

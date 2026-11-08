@@ -116,6 +116,9 @@ async function applyStatus(table, id, action, body = {}, adminUserId = null) {
         status: pharmacyStatus[action],
         ...(action === "reject" ? { rejection_reason: body.reason || null } : {}),
       });
+      const placed = await one("SELECT * FROM pharmacy_orders WHERE id = ?", [id]).catch(() => null);
+      const { onPharmacyShopOrder } = await import("./clinical-episodes.js");
+      await onPharmacyShopOrder(placed, action).catch(() => null);
       return true;
     }
   }
@@ -241,7 +244,10 @@ async function handlePharmacyOrders(req, res, parts) {
       delivery_type: req.body?.delivery_type || order.delivery_type,
       delivery_address: req.body?.delivery_address || order.delivery_address,
     });
-    return res.json({ message: "Order placed.", order: await shapeOrder(await one("SELECT * FROM pharmacy_orders WHERE id = ?", [order.id])) });
+    const placed = await one("SELECT * FROM pharmacy_orders WHERE id = ?", [order.id]);
+    const { onPharmacyShopOrder } = await import("./clinical-episodes.js");
+    await onPharmacyShopOrder(placed, "place").catch(() => null);
+    return res.json({ message: "Order placed.", order: await shapeOrder(placed) });
   }
 
   return res.status(404).json({ message: "Order action was not found." });

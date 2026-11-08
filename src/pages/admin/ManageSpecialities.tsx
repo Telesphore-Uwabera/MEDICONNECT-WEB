@@ -25,17 +25,17 @@ import {
   Layers,
 } from "lucide-react";
 import {
-  useGetSpecializations,
-  useCreateSpecialization,
-  useUpdateSpecialization,
-  useDeleteSpecialization,
-  useGetSpecializationFees,
-  useCreateSpecializationFee,
-  useUpdateSpecializationFee,
-  useDeleteSpecializationFee,
-  type ApiSpecialization,
-  type ApiSpecializationFee,
-} from "@/hooks/admin/use-admin-specializations";
+  useGetSpecialities,
+  useCreateSpeciality,
+  useUpdateSpeciality,
+  useDeleteSpeciality,
+  useGetSpecialityFees,
+  useCreateSpecialityFee,
+  useUpdateSpecialityFee,
+  useDeleteSpecialityFee,
+  type ApiSpeciality,
+  type ApiSpecialityFee,
+} from "@/hooks/admin/use-admin-specialities";
 import { StatCard } from "@/components/StatCard";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ function formatFee(amount: number, currency = "RWF") {
 }
 
 /** Derive a display name for a fee entry */
-function feeDisplayName(fee: ApiSpecializationFee): string {
+function feeDisplayName(fee: ApiSpecialityFee): string {
   const parts = [fee.sub_specialization, fee.tier_name].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : fee.slug;
 }
@@ -141,7 +141,7 @@ function LangField({
   );
 }
 
-// ─── Expanded sub-specialization rows (inline under parent) ───────────────────
+// ─── Expanded sub-speciality rows (inline under parent) ───────────────────
 
 function SubSpecRow({
   fee,
@@ -149,9 +149,9 @@ function SubSpecRow({
   onDelete,
   isDeleting,
 }: {
-  fee: ApiSpecializationFee;
-  onEdit: (f: ApiSpecializationFee) => void;
-  onDelete: (f: ApiSpecializationFee) => void;
+  fee: ApiSpecialityFee;
+  onEdit: (f: ApiSpecialityFee) => void;
+  onDelete: (f: ApiSpecialityFee) => void;
   isDeleting: boolean;
 }) {
   return (
@@ -241,9 +241,9 @@ function SubSpecRow({
   );
 }
 
-// ─── Specialization Row (desktop) ─────────────────────────────────────────────
+// ─── Speciality Row (desktop) ─────────────────────────────────────────────
 
-function SpecializationRow({
+function SpecialityRow({
   spec,
   fees,
   expanded,
@@ -256,17 +256,17 @@ function SpecializationRow({
   onEditFee,
   onDeleteFee,
 }: {
-  spec: ApiSpecialization;
-  fees: ApiSpecializationFee[];
+  spec: ApiSpeciality;
+  fees: ApiSpecialityFee[];
   expanded: boolean;
   onToggleExpand: () => void;
-  onEdit: (s: ApiSpecialization) => void;
-  onDelete: (s: ApiSpecialization) => void;
-  onAddSubSpec: (s: ApiSpecialization) => void;
+  onEdit: (s: ApiSpeciality) => void;
+  onDelete: (s: ApiSpeciality) => void;
+  onAddSubSpec: (s: ApiSpeciality) => void;
   isDeleting: boolean;
   deletingFeeId: number | null;
-  onEditFee: (f: ApiSpecializationFee) => void;
-  onDeleteFee: (f: ApiSpecializationFee) => void;
+  onEditFee: (f: ApiSpecialityFee) => void;
+  onDeleteFee: (f: ApiSpecialityFee) => void;
 }) {
   return (
     <>
@@ -287,8 +287,8 @@ function SpecializationRow({
                 fees.length > 0
                   ? expanded
                     ? "Collapse"
-                    : "Expand sub-specializations"
-                  : "No sub-specializations"
+                    : "Expand sub-specialities"
+                  : "No sub-specialities"
               }
             >
               {fees.length > 0 ? (
@@ -370,7 +370,7 @@ function SpecializationRow({
               variant="outline"
               className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-sky-400/60 hover:bg-sky-50/50 hover:text-sky-700 dark:hover:bg-sky-950/20 dark:hover:text-sky-400 transition-all duration-200"
               onClick={() => onAddSubSpec(spec)}
-              title="Add sub-specialization"
+              title="Add sub-speciality"
             >
               <Plus className="w-3 h-3 mr-1" />
               Sub-spec
@@ -401,7 +401,7 @@ function SpecializationRow({
         </td>
       </tr>
 
-      {/* Sub-specialization rows */}
+      {/* Sub-speciality rows */}
       {expanded &&
         fees.map((fee) => (
           <SubSpecRow
@@ -416,9 +416,9 @@ function SpecializationRow({
   );
 }
 
-// ─── Specialization Card (mobile) ─────────────────────────────────────────────
+// ─── Speciality Card (mobile) ─────────────────────────────────────────────
 
-function SpecializationCard({
+function SpecialityCard({
   spec,
   fees,
   onEdit,
@@ -429,15 +429,15 @@ function SpecializationCard({
   onEditFee,
   onDeleteFee,
 }: {
-  spec: ApiSpecialization;
-  fees: ApiSpecializationFee[];
-  onEdit: (s: ApiSpecialization) => void;
-  onDelete: (s: ApiSpecialization) => void;
-  onAddSubSpec: (s: ApiSpecialization) => void;
+  spec: ApiSpeciality;
+  fees: ApiSpecialityFee[];
+  onEdit: (s: ApiSpeciality) => void;
+  onDelete: (s: ApiSpeciality) => void;
+  onAddSubSpec: (s: ApiSpeciality) => void;
   isDeleting: boolean;
   deletingFeeId: number | null;
-  onEditFee: (f: ApiSpecializationFee) => void;
-  onDeleteFee: (f: ApiSpecializationFee) => void;
+  onEditFee: (f: ApiSpecialityFee) => void;
+  onDeleteFee: (f: ApiSpecialityFee) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -520,7 +520,7 @@ function SpecializationCard({
             ) : (
               <ChevronRight className="w-3 h-3" />
             )}
-            {fees.length} sub-specialization{fees.length !== 1 ? "s" : ""}
+            {fees.length} sub-specialit{fees.length !== 1 ? "ies" : "y"}
           </button>
           {expanded && (
             <div className="divide-y divide-border/30">
@@ -571,17 +571,17 @@ function SpecializationCard({
   );
 }
 
-// ─── Specialization Panel ─────────────────────────────────────────────────────
+// ─── Speciality Panel ─────────────────────────────────────────────────────
 
 type SpecPanelMode = "create" | "edit";
 
-function SpecializationPanel({
+function SpecialityPanel({
   mode,
   specialization,
   onClose,
 }: {
   mode: SpecPanelMode | null;
-  specialization: ApiSpecialization | null;
+  specialization: ApiSpeciality | null;
   onClose: () => void;
 }) {
   const open = !!mode;
@@ -595,8 +595,8 @@ function SpecializationPanel({
   const [icon, setIcon] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const createMutation = useCreateSpecialization();
-  const updateMutation = useUpdateSpecialization();
+  const createMutation = useCreateSpeciality();
+  const updateMutation = useUpdateSpeciality();
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   useEffect(() => {
@@ -658,7 +658,7 @@ function SpecializationPanel({
         });
       }
       
-      sonnerToast.success(isEdit ? "Specialization updated.sadasd" : "Specialization created.");
+      sonnerToast.success(isEdit ? "Speciality updated." : "Speciality created.");
       onClose();
     } catch (error) {
       sonnerToast.error(getErrorMessage(error)); 
@@ -690,12 +690,12 @@ function SpecializationPanel({
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
               <div>
                 <p className="text-[14px] font-semibold text-foreground leading-tight">
-                  {isEdit ? "Edit specialization" : "New specialization"}
+                  {isEdit ? "Edit speciality" : "New speciality"}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {isEdit
                     ? "Update details and translations"
-                    : "Create a parent specialization first — then add sub-specializations under it"}
+                    : "Create a parent speciality first — then add sub-specialities under it"}
                 </p>
               </div>
               <button
@@ -745,7 +745,7 @@ function SpecializationPanel({
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description of this specialization…"
+                  placeholder="Brief description of this speciality…"
                   rows={3}
                   className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none"
                 />
@@ -828,7 +828,7 @@ function SpecializationPanel({
                   ? "Saving…"
                   : isEdit
                     ? "Save changes"
-                    : "Create specialization"}
+                    : "Create speciality"}
               </Button>
               <Button
                 variant="ghost"
@@ -846,7 +846,7 @@ function SpecializationPanel({
   );
 }
 
-// ─── Sub-Specialization (Fee) Panel ───────────────────────────────────────────
+// ─── Sub-Speciality (Fee) Panel ───────────────────────────────────────────
 
 type FeePanelMode = "create" | "edit";
 
@@ -857,8 +857,8 @@ function SubSpecPanel({
   onClose,
 }: {
   mode: FeePanelMode | null;
-  fee: ApiSpecializationFee | null;
-  parentSpec: ApiSpecialization | null;
+  fee: ApiSpecialityFee | null;
+  parentSpec: ApiSpeciality | null;
   onClose: () => void;
 }) {
   const open = !!mode;
@@ -874,8 +874,8 @@ function SubSpecPanel({
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const createMutation = useCreateSpecializationFee();
-  const updateMutation = useUpdateSpecializationFee();
+  const createMutation = useCreateSpecialityFee();
+  const updateMutation = useUpdateSpecialityFee();
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   useEffect(() => {
@@ -918,7 +918,7 @@ function SubSpecPanel({
   const handleSubmit = async () => {
     if (!isEdit && !subSpec.trim()) {
       
-      sonnerToast.error("Sub-specialization name is required"); 
+      sonnerToast.error("Sub-speciality name is required"); 
       return;
     }
     if (!isEdit && !tierName.trim()) { 
@@ -959,8 +959,8 @@ function SubSpecPanel({
       }
       sonnerToast.success(
         isEdit
-          ? "Sub-specialization updated."
-          : "Sub-specialization created."
+          ? "Sub-speciality updated."
+          : "Sub-speciality created."
       );
       onClose();
     } catch (error) {
@@ -968,9 +968,9 @@ function SubSpecPanel({
     }
   };
 
-  // Breadcrumb: parent name from specialization_model (edit) or parentSpec (create)
+  // Breadcrumb: parent name from speciality_model (edit) or parentSpec (create)
   const parentName =
-    parentSpec?.name ?? fee?.specialization_model?.name ?? null;
+    parentSpec?.name ?? fee?.speciality_model?.name ?? null;
 
   return (
     <>
@@ -998,8 +998,8 @@ function SubSpecPanel({
               <div className="min-w-0 flex-1 pr-3">
                 <p className="text-[14px] font-semibold text-foreground leading-tight">
                   {isEdit
-                    ? "Edit sub-specialization"
-                    : "Add sub-specialization"}
+                    ? "Edit sub-speciality"
+                    : "Add sub-speciality"}
                 </p>
                 {parentName && (
                   <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground truncate">
@@ -1026,7 +1026,7 @@ function SubSpecPanel({
               {!isEdit && (
                 <div className="space-y-3">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                    Sub-specialization name
+                    Sub-speciality name
                   </p>
                   <LangField
                     label="Name"
@@ -1172,7 +1172,7 @@ function SubSpecPanel({
                   ? "Saving…"
                   : isEdit
                     ? "Save changes"
-                    : "Create sub-specialization"}
+                    : "Create sub-speciality"}
               </Button>
               <Button
                 variant="ghost"
@@ -1304,21 +1304,21 @@ function DeleteDialog({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-function ManageSpecializations() {
+function ManageSpecialities() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Specialization panel
+  // Speciality panel
   const [specPanelMode, setSpecPanelMode] = useState<SpecPanelMode | null>(
     null,
   );
-  const [editingSpec, setEditingSpec] = useState<ApiSpecialization | null>(
+  const [editingSpec, setEditingSpec] = useState<ApiSpeciality | null>(
     null,
   );
-  const [deletingSpec, setDeletingSpec] = useState<ApiSpecialization | null>(
+  const [deletingSpec, setDeletingSpec] = useState<ApiSpeciality | null>(
     null,
   );
   const [deletingSpecId, setDeletingSpecId] = useState<number | null>(null);
@@ -1328,12 +1328,12 @@ function ManageSpecializations() {
 
   // Sub-spec (fee) panel
   const [feePanelMode, setFeePanelMode] = useState<FeePanelMode | null>(null);
-  const [editingFee, setEditingFee] = useState<ApiSpecializationFee | null>(
+  const [editingFee, setEditingFee] = useState<ApiSpecialityFee | null>(
     null,
   );
   const [addingSubSpecFor, setAddingSubSpecFor] =
-    useState<ApiSpecialization | null>(null);
-  const [deletingFee, setDeletingFee] = useState<ApiSpecializationFee | null>(
+    useState<ApiSpeciality | null>(null);
+  const [deletingFee, setDeletingFee] = useState<ApiSpecialityFee | null>(
     null,
   );
   const [deletingFeeId, setDeletingFeeId] = useState<number | null>(null);
@@ -1349,22 +1349,22 @@ function ManageSpecializations() {
     data: specsData,
     isLoading: specsLoading,
     isError: specsError,
-  } = useGetSpecializations();
+  } = useGetSpecialities();
   const {
     data: fees = [],
     isLoading: feesLoading,
     isError: feesError,
-  } = useGetSpecializationFees();
+  } = useGetSpecialityFees();
 
-  const specs: ApiSpecialization[] = specsData?.data ?? [];
+  const specs: ApiSpeciality[] = specsData?.data ?? [];
 
-  const deleteSpecMutation = useDeleteSpecialization();
-  const deleteFeeMutation = useDeleteSpecializationFee();
-  const updateFeeMutation = useUpdateSpecializationFee();
+  const deleteSpecMutation = useDeleteSpeciality();
+  const deleteFeeMutation = useDeleteSpecialityFee();
+  const updateFeeMutation = useUpdateSpecialityFee();
 
-  // Group fees by specialization_id — skip orphaned fees (null specialization_id)
+  // Group fees by speciality_id — skip orphaned fees (null speciality_id)
   const feesBySpecId = useMemo(() => {
-    const map: Record<number, ApiSpecializationFee[]> = {};
+    const map: Record<number, ApiSpecialityFee[]> = {};
     fees.forEach((f) => {
       if (f.specialization_id === null) return;
       if (!map[f.specialization_id]) map[f.specialization_id] = [];
@@ -1408,12 +1408,12 @@ function ManageSpecializations() {
     });
   }, []);
 
-  // Specialization actions
+  // Speciality actions
   const openCreateSpec = useCallback(() => {
     setEditingSpec(null);
     setSpecPanelMode("create");
   }, []);
-  const openEditSpec = useCallback((s: ApiSpecialization) => {
+  const openEditSpec = useCallback((s: ApiSpeciality) => {
     setEditingSpec(s);
     setSpecPanelMode("edit");
   }, []);
@@ -1428,7 +1428,7 @@ function ManageSpecializations() {
     setSpecDeleteConflict(null);
     try {
       await deleteSpecMutation.mutateAsync(deletingSpec.id);
-      sonnerToast.success("Specialization deleted.");
+      sonnerToast.success("Speciality deleted.");
       setDeletingSpec(null);
     } catch (error) {
       const msg = getErrorMessage(error);
@@ -1447,12 +1447,12 @@ function ManageSpecializations() {
   }, [deletingSpec, deleteSpecMutation, toast]);
 
   // Sub-spec (fee) actions
-  const openAddSubSpec = useCallback((s: ApiSpecialization) => {
+  const openAddSubSpec = useCallback((s: ApiSpeciality) => {
     setAddingSubSpecFor(s);
     setEditingFee(null);
     setFeePanelMode("create");
   }, []);
-  const openEditFee = useCallback((f: ApiSpecializationFee) => {
+  const openEditFee = useCallback((f: ApiSpecialityFee) => {
     setEditingFee(f);
     setAddingSubSpecFor(null);
     setFeePanelMode("edit");
@@ -1469,7 +1469,7 @@ function ManageSpecializations() {
     setFeeDeleteConflict(null);
     try {
       await deleteFeeMutation.mutateAsync(deletingFee.id);
-      sonnerToast.success("Sub-specialization deleted.");
+      sonnerToast.success("Sub-speciality deleted.");
       setDeletingFee(null);
     } catch (error) {
       const msg = getErrorMessage(error);
@@ -1496,7 +1496,7 @@ function ManageSpecializations() {
         id: deletingFee.id,
         is_active: false,
       });
-      sonnerToast.success("Sub-specialization deactivated.");
+      sonnerToast.success("Sub-speciality deactivated.");
       setDeletingFee(null);
       setFeeDeleteConflict(null);
     } catch (error) {
@@ -1513,8 +1513,8 @@ function ManageSpecializations() {
     <DashboardLayout role="admin">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.specializations.overview_title")}
-          subtitle={t("pages.specializations.overview_sub")}
+          title={t("pages.specialities.overview_title")}
+          subtitle={t("pages.specialities.overview_sub")}
         />
 
         <main className="flex-1 overflow-y-auto">
@@ -1556,7 +1556,7 @@ function ManageSpecializations() {
                   <span className="font-bold text-foreground">
                     {specs.length}
                   </span>{" "}
-                  {specs.length === 1 ? "specialization" : "specializations"}
+                  {specs.length === 1 ? "speciality" : "specialities"}
                   {fees.length > 0 && (
                     <span className="text-muted-foreground/50 ml-1">
                       · {fees.length} sub-specs
@@ -1574,7 +1574,7 @@ function ManageSpecializations() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search specializations…"
+                  placeholder="Search specialities…"
                   className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
                 {search && (
@@ -1593,7 +1593,7 @@ function ManageSpecializations() {
                 onClick={openCreateSpec}
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add specialization
+                Add speciality
               </Button>
             </div>
           </div>
@@ -1632,13 +1632,13 @@ function ManageSpecializations() {
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
                     {search
-                      ? "No specializations match your search"
-                      : "No specializations yet"}
+                      ? "No specialities match your search"
+                      : "No specialities yet"}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {search
                       ? "Try a different keyword"
-                      : "Create a parent specialization, then add sub-specializations under it"}
+                      : "Create a parent speciality, then add sub-specialities under it"}
                   </p>
                 </div>
                 {!search && (
@@ -1648,7 +1648,7 @@ function ManageSpecializations() {
                     onClick={openCreateSpec}
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Add specialization
+                    Add speciality
                   </Button>
                 )}
               </div>
@@ -1660,7 +1660,7 @@ function ManageSpecializations() {
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-4 py-3 font-semibold">
-                          Specialization
+                          Speciality
                         </th>
                         <th className="text-left px-4 py-3 font-semibold">
                           Description
@@ -1682,7 +1682,7 @@ function ManageSpecializations() {
                         <SkeletonRows cols={6} />
                       ) : (
                         pagedSpecs.map((spec) => (
-                          <SpecializationRow
+                          <SpecialityRow
                             key={spec.id}
                             spec={spec}
                             fees={feesBySpecId[spec.id] ?? []}
@@ -1712,7 +1712,7 @@ function ManageSpecializations() {
                       />
                     ))
                     : pagedSpecs.map((spec) => (
-                      <SpecializationCard
+                      <SpecialityCard
                         key={spec.id}
                         spec={spec}
                         fees={feesBySpecId[spec.id] ?? []}
@@ -1738,8 +1738,8 @@ function ManageSpecializations() {
         </main>
       </div>
 
-      {/* Specialization panel */}
-      <SpecializationPanel
+      {/* Speciality panel */}
+      <SpecialityPanel
         mode={specPanelMode}
         specialization={editingSpec}
         onClose={closeSpecPanel}
@@ -1753,10 +1753,10 @@ function ManageSpecializations() {
         onClose={closeFeePanel}
       />
 
-      {/* Delete specialization dialog */}
+      {/* Delete speciality dialog */}
       {deletingSpec && (
         <DeleteDialog
-          label="specialization"
+          label="speciality"
           name={deletingSpec.name}
           onConfirm={confirmDeleteSpec}
           onCancel={() => {
@@ -1771,7 +1771,7 @@ function ManageSpecializations() {
       {/* Delete fee dialog */}
       {deletingFee && (
         <DeleteDialog
-          label="sub-specialization"
+          label="sub-speciality"
           name={feeDisplayName(deletingFee)}
           onConfirm={confirmDeleteFee}
           onCancel={() => {
@@ -1788,4 +1788,4 @@ function ManageSpecializations() {
   );
 }
 
-export default ManageSpecializations;
+export default ManageSpecialities;

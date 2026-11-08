@@ -71,7 +71,7 @@ export const FloatingCall = () => {
       {/* Controls */}
       <div className="flex items-center justify-between px-3 py-2 bg-[#1a1a1a]">
         <p className="text-[9px] text-white/50 truncate flex-1 mr-2">
-          {call.doctor.specialty}
+          {call.doctor.speciality}
         </p>
         <div className="flex items-center gap-1.5">
           <button

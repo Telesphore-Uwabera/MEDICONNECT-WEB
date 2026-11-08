@@ -49,7 +49,7 @@ export interface ApiDoctorHospital {
   address?: string;
 }
 
-export interface ApiDoctorSpecialization {
+export interface ApiDoctorSpeciality {
   id: number;
   name: string;
 }
@@ -92,9 +92,9 @@ export interface ApiDoctor {
     avatar: string | null;
   };
   hospitals: ApiDoctorHospital[];
-  specializations: ApiDoctorSpecialization[];
-  /** Specialist sub-types the doctor saved under their specialization.
-   *  Field/name shape is read defensively (name / sub_type / sub_specialization). */
+  specializations: ApiDoctorSpeciality[];
+  /** Specialist sub-types the doctor saved under their speciality.
+   *  Field/name shape is read defensively (name / sub_type / sub_speciality). */
   sub_specializations?: Array<{
     id: number;
     name?: string;
@@ -145,11 +145,11 @@ export interface DoctorSearchParams {
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
-let specializationFees: Promise<Map<number, number>> | null = null;
+let specialityFees: Promise<Map<number, number>> | null = null;
 
-function loadSpecializationFees() {
-  if (!specializationFees) {
-    specializationFees = apiFetch<Array<{ id: number; online_fee?: string | number }>>(
+function loadSpecialityFees() {
+  if (!specialityFees) {
+    specialityFees = apiFetch<Array<{ id: number; online_fee?: string | number }>>(
       "/public/dropdowns/specialization-fees",
     )
       .then((rows) => {
@@ -158,7 +158,7 @@ function loadSpecializationFees() {
       })
       .catch(() => new Map<number, number>());
   }
-  return specializationFees;
+  return specialityFees;
 }
 
 async function withResolvedFees(response: ApiDoctorListResponse) {
@@ -167,7 +167,7 @@ async function withResolvedFees(response: ApiDoctorListResponse) {
     (doctor) => !(Number(doctor.consultation_fee) > 0) && Number((doctor as { specialization_fee_id?: number }).specialization_fee_id) > 0,
   );
   if (!missing) return response;
-  const fees = await loadSpecializationFees();
+  const fees = await loadSpecialityFees();
   return {
     ...response,
     data: response.data.map((doctor) => {

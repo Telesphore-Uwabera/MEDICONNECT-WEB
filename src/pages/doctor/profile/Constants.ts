@@ -26,7 +26,7 @@ export const LANGUAGES = [
   { value: "kiny", label: "Kinyarwanda" },
 ];
 
-export const COMMON_SPECIALIZATIONS = [
+export const COMMON_SPECIALITIES = [
   "General Practice", "Internal Medicine", "Pediatrics", "Surgery",
   "Obstetrics & Gynecology", "Cardiology", "Dermatology", "Neurology",
   "Orthopedics", "Psychiatry", "Radiology", "Anesthesiology",
@@ -47,8 +47,8 @@ export const SOCIAL_PLATFORMS: Array<{
   ];
 
 export const STEPS = [
-  { id: "personal" as const, label: "Personal", icon: User, sectionTitle: "Professional information", description: "Specialization, degree, license, bio & fees" },
-  { id: "specializations" as const, label: "Specializations", icon: Stethoscope, sectionTitle: "Specializations", description: "Primary & secondary medical specializations" },
+  { id: "personal" as const, label: "Personal", icon: User, sectionTitle: "Professional information", description: "Speciality, degree, license, bio & fees" },
+  { id: "specializations" as const, label: "Specialities", icon: Stethoscope, sectionTitle: "Specialities", description: "Primary and secondary medical specialities" },
   { id: "education" as const, label: "Education", icon: GraduationCap, sectionTitle: "Education history", description: "Degrees and academic background" },
   { id: "experience" as const, label: "Experience", icon: Briefcase, sectionTitle: "Work experience", description: "Past and current positions" },
   { id: "qualifications" as const, label: "Qualifications", icon: Award, sectionTitle: "Certifications & qualifications", description: "Certifications and licenses" },
@@ -56,7 +56,7 @@ export const STEPS = [
   { id: "linksSection" as const, label: "Social Links", icon: Link2, sectionTitle: "Social & online presence", description: "LinkedIn, website, ResearchGate & more" },
 ];
 
-export const SPECIALIZATION_MAP: Record<string, string[]> = {
+export const SPECIALITY_MAP: Record<string, string[]> = {
   "Internal Medicine": [
     "Cardiology", "Endocrinology", "Gastroenterology", "Hematology",
     "Infectious Disease", "Nephrology", "Oncology", "Pulmonology",
@@ -197,4 +197,4 @@ export const SPECIALIZATION_MAP: Record<string, string[]> = {
   "General Practice": [],
 };
 
-export const PRIMARY_SPECIALIZATIONS = Object.keys(SPECIALIZATION_MAP).sort();
+export const PRIMARY_SPECIALITIES = Object.keys(SPECIALITY_MAP).sort();

@@ -1,6 +1,6 @@
 /**
  * CustomSelect — site-styled dropdown to replace bare <select> elements.
- * Matches the SpecializationSelect aesthetic:
+ * Matches the SpecialitySelect aesthetic:
  *  - Custom button trigger with border-primary focus ring
  *  - Portal dropdown rendered via createPortal (escapes overflow:hidden)
  *  - Hover/selected states using primary / secondary tokens

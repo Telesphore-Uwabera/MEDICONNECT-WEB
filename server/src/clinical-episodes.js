@@ -1,7 +1,7 @@
 import { loadOwnedId } from "./auth.js";
 import { hasColumn, insert, one, presentRow, q, tableExists, update, forgetColumns } from "./db.js";
 
-const INVESTIGATION_TYPES = new Set(["lab", "imaging", "procedure", "facility_packet", "nursing"]);
+const INVESTIGATION_TYPES = new Set(["lab", "imaging", "procedure", "facility_packet", "nursing", "rehab", "vaccination"]);
 const CLINICAL_OPEN = new Set(["CREATED", "SCHEDULED", "IN_PROGRESS", "AWAITING_INVESTIGATIONS", "AWAITING_RESULTS_REVIEW", "AWAITING_REFERRAL_OUTCOME", "AWAITING_FOLLOW_UP"]);
 const COVERAGE_THRESHOLD = 80;
 
@@ -106,6 +106,12 @@ export async function ensureEpisode(input = {}) {
       [patientId, doctorId],
     ).catch(() => null);
   }
+  if (!row && input.attach_open) {
+    row = await one(
+      "SELECT * FROM clinical_episodes WHERE patient_id = ? AND episode_status NOT IN ('CLOSED','CANCELLED') ORDER BY id DESC LIMIT 1",
+      [patientId],
+    ).catch(() => null);
+  }
   if (row) {
     const patch = {};
     if (appointmentId && !row.appointment_id) patch.appointment_id = appointmentId;
@@ -173,7 +179,7 @@ export async function recalculateEpisodeStatus(episodeId) {
   if (open("investigation").length) status = "AWAITING_INVESTIGATIONS";
   if (open("result_review").length) status = "AWAITING_RESULTS_REVIEW";
   else if (open("referral").length || open("inpatient").length) status = "AWAITING_REFERRAL_OUTCOME";
-  else if (open("follow_up").length || open("pharmacy_fulfillment").length) status = "AWAITING_FOLLOW_UP";
+  else if (open("follow_up").length || open("home_care").length || open("pharmacy_fulfillment").length) status = "AWAITING_FOLLOW_UP";
   else if (episode.note_finalized_at && !open("result_review").length && !open("investigation").length) {
     status = "CLINICALLY_COMPLETED";
   }
@@ -211,8 +217,12 @@ export async function onCareOrderCreated(order) {
       assigned_to: order.pharmacy_id || null,
       task_status: "PENDING",
     });
-  } else if (type === "follow_up") {
-    await upsertTask(episode.id, "follow_up", "care_orders", order.id, { task_status: "PENDING" });
+  } else if (type === "follow_up" || type === "home_care") {
+    await upsertTask(episode.id, type, "care_orders", order.id, {
+      assigned_role: type === "home_care" && order.hospital_id ? "hospital" : "doctor",
+      assigned_to: type === "home_care" && order.hospital_id ? order.hospital_id : order.doctor_id || null,
+      task_status: "PENDING",
+    });
   } else if (type === "admission") {
     if (await hasColumn("care_orders", "handover_status") && !order.handover_status) {
       await update("care_orders", order.id, { handover_status: "RECEIVED" }).catch(() => {});
@@ -228,8 +238,9 @@ export async function onCareOrderCreated(order) {
 }
 
 export async function onCareOrderUpdated(order, action, scope) {
-  if (!order) return;
+  if (!order) return { patient_message: null };
   await ensureCareOrderReviewColumns();
+  let patientMessage = null;
   const episode = await ensureEpisode({
     patient_id: order.patient_id,
     doctor_id: order.doctor_id,
@@ -237,7 +248,7 @@ export async function onCareOrderUpdated(order, action, scope) {
     instant_consultation_id: order.instant_consultation_id,
     note_finalized: true,
   });
-  if (!episode) return;
+  if (!episode) return { patient_message: null };
   const type = String(order.order_type || "");
   if (action === "complete" && INVESTIGATION_TYPES.has(type)) {
     const alreadyReviewed = String(order.review_status || "") === "reviewed";
@@ -260,19 +271,35 @@ export async function onCareOrderUpdated(order, action, scope) {
       );
     }
   } else if (action === "complete" && type === "pharmacy_packet") {
-    await upsertTask(episode.id, "pharmacy_fulfillment", "care_orders", order.id, { task_status: "SERVED" });
-  } else if (action === "complete" && type === "admission") {
-    const handover = String(order.handover_status || "ADMITTED");
+    const items = parseJson(order.items_json, []);
+    const lines = Array.isArray(items) ? items : [];
+    const shortages = await deductPharmacyStock(order.pharmacy_id, lines);
+    const method = order.delivery_type || "pickup";
+    await upsertTask(episode.id, "pharmacy_fulfillment", "care_orders", order.id, {
+      task_status: shortages.length ? "PARTIALLY_FULFILLED" : "SERVED",
+      payload_json: { shortages, method },
+    });
+    patientMessage = dispenseNotice(method, shortages).body;
+  } else if (action === "complete" && (type === "follow_up" || type === "home_care")) {
+    await upsertTask(episode.id, type, "care_orders", order.id, { task_status: "COMPLETED" });
+  } else if ((action === "complete" || action === "accept") && type === "admission") {
+    const handover = String(order.handover_status || "RECEIVED");
     await upsertTask(episode.id, "inpatient", "care_orders", order.id, {
       task_status: handover === "DISCHARGED" || handover === "TRANSFERRED" ? "COMPLETED" : "PENDING",
       payload_json: { handover_status: handover },
     });
   } else if (action === "reject") {
-    await upsertTask(episode.id, INVESTIGATION_TYPES.has(type) ? "investigation" : "pharmacy_fulfillment", "care_orders", order.id, {
-      task_status: "CANCELLED",
-    });
+    const taskType = INVESTIGATION_TYPES.has(type)
+      ? "investigation"
+      : type === "admission"
+        ? "inpatient"
+        : type === "follow_up" || type === "home_care"
+          ? type
+          : "pharmacy_fulfillment";
+    await upsertTask(episode.id, taskType, "care_orders", order.id, { task_status: "CANCELLED" });
   }
   await recalculateEpisodeStatus(episode.id);
+  return { patient_message: patientMessage };
 }
 
 export async function onConsultationSummarySaved(row) {
@@ -287,6 +314,7 @@ export async function onConsultationSummarySaved(row) {
   });
   if (!episode) return null;
   await upsertTask(episode.id, "consult_note", "consultation_summaries", row.id, { task_status: "COMPLETED" });
+  await openInsuranceClaim(episode, "consultation_summaries", row.id);
   return recalculateEpisodeStatus(episode.id);
 }
 
@@ -308,7 +336,7 @@ export async function onReferralCreated(row) {
   return recalculateEpisodeStatus(episode.id);
 }
 
-export async function onPharmacyRequestFulfilled(row, fulfillmentStatus = "SERVED") {
+export async function onPharmacyRequestFulfilled(row, fulfillmentStatus = "SERVED", extra = {}) {
   if (!row) return null;
   const prescription = row.prescription_id
     ? await one("SELECT * FROM prescriptions WHERE id = ?", [row.prescription_id]).catch(() => null)
@@ -323,12 +351,19 @@ export async function onPharmacyRequestFulfilled(row, fulfillmentStatus = "SERVE
     note_finalized: true,
   });
   if (!episode) return null;
-  const status = String(fulfillmentStatus || "SERVED").toUpperCase() === "PARTIALLY_FULFILLED" ? "PARTIALLY_FULFILLED" : "SERVED";
+  const shortages = Array.isArray(extra.shortages) ? extra.shortages : [];
+  const status = shortages.length || String(fulfillmentStatus || "SERVED").toUpperCase() === "PARTIALLY_FULFILLED"
+    ? "PARTIALLY_FULFILLED"
+    : "SERVED";
+  const method = extra.method || row.fulfillment_method || row.delivery_type || "pickup";
   await upsertTask(episode.id, "pharmacy_fulfillment", "pharmacy_prescription_requests", row.id, {
     assigned_role: "pharmacy",
     assigned_to: row.pharmacy_id || null,
     task_status: status,
+    payload_json: { shortages, method },
   });
+  const notice = dispenseNotice(method, shortages);
+  await notifyUser(await patientUserId(patientId), notice.title, notice.body, "care.pharmacy");
   if (prescription?.id && (await tableExists("prescriptions")) && (await hasColumn("prescriptions", "status"))) {
     await update("prescriptions", prescription.id, {
       status: status === "PARTIALLY_FULFILLED" ? "partially_dispensed" : "dispensed",
@@ -377,9 +412,12 @@ async function shapeEpisode(row) {
   const presented = await presentRow("clinical_episodes", row);
   const tasks = await q("SELECT * FROM clinical_episode_tasks WHERE episode_id = ? ORDER BY id ASC", [row.id]).catch(() => []);
   const pending = tasks.filter((t) => t.task_status === "PENDING");
+  const payments = await visitPayments(row);
+  const paymentHold = payments.some((payment) => !paymentIsSettled(payment));
   return {
     ...presented,
     episode_id: presented.id,
+    payment_hold: paymentHold,
     tasks: tasks.map((t) => ({
       ...t,
       payload: parseJson(t.payload_json, null),
@@ -421,6 +459,16 @@ async function timelineFor(episode) {
       });
     }
   }
+  const payments = await visitPayments(episode);
+  for (const payment of payments) {
+    const paid = paymentIsSettled(payment) && !["cancelled", "failed", "refunded"].includes(String(payment.status || "").toLowerCase());
+    const amount = payment.amount != null ? `${payment.amount} ${payment.currency || "RWF"}` : "";
+    events.push({
+      at: payment.paid_at || payment.created_at,
+      kind: paid ? "payment_paid" : "payment_due",
+      label: paid ? `Visit payment recorded${amount ? ` (${amount})` : ""}` : `Visit payment still due${amount ? ` (${amount})` : ""}`,
+    });
+  }
   events.sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
   return events;
 }
@@ -453,6 +501,226 @@ function itemKey(item) {
 function stockQty(medicine) {
   const n = Number(medicine.quantity ?? medicine.stock ?? medicine.stock_quantity ?? medicine.units_in_stock ?? 0);
   return Number.isFinite(n) ? n : 0;
+}
+
+function dispenseNotice(method, shortages) {
+  const delivery = String(method || "").toLowerCase() === "delivery";
+  const title = delivery ? "Your medicine is out for delivery" : "Your medicine is ready for pickup";
+  const body = shortages.length
+    ? `The pharmacy could not supply: ${shortages.join(", ")}.`
+    : delivery
+      ? "The pharmacy has sent your order."
+      : "The pharmacy has prepared your order for pickup.";
+  return { title, body };
+}
+
+async function patientUserId(patientId) {
+  const patient = await one("SELECT user_id FROM patients WHERE id = ? OR user_id = ? LIMIT 1", [patientId, patientId]).catch(() => null);
+  return patient?.user_id || null;
+}
+
+async function stockColumn() {
+  for (const name of ["quantity", "stock", "stock_quantity", "units_in_stock"]) {
+    if (await hasColumn("pharmacy_medicines", name)) return name;
+  }
+  return null;
+}
+
+export async function deductPharmacyStock(pharmacyId, lines) {
+  const shortages = [];
+  if (!pharmacyId || !(await tableExists("pharmacy_medicines"))) return shortages;
+  const column = await stockColumn();
+  if (!column) return shortages;
+  const stock = await q("SELECT * FROM pharmacy_medicines WHERE pharmacy_id = ?", [pharmacyId]).catch(() => []);
+  for (const line of lines || []) {
+    const need = Math.max(1, Number(line.quantity || line.qty || 1) || 1);
+    const key = itemKey(line);
+    const medicineId = Number(line.medicine_id || 0) || null;
+    const hit = stock.find((row) => {
+      if (medicineId && Number(row.id) === medicineId) return true;
+      if (!key) return false;
+      const names = [row.name, row.generic_name, row.brand_name].map(foldName).filter(Boolean);
+      return names.some((name) => name === key || name.includes(key) || key.includes(name));
+    });
+    if (!hit || stockQty(hit) < need) {
+      shortages.push(line.medicine_name || line.name || key || "medicine");
+      continue;
+    }
+    const next = stockQty(hit) - need;
+    await update("pharmacy_medicines", hit.id, { [column]: next });
+    hit[column] = next;
+  }
+  return shortages;
+}
+
+export async function deductForPrescription(pharmacyId, prescriptionId) {
+  const items = await loadPrescriptionItems(prescriptionId);
+  return deductPharmacyStock(pharmacyId, items);
+}
+
+async function ensureClaimTable() {
+  await q(`
+    CREATE TABLE IF NOT EXISTS insurance_claims (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      episode_id BIGINT UNSIGNED NULL,
+      patient_id BIGINT UNSIGNED NOT NULL,
+      insurer_ref VARCHAR(191) NULL,
+      source_table VARCHAR(64) NULL,
+      source_id BIGINT UNSIGNED NULL,
+      status VARCHAR(40) NOT NULL DEFAULT 'submitted',
+      created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY insurance_claims_episode (episode_id)
+    )
+  `).catch(() => {});
+  forgetColumns("insurance_claims");
+}
+
+async function patientInsuranceRef(patientId) {
+  const patient = await one(
+    "SELECT * FROM patients WHERE id = ? OR user_id = ? ORDER BY id DESC LIMIT 1",
+    [patientId, patientId],
+  ).catch(() => null);
+  if (!patient) return null;
+  for (const key of ["insurance_id", "insurance_provider", "insurance_name", "insurance_number", "insurance", "insurer"]) {
+    const value = patient[key];
+    if (value != null && String(value).trim() && String(value).trim() !== "0") return String(value).trim();
+  }
+  if (await tableExists("patient_insurances")) {
+    const row = await one("SELECT * FROM patient_insurances WHERE patient_id = ? ORDER BY id DESC LIMIT 1", [patient.id]).catch(() => null);
+    const value = row?.insurance_id || row?.provider || row?.insurance_name || row?.policy_number;
+    if (value) return String(value);
+  }
+  return null;
+}
+
+export async function openInsuranceClaim(episode, sourceTable, sourceId) {
+  if (!episode?.id) return null;
+  const ref = await patientInsuranceRef(episode.patient_id);
+  if (!ref) return null;
+  await ensureClaimTable();
+  const existing = await one(
+    "SELECT id FROM insurance_claims WHERE episode_id = ? AND source_table = ? AND source_id <=> ? LIMIT 1",
+    [episode.id, sourceTable, sourceId || null],
+  ).catch(() => null);
+  if (existing) return existing;
+  const id = await insert("insurance_claims", {
+    episode_id: episode.id,
+    patient_id: episode.patient_id,
+    insurer_ref: ref.slice(0, 191),
+    source_table: sourceTable,
+    source_id: sourceId || null,
+    status: "submitted",
+  }).catch(() => null);
+  if (!id) return null;
+  await upsertTask(episode.id, "insurance_claim", "insurance_claims", id, {
+    task_status: "SUBMITTED",
+    payload_json: { insurer_ref: ref },
+  });
+  return one("SELECT * FROM insurance_claims WHERE id = ?", [id]);
+}
+
+export async function onPrescriptionIssued(prescription) {
+  if (!prescription) return null;
+  const patientId = prescription.patient_id || prescription.user_id;
+  if (!patientId) return null;
+  const episode = await ensureEpisode({
+    patient_id: patientId,
+    doctor_id: prescription.doctor_id || prescription.prescriber_id || null,
+    appointment_id: prescription.appointment_id || null,
+    instant_consultation_id: prescription.instant_consultation_id || null,
+    attach_open: true,
+  });
+  if (!episode) return null;
+  await upsertTask(episode.id, "prescription", "prescriptions", prescription.id, {
+    assigned_role: "pharmacy",
+    assigned_to: prescription.pharmacy_id || null,
+    task_status: "ISSUED",
+  });
+  await openInsuranceClaim(episode, "prescriptions", prescription.id);
+  return recalculateEpisodeStatus(episode.id);
+}
+
+export async function onPharmacyShopOrder(order, action) {
+  if (!order?.patient_id) return null;
+  const episode = await ensureEpisode({
+    patient_id: order.patient_id,
+    attach_open: true,
+  });
+  if (!episode) return null;
+  if (action === "place" || action === "accept") {
+    await upsertTask(episode.id, "pharmacy_fulfillment", "pharmacy_orders", order.id, {
+      assigned_role: "pharmacy",
+      assigned_to: order.pharmacy_id || null,
+      task_status: "PENDING",
+      payload_json: { delivery_type: order.delivery_type || "pickup" },
+    });
+  } else if (action === "complete") {
+    const items = await q("SELECT * FROM pharmacy_order_items WHERE order_id = ?", [order.id]).catch(() => []);
+    const shortages = await deductPharmacyStock(order.pharmacy_id, items);
+    const method = order.delivery_type || "pickup";
+    await upsertTask(episode.id, "pharmacy_fulfillment", "pharmacy_orders", order.id, {
+      assigned_role: "pharmacy",
+      assigned_to: order.pharmacy_id || null,
+      task_status: shortages.length ? "PARTIALLY_FULFILLED" : "SERVED",
+      payload_json: { shortages, method },
+    });
+    const notice = dispenseNotice(method, shortages);
+    await notifyUser(await patientUserId(order.patient_id), notice.title, notice.body, "care.pharmacy");
+  } else if (action === "reject") {
+    await upsertTask(episode.id, "pharmacy_fulfillment", "pharmacy_orders", order.id, { task_status: "CANCELLED" });
+  }
+  return recalculateEpisodeStatus(episode.id);
+}
+
+async function visitPayments(episode) {
+  if (!episode?.appointment_id || !(await tableExists("payments"))) return [];
+  const id = episode.appointment_id;
+  const clauses = [];
+  const params = [];
+  if (await hasColumn("payments", "appointment_id")) {
+    clauses.push("appointment_id = ?");
+    params.push(id);
+  }
+  if ((await hasColumn("payments", "payable_id")) && (await hasColumn("payments", "payable_type"))) {
+    clauses.push("(payable_id = ? AND payable_type LIKE '%ppointment%')");
+    params.push(id);
+  }
+  if (!clauses.length) return [];
+  return q(`SELECT * FROM payments WHERE ${clauses.join(" OR ")} ORDER BY id ASC`, params).catch(() => []);
+}
+
+function paymentIsSettled(row) {
+  const status = String(row?.status || "").toLowerCase();
+  return ["paid", "completed", "success", "successful", "cancelled", "failed", "refunded"].includes(status);
+}
+
+export async function closeClinicalEpisode(episodeId, doctorId) {
+  await ensureClinicalEpisodeTables();
+  const episode = await one("SELECT * FROM clinical_episodes WHERE id = ?", [episodeId]).catch(() => null);
+  if (!episode || Number(episode.doctor_id) !== Number(doctorId)) {
+    return { error: 404, message: "Episode not found." };
+  }
+  if (episode.closed_at) return { episode: await shapeEpisode(episode) };
+  const tasks = await q("SELECT * FROM clinical_episode_tasks WHERE episode_id = ?", [episodeId]).catch(() => []);
+  const blocking = tasks.filter((task) => {
+    const status = String(task.task_status || "");
+    return task.task_type !== "insurance_claim" && ["PENDING", "PARTIALLY_FULFILLED", "RECEIVED", "IN_TRANSIT"].includes(status);
+  });
+  if (blocking.length) {
+    return { error: 422, message: "Finish the remaining clinical tasks before closing this episode." };
+  }
+  const payments = await visitPayments(episode);
+  if (payments.some((row) => !paymentIsSettled(row))) {
+    return { error: 422, message: "This visit still has an unpaid charge. The episode stays open until that payment is recorded." };
+  }
+  await update("clinical_episodes", episodeId, {
+    closed_at: new Date(),
+    closure_reason: "doctor_closed",
+    episode_status: "CLOSED",
+  });
+  const fresh = await one("SELECT * FROM clinical_episodes WHERE id = ?", [episodeId]);
+  return { episode: await shapeEpisode(fresh) };
 }
 
 export async function matchPharmaciesForPrescription(prescriptionId, doctorId) {
@@ -647,6 +915,21 @@ export function registerClinicalEpisodeRoutes(router, { requireAuth, requireRole
     router.get(`/${scope}/episodes/:episodeId/tasks`, requireAuth, requireRole(scope), showEpisode);
     router.get(`/${scope}/episodes/:episodeId/timeline`, requireAuth, requireRole(scope), showEpisode);
   }
+
+  router.post("/doctor/episodes/:episodeId/close", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const result = await closeClinicalEpisode(Number(req.params.episodeId), doctorId);
+      if (result.error) return res.status(result.error).json({ message: result.message });
+      res.json({
+        message: "Episode closed.",
+        episode: result.episode,
+        data: result.episode,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   router.post("/doctor/care-orders/:careOrderId/review", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {

@@ -274,7 +274,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
     ${contactBlock(brand)}
 
     ${section("Patient Information", infoRow("Patient Name", esc(patientName)) + infoRow("Phone Number", esc(patientPhone)))}
-    ${section("Prescribing Physician Information", infoRow("Physician Name", esc(doctorName)) + infoRow("Specialty", esc(doctorSpec)) + infoRow("Qualification", esc(doctorDegree)) + infoRow("Email", esc(doctorEmail)) + infoRow("Phone Number", esc(doctorPhone)))}
+    ${section("Prescribing Physician Information", infoRow("Physician Name", esc(doctorName)) + infoRow("Speciality", esc(doctorSpec)) + infoRow("Qualification", esc(doctorDegree)) + infoRow("Email", esc(doctorEmail)) + infoRow("Phone Number", esc(doctorPhone)))}
     ${section("Prescription Information", infoRow("Prescription Number", esc(p.prescription_number ?? "")) + infoRow("Status", esc(statusLabel(p.status))) + infoRow("Issued Date", esc(fmtDate(p.issued_at ?? p.created_at))) + infoRow("Valid Until", esc(fmtDate(p.valid_until))))}
     ${
       p.diagnosis || p.notes

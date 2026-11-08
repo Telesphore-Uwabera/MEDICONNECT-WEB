@@ -248,7 +248,7 @@ function DoctorProfileForm({ userId }: { userId: number }) {
     <>
       {isError && <NotFoundBanner />}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Specialization"><Text value={form.specialization} onChange={(v) => setForm((f) => ({ ...f, specialization: v }))} /></Field>
+        <Field label="Speciality"><Text value={form.specialization} onChange={(v) => setForm((f) => ({ ...f, specialization: v }))} /></Field>
         <Field label="Degree"><Text value={form.doctor_degree} onChange={(v) => setForm((f) => ({ ...f, doctor_degree: v }))} /></Field>
         <Field label="Medical license"><Text value={form.medical_license} onChange={(v) => setForm((f) => ({ ...f, medical_license: v }))} /></Field>
         <Field label="Designations"><Text value={form.designations} onChange={(v) => setForm((f) => ({ ...f, designations: v }))} /></Field>

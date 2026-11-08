@@ -263,7 +263,7 @@ export default function HeroSection() {
                         <p className="truncate text-sm font-bold leading-tight text-white drop-shadow-md">
                           {activeDoctor.user?.name ?? ""}
                         </p>
-                        {/* Specialization from DB — fallback to General Practitioner */}
+                        {/* Speciality from DB — fallback to General Practitioner */}
                         <p className="mt-0.5 truncate text-[11px] font-semibold leading-none text-white/80 drop-shadow">
                           {activeDoctor.specialization
                             || t("pages.landing.general_practitioner", "General Practitioner")}

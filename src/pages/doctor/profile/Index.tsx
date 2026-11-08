@@ -9,7 +9,7 @@ export * from "./Constants";
 export * from "./UiPrimitives";
 export * from "./Stepsavestatusbadge";
 export * from "./Fileuploadbox";
-export * from "./Specializationsstep";
+export * from "./SpecialitiesStep";
 export * from "./Educationstep";
 export * from "./Experiencestep";
 export * from "./Qualificationsstep";

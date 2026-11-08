@@ -11,6 +11,19 @@ import{  getInitials,
   CONSULTATION_LABELS,
 } from "./Types";
 import { ConsultationIcon } from "./Constants";
+import { landingSpecialityLabels } from "@/lib/browse-specialities";
+
+function specialityText(d: ApiDoctor) {
+  const labels = landingSpecialityLabels({
+    specialization: typeof d.specialization === "string"
+      ? d.specialization
+      : d.specialization?.name_en || d.specialization?.name || "",
+    specialization_fee_id: d.specialization_fee_id,
+  });
+  if (labels.length) return labels.join(", ");
+  if (typeof d.specialization === "string") return d.specialization;
+  return d.specialization?.name_en || d.specialization?.name || "";
+}
 
 function doctorEmail(d: ApiDoctor) {
   return d.user?.email ?? "-";
@@ -44,7 +57,7 @@ export function DoctorRow({
       </td>
 
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {d.specialization ?? <span className="text-muted-foreground/40">-</span>}
+        {specialityText(d) || <span className="text-muted-foreground/40">-</span>}
       </td>
 
       <td className="px-4 py-3">
@@ -130,10 +143,10 @@ export function DoctorCard({
           </Badge>
         </div>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          {d.specialization && (
+          {specialityText(d) && (
             <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
               <Stethoscope className="w-3 h-3" />
-              {d.specialization}
+              {specialityText(d)}
             </span>
           )}
           {d.consultation_type && (

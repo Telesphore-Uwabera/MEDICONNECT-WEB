@@ -12,7 +12,7 @@
 //   address?: string;
 // }
 
-// export interface ApiDoctorSpecialization {
+// export interface ApiDoctorSpeciality {
 //   id: number;
 //   name: string;
 // }
@@ -23,7 +23,7 @@
 //   id: number;
 //   user_id: number;
 //   slug: string;
-//   specialization: string;
+//   speciality: string;
 //   doctor_degree: string;
 //   medical_license: string;
 //   designations: string;
@@ -55,7 +55,7 @@
 //     avatar: string | null;
 //   };
 //   hospitals: ApiDoctorHospital[];
-//   specializations: ApiDoctorSpecialization[];
+//   specialities: ApiDoctorSpeciality[];
 // }
 
 // export interface ApiDoctorListResponse {
@@ -77,7 +77,7 @@
 
 // export interface DoctorSearchParams {
 //   q?: string;
-//   specialization?: string;
+//   speciality?: string;
 //   type?: "online" | "in_person" | "both";
 //   language?: string;
 //   city?: string;
@@ -95,7 +95,7 @@
 //   const searchParams = new URLSearchParams();
 
 //   if (params.q && params.q.trim().length >= 2) searchParams.set("q", params.q.trim());
-//   if (params.specialization) searchParams.set("specialization", params.specialization);
+//   if (params.speciality) searchParams.set("speciality", params.speciality);
 //   if (params.type) searchParams.set("type", params.type);
 //   if (params.language) searchParams.set("language", params.language);
 //   if (params.city) searchParams.set("city", params.city);

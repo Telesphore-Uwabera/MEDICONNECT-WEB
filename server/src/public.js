@@ -31,6 +31,14 @@ export function withTeamPhoto(member) {
   };
 }
 
+const UNLISTED_PUBLIC = new Set(["pending", "submitted", "rejected", "suspended", "action_requested", "inactive", "draft"]);
+
+function publiclyListed(status) {
+  const value = String(status || "").trim().toLowerCase();
+  if (!value) return true;
+  return !UNLISTED_PUBLIC.has(value);
+}
+
 async function whereActive(table, alias = "") {
   const prefix = alias ? `${alias}.` : "";
   const parts = [];
@@ -817,7 +825,7 @@ export function publicRoutes(router) {
         }
         filters.push(`(${parts.join(" OR ")})`);
       }
-      const specialtyName = String(req.query.specialization || "").trim();
+      const specialityName = String(req.query.specialization || "").trim();
       const subName = String(req.query.sub_specialization || "").trim();
       const feeId = Number(req.query.specialization_fee_id);
       if (Number.isFinite(feeId) && feeId > 0) {
@@ -836,9 +844,9 @@ export function publicRoutes(router) {
           filters.push("d.specialization_fee_id = ?");
           params.push(feeId);
         }
-      } else if (specialtyName || subName) {
+      } else if (specialityName || subName) {
         const clauses = [];
-        for (const name of [...new Set([specialtyName, subName].filter(Boolean))]) {
+        for (const name of [...new Set([specialityName, subName].filter(Boolean))]) {
           const like = `%${name}%`;
           clauses.push("(d.specialization = ? OR d.specialization LIKE ?)");
           params.push(name, like);
@@ -1136,7 +1144,7 @@ export function publicRoutes(router) {
   router.get("/public/hospitals/:slug", async (req, res, next) => {
     try {
       const row = await one("SELECT * FROM hospitals WHERE slug = ? OR id = ? LIMIT 1", [req.params.slug, req.params.slug]);
-      if (!row) return res.status(404).json({ message: "Hospital not found." });
+      if (!row || !publiclyListed(row.status)) return res.status(404).json({ message: "Hospital not found." });
       res.json({ data: await presentRow("hospitals", row) });
     } catch (error) {
       next(error);
@@ -1180,7 +1188,7 @@ export function publicRoutes(router) {
   router.get("/public/pharmacies/:slug", async (req, res, next) => {
     try {
       const row = await one("SELECT * FROM pharmacies WHERE slug = ? LIMIT 1", [req.params.slug]);
-      if (!row) return res.status(404).json({ message: "Pharmacy not found." });
+      if (!row || !publiclyListed(row.status)) return res.status(404).json({ message: "Pharmacy not found." });
       const pharmacy = await presentRow("pharmacies", row);
       pharmacy.working_hours = await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [pharmacy.id]).catch(() => []);
       res.json({ status: "success", data: pharmacy });

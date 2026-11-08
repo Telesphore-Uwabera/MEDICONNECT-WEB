@@ -25,9 +25,9 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
-import { BROWSE_SPECIALTIES, type BrowseSpecialty } from '@/lib/browse-specialties';
+import { BROWSE_SPECIALITIES, type BrowseSpeciality } from '@/lib/browse-specialities';
 
-interface LandingSpecializationFee {
+interface LandingSpecialityFee {
   id: number;
   slug?: string | null;
   name?: string | null;
@@ -42,20 +42,20 @@ interface LandingSpecializationFee {
   icon_svg?: string | null;
 }
 
-type SpecializationFeesResponse =
-  | LandingSpecializationFee[]
+type SpecialityFeesResponse =
+  | LandingSpecialityFee[]
   | {
-      data?: LandingSpecializationFee[];
-      specialization_fees?: LandingSpecializationFee[];
+      data?: LandingSpecialityFee[];
+      specialization_fees?: LandingSpecialityFee[];
     };
 
-interface ServiceDefinition extends BrowseSpecialty {
+interface ServiceDefinition extends BrowseSpeciality {
   fallbackIcon: LucideIcon;
   fallbackSvg?: string;
   searchUrl?: string;
 }
 
-const SPECIALTY_ICONS: Record<string, Pick<ServiceDefinition, "fallbackIcon" | "fallbackSvg" | "searchUrl">> = {
+const SPECIALITY_ICONS: Record<string, Pick<ServiceDefinition, "fallbackIcon" | "fallbackSvg" | "searchUrl">> = {
   "internal-medicine": { fallbackIcon: HeartPulse },
   pediatrics: { fallbackIcon: Baby },
   "gynecology-and-obstetrics": { fallbackIcon: Heart },
@@ -82,14 +82,14 @@ const SPECIALTY_ICONS: Record<string, Pick<ServiceDefinition, "fallbackIcon" | "
   "mental-counseling": { fallbackIcon: Brain },
 };
 
-const TARGET_SERVICES: ServiceDefinition[] = BROWSE_SPECIALTIES.map((item) => ({
+const TARGET_SERVICES: ServiceDefinition[] = BROWSE_SPECIALITIES.map((item) => ({
   ...item,
-  fallbackIcon: SPECIALTY_ICONS[item.key]?.fallbackIcon ?? Stethoscope,
-  fallbackSvg: SPECIALTY_ICONS[item.key]?.fallbackSvg,
-  searchUrl: SPECIALTY_ICONS[item.key]?.searchUrl,
+  fallbackIcon: SPECIALITY_ICONS[item.key]?.fallbackIcon ?? Stethoscope,
+  fallbackSvg: SPECIALITY_ICONS[item.key]?.fallbackSvg,
+  searchUrl: SPECIALITY_ICONS[item.key]?.searchUrl,
 }));
 
-interface PreparedSpecialization {
+interface PreparedSpeciality {
   id: number;
   key: string;
   label: string;
@@ -150,7 +150,7 @@ const sanitizeSvg = (svg?: string | null): string | null => {
   return new XMLSerializer().serializeToString(root);
 };
 
-function SpecialtyIcon({
+function SpecialityIcon({
   svg,
   fallback: Fallback,
 }: {
@@ -175,11 +175,11 @@ function SpecialtyIcon({
   return <Fallback className="h-6 w-6" />;
 }
 
-function useLandingSpecializationFees() {
+function useLandingSpecialityFees() {
   return useQuery({
     queryKey: ['landing-specialization-fees'],
     queryFn: async () => {
-      const response = await apiFetch<SpecializationFeesResponse>(
+      const response = await apiFetch<SpecialityFeesResponse>(
         '/public/specialization-fees'
       );
 
@@ -193,10 +193,10 @@ function useLandingSpecializationFees() {
   });
 }
 
-function specialtyHref(def: ServiceDefinition, matched?: LandingSpecializationFee) {
+function specialityHref(def: ServiceDefinition, matched?: LandingSpecialityFee) {
   const name =
-    def.subSpecializationName ||
-    def.specializationName ||
+    def.subSpecialityName ||
+    def.specialityName ||
     matched?.sub_specialization ||
     def.label;
   const params = new URLSearchParams();
@@ -210,9 +210,9 @@ function specialtyHref(def: ServiceDefinition, matched?: LandingSpecializationFe
   return `/patient/search-doctors?${params.toString()}`;
 }
 
-function specialtyLabel(
+function specialityLabel(
   def: ServiceDefinition,
-  matched: LandingSpecializationFee | undefined,
+  matched: LandingSpecialityFee | undefined,
   language: string,
   translatedMental: string,
 ) {
@@ -234,7 +234,7 @@ function Specialities() {
     isError,
     refetch,
     isFetching,
-  } = useLandingSpecializationFees();
+  } = useLandingSpecialityFees();
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const isHoveringRef = useRef(false);
@@ -246,7 +246,7 @@ function Specialities() {
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
 
-  const preparedSpecializations = useMemo<PreparedSpecialization[]>(() => {
+  const preparedSpecialities = useMemo<PreparedSpeciality[]>(() => {
     const mentalLabel = t("pages.landing.spec_mental_counseling", {
       defaultValue: "Mental Counseling",
     });
@@ -254,8 +254,8 @@ function Specialities() {
       const matched = data.find((item) => {
         if (def.feeId && item.id === def.feeId) return true;
         if (
-          def.subSpecializationName &&
-          item.sub_specialization?.toLowerCase() === def.subSpecializationName.toLowerCase()
+          def.subSpecialityName &&
+          item.sub_specialization?.toLowerCase() === def.subSpecialityName.toLowerCase()
         ) {
           return true;
         }
@@ -264,9 +264,9 @@ function Specialities() {
             ? item.specialization
             : item.specialization?.name;
         if (
-          def.specializationName &&
-          (specName?.toLowerCase() === def.specializationName.toLowerCase() ||
-            item.name?.toLowerCase() === def.specializationName.toLowerCase())
+          def.specialityName &&
+          (specName?.toLowerCase() === def.specialityName.toLowerCase() ||
+            item.name?.toLowerCase() === def.specialityName.toLowerCase())
         ) {
           return true;
         }
@@ -276,8 +276,8 @@ function Specialities() {
       return {
         id: matched?.id ?? (100 + idx),
         key: def.key,
-        label: specialtyLabel(def, matched, i18n.language, mentalLabel),
-        href: specialtyHref(def, matched),
+        label: specialityLabel(def, matched, i18n.language, mentalLabel),
+        href: specialityHref(def, matched),
         resolvedSlug: def.slug,
         doctorCount: matched?.doctorCount ?? matched?.doctors_count,
         Icon: def.fallbackIcon,
@@ -286,17 +286,17 @@ function Specialities() {
     });
   }, [data, i18n.language, t]);
 
-  const filteredSpecializations = useMemo(() => {
+  const filteredSpecialities = useMemo(() => {
     const query = mobileSearch.trim().toLowerCase();
 
     if (!query) {
-      return preparedSpecializations;
+      return preparedSpecialities;
     }
 
-    return preparedSpecializations.filter((item) =>
+    return preparedSpecialities.filter((item) =>
       item.label.toLowerCase().includes(query)
     );
-  }, [mobileSearch, preparedSpecializations]);
+  }, [mobileSearch, preparedSpecialities]);
 
   const updateScrollState = () => {
     const element = scrollRef.current;
@@ -310,7 +310,7 @@ function Specialities() {
 
   useEffect(() => {
     updateScrollState();
-  }, [preparedSpecializations]);
+  }, [preparedSpecialities]);
 
   useEffect(() => {
     const element = scrollRef.current;
@@ -329,7 +329,7 @@ function Specialities() {
   // Subtle auto-scroll loop
   useEffect(() => {
     const element = scrollRef.current;
-    if (!element || preparedSpecializations.length === 0) return;
+    if (!element || preparedSpecialities.length === 0) return;
 
     const interval = window.setInterval(() => {
       if (isHoveringRef.current) return;
@@ -347,7 +347,7 @@ function Specialities() {
     return () => {
       window.clearInterval(interval);
     };
-  }, [preparedSpecializations.length]);
+  }, [preparedSpecialities.length]);
 
   useEffect(() => {
     if (!mobileDropdownOpen) return;
@@ -411,7 +411,7 @@ function Specialities() {
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
             {t('pages.landing.spec_eyebrow', {
-              defaultValue: 'Browse by specialty',
+              defaultValue: 'Browse by speciality',
             })}
           </p>
 
@@ -492,7 +492,7 @@ function Specialities() {
         <div className="box-border flex flex-col items-center gap-3 rounded-sm border border-border bg-card py-8 text-center shadow-none">
           <p className="text-sm text-muted-foreground">
             {t('pages.landing.spec_load_error', {
-              defaultValue: 'Failed to load specialties',
+              defaultValue: 'Failed to load specialities',
             })}
           </p>
 
@@ -546,7 +546,7 @@ function Specialities() {
 
             <span className="truncate font-medium">
               {t('pages.landing.spec_choose', {
-                defaultValue: 'Find a specialization',
+                defaultValue: 'Find a speciality',
               })}
             </span>
           </span>
@@ -583,7 +583,7 @@ function Specialities() {
                   value={mobileSearch}
                   onChange={(event) => setMobileSearch(event.target.value)}
                   placeholder={t('pages.landing.spec_search_placeholder', {
-                    defaultValue: 'Search specializations...',
+                    defaultValue: 'Search specialities...',
                   })}
                   className="
                     box-border h-11 w-full rounded-sm
@@ -601,9 +601,9 @@ function Specialities() {
 
             {/* Vertical results */}
             <div className="max-h-[320px] overflow-y-auto p-2">
-              {filteredSpecializations.length > 0 ? (
+              {filteredSpecialities.length > 0 ? (
                 <div className="flex flex-col gap-1">
-                  {filteredSpecializations.map((item) => (
+                  {filteredSpecialities.map((item) => (
                     <Link
                       key={item.key}
                       role="option"
@@ -622,7 +622,7 @@ function Specialities() {
                       "
                     >
                       <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                        <SpecialtyIcon
+                        <SpecialityIcon
                           svg={item.icon_svg}
                           fallback={item.Icon}
                         />
@@ -651,7 +651,7 @@ function Specialities() {
                   <Search className="mb-2 h-7 w-7 text-muted-foreground/50" />
                   <p className="text-sm font-medium text-foreground">
                     {t('pages.landing.spec_no_results', {
-                      defaultValue: 'No specialization found',
+                      defaultValue: 'No speciality found',
                     })}
                   </p>
                 </div>
@@ -704,7 +704,7 @@ function Specialities() {
             focus-visible:outline-none
           "
         >
-          {preparedSpecializations.map((item) => (
+          {preparedSpecialities.map((item) => (
             <Link
               key={item.key}
               to={item.href}
@@ -725,7 +725,7 @@ function Specialities() {
               "
             >
               <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                <SpecialtyIcon
+                <SpecialityIcon
                   svg={item.icon_svg}
                   fallback={item.Icon}
                 />

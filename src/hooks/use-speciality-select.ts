@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
    Types
 ───────────────────────────────────────────── */
 
-export interface Specialization {
+export interface Speciality {
   id: number;
   name: string;
   name_fr: string;
@@ -15,7 +15,7 @@ export interface Specialization {
    doctorCount?: number;
 }
 
-export interface SpecializationFee {
+export interface SpecialityFee {
   id: number;
   specialization_id: number;
   sub_specialization: string;
@@ -28,14 +28,14 @@ export interface SpecializationFee {
   currency: string;
 }
 
-export interface SpecializationValue {
-  specialization: Specialization | null;
-  fee: SpecializationFee | null;
+export interface SpecialityValue {
+  specialization: Speciality | null;
+  fee: SpecialityFee | null;
 }
 
-/** A selectable sub-type under a Specialist sub-specialization (e.g. under
+/** A selectable sub-type under a Specialist sub-speciality (e.g. under
  *  Cardiology: "Interventional Cardiology", "Electrophysiology", …). */
-export interface SpecializationSubType {
+export interface SpecialitySubType {
   id: number;
   name: string;
   name_fr: string;
@@ -44,17 +44,17 @@ export interface SpecializationSubType {
   requires_approval: boolean;
 }
 
-export interface SpecializationSubTypesResponse {
+export interface SpecialitySubTypesResponse {
   specialization: { id: number; name: string; slug: string };
-  sub_types: SpecializationSubType[];
+  sub_types: SpecialitySubType[];
 }
 
 /* ─────────────────────────────────────────────
    Raw API hooks
 ───────────────────────────────────────────── */
 
-export function useGetSpecializations(search = "") {
-  return useQuery<Specialization[]>({
+export function useGetSpecialities(search = "") {
+  return useQuery<Speciality[]>({
     queryKey: ["dropdowns-specializations", search],
     queryFn: () =>
       apiFetch(
@@ -65,25 +65,25 @@ export function useGetSpecializations(search = "") {
   });
 }
 
-export function useGetSpecializationFees(
-  specializationId: number | null,
+export function useGetSpecialityFees(
+  specialityId: number | null,
   search = ""
 ) {
-  return useQuery<SpecializationFee[]>({
-    queryKey: ["dropdowns-specialization-fees", specializationId, search],
+  return useQuery<SpecialityFee[]>({
+    queryKey: ["dropdowns-specialization-fees", specialityId, search],
     queryFn: () =>
       apiFetch(
-        `/public/dropdowns/specialization-fees?specialization_id=${specializationId}${
+        `/public/dropdowns/specialization-fees?specialization_id=${specialityId}${
           search ? `&search=${encodeURIComponent(search)}` : ""
         }`
       ),
-    enabled: specializationId !== null,
+    enabled: specialityId !== null,
   });
 }
 
-/** Sub-types under a given sub-specialization slug (Specialist only). */
-export function useGetSpecializationSubTypes(slug: string | null) {
-  return useQuery<SpecializationSubTypesResponse>({
+/** Sub-types under a given sub-speciality slug (Specialist only). */
+export function useGetSpecialitySubTypes(slug: string | null) {
+  return useQuery<SpecialitySubTypesResponse>({
     queryKey: ["dropdowns-specialization-sub-types", slug],
     queryFn: () =>
       apiFetch(`/public/dropdowns/specialization-sub-types/${slug}`),
@@ -97,11 +97,11 @@ export function useGetSpecializationSubTypes(slug: string | null) {
    Composed hook — used directly by the component
 ───────────────────────────────────────────── */
 
-export function useSpecializationSelect() {
+export function useSpecialitySelect() {
   const [step, setStep] = useState<"specialization" | "fee">("specialization");
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [value, setValue] = useState<SpecializationValue>({
+  const [value, setValue] = useState<SpecialityValue>({
     specialization: null,
     fee: null,
   });
@@ -112,24 +112,24 @@ export function useSpecializationSelect() {
     return () => clearTimeout(t);
   }, [query]);
 
-  const specializationsQuery = useGetSpecializations(
+  const specialitiesQuery = useGetSpecialities(
     step === "specialization" ? debouncedQuery : ""
   );
 
-  const feesQuery = useGetSpecializationFees(
+  const feesQuery = useGetSpecialityFees(
     step === "fee" ? (value.specialization?.id ?? null) : null,
     step === "fee" ? debouncedQuery : ""
   );
 
   // ── Actions ───────────────────────────────
 
-  const selectSpecialization = (spec: Specialization) => {
+  const selectSpeciality = (spec: Speciality) => {
     setValue({ specialization: spec, fee: null });
     setQuery("");
     setStep("fee");
   };
 
-  const selectFee = (fee: SpecializationFee) => {
+  const selectFee = (fee: SpecialityFee) => {
     setValue((prev) => ({ ...prev, fee }));
     setQuery("");
   };
@@ -140,13 +140,13 @@ export function useSpecializationSelect() {
     setStep("specialization");
   };
 
-  const backToSpecialization = () => {
+  const backToSpeciality = () => {
     setQuery("");
     setStep("specialization");
   };
 
-  const openDropdown = (hasSpecialization: boolean) => {
-    setStep(hasSpecialization ? "fee" : "specialization");
+  const openDropdown = (hasSpeciality: boolean) => {
+    setStep(hasSpeciality ? "fee" : "specialization");
   };
 
   const resetQuery = () => setQuery("");
@@ -167,19 +167,19 @@ export function useSpecializationSelect() {
     value,
 
     // data
-    specializations: specializationsQuery.data ?? [],
-    loadingSpecializations: specializationsQuery.isLoading,
-    errorSpecializations: specializationsQuery.isError,
+    specializations: specialitiesQuery.data ?? [],
+    loadingSpecialities: specialitiesQuery.isLoading,
+    errorSpecialities: specialitiesQuery.isError,
 
     fees: feesQuery.data ?? [],
     loadingFees: feesQuery.isLoading,
     errorFees: feesQuery.isError,
 
     // actions
-    selectSpecialization,
+    selectSpeciality,
     selectFee,
     clear,
-    backToSpecialization,
+    backToSpeciality,
     openDropdown,
     resetQuery,
 

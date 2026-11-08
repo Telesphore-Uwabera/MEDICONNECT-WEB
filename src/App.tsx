@@ -116,7 +116,7 @@ import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
 import ManageCertificationDoctor from "./pages/admin/ManageCertificationDoctor.tsx";
 import ManageFitnessCertificates from "./pages/admin/ManageFitnessCertificates.tsx";
 import ManageHelpCenterLinks from "./pages/admin/ManageHelpCenterLinks.tsx";
-import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
+import ManageSpecialities from "./pages/admin/ManageSpecialities.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
 import AdminOurTeam from "./pages/admin/AdminOurTeam.tsx";
@@ -990,7 +990,7 @@ const App = () => (
               path="/admin/manage-specializations"
               element={
                 <RequireAuth>
-                  <ManageSpecializations />
+                  <ManageSpecialities />
                 </RequireAuth>
               }
             />

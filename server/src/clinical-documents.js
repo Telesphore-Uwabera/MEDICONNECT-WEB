@@ -260,7 +260,10 @@ export async function stampPrescriptionIssued(prescription) {
     patch.pdf_url = `/api/v1/patient/prescriptions/${prescription.id}/document`;
   }
   if (Object.keys(patch).length) await update("prescriptions", prescription.id, patch).catch(() => null);
-  return one("SELECT * FROM prescriptions WHERE id = ?", [prescription.id]);
+  const fresh = await one("SELECT * FROM prescriptions WHERE id = ?", [prescription.id]);
+  const { onPrescriptionIssued } = await import("./clinical-episodes.js");
+  await onPrescriptionIssued(fresh || prescription).catch(() => null);
+  return fresh || prescription;
 }
 
 export function registerClinicalDocumentRoutes(router, { requireAuth, requireRole }) {

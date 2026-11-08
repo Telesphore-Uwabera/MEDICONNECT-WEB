@@ -48,7 +48,7 @@ export const fmtRelative = (iso: string | null | undefined): string => {
 // ─── Appointment helpers ──────────────────────────────────────────────────────
 
 export const apptLabel     = (a: Appointment) => a.patient?.name ?? "Patient";
-export const apptSpecialty = (_a: Appointment) => "General";
+export const apptSpeciality = (_a: Appointment) => "General";
 
 export const statusLabel = (status: string, t?: TFunction): string => {
   const keys: Record<string, string> = {

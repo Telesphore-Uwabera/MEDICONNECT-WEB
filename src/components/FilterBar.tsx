@@ -48,7 +48,7 @@ export interface FilterBarProps {
   hasActiveFilters?: boolean;
   /** Called when the user clicks "Reset all" */
   onClearAll?: () => void;
-  /** Extra content rendered after the fields grid (e.g. a SpecializationSelect) */
+  /** Extra content rendered after the fields grid (e.g. a SpecialitySelect) */
   extraSlot?: ReactNode;
   /** Override grid column count at each breakpoint */
   cols?: {

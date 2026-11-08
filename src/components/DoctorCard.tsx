@@ -38,7 +38,6 @@ import type { Doctor } from "@/context/CallStore";
 import type {
   ApiDoctor,
   ApiDoctorHospital,
-  ApiDoctorSpecialization,
 } from "@/hooks/patient/use-patient-doctor";
 import {
   readConsultSession,
@@ -47,20 +46,23 @@ import {
 import { resolveMediaUrl } from "@/lib/image-url";
 import { apiFetch } from "@/lib/api";
 import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
+import { landingSpecialityLabels } from "@/lib/browse-specialities";
 import { Card } from "./ui/card";
 import { RichTextRenderer } from "./ui/rich-textarea";
 
 type ModalMode = "details" | "connect";
 
-const SPECIALTY_BY_DEPARTMENT: Record<string, string> = {
+const SPECIALITY_BY_DEPARTMENT: Record<string, string> = {
   pediatrics: "Pediatrician",
   orthopedics: "Orthopedist",
   "general practice": "General Practitioner",
 };
 
-function doctorSpecialtyLabel(doctor: ApiDoctor) {
+function doctorSpecialityLabel(doctor: ApiDoctor) {
+  const landing = landingSpecialityLabels(doctor);
+  if (landing.length) return landing.join(", ");
   const raw = String(doctor.specialization || "").trim();
-  const primary = SPECIALTY_BY_DEPARTMENT[raw.toLowerCase()] || raw;
+  const primary = SPECIALITY_BY_DEPARTMENT[raw.toLowerCase()] || raw;
   const extras = (doctor.sub_specializations || [])
     .map((item) => String(item.name || item.sub_type || item.sub_specialization || "").trim())
     .filter((name) => name && name.toLowerCase() !== raw.toLowerCase() && name.toLowerCase() !== primary.toLowerCase());
@@ -411,7 +413,7 @@ export function UnifiedModal({
     kiny: t("pages.landing.lang_rw"),
   };
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
-  const subSpecialtyLabel =
+  const subSpecialityLabel =
     doctor.sub_specializations
       ?.map((s) => s.name ?? s.sub_type ?? s.sub_specialization)
       .filter(Boolean)
@@ -523,7 +525,7 @@ export function UnifiedModal({
                     </div>
                     
                     <p className="text-xs text-primary font-medium mt-1">
-                      {doctorSpecialtyLabel(doctor)}
+                      {doctorSpecialityLabel(doctor)}
                       {doctor.doctor_degree ? ` - ${doctor.doctor_degree}` : ""}
                     </p>
                     {doctor.designations && (
@@ -575,11 +577,11 @@ export function UnifiedModal({
                         value={locationLabel}
                       />
                     )}
-                    {subSpecialtyLabel && (
+                    {subSpecialityLabel && (
                       <DetailRow
                         icon={Stethoscope}
-                        label={t("pages.cards.sub_specialties")}
-                        value={subSpecialtyLabel}
+                        label={t("pages.cards.sub_specialities")}
+                        value={subSpecialityLabel}
                       />
                     )}
                     {doctor.preferred_language && (
@@ -629,15 +631,18 @@ export function UnifiedModal({
                     </div>
                   )}
 
-                  {doctor.specializations &&
-                    doctor.specializations.length > 0 && (
+                  {(landingSpecialityLabels(doctor).length > 0 ||
+                    (doctor.specializations && doctor.specializations.length > 0)) && (
                       <div className="mt-4">
                         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                          {t("pages.cards.specializations")}
+                          {t("pages.cards.specialities")}
                         </p>
                         <div className="flex flex-wrap gap-1">
-                          {doctor.specializations.map(
-                            (sp: ApiDoctorSpecialization, i: number) => (
+                          {(landingSpecialityLabels(doctor).length
+                            ? landingSpecialityLabels(doctor).map((name) => ({ name }))
+                            : doctor.specializations
+                          ).map(
+                            (sp: { name?: string }, i: number) => (
                               <span
                                 key={i}
                                 className="px-2 py-0.5 text-xs font-medium rounded-[6px] bg-primary/8 text-primary border border-primary/20"
@@ -700,7 +705,7 @@ export function UnifiedModal({
 // Restyled: the doctor image is now a full-width banner at the top of the
 // card (h-44 / sm:h-52) instead of a small h-12 inline avatar. Status dot and
 // "Featured" badge float on top of the image as pills. Everything else 
-// name, specialization, location, consult badge, divider, buttons, pills,
+// name, speciality, location, consult badge, divider, buttons, pills,
 // modal  is unchanged in content, only reflowed to sit below the image.
 
 export const DoctorCard = ({
@@ -773,7 +778,7 @@ export const DoctorCard = ({
       name: doctor.user.name,
       avatar: doctor.user.avatar,
     },
-    specialization: doctorSpecialtyLabel(doctor),
+    specialization: doctorSpecialityLabel(doctor),
   };
 
   const isThisDoctor = call.doctor?.id === doctor.id;
@@ -858,7 +863,7 @@ export const DoctorCard = ({
             <p className="mt-0.5 flex min-w-0 items-start gap-1 text-xs font-medium text-primary sm:items-center sm:truncate">
               <BriefcaseMedical className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:mt-0" />
               <span className="min-w-0 whitespace-normal break-words sm:truncate">
-                {doctorSpecialtyLabel(doctor) || t("pages.landing.general_practitioner", "General Practitioner")}
+                {doctorSpecialityLabel(doctor) || t("pages.landing.general_practitioner", "General Practitioner")}
               </span>
             </p>
             {locationLabel && (

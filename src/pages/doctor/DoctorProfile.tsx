@@ -155,7 +155,7 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
       sub_specializations: (doc.sub_specializations ?? []).map((x) => ({
         id: x.id,
       })),
-      sub_specialization_names: (doc.sub_specializations ?? []).map(
+      sub_speciality_names: (doc.sub_specializations ?? []).map(
         (x) => x.name ?? x.sub_type ?? x.sub_specialization ?? `#${x.id}`,
       ),
     },
@@ -535,7 +535,7 @@ const ViewPersonal = React.memo(function ViewPersonal({
   );
 });
 
-const ViewSpecializations = React.memo(function ViewSpecializations({
+const ViewSpecialities = React.memo(function ViewSpecialities({
   data,
 }: {
   data: DoctorProfileData;
@@ -544,11 +544,11 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
   const s = data.specializations;
   if (!s.primary) return null;
 
-  const subNames = s.sub_specialization_names ?? [];
+  const subNames = s.sub_speciality_names ?? [];
 
   return (
     <div className="space-y-5">
-      <ViewField label={t("doctorProfile.primary_specialization")} value={s.primary} />
+      <ViewField label={t("doctorProfile.primary_speciality")} value={s.primary} />
 
       {s.years_of_experience > 0 && (
         <ViewField
@@ -560,16 +560,16 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
       {s.specialization_fee_id && s.fee_name && (
         <div className="rounded-[6px] border border-primary/20 bg-primary/5 p-4 space-y-3">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-            {t("doctorProfile.selected_subspecialization")}
+            {t("doctorProfile.selected_subspeciality")}
           </span>
-          <ViewField label={t("doctorProfile.sub_specialization_label")} value={s.fee_name} />
+          <ViewField label={t("doctorProfile.sub_speciality_label")} value={s.fee_name} />
         </div>
       )}
 
       {subNames.length > 0 && (
         <div className="rounded-[6px] border border-border bg-card p-4 space-y-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {t("doctorProfile.sub_specialties_header")}
+            {t("doctorProfile.sub_specialities_header")}
           </span>
           <div className="flex flex-wrap gap-2">
             {subNames.map((name, i) => (
@@ -586,7 +586,7 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
 
       {s.specialization_fee_id && !s.fee_name && (
         <ViewField
-          label={t("doctorProfile.sub_specialization_id")}
+          label={t("doctorProfile.sub_speciality_id")}
           value={s.specialization_fee_id}
         />
       )}
@@ -905,7 +905,7 @@ function SectionViewPanel({
     case "personal":
       return <ViewPersonal data={data} />;
     case "specializations":
-      return <ViewSpecializations data={data} />;
+      return <ViewSpecialities data={data} />;
     case "education":
       return <ViewEducation data={data} />;
     case "experience":
@@ -1466,8 +1466,13 @@ const DoctorProfile = () => {
           }
           case "specializations": {
             const payload: UpsertProfilePayload = {};
-            if (data.specializations?.primary)
+            if (data.specializations?.primary) {
               payload.specialization = data.specializations.primary;
+              payload.specialities = data.specializations.primary
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean);
+            }
             if (data.specializations?.specialization_fee_id !== undefined)
               payload.specialization_fee_id =
                 data.specializations.specialization_fee_id;

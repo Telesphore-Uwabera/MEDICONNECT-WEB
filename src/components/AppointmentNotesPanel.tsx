@@ -64,7 +64,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
           </div>
           <div>
             <p className="text-[12px] font-semibold leading-tight">Consultation notes</p>
-            <p className="text-[10px] text-muted-foreground leading-tight">{appt.specialty}</p>
+            <p className="text-[10px] text-muted-foreground leading-tight">{appt.speciality}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -110,11 +110,11 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
               {/* Patient */}
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
-                  {appt.specialty.slice(0, 2).toUpperCase()}
+                  {appt.speciality.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">{appt.patientLabel}</p>
-                  <p className="text-[10px] text-muted-foreground">{appt.specialty}</p>
+                  <p className="text-[10px] text-muted-foreground">{appt.speciality}</p>
                 </div>
               </div>
               {/* Meta */}
@@ -162,7 +162,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
         ref={textRef}
         value={notes}
         onChange={update}
-        placeholder={`Consultation notes for ${appt.specialty}…\n\nUse Quick insert above to add structured sections, or type freely.\n\nNotes are saved automatically per appointment.`}
+        placeholder={`Consultation notes for ${appt.speciality}…\n\nUse Quick insert above to add structured sections, or type freely.\n\nNotes are saved automatically per appointment.`}
         className="flex-1 min-h-0 border-0 rounded-none focus-within:ring-0 focus-within:ring-offset-0"
         editorClassName="h-full text-[12px] leading-relaxed"
         minHeight={280}

@@ -36,6 +36,9 @@ export interface RegisterPayload {
   password_confirmation: string;
   accepted_terms: boolean;
   gender:string
+  specialities?: string[];
+  specialization_fee_ids?: number[];
+  specialization?: string;
 }
 
 export interface RegisterResponse {

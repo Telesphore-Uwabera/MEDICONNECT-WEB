@@ -100,7 +100,7 @@ export interface HospitalInfo {
   name: string;
   city: string;
   address: string;
-  specialties: string[];
+  specialities: string[];
   rating: number;
   beds: number;
   image: string; 
@@ -122,7 +122,7 @@ export const hospitals: HospitalInfo[] = [
     name: "King Faisal Hospital",
     city: "Kigali",
     address: "KG 544 St, Kacyiru",
-    specialties: ["Cardiology", "Pediatrics", "Surgery"],
+    specialities: ["Cardiology", "Pediatrics", "Surgery"],
     rating: 4.9,
     beds: 240,
     image: "KF",
@@ -137,7 +137,7 @@ export const hospitals: HospitalInfo[] = [
     name: "Kigali Medical Center",
     city: "Kigali",
     address: "KN 3 Ave, Nyarugenge",
-    specialties: ["General Practice", "Neurology", "Maternity"],
+    specialities: ["General Practice", "Neurology", "Maternity"],
     rating: 4.7,
     beds: 180,
     image: "KM",
@@ -152,7 +152,7 @@ export const hospitals: HospitalInfo[] = [
     name: "Rwanda Health Clinic",
     city: "Kigali",
     address: "KK 15 Rd, Kicukiro",
-    specialties: ["Dermatology", "Orthopedics", "Diagnostics"],
+    specialities: ["Dermatology", "Orthopedics", "Diagnostics"],
     rating: 4.6,
     beds: 95,
     image: "RH",

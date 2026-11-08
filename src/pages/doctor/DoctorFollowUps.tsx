@@ -14,7 +14,7 @@ import {
   type ConsultationSummary,
 } from "@/hooks/doctor/use-consultation-summaries";
 import { useGetAppointments } from "@/hooks/doctor/use-doctor-appointment";
-import { useDoctorEpisodes } from "@/hooks/doctor/use-clinical-episodes";
+import { useCloseEpisode, useDoctorEpisodes } from "@/hooks/doctor/use-clinical-episodes";
 import { formatDateOnly } from "@/lib/date";
 
 type FollowRow = {
@@ -42,6 +42,9 @@ export default function DoctorFollowUps() {
   const summaries = useConsultationSummaries();
   const pending = useGetAppointments({ status: "pending", per_page: 50, page: 1 });
   const awaitingReview = useDoctorEpisodes("AWAITING_RESULTS_REVIEW");
+  const readyToClose = useDoctorEpisodes("CLINICALLY_COMPLETED");
+  const closeEpisode = useCloseEpisode();
+  const [closeError, setCloseError] = useState<string | null>(null);
 
   const unsignedRows = unsigned.data?.data ?? [];
   const draftRows = drafts.data?.data ?? [];
@@ -113,6 +116,38 @@ export default function DoctorFollowUps() {
             <StatCard label={t("pages.doctor.followup_results_review", "Results to review")} value={awaitingReview.data?.length ?? 0} icon={Stethoscope} accent="warning" />
             <StatCard label={t("pages.doctor.followup_pending_appt")} value={pendingRows.length} icon={ClipboardList} accent="info" />
           </div>
+
+          {(readyToClose.data ?? []).some((episode) => (episode.pending_count ?? 0) === 0) && (
+            <section className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm">
+              <h2 className="text-sm font-semibold">{t("pages.doctor.followup_ready_close", "Ready to close")}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("pages.doctor.followup_ready_close_hint", "Close a visit only after every clinical task is done. An unpaid visit stays open.")}
+              </p>
+              {closeError && <p className="mt-2 text-xs text-destructive">{closeError}</p>}
+              <ul className="mt-3 space-y-2">
+                {(readyToClose.data ?? []).filter((episode) => (episode.pending_count ?? 0) === 0).map((episode) => (
+                  <li key={episode.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span>Patient #{episode.patient_id}</span>
+                    <button
+                      type="button"
+                      className="rounded-[6px] bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                      disabled={episode.payment_hold || closeEpisode.isPending}
+                      onClick={() => {
+                        setCloseError(null);
+                        closeEpisode.mutate(episode.id, {
+                          onError: (error) => setCloseError(error instanceof Error ? error.message : "Could not close this episode."),
+                        });
+                      }}
+                    >
+                      {episode.payment_hold
+                        ? t("pages.doctor.followup_payment_due", "Payment still due")
+                        : t("pages.doctor.followup_close", "Close episode")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section className="overflow-hidden rounded-[6px] border border-border/70 bg-card shadow-sm">
             {unsigned.isLoading || summaries.isLoading || pending.isLoading ? (

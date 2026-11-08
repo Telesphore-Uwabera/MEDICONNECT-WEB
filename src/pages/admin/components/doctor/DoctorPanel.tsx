@@ -79,7 +79,7 @@ import {
   useAddCertificationDoctor,
   useUpdateCertificationDoctor,
   useRemoveCertificationDoctor,
-  useGetSpecializationFees,
+  useGetSpecialityFees,
   useGetDoctorConsultations,
   useAssignDoctorConsultation,
   useUpdateDoctorConsultation,
@@ -871,7 +871,7 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
             {doctor.specialization && (
               <InfoTile
                 icon={<Stethoscope className="w-2.5 h-2.5" />}
-                label="Specialization"
+                label="Speciality"
                 value={displayText(doctor.specialization)}
               />
             )}
@@ -2063,7 +2063,7 @@ function CertificationTab({ doctor }: { doctor: ApiDoctor }) {
 // ─── Tab: Fees ────────────────────────────────────────────────────────────────
 function FeesTab({ doctor }: { doctor: ApiDoctor }) {
   const { data, isLoading, isError } = useGetDoctorConsultationFees(doctor.id);
-  const { data: allFees, isLoading: feesLoading } = useGetSpecializationFees();
+  const { data: allFees, isLoading: feesLoading } = useGetSpecialityFees();
 
   const overrideMutation = useSetDoctorFeeOverride();
   const updateMutation = useUpdateDoctorConsultationFee();
@@ -2204,7 +2204,7 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
                   key={rec.id}
                   className="rounded-[6px] border border-border/40 bg-card/60 overflow-hidden"
                 >
-                  {/* ── header: specialization name + badges ── */}
+                  {/* ── header: speciality name + badges ── */}
                   <div className="flex items-center justify-between px-4 py-3 bg-accent/10 border-b border-primary/8">
                     <div className="min-w-0">
                       <p className="text-[12.5px] font-bold text-foreground truncate">

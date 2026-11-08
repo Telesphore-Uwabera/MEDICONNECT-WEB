@@ -52,8 +52,8 @@ import {
   ApiDoctor,
 } from "@/hooks/patient/use-patient-doctor";
 import { 
-  SpecializationValue,
-} from "./patient/components/SpecializationSelect";
+  SpecialityValue,
+} from "./patient/components/SpecialitySelect";
 import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 import { parseDeliveryMins, useSearchPharmacies } from "@/hooks/patient/use-patient-search-pharmacy";
 import HeroSection from "./doctor/HeroSection";
@@ -109,8 +109,8 @@ const Index = () => {
 
   // ── Doctor filter state ─────────────────────────────────────────────────────
   const [doctorFilter, setDoctorFilter] = useState<"all" | "instant">("all");
-  const [selectedSpecialization, setSelectedSpecialization] =
-    useState<SpecializationValue>({ specialization: null, fee: null });
+  const [selectedSpeciality, setSelectedSpeciality] =
+    useState<SpecialityValue>({ specialization: null, fee: null });
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
 
   useEffect(() => {
@@ -192,15 +192,15 @@ const Index = () => {
     if (doctorFilter === "instant") params.instant = true;
     if (selectedLanguage !== "all") params.language = selectedLanguage;
 
-    if (selectedSpecialization.specialization) {
-      params.specialization = selectedSpecialization.specialization.name;
-      if (selectedSpecialization.fee?.id) {
-        params.specialization_fee_id = selectedSpecialization.fee.id;
+    if (selectedSpeciality.specialization) {
+      params.specialization = selectedSpeciality.specialization.name;
+      if (selectedSpeciality.fee?.id) {
+        params.specialization_fee_id = selectedSpeciality.fee.id;
       }
     }
 
     return params;
-  }, [doctorFilter, selectedLanguage, selectedSpecialization]);
+  }, [doctorFilter, selectedLanguage, selectedSpeciality]);
 
   const { data: pharmacyStats } = useGetPharmacyStats();
   const { data: pharmaciesResp, isLoading: pharmaciesLoading } = useSearchPharmacies({ per_page: 12 });
@@ -338,13 +338,13 @@ const Index = () => {
   // ── Clear all filters helper ─────────────────────────────────────────────────
   const clearFilters = useCallback(() => {
     setDoctorFilter("all");
-    setSelectedSpecialization({ specialization: null, fee: null });
+    setSelectedSpeciality({ specialization: null, fee: null });
     setSelectedLanguage("all");
   }, []);
 
   const hasActiveFilters =
     doctorFilter !== "all" ||
-    !!selectedSpecialization.specialization ||
+    !!selectedSpeciality.specialization ||
     selectedLanguage !== "all";
 
   // ── Static content ───────────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ export function ScheduledCallView({ onExit }: Props) {
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-[12px] font-semibold text-foreground shrink-0">{appt.patientLabel}</span>
             <span className="text-[11px] text-muted-foreground truncate">
-              — {appt.specialty} · {fmtDate(appt.date)} {fmtTime(appt.time)}
+              — {appt.speciality} · {fmtDate(appt.date)} {fmtTime(appt.time)}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
