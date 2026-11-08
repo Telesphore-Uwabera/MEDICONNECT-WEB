@@ -14,9 +14,22 @@ const db = {
   patients: [
     { id: 55, user_id: 77, name: "Amina" },
     { id: 56, user_id: 80, name: "Other" },
+    { id: 77, user_id: 8, name: "Foreign Profile" },
   ],
-  prescriptions: [{ id: 5, doctor_id: 31, prescriber_id: 31, patient_id: 55, notes: "" }],
-  appointments: [{ id: 5, doctor_id: 31, patient_id: 77, status: "confirmed" }],
+  prescriptions: [
+    { id: 5, doctor_id: 31, prescriber_id: 31, patient_id: 55, notes: "" },
+    { id: 11, doctor_id: 31, prescriber_id: 31, patient_id: 77, notes: "" },
+  ],
+  appointments: [
+    { id: 5, doctor_id: 31, patient_id: 77, user_id: null, status: "confirmed" },
+    { id: 8, doctor_id: 31, patient_id: 55, user_id: null, status: "confirmed" },
+    { id: 9, doctor_id: 31, patient_id: 77, user_id: 8, status: "confirmed" },
+  ],
+  instants: [
+    { id: 9, doctor_id: 31, patient_id: 55, user_id: null, status: "accepted" },
+    { id: 10, doctor_id: 31, patient_id: 77, user_id: null, status: "accepted" },
+    { id: 12, doctor_id: 31, patient_id: 55, user_id: 8, status: "accepted" },
+  ],
 };
 
 vi.mock("./db.js", async (importOriginal) => {
@@ -26,6 +39,7 @@ vi.mock("./db.js", async (importOriginal) => {
     tableExists: async (name) => [
       "appointments", "prescriptions", "prescription_requests", "patients", "doctors", "pharmacies",
       "patient_medical_infos", "team_members", "instant_consultation_requests",
+      "pharmacy_orders", "service_bookings", "hospitals",
     ].includes(name),
     hasColumn: async () => {
       if (db.columnThrows) throw new Error("columns unreadable");
@@ -39,7 +53,25 @@ vi.mock("./db.js", async (importOriginal) => {
       writes.push({ op: "update", table, id, data });
       return 1;
     },
-    q: async () => [],
+    q: async (sql, params = []) => {
+      const text = String(sql).replace(/`/g, "");
+      if (db.careThrows && text.includes("FROM appointments") && text.includes("doctor_id")) {
+        throw new Error("care unreadable");
+      }
+      if (text.includes("FROM patients WHERE user_id")) {
+        return db.patients.filter((row) => row.user_id === Number(params[0]));
+      }
+      if (text.includes("FROM appointments") && text.includes("doctor_id")) {
+        return db.appointments.filter((row) => row.doctor_id === Number(params[0]) && row.patient_id === Number(params[1]));
+      }
+      if (text.includes("instant_consultation_requests") && text.includes("patient_id =")) {
+        return db.instants.filter((row) => row.doctor_id === Number(params[0]) && row.patient_id === Number(params[1]));
+      }
+      if (text.includes("instant_consultation_requests") && text.includes("user_id =")) {
+        return db.instants.filter((row) => row.doctor_id === Number(params[0]) && row.user_id === Number(params[1]));
+      }
+      return [];
+    },
     one: async (sql, params = []) => {
       const text = String(sql).replace(/`/g, "");
       if (db.patientThrows && text.includes("FROM patients")) throw new Error("patients unreadable");
@@ -51,6 +83,9 @@ vi.mock("./db.js", async (importOriginal) => {
       }
       if (text.includes("FROM pharmacies") && text.includes("user_id")) {
         return db.pharmacies.find((row) => row.user_id === Number(params[0])) || null;
+      }
+      if (text.includes("FROM hospitals") && text.includes("user_id")) {
+        return { id: 4, user_id: 10 };
       }
       if (text.includes("FROM patients WHERE user_id")) {
         return db.patients.find((row) => row.user_id === Number(params[0])) || null;
@@ -65,8 +100,11 @@ vi.mock("./db.js", async (importOriginal) => {
         if (text.includes("patient_id = ?") && Number(params[1]) !== Number(row.patient_id)) return null;
         return row;
       }
-      if (text.includes("FROM appointments WHERE id")) {
+      if (text.includes("FROM appointments WHERE id") || (text.includes("FROM appointments") && text.includes("WHERE id ="))) {
         return db.appointments.find((row) => row.id === Number(params[0])) || null;
+      }
+      if (text.includes("instant_consultation_requests") && text.includes("WHERE id")) {
+        return db.instants.find((row) => row.id === Number(params[0])) || null;
       }
       if (text.includes("FROM appointments") && text.includes("doctor_id")) {
         return db.appointments.find((row) => (
@@ -95,6 +133,7 @@ const users = {
   doctor: { id: 4, active_role: "doctor", role: "doctor" },
   otherDoctor: { id: 5, active_role: "doctor", role: "doctor" },
   pharmacy: { id: 6, active_role: "pharmacy", role: "pharmacy" },
+  hospital: { id: 10, active_role: "hospital", role: "hospital" },
 };
 
 function request(user, method, path, body) {
@@ -207,6 +246,61 @@ describe("resource write authorization", () => {
     db.patientThrows = true;
     const patient = await request(users.doctor, "PUT", "/doctor/patients/55/record", { known_allergies: "penicillin" });
     expect(patient.status).toBe(403);
+    expect(writes).toEqual([]);
+  });
+
+  it("does not let an appointment id rule write an instant row, or the reverse", async () => {
+    const ownInstant = await request(users.patient, "PATCH", "/patient/instant-consultation-requests/9", { status: "accepted" });
+    expect(ownInstant.status).toBe(200);
+    writes.length = 0;
+    const foreignProfile = await request(users.patient, "PATCH", "/patient/instant-consultation-requests/10", { status: "accepted" });
+    const contradicted = await request(users.patient, "PATCH", "/patient/instant-consultation-requests/12", { status: "accepted" });
+    expect(foreignProfile.status).toBe(403);
+    expect(contradicted.status).toBe(403);
+    const legacyAppointment = await request(users.patient, "PATCH", "/patient/my-visits/5", { notes: "mine" });
+    expect(legacyAppointment.status).toBe(200);
+    writes.length = 0;
+    const profileOnAppointment = await request(users.patient, "PATCH", "/patient/my-visits/8", { notes: "nope" });
+    const foreignUser = await request(users.patient, "DELETE", "/patient/my-visits/9");
+    expect(profileOnAppointment.status).toBe(403);
+    expect(foreignUser.status).toBe(403);
+    expect(writes).toEqual([]);
+  });
+
+  it("keeps a validated patient on clinical create and rejects a foreign target", async () => {
+    const created = await request(users.doctor, "POST", "/doctor/prescriptions", {
+      patient_id: 55,
+      doctor_id: 99,
+      notes: "amoxicillin",
+    });
+    expect(created.status).toBe(201);
+    expect(writes[0]).toMatchObject({ op: "insert", table: "prescriptions" });
+    expect(writes[0].data.patient_id).toBe(55);
+    expect(writes[0].data.doctor_id).toBe(31);
+    writes.length = 0;
+    const foreign = await request(users.doctor, "POST", "/doctor/prescriptions", { patient_id: 56, notes: "no" });
+    expect(foreign.status).toBe(403);
+    const ownRequest = await request(users.patient, "POST", "/patient/prescription-requests", { patient_id: 55, doctor_id: 99 });
+    expect(ownRequest.status).toBe(201);
+    expect(writes.at(-1).data.patient_id).toBe(55);
+    expect(writes.at(-1).data.doctor_id).toBeUndefined();
+    writes.length = 0;
+    const stolen = await request(users.patient, "POST", "/patient/prescription-requests", { patient_id: 77 });
+    const pharmacy = await request(users.pharmacy, "POST", "/pharmacy/pharmacy-orders", { patient_id: 55, pharmacy_id: 99 });
+    expect(stolen.status).toBe(403);
+    expect(pharmacy.status).toBe(201);
+    expect(pharmacy.body.data?.patient_id || writes.at(-1)?.data?.patient_id).toBe(55);
+    expect(writes.at(-1).data.pharmacy_id).toBe(8);
+    const hospital = await request(users.hospital, "POST", "/hospital/service-bookings", {
+      patient_id: 55,
+      hospital_id: 99,
+    });
+    expect(hospital.status).toBe(201);
+    expect(writes.at(-1).data).toMatchObject({ hospital_id: 4, patient_id: 55 });
+    expect(writes.at(-1).data.hospital_id).not.toBe(99);
+    writes.length = 0;
+    const missing = await request(users.hospital, "POST", "/hospital/service-bookings", { patient_id: 999 });
+    expect(missing.status).toBe(422);
     expect(writes).toEqual([]);
   });
 });

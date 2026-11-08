@@ -5,7 +5,7 @@ import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, prese
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
-import { DOCTOR_WORK_STATUSES, VISIT_TABLES, mayWriteRow, releaseSlot, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard } from "./visit-rules.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -820,12 +820,15 @@ async function fillGap(req, res, parts) {
   }
 
   if (!id && req.method === "POST") {
-    const extra = await ownedExtra(parts[0], req.user.id, table);
     const raw = table === "consultation_summaries"
       ? await fillConsultationSummaryBody(req.body ?? {})
       : (req.body ?? {});
-    const body = { ...stripClientOwners(raw, { keep: parts[0] === "admin" }), ...extra };
-    const newId = await insert(table, body);
+    const prepared = await resolveCreateBody(parts[0], table, raw, req.user);
+    if (!prepared.ok) {
+      res.status(prepared.status).json({ message: prepared.message });
+      return true;
+    }
+    const newId = await insert(table, prepared.body);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);

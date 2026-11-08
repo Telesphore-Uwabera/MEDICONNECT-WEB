@@ -197,14 +197,38 @@ async function columnMatches(scope, table, row, user) {
   return false;
 }
 
-async function patientPointerIds(user) {
-  const ids = new Set([Number(user.id)].filter((id) => id > 0));
-  const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [user.id]);
-  for (const profile of profiles) {
-    const id = Number(profile.id);
-    if (id > 0) ids.add(id);
+async function ownProfileIds(user) {
+  if (!(await tableExists("patients"))) {
+    throw new Error("patients table is unreadable");
   }
-  return ids;
+  const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [user.id]);
+  return new Set(profiles.map((row) => Number(row.id)).filter((id) => id > 0));
+}
+
+function contradictsAccount(row, accountId) {
+  return row?.user_id != null && row.user_id !== "" && Number(row.user_id) > 0 && Number(row.user_id) !== accountId;
+}
+
+/** Appointment patient_id is the account id. The profile id is not a substitute. */
+function patientMayWriteAppointment(row, user) {
+  const accountId = Number(user?.id) || 0;
+  if (!accountId || contradictsAccount(row, accountId)) return false;
+  return Number(row?.patient_id) === accountId;
+}
+
+/** Instant patient_id is a profile id. A failed profile lookup is not ownership. */
+async function patientMayWriteInstant(row, user) {
+  if (!user?.id) return false;
+  if (!(await tableExists("patients"))) return false;
+  const profiles = await ownProfileIds(user);
+  const occupant = await one("SELECT user_id FROM patients WHERE id = ? LIMIT 1", [user.id]);
+  return ownsInstant(row, {
+    userId: Number(user.id),
+    patientIds: [...profiles],
+    email: user.email || "",
+    phone: user.phone || "",
+    occupiedUserId: occupant?.user_id ? Number(occupant.user_id) : null,
+  });
 }
 
 async function clinicalRowOpen(scope, table, row, user) {
@@ -214,8 +238,9 @@ async function clinicalRowOpen(scope, table, row, user) {
     return Number(row.doctor_id || row.prescriber_id) === Number(doctorId);
   }
   if (scope === "patient") {
-    const ids = await patientPointerIds(user);
-    return ids.has(Number(row.patient_id));
+    const profiles = await ownProfileIds(user);
+    if (contradictsAccount(row, Number(user.id))) return false;
+    return profiles.has(Number(row.patient_id));
   }
   if (scope === "pharmacy") {
     const pharmacyId = await profileId(user, "pharmacy");
@@ -243,7 +268,8 @@ export async function mayWriteRow(scope, table, row, user) {
   try {
     if (VISIT_TABLES.has(table)) {
       if (scope === "patient") {
-        return (await patientOwnsAppointment(row, user)) || (await patientOwnsInstant(row, user));
+        if (table === "appointments") return patientMayWriteAppointment(row, user);
+        return patientMayWriteInstant(row, user);
       }
       if (scope === "doctor") return doctorOwnsVisit(row, user);
       return columnMatches(scope, table, row, user);
@@ -271,42 +297,111 @@ export async function doctorHasCareLink(user, patient) {
   if (!doctorId) return false;
   const accountId = Number(patient.user_id) || null;
   const profileId = Number(patient.id);
+  let occupantOfAccount = null;
+  let occupantKnown = false;
   try {
+    if (accountId && await tableExists("patients")) {
+      const occupant = await one("SELECT user_id FROM patients WHERE id = ? LIMIT 1", [accountId]);
+      occupantKnown = true;
+      occupantOfAccount = occupant?.user_id ? Number(occupant.user_id) : null;
+    }
     if (await tableExists("appointments") && accountId) {
-      const booked = await one(
-        "SELECT id FROM appointments WHERE doctor_id = ? AND patient_id = ? LIMIT 1",
+      const booked = await q(
+        "SELECT id, user_id, patient_id FROM appointments WHERE doctor_id = ? AND patient_id = ? LIMIT 5",
         [doctorId, accountId],
       );
-      if (booked?.id) return true;
+      if (booked.some((row) => !contradictsAccount(row, accountId))) return true;
     }
-  } catch {
-    return false;
-  }
-  let instantTable = null;
-  try {
+    let instantTable = null;
     if (await tableExists("instant_consultation_requests")) instantTable = "instant_consultation_requests";
     else if (await tableExists("instant_consultations")) instantTable = "instant_consultations";
-  } catch {
-    return false;
-  }
-  if (!instantTable) return false;
-  try {
-    const byProfile = await one(
-      `SELECT id FROM \`${instantTable}\` WHERE doctor_id = ? AND patient_id = ? LIMIT 1`,
+    if (!instantTable) return false;
+    const byProfile = await q(
+      `SELECT id, user_id, patient_id FROM \`${instantTable}\` WHERE doctor_id = ? AND patient_id = ? LIMIT 5`,
       [doctorId, profileId],
     );
-    if (byProfile?.id) return true;
+    if (byProfile.some((row) => !row.user_id || Number(row.user_id) === accountId)) return true;
     if (accountId && await hasColumn(instantTable, "user_id")) {
-      const byAccount = await one(
-        `SELECT id FROM \`${instantTable}\` WHERE doctor_id = ? AND user_id = ? LIMIT 1`,
+      const byAccount = await q(
+        `SELECT id, user_id, patient_id FROM \`${instantTable}\` WHERE doctor_id = ? AND user_id = ? LIMIT 5`,
         [doctorId, accountId],
       );
-      if (byAccount?.id) return true;
+      for (const row of byAccount) {
+        const pointed = Number(row.patient_id) || null;
+        if (!pointed || pointed === profileId) return true;
+        if (pointed === accountId) {
+          if (!occupantKnown || (occupantOfAccount && occupantOfAccount !== accountId)) continue;
+          return true;
+        }
+      }
     }
   } catch {
     return false;
   }
   return false;
+}
+
+/**
+ * Create keeps a target patient only when that profile is real and, for a
+ * doctor, already linked by a visit. The actor's own id is stamped. A spoofed
+ * doctor, pharmacy, or hospital id is not copied from the body.
+ */
+export async function resolveCreateBody(scope, table, body, user) {
+  if (!scopeRoleAllowed(user, scope)) {
+    return { ok: false, status: 403, message: "You do not have access to this area." };
+  }
+  if (scope === "admin") return { ok: true, body: stripClientOwners(body, { keep: true }) };
+  const actor = {};
+  try {
+    if (scope === "doctor") {
+      const doctorId = await loadOwnedId(user.id, "doctors");
+      if (!doctorId) return { ok: false, status: 403, message: "You do not have access to this area." };
+      if (await hasColumn(table, "doctor_id")) actor.doctor_id = doctorId;
+      if (await hasColumn(table, "prescriber_id")) actor.prescriber_id = doctorId;
+      if (await hasColumn(table, "patient_id")) {
+        const requested = Number(body?.patient_id);
+        if (!requested) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+        const patient = await one("SELECT id, user_id FROM patients WHERE id = ? LIMIT 1", [requested]);
+        if (!patient?.id) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+        if (CLINICAL_TABLES.has(table) || VISIT_TABLES.has(table)) {
+          if (!(await doctorHasCareLink(user, patient))) {
+            return { ok: false, status: 403, message: "You do not have access to this record." };
+          }
+        }
+        actor.patient_id = Number(patient.id);
+      }
+    } else if (scope === "patient") {
+      const profiles = await ownProfileIds(user);
+      const requested = Number(body?.patient_id) || null;
+      if (requested && !profiles.has(requested)) {
+        return { ok: false, status: 403, message: "You do not have access to this record." };
+      }
+      const profileId = requested || (profiles.size === 1 ? [...profiles][0] : null);
+      if (await hasColumn(table, "patient_id")) {
+        if (!profileId) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+        actor.patient_id = profileId;
+      }
+      if (await hasColumn(table, "user_id")) actor.user_id = Number(user.id);
+    } else if (scope === "hospital" || scope === "pharmacy") {
+      const ownerId = await loadOwnedId(user.id, PROFILE_TABLE[scope]);
+      if (!ownerId) return { ok: false, status: 403, message: "You do not have access to this area." };
+      const column = `${scope}_id`;
+      if (await hasColumn(table, column)) actor[column] = ownerId;
+      if (await hasColumn(table, "patient_id") && body?.patient_id != null && body.patient_id !== "") {
+        const requested = Number(body.patient_id);
+        const patient = requested
+          ? await one("SELECT id FROM patients WHERE id = ? LIMIT 1", [requested])
+          : null;
+        if (!patient?.id) return { ok: false, status: 422, message: "Choose the patient this record is for." };
+        actor.patient_id = Number(patient.id);
+      }
+    } else {
+      return { ok: false, status: 403, message: "You do not have access to this record." };
+    }
+  } catch {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
+  }
+  return { ok: true, body: { ...stripClientOwners(body), ...actor } };
 }
 
 /** Fields no caller may set on a visit with a plain record update. */

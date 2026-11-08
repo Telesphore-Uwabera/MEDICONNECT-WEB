@@ -33,6 +33,7 @@ import {
   claimSlot,
   mayWriteRow,
   patientOwnsAppointment,
+  resolveCreateBody,
   patientOwnsInstant,
   releaseSlot,
   scopeRoleAllowed,
@@ -3453,28 +3454,9 @@ export function appRoutes(router) {
       }
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
-      const body = stripClientOwners(req.body, { keep: req.params.scope === "admin" });
-      let stamp = {};
-      if (req.params.scope !== "admin") {
-        try {
-          const column = `${req.params.scope}_id`;
-          if (await hasColumn(table, column)) {
-            const ownerId = await loadOwnedId(req.user.id, PROFILE_TABLE[req.params.scope]);
-            if (!ownerId) return res.status(403).json({ message: "You do not have access to this area." });
-            stamp = { [column]: ownerId };
-          } else if (req.params.scope === "patient" && await hasColumn(table, "patient_id")) {
-            const ownerId = await loadOwnedId(req.user.id, "patients");
-            stamp = { patient_id: ownerId || req.user.id };
-          } else if (await hasColumn(table, "user_id")) {
-            stamp = { user_id: req.user.id };
-          } else {
-            return res.status(403).json({ message: "You do not have access to this record." });
-          }
-        } catch {
-          return res.status(403).json({ message: "You do not have access to this record." });
-        }
-      }
-      const id = await insert(table, { ...body, ...stamp });
+      const prepared = await resolveCreateBody(req.params.scope, table, req.body, req.user);
+      if (!prepared.ok) return res.status(prepared.status).json({ message: prepared.message });
+      const id = await insert(table, prepared.body);
       let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
       stored = await afterResourceSaved(table, stored, req);
       res.status(201).json({ message: "Saved.", data: await presentRow(table, stored) });
