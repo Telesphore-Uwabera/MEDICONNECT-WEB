@@ -20,9 +20,21 @@ const db = {
     { id: 90, user_id: null, name: "Guest Chart", email: null, phone: "788100200" },
   ],
   reviews: [
-    { id: 1, patient_id: 55, user_id: null, doctor_id: 31, comment: "my-review" },
-    { id: 2, patient_id: 77, user_id: null, doctor_id: 31, comment: "foreign-review" },
-    { id: 3, patient_id: 55, user_id: null, doctor_id: 32, comment: "other-doctor-review" },
+    { id: 1, patient_id: 55, user_id: null, doctor_id: 31, comment: "my-review", rating: 5 },
+    { id: 2, patient_id: 77, user_id: null, doctor_id: 31, comment: "foreign-review", rating: 1 },
+    { id: 3, patient_id: 56, user_id: null, doctor_id: 32, comment: "other-doctor-review", rating: 4 },
+  ],
+  serviceBookings: [
+    { id: 1, patient_id: 77, user_id: null, hospital_id: 4, status: "pending" },
+    { id: 2, patient_id: 55, user_id: null, hospital_id: 9, status: "pending" },
+  ],
+  pharmacyOrders: [
+    { id: 1, patient_id: 55, user_id: null, status: "confirmed" },
+    { id: 2, patient_id: 77, user_id: null, status: "confirmed" },
+  ],
+  referrals: [
+    { id: 1, patient_id: 55, user_id: null, doctor_id: 31, reason: "my-referral" },
+    { id: 2, patient_id: 77, user_id: null, doctor_id: 31, reason: "foreign-referral" },
   ],
   refunds: [
     { id: 1, patient_id: 55, user_id: null, amount: "10", reason: "my-refund" },
@@ -72,7 +84,10 @@ function sqliteRows(sql, params) {
   const database = new DatabaseSync(":memory:");
   database.exec(`
     CREATE TABLE patients (id INTEGER, user_id INTEGER, name TEXT, email TEXT, phone TEXT);
-    CREATE TABLE reviews (id INTEGER, patient_id INTEGER, user_id INTEGER, doctor_id INTEGER, comment TEXT);
+    CREATE TABLE reviews (id INTEGER, patient_id INTEGER, user_id INTEGER, doctor_id INTEGER, comment TEXT, rating INTEGER);
+    CREATE TABLE service_bookings (id INTEGER, patient_id INTEGER, user_id INTEGER, hospital_id INTEGER, status TEXT);
+    CREATE TABLE pharmacy_orders (id INTEGER, patient_id INTEGER, user_id INTEGER, status TEXT);
+    CREATE TABLE referrals (id INTEGER, patient_id INTEGER, user_id INTEGER, doctor_id INTEGER, reason TEXT);
     CREATE TABLE refunds (id INTEGER, patient_id INTEGER, user_id INTEGER, amount TEXT, reason TEXT);
     CREATE TABLE payments (id INTEGER, patient_id INTEGER, user_id INTEGER, amount TEXT);
     CREATE TABLE legal_documents (id INTEGER, title TEXT, body TEXT);
@@ -127,7 +142,7 @@ function sqliteRows(sql, params) {
     insert("INSERT INTO patient_medical_infos (id, patient_id, known_allergies) VALUES (?, ?, ?)").run(row.id, row.patient_id, row.known_allergies);
   }
   for (const row of db.reviews) {
-    insert("INSERT INTO reviews (id, patient_id, user_id, doctor_id, comment) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.doctor_id, row.comment);
+    insert("INSERT INTO reviews (id, patient_id, user_id, doctor_id, comment, rating) VALUES (?, ?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.doctor_id, row.comment, row.rating ?? null);
   }
   for (const row of db.refunds) {
     insert("INSERT INTO refunds (id, patient_id, user_id, amount, reason) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.amount, row.reason);
@@ -147,6 +162,15 @@ function sqliteRows(sql, params) {
   for (const row of db.fees) insert("INSERT INTO specialization_fees (id, name, online_fee) VALUES (?, ?, ?)").run(row.id, row.name, row.online_fee);
   for (const row of db.helpLinks) insert("INSERT INTO help_center_links (id, title) VALUES (?, ?)").run(row.id, row.title);
   for (const row of db.questions) insert("INSERT INTO fitness_checklist_questions (id, question) VALUES (?, ?)").run(row.id, row.question);
+  for (const row of db.serviceBookings || []) {
+    insert("INSERT INTO service_bookings (id, patient_id, user_id, hospital_id, status) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.hospital_id, row.status);
+  }
+  for (const row of db.pharmacyOrders || []) {
+    insert("INSERT INTO pharmacy_orders (id, patient_id, user_id, status) VALUES (?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.status);
+  }
+  for (const row of db.referrals || []) {
+    insert("INSERT INTO referrals (id, patient_id, user_id, doctor_id, reason) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.doctor_id, row.reason);
+  }
   return database.prepare(text).all(...params);
 }
 
@@ -160,6 +184,7 @@ vi.mock("./db.js", async (importOriginal) => {
       "pharmacy_orders", "service_bookings", "hospitals", "users", "leaflets", "chart_notes",
       "reviews", "refunds", "payments", "legal_documents", "insurances",
       "specializations", "specialization_fees", "help_center_links", "fitness_checklist_questions",
+      "service_bookings", "pharmacy_orders", "referrals",
     ].includes(name),
     hasColumn: async (table, column) => {
       if (db.columnThrows) throw new Error("columns unreadable");
@@ -184,7 +209,7 @@ vi.mock("./db.js", async (importOriginal) => {
         throw new Error("care unreadable");
       }
       if (db.patientThrows && text.includes("FROM patients")) throw new Error("patients unreadable");
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions|service_bookings|pharmacy_orders|referrals)"?/i.test(text)) {
         return sqliteRows(sql, params);
       }
       return [];
@@ -213,7 +238,7 @@ vi.mock("./db.js", async (importOriginal) => {
       if (text.includes("FROM users") && text.includes("WHERE id")) {
         return db.accounts.find((row) => row.id === Number(params[0])) || null;
       }
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions|service_bookings|pharmacy_orders|referrals)"?/i.test(text)) {
         return sqliteRows(sql, params)[0] ?? null;
       }
       if (text.includes("FROM leaflets")) {
@@ -901,5 +926,47 @@ describe("resource write authorization", () => {
     });
     expect(cared.status).toBe(201);
     expect(writes).toEqual([expect.objectContaining({ op: "update", table: "patients", id: 55 })]);
+  });
+
+  it("counts and lists only the id each table stores", async () => {
+    const dashboard = await request(users.patient, "GET", "/patient/dashboard");
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.body.period_stats.total_appointments).toBe(1);
+    expect(dashboard.body.period_stats.instant_total).toBe(1);
+    expect(dashboard.body.service_bookings.total).toBe(1);
+    expect(dashboard.body.reviews.total).toBe(1);
+    expect(dashboard.body.period_stats.pharmacy_orders_total).toBe(1);
+    const referrals = await request(users.patient, "GET", "/patient/referrals");
+    const packed = JSON.stringify(referrals.body);
+    expect(referrals.status).toBe(200);
+    expect(packed).toContain("my-referral");
+    expect(packed).not.toContain("foreign-referral");
+  });
+
+  it("does not update a guest who has a care link when the appointment is another account", async () => {
+    db.instants.push({ id: 40, doctor_id: 31, patient_id: 90, user_id: null, status: "accepted" });
+    db.appointments.push({ id: 11, doctor_id: 31, patient_id: 80, user_id: null, status: "confirmed" });
+    const refused = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Renamed Guest",
+      phone: "788100200",
+      appointment_id: 11,
+    });
+    expect(refused.status).toBe(403);
+    expect(writes).toEqual([]);
+    const allowed = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest Kept",
+      phone: "788100200",
+    });
+    expect(allowed.status).toBe(201);
+    expect(writes).toEqual([expect.objectContaining({ op: "update", table: "patients", id: 90 })]);
+    writes.length = 0;
+    db.instants = db.instants.filter((row) => row.id !== 40);
+    db.appointments.push({ id: 12, doctor_id: 31, patient_id: 90, user_id: null, status: "confirmed" });
+    const profileAppointment = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Guest From Appointment Id",
+      phone: "788100200",
+    });
+    expect(profileAppointment.status).toBe(403);
+    expect(writes).toEqual([]);
   });
 });

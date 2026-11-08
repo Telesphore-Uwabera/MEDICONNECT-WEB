@@ -1,5 +1,6 @@
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { loadOwnedId } from "./auth.js";
+import { patientOwnedWhere } from "./visit-rules.js";
 import { requireRegisteredFacility, requireRegisteredPharmacy } from "./care-partners.js";
 import { onReferralCreated } from "./clinical-episodes.js";
 
@@ -138,12 +139,9 @@ async function referralWhere(scope, req) {
     await add("referred_to_doctor_id");
     if (parts.length) clauses.push(`(${parts.join(" OR ")})`);
   } else if (scope === "patient") {
-    const patient = await resolvePatient(await loadOwnedId(req.user.id, "patients"));
-    const ids = [...new Set([patient?.id, patient?.user_id, req.user.id].filter(Boolean))];
-    if (await hasColumn("referrals", "patient_id") && ids.length) {
-      clauses.push(`\`patient_id\` IN (${ids.map(() => "?").join(",")})`);
-      params.push(...ids);
-    }
+    const owned = await patientOwnedWhere("referrals", req.user);
+    clauses.push(owned.sql);
+    params.push(...owned.params);
   } else if (scope === "hospital") {
     const hospitalId = await loadOwnedId(req.user.id, "hospitals");
     const parts = [];
