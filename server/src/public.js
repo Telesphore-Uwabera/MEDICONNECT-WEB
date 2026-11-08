@@ -9,7 +9,7 @@ import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
-import { releaseSlot } from "./visit-rules.js";
+import { loadInstantViewer, releaseSlot } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
 import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
@@ -1436,16 +1436,12 @@ export function publicRoutes(router) {
   });
 
   async function instantOwnerIdentity(req) {
-    const patientIds = [];
-    if (req.user?.id && await tableExists("patients")) {
-      const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [req.user.id]).catch(() => []);
-      for (const profile of profiles) patientIds.push(profile.id);
-    }
-    return {
-      userId: req.user?.id,
-      patientIds,
-      email: req.user?.email,
-      phone: req.user?.phone,
+    return await loadInstantViewer(req.user) || {
+      userId: 0,
+      patientIds: [],
+      email: "",
+      phone: "",
+      occupiedUserId: null,
     };
   }
 
