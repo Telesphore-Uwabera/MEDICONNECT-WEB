@@ -22,11 +22,9 @@ import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { PageHeader } from "@/components/PageHeader";
 import {
-  useGetPatientQuickAppointments,
   ApiAppointment,
   ApiAppointmentStatus,
   ApiAppointmentType,
-  AppointmentFilterParams,
 } from "@/hooks/patient/use-patient-appointment";
 import AppointmentDetailModal from "./components/AppointmentDetail";
 import { InstantSummaryModal } from "./components/InstantSummaryModal";
@@ -133,7 +131,8 @@ function formatTime(timeStr: string) {
   } catch { return timeStr; }
 }
 
-function getDoctorName(appt: ApiAppointment) {
+function getDoctorName(appt: ApiAppointment & { doctor_name?: string | null }) {
+  if (appt.doctor_name) return appt.doctor_name;
   if (appt.doctor) return appt.doctor.designations || appt.doctor.user.name;
   if (appt.hospital) return appt.hospital.name_en;
   return "—";
@@ -153,7 +152,8 @@ function getSpeciality(appt: ApiAppointment) {
   return "—";
 }
 
-function isActionable(appt: ApiAppointment) {
+function isActionable(appt: ApiAppointment & { can_join?: boolean }) {
+  if (typeof appt.can_join === "boolean") return appt.can_join;
   return canJoinAppointment(appt);
 }
 
@@ -368,30 +368,24 @@ type OpenInstantRow = {
   can_pay: boolean;
   can_join: boolean;
   room_url: string | null;
+  created_at?: string | null;
+  payment_status?: string | null;
 };
 
-function OpenInstantRequests() {
+function OpenInstantRequests({ rows, onJoin }: { rows: OpenInstantRow[]; onJoin: (row: OpenInstantRow) => void }) {
   const { t } = useTranslation();
   const pay = useInstantConsultationPay();
-  const { data } = useQuery({
-    queryKey: ["patient", "instant-consultations"],
-    queryFn: () => apiFetch<{ data: OpenInstantRow[] }>("/patient/instant-consultations"),
-    refetchInterval: 15_000,
-  });
-  const rows = (data?.data ?? []).filter((row) =>
-    row.can_pay || row.can_join || ["pending", "queued", "waiting", "payment_pending", "confirmed", "accepted", "in_progress"].includes(row.status),
-  );
-  if (!rows.length) return null;
+  const visible = rows.filter((row) => row.can_pay || row.can_join);
+  if (!visible.length) return null;
   return (
     <div className="px-5 pt-4 space-y-2">
-      {rows.map((row) => (
+      {visible.map((row) => (
         <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[6px] border border-border bg-card px-3 py-3">
           <div>
             <p className="text-sm font-semibold text-foreground">Request #{row.id}</p>
             <p className="text-xs text-muted-foreground">
               {row.doctor_name || "Doctor"}
-              {" · "}
-              {row.amount} {row.currency}
+              {row.amount > 0 ? ` · ${row.amount} ${row.currency || "RWF"}` : ""}
               {row.queue_position > 1
                 ? ` · ${t("consult.connect.queue_position", { position: row.queue_position })}`
                 : row.you_are_next
@@ -399,9 +393,9 @@ function OpenInstantRequests() {
                   : ""}
             </p>
           </div>
-          {row.can_join && row.room_url ? (
-            <Button asChild>
-              <Link to={row.room_url}>{t("consult.connect.join_call", { defaultValue: "Join" })}</Link>
+          {row.can_join ? (
+            <Button onClick={() => onJoin(row)}>
+              {t("consult.connect.join_call", { defaultValue: "Join" })}
             </Button>
           ) : row.can_pay ? (
             <Button
@@ -410,7 +404,7 @@ function OpenInstantRequests() {
                 onError: (error) => toast.error(error instanceof Error ? error.message : "Payment could not start."),
               })}
             >
-              {t("consult.connect.pay_now", { defaultValue: "Pay" })} {row.amount} {row.currency}
+              {t("consult.connect.pay_now", { defaultValue: "Pay" })} {row.amount} {row.currency || "RWF"}
             </Button>
           ) : null}
         </div>
@@ -546,7 +540,7 @@ const PatientInstant = () => {
   }, []);
 
   const handleJoin = useCallback(
-    (appt: ApiAppointment) => {
+    (appt: ApiAppointment & { can_join?: boolean; room_url?: string | null }) => {
       // Completed consultation — ended by doctor
       if (appt.status === "completed") {
         toast.info(t("pages.patient.appt_ended", { defaultValue: "This consultation has ended. Check your prescriptions for any notes from the doctor." }));
@@ -593,18 +587,50 @@ const PatientInstant = () => {
 
   // ── API ────────────────────────────────────────────────────────────────────
 
-  const apiParams: AppointmentFilterParams = useMemo(() => ({
-    status: filters.status !== "all" ? filters.status : undefined,
-    type: filters.type !== "all" ? filters.type : undefined,
-    date_from: filters.date_from || undefined,
-    date_to: filters.date_to || undefined,
-    page: filters.page,
-    per_page: 10,
-  }), [filters]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["patient", "instant-consultations", filters.page, filters.status, filters.date_from, filters.date_to],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(filters.page), per_page: "10" });
+      if (filters.status !== "all") params.set("status", filters.status);
+      if (filters.date_from) params.set("date_from", filters.date_from);
+      if (filters.date_to) params.set("date_to", filters.date_to);
+      return apiFetch<{
+        data: OpenInstantRow[];
+        open?: OpenInstantRow[];
+        total?: number;
+        last_page?: number;
+        counts?: { total?: number; pending?: number; confirmed?: number; in_progress?: number; completed?: number; cancelled?: number };
+      }>(`/patient/instant-consultations?${params.toString()}`);
+    },
+  });
 
-  const { data, isLoading } = useGetPatientQuickAppointments(apiParams);
-
-  const appointments = data?.data ?? [];
+  const appointments: Array<ApiAppointment & { doctor_name?: string | null; can_pay?: boolean; room_url?: string | null }> = (data?.data ?? []).map((row) => ({
+    id: row.id,
+    status: (["queued", "waiting", "payment_pending"].includes(row.status) ? "pending"
+      : row.status === "accepted" ? "in_progress"
+      : ["expired", "payment_expired", "declined", "rejected"].includes(row.status) ? "cancelled"
+      : row.status) as ApiAppointment["status"],
+    type: "online",
+    booking_type: "instant",
+    appointment_date: String(row.created_at || "").slice(0, 10),
+    appointment_time: String(row.created_at || "").slice(11, 19),
+    duration_minutes: 0,
+    consultation_fee: String(row.amount ?? 0),
+    insurance_covered: "0",
+    patient_pays: String(row.amount ?? 0),
+    currency: row.currency || "RWF",
+    payment_status: row.payment_status || "",
+    daily_room_url: row.room_url,
+    can_join: row.can_join,
+    can_review: false,
+    doctor: null,
+    hospital: null,
+    insurance: null,
+    notes: null,
+    doctor_name: row.doctor_name,
+    can_pay: row.can_pay,
+    room_url: row.room_url,
+  }));
   const totalPages = data?.last_page ?? 1;
 
   const sorted = useMemo(() => {
@@ -686,23 +712,23 @@ const PatientInstant = () => {
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen, selectedId]);
 
-  const counts = useMemo(() => appointments.reduce(
+  const counts = useMemo(() => data?.counts ?? appointments.reduce(
     (acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }),
     {} as Record<string, number>
-  ), [appointments]);
+  ), [appointments, data?.counts]);
   const statusTabs = useMemo(() => [
-    { value: "all" as const, label: "All statuses", count: data?.total ?? appointments.length },
+    { value: "all" as const, label: "All statuses", count: data?.counts?.total ?? data?.total ?? appointments.length },
     { value: "pending" as const, label: STATUS_LABEL.pending, count: counts.pending ?? 0 },
     { value: "confirmed" as const, label: STATUS_LABEL.confirmed, count: counts.confirmed ?? 0 },
     { value: "in_progress" as const, label: STATUS_LABEL.in_progress, count: counts.in_progress ?? 0 },
     { value: "completed" as const, label: STATUS_LABEL.completed, count: counts.completed ?? 0 },
     { value: "cancelled" as const, label: STATUS_LABEL.cancelled, count: counts.cancelled ?? 0 },
-  ], [appointments.length, counts.cancelled, counts.completed, counts.confirmed, counts.in_progress, counts.pending, data?.total]);
+  ], [appointments.length, counts.cancelled, counts.completed, counts.confirmed, counts.in_progress, counts.pending, data?.counts?.total, data?.total]);
 
   const statsItems = useMemo<PatientStatItem[]>(() => {
     const active = (counts.confirmed ?? 0) + (counts.in_progress ?? 0);
     return [
-      { label: "Total", value: data?.total ?? appointments.length, helper: "Instant requests", icon: Sparkles, tone: "primary" },
+      { label: "Total", value: data?.counts?.total ?? data?.total ?? appointments.length, helper: "Instant requests", icon: Sparkles, tone: "primary" },
       { label: "Ready to join", value: active, helper: "Accepted or live", icon: Video, tone: "sky" },
       { label: "Pending", value: counts.pending ?? 0, helper: "Waiting doctor", icon: Clock, tone: "amber" },
       { label: "Completed", value: counts.completed ?? 0, helper: "Resolved calls", icon: CheckCircle2, tone: "emerald" },
@@ -803,7 +829,35 @@ const PatientInstant = () => {
         />
     
         <main className="flex-1 overflow-y-auto flex flex-col">
-          <OpenInstantRequests />
+          <OpenInstantRequests
+            rows={data?.open ?? []}
+            onJoin={(row) => {
+              const existing = appointments.find((item) => item.id === row.id);
+              handleJoin(existing ?? {
+                id: row.id,
+                status: (["queued", "waiting", "payment_pending"].includes(row.status) ? "pending"
+                  : row.status === "accepted" ? "in_progress"
+                  : row.status) as ApiAppointment["status"],
+                type: "online",
+                booking_type: "instant",
+                appointment_date: String(row.created_at || "").slice(0, 10),
+                appointment_time: String(row.created_at || "").slice(11, 19),
+                duration_minutes: 0,
+                consultation_fee: String(row.amount ?? 0),
+                insurance_covered: "0",
+                patient_pays: String(row.amount ?? 0),
+                currency: row.currency || "RWF",
+                payment_status: row.payment_status || "",
+                daily_room_url: row.room_url,
+                can_join: true,
+                can_review: false,
+                doctor: null,
+                hospital: null,
+                insurance: null,
+                notes: null,
+              });
+            }}
+          />
 
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between gap-3">
