@@ -1,6 +1,6 @@
 import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
 import { loadOwnedId } from "./auth.js";
-import { patientOwnedWhere } from "./visit-rules.js";
+import { doctorHasCareLink, patientOwnedWhere } from "./visit-rules.js";
 import { requireRegisteredFacility, requireRegisteredPharmacy } from "./care-partners.js";
 import { onReferralCreated } from "./clinical-episodes.js";
 
@@ -21,12 +21,59 @@ async function notifyUser(userId, title, message) {
 }
 
 async function resolvePatient(rawId) {
-  const id = Number(rawId);
-  if (!id) return null;
-  return (
-    (await one("SELECT * FROM patients WHERE id = ? OR user_id = ? LIMIT 1", [id, id]).catch(() => null)) ||
-    null
-  );
+  const requested = Number(rawId);
+  if (!requested) return { patient: null };
+  let byId = null;
+  let byAccount = [];
+  try {
+    byId = await one("SELECT id, user_id, name FROM patients WHERE id = ? LIMIT 1", [requested]);
+    byAccount = await q("SELECT id, user_id, name FROM patients WHERE user_id = ?", [requested]);
+  } catch {
+    return { unreadable: true };
+  }
+  const profileIsOther = Boolean(byId?.id && Number(byId.user_id) !== requested);
+  const accountOthers = byAccount.filter((row) => Number(row.id) !== Number(byId?.id));
+  if (profileIsOther && accountOthers.length) return { ambiguous: true };
+  if (byAccount.length > 1) return { ambiguous: true };
+  if (byId && !profileIsOther) return { patient: byId };
+  if (byAccount.length === 1) return { patient: byAccount[0] };
+  if (byId) return { patient: byId };
+  return { patient: null };
+}
+
+async function visitMatchesPatient(body, doctorId, patient) {
+  const appointmentId = Number(body?.appointment_id) || null;
+  const instantId = Number(body?.instant_consultation_id) || null;
+  try {
+  if (appointmentId) {
+    const names = ["id", "doctor_id", "patient_id"];
+    if (await hasColumn("appointments", "user_id")) names.push("user_id");
+    const visit = await one(
+      `SELECT ${names.map((name) => `\`${name}\``).join(", ")} FROM appointments WHERE id = ? LIMIT 1`,
+      [appointmentId],
+    );
+    if (!visit || Number(visit.doctor_id) !== Number(doctorId)) return false;
+    if (visit.user_id && Number(visit.user_id) > 0 && Number(visit.user_id) !== Number(patient.user_id)) return false;
+    if (!patient.user_id || Number(visit.patient_id) !== Number(patient.user_id)) return false;
+  }
+  if (instantId) {
+    const table = (await tableExists("instant_consultation_requests"))
+      ? "instant_consultation_requests"
+      : "instant_consultations";
+    const names = ["id", "doctor_id", "patient_id"];
+    if (await hasColumn(table, "user_id")) names.push("user_id");
+    const visit = await one(
+      `SELECT ${names.map((name) => `\`${name}\``).join(", ")} FROM \`${table}\` WHERE id = ? LIMIT 1`,
+      [instantId],
+    );
+    if (!visit || Number(visit.doctor_id) !== Number(doctorId)) return false;
+    if (Number(visit.patient_id) !== Number(patient.id)) return false;
+    if (visit.user_id && Number(visit.user_id) > 0 && Number(visit.user_id) !== Number(patient.user_id || 0)) return false;
+  }
+  return true;
+  } catch {
+    return false;
+  }
 }
 
 async function doctorCard(id) {
@@ -195,8 +242,17 @@ export async function handleCareReferrals(req, res, parts) {
     const doctorId = await loadOwnedId(req.user.id, "doctors");
     if (!doctorId) return res.status(403).json({ message: "A doctor profile is required." }) || true;
     const body = req.body || {};
-    const patient = await resolvePatient(body.patient_id);
+    const found = await resolvePatient(body.patient_id);
+    if (found.unreadable) return res.status(403).json({ message: "You do not have access to this record." }) || true;
+    if (found.ambiguous) return res.status(422).json({ message: "Choose the patient this referral is for." }) || true;
+    const patient = found.patient;
     if (!patient) return res.status(422).json({ message: "Choose a patient for this referral." }) || true;
+    if (!(await doctorHasCareLink(req.user, patient))) {
+      return res.status(403).json({ message: "You do not have access to this record." }) || true;
+    }
+    if (!(await visitMatchesPatient(body, doctorId, patient))) {
+      return res.status(403).json({ message: "You do not have access to this record." }) || true;
+    }
     const toDoctorId = Number(body.referred_to_doctor_id || body.doctor_id || 0) || null;
     const hospitalId = Number(body.hospital_id || body.referred_hospital_id || 0) || null;
     const pharmacyId = Number(body.pharmacy_id || body.referred_pharmacy_id || 0) || null;
@@ -234,8 +290,9 @@ export async function handleCareReferrals(req, res, parts) {
       type: hospitalId ? "hospital" : "pharmacy",
     };
     const id = await insert("referrals", payload);
-    const referral = await shapeReferral(await one("SELECT * FROM referrals WHERE id = ?", [id]));
-    await onReferralCreated(await one("SELECT * FROM referrals WHERE id = ?", [id])).catch(() => null);
+    const stored = await one("SELECT * FROM referrals WHERE id = ?", [id]).catch(() => null);
+    const referral = stored ? await shapeReferral(stored) : { ...payload, id };
+    if (stored) await onReferralCreated(stored).catch(() => null);
     const patientUserId = patient.user_id;
     const target =
       referral.hospital?.name || referral.pharmacy?.name || referral.referred_to_doctor?.name || "a MediConnect partner";
