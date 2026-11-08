@@ -78,21 +78,154 @@ export function placeInQueue(request, peers = [], now = new Date()) {
   };
 }
 
+function positiveId(value) {
+  const id = Number(value);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+/** Same characters the ownership SQL strips, so list and pay agree. */
+export function normPhone(value) {
+  let digits = String(value ?? "").replace(/[+\s\-()]/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("250") && digits.length > 9) digits = digits.slice(3);
+  else if (digits.startsWith("0") && digits.length > 9) digits = digits.slice(1);
+  return digits.length >= 9 ? digits : "";
+}
+
+function normEmail(value) {
+  const email = String(value ?? "").trim().toLowerCase();
+  return email || "";
+}
+
+function contactField(primary, secondary, normalize) {
+  const first = normalize(primary);
+  const second = normalize(secondary);
+  if (first && second && first !== second) return { value: "", conflict: true };
+  return { value: first || second, conflict: false };
+}
+
+/**
+ * users.id and patients.id are different sequences. A row may name the account
+ * (`user_id`) or this account's patient profile (`patient_id` in `patientIds`).
+ * `patient_id` equal to the account id is not proof: that integer may be a
+ * different patient's profile. Contact is used only when both foreign keys are
+ * empty, and email and phone must not disagree.
+ *
+ * `occupiedUserId` is `patients.user_id` for `patients.id = account id`, or null
+ * when no profile has that id. It distinguishes a second copy of the account id
+ * from a real collision with someone else's profile.
+ */
 export function ownsInstant(row, identity) {
   if (!row || !identity) return false;
-  const userId = Number(identity.userId || 0);
-  const patientIds = new Set((identity.patientIds || []).map(Number).filter((id) => id > 0));
-  if (userId && Number(row.user_id) === userId) return true;
-  if (patientIds.size && patientIds.has(Number(row.patient_id))) return true;
-  const email = String(identity.email || "").trim().toLowerCase();
-  const rowEmail = String(row.guest_email || row.email || "").trim().toLowerCase();
-  if (email && rowEmail && email === rowEmail) return true;
-  const phone = String(identity.phone || "").replace(/\D/g, "");
-  const rowPhone = String(row.guest_phone || row.phone || "").replace(/\D/g, "");
-  if (phone.length >= 8 && rowPhone.length >= 8 && (phone === rowPhone || phone.endsWith(rowPhone) || rowPhone.endsWith(phone))) {
-    return true;
+  const userId = positiveId(identity.userId);
+  const profiles = new Set((identity.patientIds || []).map(positiveId).filter(Boolean));
+  const rowUser = positiveId(row.user_id);
+  const rowPatient = positiveId(row.patient_id);
+  const account = !rowUser ? "absent" : rowUser === userId ? "self" : "other";
+  let profile = "absent";
+  if (rowPatient) {
+    if (profiles.has(rowPatient)) profile = "self";
+    else if (userId && rowPatient === userId) {
+      const occupant = positiveId(identity.occupiedUserId);
+      if (occupant && occupant !== userId) profile = "other";
+      else profile = "ambiguous";
+    } else profile = "other";
   }
+  if (account === "other" || profile === "other") return false;
+  if (profile === "ambiguous" && account !== "self") return false;
+  if (account === "self" || profile === "self") return true;
+  const email = contactField(row.guest_email, row.email, normEmail);
+  const phone = contactField(row.guest_phone, row.phone, normPhone);
+  if (email.conflict || phone.conflict) return false;
+  const viewerEmail = normEmail(identity.email);
+  const viewerPhone = normPhone(identity.phone);
+  const emailMatch = Boolean(viewerEmail && email.value && viewerEmail === email.value);
+  const phoneMatch = Boolean(viewerPhone && phone.value && viewerPhone === phone.value);
+  if (email.value && phone.value) return emailMatch && phoneMatch;
+  if (email.value) return emailMatch;
+  if (phone.value) return phoneMatch;
   return false;
+}
+
+function phoneSql(column) {
+  const digits = ["+", " ", "-", "(", ")"].reduce(
+    (expr, ch) => `REPLACE(${expr}, '${ch}', '')`,
+    `COALESCE(\`${column}\`, '')`,
+  );
+  return `CASE WHEN CHAR_LENGTH(${digits}) > 9 AND ${digits} LIKE '250%' THEN SUBSTRING(${digits}, 4) WHEN CHAR_LENGTH(${digits}) > 9 AND ${digits} LIKE '0%' THEN SUBSTRING(${digits}, 2) WHEN CHAR_LENGTH(${digits}) >= 9 THEN ${digits} ELSE '' END`;
+}
+
+/**
+ * SQL form of ownsInstant. Profile ids never include the account id unless that
+ * account's own patient profile uses the same integer.
+ */
+export function instantOwnedWhere(identity, columns) {
+  const present = columns instanceof Set ? columns : new Set(columns || []);
+  const userId = positiveId(identity?.userId);
+  const profiles = [...new Set((identity?.patientIds || []).map(positiveId).filter(Boolean))];
+  const clauses = [];
+  const params = [];
+  const hasUser = present.has("user_id");
+  const hasPatient = present.has("patient_id");
+  const occupant = positiveId(identity?.occupiedUserId);
+  const legacyCopyAllowed = Boolean(userId) && (!occupant || occupant === userId);
+  if (hasUser && userId) {
+    const patientOk = [];
+    const patientParams = [];
+    if (hasPatient) {
+      patientOk.push("`patient_id` IS NULL");
+      if (profiles.length) {
+        patientOk.push(`\`patient_id\` IN (${profiles.map(() => "?").join(",")})`);
+        patientParams.push(...profiles);
+      }
+      if (legacyCopyAllowed && !profiles.includes(userId)) {
+        patientOk.push("`patient_id` = ?");
+        patientParams.push(userId);
+      }
+    }
+    clauses.push(patientOk.length ? `(\`user_id\` = ? AND (${patientOk.join(" OR ")}))` : "`user_id` = ?");
+    params.push(userId, ...patientParams);
+  }
+  if (hasPatient && profiles.length) {
+    const userOk = hasUser ? "(`user_id` IS NULL OR `user_id` = ?)" : "1=1";
+    clauses.push(`(\`patient_id\` IN (${profiles.map(() => "?").join(",")}) AND ${userOk})`);
+    params.push(...profiles);
+    if (hasUser) params.push(userId || 0);
+  }
+  const emailColumn = present.has("guest_email") ? "guest_email" : present.has("email") ? "email" : null;
+  const phoneColumn = present.has("guest_phone") ? "guest_phone" : present.has("phone") ? "phone" : null;
+  const viewerEmail = normEmail(identity?.email);
+  const viewerPhone = normPhone(identity?.phone);
+  if ((emailColumn && viewerEmail) || (phoneColumn && viewerPhone)) {
+    const emptyFk = [];
+    if (hasUser) emptyFk.push("`user_id` IS NULL");
+    if (hasPatient) emptyFk.push("`patient_id` IS NULL");
+    const contact = [];
+    if (emailColumn && viewerEmail && phoneColumn && viewerPhone) {
+      contact.push(`(LOWER(TRIM(\`${emailColumn}\`)) = ? AND (TRIM(COALESCE(\`${phoneColumn}\`, '')) = '' OR ${phoneSql(phoneColumn)} = ?))`);
+      params.push(viewerEmail, viewerPhone);
+      contact.push(`(${phoneSql(phoneColumn)} = ? AND (TRIM(COALESCE(\`${emailColumn}\`, '')) = '' OR LOWER(TRIM(\`${emailColumn}\`)) = ?))`);
+      params.push(viewerPhone, viewerEmail);
+    } else if (emailColumn && viewerEmail) {
+      contact.push(`(LOWER(TRIM(\`${emailColumn}\`)) = ? AND (${phoneColumn ? `TRIM(COALESCE(\`${phoneColumn}\`, '')) = ''` : "1=1"}))`);
+      params.push(viewerEmail);
+    } else if (phoneColumn && viewerPhone) {
+      contact.push(`(${phoneSql(phoneColumn)} = ? AND (${emailColumn ? `TRIM(COALESCE(\`${emailColumn}\`, '')) = ''` : "1=1"}))`);
+      params.push(viewerPhone);
+    }
+    if (contact.length) {
+      const same = [];
+      if (present.has("guest_email") && present.has("email")) {
+        same.push("(TRIM(COALESCE(`guest_email`, '')) = '' OR TRIM(COALESCE(`email`, '')) = '' OR LOWER(TRIM(`guest_email`)) = LOWER(TRIM(`email`)))");
+      }
+      if (present.has("guest_phone") && present.has("phone")) {
+        same.push(`(TRIM(COALESCE(\`guest_phone\`, '')) = '' OR TRIM(COALESCE(\`phone\`, '')) = '' OR ${phoneSql("guest_phone")} = ${phoneSql("phone")})`);
+      }
+      clauses.push(`(${emptyFk.length ? `${emptyFk.join(" AND ")} AND ` : ""}(${contact.join(" OR ")})${same.length ? ` AND ${same.join(" AND ")}` : ""})`);
+    }
+  }
+  if (!clauses.length) return { sql: "0", params: [] };
+  return { sql: `(${clauses.join(" OR ")})`, params };
 }
 
 export function canPayInstant(row) {

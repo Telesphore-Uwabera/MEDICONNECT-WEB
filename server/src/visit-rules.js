@@ -1,6 +1,7 @@
 import { hasColumn, one, pool, q, tableExists } from "./db.js";
 import { loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
+import { ownsInstant } from "./instant-visit.js";
 
 /**
  * Visit rules shared by the patient, doctor and payment routes.
@@ -87,19 +88,41 @@ export async function patientOwnsAppointment(appointment, user) {
 }
 
 /**
- * Instant rows belong to a signed-up patient through user_id, and to a guest only
- * through the contact details they typed at the payment step.
+ * The signed-in viewer for instant ownership. Profile ids come only from
+ * `patients.user_id`. The account id is not added as a profile id.
+ * `occupiedUserId` is the owner of the patient profile whose id equals this
+ * account id, when that profile exists.
+ */
+export async function loadInstantViewer(user) {
+  if (!user?.id) return null;
+  const patientIds = [];
+  let occupiedUserId = null;
+  if (await tableExists("patients") && await hasColumn("patients", "user_id")) {
+    const profiles = await q("SELECT id FROM patients WHERE user_id = ?", [user.id]).catch(() => []);
+    for (const profile of profiles) {
+      const id = Number(profile.id);
+      if (id > 0) patientIds.push(id);
+    }
+    const occupant = await one("SELECT user_id FROM patients WHERE id = ? LIMIT 1", [user.id]).catch(() => null);
+    if (occupant && Number(occupant.user_id) > 0) occupiedUserId = Number(occupant.user_id);
+  }
+  return {
+    userId: Number(user.id),
+    patientIds,
+    email: user.email || "",
+    phone: user.phone || "",
+    occupiedUserId,
+  };
+}
+
+/**
+ * Instant rows belong to a signed-up patient through user_id or that account's
+ * patient profile. Contact is only a fallback when both of those are empty.
  */
 export async function patientOwnsInstant(row, user) {
-  if (!row || !user) return false;
-  if (Number(row.user_id) === Number(user.id)) return true;
-  const profileId = await loadOwnedId(user.id, "patients");
-  if (profileId && Number(row.patient_id) === Number(profileId)) return true;
-  const email = String(user.email || "").trim().toLowerCase();
-  const phone = String(user.phone || "").trim();
-  const rowEmail = String(row.guest_email || "").trim().toLowerCase();
-  const rowPhone = String(row.guest_phone || "").trim();
-  return Boolean((email && rowEmail && email === rowEmail) || (phone && rowPhone && phone === rowPhone));
+  const viewer = await loadInstantViewer(user);
+  if (!viewer) return false;
+  return ownsInstant(row, viewer);
 }
 
 export async function doctorOwnsVisit(row, user) {

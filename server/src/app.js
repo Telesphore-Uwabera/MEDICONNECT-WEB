@@ -42,8 +42,9 @@ import {
 } from "./visit-rules.js";
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
-import { withTeamPhoto, expireUnpaidPayments, consultationAmount } from "./public.js";
-import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
+import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
+import { ageSeconds, placeInQueue } from "./instant-visit.js";
+import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { clientMayClaimEmail, isServerGuestAccount } from "./guest-account.js";
 import { checkSocialLink } from "./social-links.js";
@@ -2310,83 +2311,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.get("/patient/instant-consultations", requireAuth, requireRole("patient"), async (req, res, next) => {
-    try {
-      const table = await instantTable();
-      if (!table) return res.json({ data: [] });
-      const profiles = await tableExists("patients")
-        ? await q("SELECT id FROM patients WHERE user_id = ?", [req.user.id]).catch(() => [])
-        : [];
-      const identity = {
-        userId: req.user.id,
-        patientIds: profiles.map((profile) => profile.id),
-        email: req.user.email,
-        phone: req.user.phone,
-      };
-      const clauses = [];
-      const params = [];
-      if (await hasColumn(table, "user_id")) {
-        clauses.push("user_id = ?");
-        params.push(req.user.id);
-      }
-      if (identity.patientIds.length && await hasColumn(table, "patient_id")) {
-        clauses.push(`patient_id IN (${identity.patientIds.map(() => "?").join(",")})`);
-        params.push(...identity.patientIds);
-      }
-      if (req.user.email && await hasColumn(table, "guest_email")) {
-        clauses.push("guest_email = ?");
-        params.push(req.user.email);
-      }
-      if (req.user.phone && await hasColumn(table, "guest_phone")) {
-        clauses.push("guest_phone = ?");
-        params.push(req.user.phone);
-      }
-      if (!clauses.length) return res.json({ data: [] });
-      const rows = await q(
-        `SELECT * FROM \`${table}\` WHERE ${clauses.join(" OR ")} ORDER BY id DESC LIMIT 50`,
-        params,
-      ).catch(() => []);
-      const data = [];
-      for (const row of rows.filter((item) => ownsInstant(item, identity))) {
-        const doctor = row.doctor_id
-          ? await one(
-            "SELECT u.name AS name FROM doctors d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ? LIMIT 1",
-            [row.doctor_id],
-          ).catch(() => null)
-          : null;
-        const peers = await q(
-          `SELECT id, doctor_id, status, created_at FROM \`${table}\`
-           WHERE ${row.doctor_id == null ? "doctor_id IS NULL" : "doctor_id = ?"}
-             AND status IN ('pending','queued','waiting','payment_pending','confirmed','accepted','in_progress')
-           ORDER BY id ASC LIMIT 100`,
-          row.doctor_id == null ? [] : [row.doctor_id],
-        ).catch(() => []);
-        const place = placeInQueue(row, peers.length ? peers : [row]);
-        const amount = await consultationAmount({ doctor_id: row.doctor_id, amount: row.amount });
-        const canJoin = canJoinInstant(row);
-        data.push({
-          id: row.id,
-          status: row.status || "pending",
-          payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
-          doctor_id: row.doctor_id || null,
-          doctor_name: doctor?.name || null,
-          amount,
-          currency: row.currency || "RWF",
-          created_at: row.created_at || null,
-          age_seconds: ageSeconds(row.created_at),
-          ...place,
-          can_pay: canPayInstant(row) && amount > 0,
-          can_join: canJoin,
-          room_url: canJoin
-            ? (row.daily_room_url || row.room_url || `/consultation/${row.daily_room_name || row.room_name || `instant-${row.id}`}`)
-            : null,
-        });
-      }
-      res.json({ data });
-    } catch (error) {
-      next(error);
-    }
-  });
+  registerPatientInstantList(router, { requireAuth, requireRole });
 
   router.get("/patient/appointments", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {

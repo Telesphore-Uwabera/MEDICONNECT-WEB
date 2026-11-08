@@ -558,6 +558,9 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
 
       router.get(base, ...listGuard, async (req, res, next) => {
         try {
+          // The owned instant list is registered later and must win. This catalog
+          // route otherwise answers first with a raw page and hides that handler.
+          if (scope === "patient" && spec.resource === "instant-consultations") return next();
           const table = await firstTable(tablesFor(spec, scope));
           if (!table) return next();
           const { page, perPage, offset } = pageArgs(req);

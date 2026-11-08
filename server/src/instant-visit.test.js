@@ -68,9 +68,29 @@ describe("instant visit queue", () => {
       guest_phone: "789107304",
       guest_token: "owner-token",
     });
-    expect(ownsInstant(visit, { userId: 9, patientIds: [55], email: "other@example.com", phone: "788000000" })).toBe(true);
-    expect(ownsInstant(visit, { userId: 9, patientIds: [], email: "patient@example.com" })).toBe(true);
+    const owner = { userId: 9, patientIds: [55], email: "other@example.com", phone: "788000000", occupiedUserId: null };
+    expect(ownsInstant(visit, owner)).toBe(true);
+    expect(ownsInstant(visit, { ...owner, patientIds: [], email: "patient@example.com", phone: "" })).toBe(false);
+    expect(ownsInstant(
+      { guest_email: "patient@example.com", guest_phone: "" },
+      { userId: 9, patientIds: [], email: "patient@example.com", phone: "", occupiedUserId: null },
+    )).toBe(true);
     expect(ownsInstant(visit, { userId: 8, patientIds: [99], email: "stranger@example.com", phone: "788111111" })).toBe(false);
+  });
+
+  it("fails closed when the account id collides with another profile or the contacts disagree", () => {
+    const viewer = { userId: 9, patientIds: [55], email: "owner@example.com", phone: "789107304", occupiedUserId: 77 };
+    expect(ownsInstant({ patient_id: 9, guest_email: "owner@example.com" }, viewer)).toBe(false);
+    expect(ownsInstant({ user_id: 9, patient_id: 9 }, viewer)).toBe(false);
+    expect(ownsInstant({ user_id: 8, patient_id: 55, guest_email: "owner@example.com" }, viewer)).toBe(false);
+    expect(ownsInstant({ user_id: 9, patient_id: 55, guest_email: "someone-else@example.com" }, viewer)).toBe(true);
+    expect(ownsInstant({ guest_email: "owner@example.com", guest_phone: "788000000" }, viewer)).toBe(false);
+    expect(ownsInstant({ guest_phone: "+250 789 107 304" }, viewer)).toBe(true);
+    expect(ownsInstant({ guest_phone: "11789107304" }, viewer)).toBe(false);
+    expect(ownsInstant(
+      { user_id: 9, patient_id: 9 },
+      { ...viewer, occupiedUserId: null },
+    )).toBe(true);
   });
 
   it("offers join only after the doctor has accepted", () => {
