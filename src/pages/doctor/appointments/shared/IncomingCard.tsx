@@ -305,9 +305,14 @@ export function IncomingCard({
               {phoneAvatar(item.guest_phone)}
             </div>
             {/* Queue position badge */}
-            <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-foreground text-background text-[8px] font-bold flex items-center justify-center border border-background leading-none">
-              {item.queue_position}
-            </span>
+            {item.queue_position != null && (
+              <span
+                title={t("consult.connect.queue_position", { position: item.queue_position })}
+                className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-1 rounded-full bg-foreground text-background text-[8px] font-bold flex items-center justify-center border border-background leading-none"
+              >
+                {item.queue_position}
+              </span>
+            )}
           </div>
 
           {/* Info */}

@@ -19,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatQueueLine, queueCopy } from "@/lib/queue-status";
 import { format, parseISO } from "date-fns";
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -364,6 +365,7 @@ type OpenInstantRow = {
   amount: number;
   currency: string;
   queue_position: number;
+  people_ahead?: number | null;
   you_are_next: boolean;
   can_pay: boolean;
   can_join: boolean;
@@ -373,7 +375,7 @@ type OpenInstantRow = {
 };
 
 function OpenInstantRequests({ rows, onJoin }: { rows: OpenInstantRow[]; onJoin: (row: OpenInstantRow) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const pay = useInstantConsultationPay();
   const visible = rows.filter((row) => row.can_pay || row.can_join);
   if (!visible.length) return null;
@@ -386,11 +388,7 @@ function OpenInstantRequests({ rows, onJoin }: { rows: OpenInstantRow[]; onJoin:
             <p className="text-xs text-muted-foreground">
               {row.doctor_name || "Doctor"}
               {row.amount > 0 ? ` · ${row.amount} ${row.currency || "RWF"}` : ""}
-              {row.queue_position > 1
-                ? ` · ${t("consult.connect.queue_position", { position: row.queue_position })}`
-                : row.you_are_next
-                  ? ` · ${t("consult.connect.queue_next")}`
-                  : ""}
+              {` · ${formatQueueLine(row.queue_position, row.people_ahead, queueCopy(i18n.language))}`}
             </p>
           </div>
           {row.can_join ? (

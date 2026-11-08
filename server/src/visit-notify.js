@@ -1,9 +1,11 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { broadcast } from "./realtime.js";
+import { beginReadyMail, finishReadyMail } from "./ready-mail.js";
 import { visitAwaitsPayment } from "./visit-rules.js";
 
 const reminded = new Set();
+const readyMailSent = new Set();
 
 // ─── In-app notification helper ───────────────────────────────────────────────
 async function notifyInApp(userId, title, message, type) {
@@ -146,8 +148,9 @@ async function patientContact(row) {
 async function deliver({ userId, email, subject, text, html, type }) {
   if (userId) await notifyInApp(userId, subject, text, type);
   if (email && email.includes("@")) {
-    await sendMail({ to: email, subject, text, html });
+    return (await sendMail({ to: email, subject, text, html })) !== false;
   }
+  return true;
 }
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
@@ -524,14 +527,14 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyDoctorReady
 // ─────────────────────────────────────────────────────────────────────────────
-const readyMailSent = new Set();
 
 export async function notifyDoctorReady(row) {
   const key = row?.id ? `instant:${row.id}` : "";
   if (!key || visitAwaitsPayment(row) || readyMailSent.has(key)) return;
   const patient = await patientContact(row);
   if (!patient) return;
-  readyMailSent.add(key);
+  const claim = await beginReadyMail(key);
+  if (!claim.send) return;
   const doctor = await doctorContact(row.doctor_id);
   const subject = `Your doctor is ready for consultation #${row.id}`;
   const text = `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`;
@@ -556,7 +559,18 @@ export async function notifyDoctorReady(row) {
     `,
   });
 
-  await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.ready" });
+  try {
+    const emailed = await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.ready" });
+    if (!emailed) {
+      await finishReadyMail(key, claim.attempt, false, "mailer declined");
+      return;
+    }
+    await finishReadyMail(key, claim.attempt, true);
+    if (claim.reason === "undurable") readyMailSent.add(key);
+  } catch (error) {
+    await finishReadyMail(key, claim.attempt, false, error?.message || "send failed");
+    throw error;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

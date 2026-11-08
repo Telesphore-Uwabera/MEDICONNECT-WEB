@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { formatQueueLine, queueCopy } from "@/lib/queue-status";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import {
   sessionToRejoinTarget,
@@ -324,7 +325,7 @@ const setGuestChatAuth = (token: string | null) => {
 export const ConnectDialogContent = ({
   doctor: initialDoctor, onMinimize, onCloseCompletely, onRegisterCancel,
 }: ConnectDialogContentProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | undefined>(undefined);
   const doctor = initialDoctor || (selectedDoctor as unknown as Doctor);
 
@@ -392,7 +393,7 @@ export const ConnectDialogContent = ({
   // ── Consultation state ────────────────────────────────────────────────────
   const [consultationToken, setConsultationToken] = useState<string | null>(null);
   const [consultationId, setConsultationId] = useState<number | null>(null);
-  const [queueInfo, setQueueInfo] = useState<{ position: number; ahead: number } | null>(null);
+  const [queueInfo, setQueueInfo] = useState<{ position: number; ahead: number | null } | null>(null);
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyToken, setDailyToken] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -587,7 +588,7 @@ export const ConnectDialogContent = ({
   useEffect(() => {
     if (!statusData || phase !== "polling") return;
     const position = Number(statusData.queue_position) || 1;
-    const ahead = statusData.people_ahead == null ? Math.max(0, position - 1) : Number(statusData.people_ahead);
+    const ahead = statusData.people_ahead == null ? null : Number(statusData.people_ahead);
     setQueueInfo({ position, ahead });
 
     setDoctorBusy(Boolean(statusData.doctor_busy));
@@ -840,7 +841,7 @@ export const ConnectDialogContent = ({
       const aheadRaw = res.people_ahead ?? responseData?.people_ahead;
       setQueueInfo({
         position,
-        ahead: aheadRaw == null ? Math.max(0, position - 1) : Number(aheadRaw),
+        ahead: aheadRaw == null ? null : Number(aheadRaw),
       });
 
       if (
@@ -1436,10 +1437,7 @@ export const ConnectDialogContent = ({
             )}
             {queueInfo && phase === "polling" && (
               <p className="text-sm text-muted-foreground mt-0.5">
-                {t("consult.connect.queue_position", { position: queueInfo.position })} ·{" "}
-                {queueInfo.position <= 1 && queueInfo.ahead === 0
-                  ? t("consult.connect.queue_next")
-                  : t("consult.connect.queue_ahead", { count: queueInfo.ahead })}
+                {formatQueueLine(queueInfo.position, queueInfo.ahead, queueCopy(i18n.language))}
               </p>
             )}
           </div>

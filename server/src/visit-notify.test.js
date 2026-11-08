@@ -1,4 +1,17 @@
+import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const claims = new DatabaseSync(":memory:");
+claims.exec(`
+  CREATE TABLE ready_mail_claims (
+    claim_key TEXT PRIMARY KEY,
+    status TEXT NOT NULL,
+    attempts INTEGER NOT NULL,
+    last_error TEXT,
+    claimed_at TEXT NOT NULL,
+    sent_at TEXT
+  )
+`);
 
 const sent = [];
 const notes = [];
@@ -15,6 +28,11 @@ const db = {
   patientsAvailable: true,
   profileThrows: false,
   userThrows: false,
+  claimsTable: true,
+  mailThrows: false,
+  mailResult: true,
+  mailGate: null,
+  mailAttempts: 0,
 };
 
 vi.mock("./mail.js", async (importOriginal) => {
@@ -22,6 +40,10 @@ vi.mock("./mail.js", async (importOriginal) => {
   return {
     ...actual,
     sendMail: async (message) => {
+      db.mailAttempts += 1;
+      if (db.mailGate) await db.mailGate;
+      if (db.mailThrows) throw new Error("smtp down");
+      if (db.mailResult === false) return false;
       sent.push(message);
       return { accepted: true };
     },
@@ -37,6 +59,7 @@ vi.mock("./db.js", async (importOriginal) => {
   return {
     ...actual,
     tableExists: async (name) => {
+      if (name === "ready_mail_claims") return db.claimsTable;
       if (name === "patients") return db.patientsAvailable;
       return ["users", "doctors", "notifications", "appointments"].includes(name);
     },
@@ -46,9 +69,20 @@ vi.mock("./db.js", async (importOriginal) => {
       return notes.length;
     },
     update: async () => 1,
-    q: async (sql) => (String(sql).includes("FROM appointments") ? db.appointments : []),
+    q: async (sql, params = []) => {
+      const text = String(sql);
+      if (text.includes("ready_mail_claims")) {
+        const statement = claims.prepare(text.replace(/`/g, ""));
+        if (/^\s*(with|select)/i.test(text)) return statement.all(...params);
+        return { affectedRows: statement.run(...params).changes };
+      }
+      return text.includes("FROM appointments") ? db.appointments : [];
+    },
     one: async (sql, params) => {
       const text = String(sql);
+      if (text.includes("ready_mail_claims")) {
+        return claims.prepare(text.replace(/`/g, "")).get(...(params || [])) ?? null;
+      }
       const id = Number(params?.[0]);
       if (text.includes("FROM patients")) {
         if (db.profileThrows) throw new Error("patients unreadable");
@@ -83,6 +117,12 @@ describe("visit notifications", () => {
     db.patientsAvailable = true;
     db.profileThrows = false;
     db.userThrows = false;
+    db.claimsTable = true;
+    db.mailThrows = false;
+    db.mailResult = true;
+    db.mailGate = null;
+    db.mailAttempts = 0;
+    claims.exec("DELETE FROM ready_mail_claims");
   });
 
   it("addresses the profile owner and cites the consultation, once", async () => {
@@ -207,5 +247,64 @@ describe("visit notifications", () => {
     expect(sent.map((message) => message.to)).toEqual(["keza@example.com"]);
     expect(sent[0].html).toContain("Hello, Keza!");
     expect(notes).toEqual([]);
+  });
+
+  it("keeps a successful ready mail stored when a new module loads", async () => {
+    const row = { id: 4, patient_id: 9, doctor_id: 31, status: "accepted" };
+    await notifyDoctorReady(row);
+    await notifyDoctorReady(row);
+    vi.resetModules();
+    const fresh = await import("./visit-notify.js");
+    await fresh.notifyDoctorReady(row);
+    expect(sent.map((message) => message.to)).toEqual(["owner@example.com"]);
+  });
+
+  it("sends the ready mail again after a restart when no claims table exists", async () => {
+    db.claimsTable = false;
+    const row = { id: 70, patient_id: 9, doctor_id: 31, status: "accepted" };
+    await notifyDoctorReady(row);
+    vi.resetModules();
+    db.claimsTable = false;
+    const fresh = await import("./visit-notify.js");
+    await fresh.notifyDoctorReady(row);
+    expect(sent.map((message) => message.to)).toEqual(["owner@example.com", "owner@example.com"]);
+  });
+
+  it("retries after the mailer declines or throws, then stops once a send is recorded", async () => {
+    const row = { id: 71, patient_id: 9, doctor_id: 31, status: "accepted" };
+    db.mailResult = false;
+    await notifyDoctorReady(row);
+    await notifyDoctorReady(row);
+    expect(sent).toEqual([]);
+    expect(db.mailAttempts).toBe(2);
+    db.mailResult = true;
+    await notifyDoctorReady(row);
+    await notifyDoctorReady(row);
+    expect(sent).toHaveLength(1);
+    db.mailThrows = true;
+    db.mailAttempts = 0;
+    const other = { id: 72, patient_id: 9, doctor_id: 31, status: "accepted" };
+    await expect(notifyDoctorReady(other)).rejects.toThrow("smtp down");
+    expect(sent).toHaveLength(1);
+    db.mailThrows = false;
+    await notifyDoctorReady(other);
+    await notifyDoctorReady(other);
+    expect(sent).toHaveLength(2);
+  });
+
+  it("sends once when two ready calls overlap", async () => {
+    let release;
+    db.mailGate = new Promise((resolve) => {
+      release = resolve;
+    });
+    const row = { id: 73, patient_id: 9, doctor_id: 31, status: "accepted" };
+    const first = notifyDoctorReady(row);
+    const second = notifyDoctorReady(row);
+    await vi.waitFor(() => {
+      expect(db.mailAttempts).toBe(1);
+    });
+    release();
+    await Promise.all([first, second]);
+    expect(sent).toHaveLength(1);
   });
 });

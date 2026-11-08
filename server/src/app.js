@@ -2062,6 +2062,8 @@ export function appRoutes(router) {
         // column is absent in production, where a paid visit is only marked by
         // status='confirmed'). Naming it in ORDER BY makes the whole query fail,
         // and the catch below would then report an empty queue to every doctor.
+        // Paid and accepted rows stay first in this doctor list. That eligibility
+        // order is separate from queue_position, which remains the arrival place.
         const paidFirst = await hasColumn(table, "payment_status")
           ? "CASE WHEN LOWER(payment_status) = 'paid' THEN 0 ELSE 1 END ASC,"
           : "";
