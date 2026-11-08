@@ -47,8 +47,8 @@ const db = {
   ],
   payments: [
     { id: 1, patient_id: 55, user_id: null, amount: "own-fee", status: "pending" },
-    { id: 2, patient_id: 77, user_id: null, amount: "secret-fee", status: "paid" },
-    { id: 3, patient_id: 55, user_id: null, amount: "15", status: "paid" },
+    { id: 2, patient_id: 77, user_id: null, amount: 999, status: "paid" },
+    { id: 3, patient_id: 55, user_id: null, amount: 15, status: "paid" },
   ],
   legal: [{ id: 1, title: "Terms of care", body: "Public terms" }],
   specializations: [{ id: 1, name: "Cardiology" }],
@@ -835,9 +835,9 @@ describe("resource write authorization", () => {
     expect(ownFee.status).toBe(200);
     expect(JSON.stringify(ownFee.body)).toContain("own-fee");
     expect(foreignFee.status).toBe(403);
-    expect(JSON.stringify(foreignFee.body)).not.toContain("secret-fee");
+    expect(JSON.stringify(foreignFee.body)).not.toContain("999");
     expect(JSON.stringify(feeList.body)).toContain("own-fee");
-    expect(JSON.stringify(feeList.body)).not.toContain("secret-fee");
+    expect(JSON.stringify(feeList.body)).not.toContain("999");
     const leaflet = await request(users.doctor, "GET", "/doctor/leaflets/1");
     expect(leaflet.status).toBe(403);
     expect(JSON.stringify(leaflet.body)).not.toContain("private-leaflet");
@@ -966,12 +966,12 @@ describe("resource write authorization", () => {
     expect(dashboard.body.reviews.total).toBe(1);
     expect(dashboard.body.period_stats.pharmacy_orders_total).toBe(1);
     expect(dashboard.body.spending.total).toBe(15);
+    expect(dashboard.body.spending.total).not.toBe(15 + 999);
     const bills = await request(users.patient, "GET", "/patient/bills");
     const billText = JSON.stringify(bills.body);
     expect(bills.status).toBe(200);
     expect(billText).toContain("own-fee");
     expect(billText).toContain("15");
-    expect(billText).not.toContain("secret-fee");
     expect(billText).not.toContain("999");
     const referrals = await request(users.patient, "GET", "/patient/referrals");
     const packed = JSON.stringify(referrals.body);
@@ -1051,6 +1051,13 @@ describe("resource write authorization", () => {
     expect(sent.status).toBe(201);
     expect(writes.some((write) => write.op === "insert" && write.table === "referrals" && write.data.patient_id === 55)).toBe(true);
     writes.length = 0;
+    const unrelated = await request(users.doctor, "POST", "/doctor/referrals", {
+      patient_id: 56,
+      hospital_id: 4,
+      reason: "not my patient",
+    });
+    expect(unrelated.status).toBe(403);
+    expect(writes.some((write) => write.table === "referrals")).toBe(false);
     db.appointments.push({ id: 13, doctor_id: 31, patient_id: 80, user_id: null, status: "confirmed" });
     const byAccount = await request(users.doctor, "POST", "/doctor/referrals", {
       patient_id: 80,
@@ -1060,6 +1067,50 @@ describe("resource write authorization", () => {
     });
     expect(byAccount.status).toBe(201);
     expect(writes.some((write) => write.op === "insert" && write.table === "referrals" && write.data.patient_id === 56)).toBe(true);
+    writes.length = 0;
+    db.instants.push({ id: 40, doctor_id: 31, patient_id: 90, user_id: null, status: "accepted" });
+    const guest = await request(users.doctor, "POST", "/doctor/referrals", {
+      patient_id: 90,
+      hospital_id: 4,
+      instant_consultation_id: 40,
+      reason: "guest follow-up",
+    });
+    expect(guest.status).toBe(201);
+    expect(writes.some((write) => write.op === "insert" && write.table === "referrals" && write.data.patient_id === 90)).toBe(true);
+    writes.length = 0;
+    const noVisit = await request(users.doctor, "POST", "/doctor/referrals", {
+      patient_id: 55,
+      hospital_id: 4,
+      reason: "known patient",
+    });
+    expect(noVisit.status).toBe(201);
+    expect(writes.some((write) => write.op === "insert" && write.table === "referrals" && write.data.patient_id === 55 && write.data.reason === "known patient")).toBe(true);
+    writes.length = 0;
+    db.patientThrows = true;
+    const unreadable = await request(users.doctor, "POST", "/doctor/referrals", {
+      patient_id: 55,
+      hospital_id: 4,
+      reason: "cannot read",
+    });
+    expect(unreadable.status).toBe(403);
+    expect(writes.some((write) => write.table === "referrals")).toBe(false);
+    db.patientThrows = false;
+    db.patients.push(
+      { id: 92, user_id: 81, name: "Twin A", email: "twin-a@example.com" },
+      { id: 93, user_id: 81, name: "Twin B", email: "twin-b@example.com" },
+    );
+    try {
+      writes.length = 0;
+      const twoProfiles = await request(users.doctor, "POST", "/doctor/referrals", {
+        patient_id: 81,
+        hospital_id: 4,
+        reason: "two profiles",
+      });
+      expect(twoProfiles.status).toBe(422);
+      expect(writes.some((write) => write.table === "referrals")).toBe(false);
+    } finally {
+      db.patients = db.patients.filter((row) => row.id !== 92 && row.id !== 93);
+    }
   });
 
   it("lists, opens, and counts only account appointments and profile certificates", async () => {
