@@ -162,7 +162,7 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         }
       }
       const row = await decorateAppointments(await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [id])));
-      notifyBookedVisit({ ...row, patient_id: req.user.id, doctor_id: doctorId, patient_pays: amount, consultation_fee: amount }).catch(() => null);
+      notifyBookedVisit({ ...row, user_id: req.user.id, patient_id: req.user.id, doctor_id: doctorId, patient_pays: amount, consultation_fee: amount }).catch(() => null);
       res.status(201).json({
         message: amount > 0
           ? "Appointment reserved. Pay before the doctor can confirm it."
