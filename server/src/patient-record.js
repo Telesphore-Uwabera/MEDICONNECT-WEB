@@ -280,10 +280,10 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         const caring = namedByInstant || namedByAppointment || await doctorHasCareLink(req.user, existingPhone);
         if (!caring) return res.status(403).json({ message: "You do not have access to this record." });
       }
-      if (linked.appointment) {
-        const accountId = Number(existingPhone?.user_id) || null;
+      if (linked.appointment && existingPhone) {
+        const accountId = Number(existingPhone.user_id) || null;
         const current = Number(linked.appointment.patient_id) || null;
-        if (current && accountId && current !== accountId) {
+        if (current && current !== accountId) {
           return res.status(403).json({ message: "You do not have access to this record." });
         }
       }

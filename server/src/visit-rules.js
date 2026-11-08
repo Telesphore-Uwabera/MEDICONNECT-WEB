@@ -83,8 +83,10 @@ export function appointmentStartIsInPast(date, time, now = new Date()) {
 }
 
 export async function patientOwnsAppointment(appointment, user) {
-  const profileId = await loadOwnedId(user?.id, "patients");
-  return new Set([Number(user?.id), Number(profileId || 0)]).has(Number(appointment?.patient_id));
+  const accountId = Number(user?.id) || 0;
+  if (!accountId || !appointment) return false;
+  if (contradictsAccount(appointment, accountId)) return false;
+  return Number(appointment.patient_id) === accountId;
 }
 
 /**
@@ -358,6 +360,8 @@ const PROFILE_OWNED_TABLES = new Set([
   "consultation_summaries",
   "prescription_requests",
   "pharmacy_orders",
+  "referrals",
+  "fitness_certificates",
 ]);
 const PERSONAL_TABLES = new Set(["reviews", "refunds", "payments"]);
 const PUBLIC_CATALOGS = new Set([

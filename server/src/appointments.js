@@ -4,7 +4,7 @@ import { loadOwnedId } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
 import { notifyAppointmentConfirmed, notifyBookedVisit } from "./visit-notify.js";
-import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot } from "./visit-rules.js";
+import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot, patientOwnsAppointment } from "./visit-rules.js";
 import { withNamedLock } from "./named-lock.js";
 
 export async function doctorOnlineFee(doctorId) {
@@ -185,9 +185,7 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
     try {
       const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.appointmentId]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
-      const ownerProfile = await loadOwnedId(req.user.id, "patients");
-      const ownerIds = new Set([Number(req.user.id), Number(ownerProfile || 0)]);
-      if (!ownerIds.has(Number(appointment.patient_id))) {
+      if (!(await patientOwnsAppointment(appointment, req.user))) {
         return res.status(403).json({ message: "This appointment belongs to another patient." });
       }
       if (String(appointment.payment_status || "").toLowerCase() === "paid") {
