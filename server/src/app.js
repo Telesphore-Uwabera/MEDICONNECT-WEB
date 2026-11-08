@@ -2279,13 +2279,12 @@ export function appRoutes(router) {
 
   router.get("/patient/appointments", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
-      const profileId = await loadOwnedId(req.user.id, "patients");
-      const ids = [...new Set([Number(req.user.id), Number(profileId || 0)].filter((id) => id > 0))];
-      if (!ids.length) {
+      const owned = await patientOwnedWhere("appointments", req.user);
+      if (!owned?.sql || owned.sql === "0") {
         return res.json({ data: [], total: 0, current_page: 1, last_page: 1, per_page: 10 });
       }
-      const filters = [`patient_id IN (${ids.map(() => "?").join(",")})`];
-      const params = [...ids];
+      const filters = [owned.sql];
+      const params = [...owned.params];
       if (await hasColumn("appointments", "deleted_at")) filters.push("deleted_at IS NULL");
       if (req.query.status) {
         filters.push("status = ?");

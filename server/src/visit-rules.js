@@ -359,6 +359,7 @@ const PROFILE_OWNED_TABLES = new Set([
   "prescription_requests",
   "pharmacy_orders",
   "referrals",
+  "fitness_certificates",
 ]);
 const PERSONAL_TABLES = new Set(["reviews", "refunds", "payments"]);
 const PUBLIC_CATALOGS = new Set([

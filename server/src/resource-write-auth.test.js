@@ -36,6 +36,10 @@ const db = {
     { id: 1, patient_id: 55, user_id: null, doctor_id: 31, reason: "my-referral" },
     { id: 2, patient_id: 77, user_id: null, doctor_id: 31, reason: "foreign-referral" },
   ],
+  certificates: [
+    { id: 1, patient_id: 55, user_id: null, status: "issued" },
+    { id: 2, patient_id: 77, user_id: null, status: "issued" },
+  ],
   refunds: [
     { id: 1, patient_id: 55, user_id: null, amount: "10", reason: "my-refund" },
     { id: 2, patient_id: 77, user_id: null, amount: "secret-refund", reason: "not-mine" },
@@ -99,8 +103,10 @@ function sqliteRows(sql, params) {
     CREATE TABLE appointments (
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
-      status TEXT, notes TEXT, daily_guest_token TEXT
+      status TEXT, notes TEXT, daily_guest_token TEXT,
+      appointment_date TEXT, appointment_time TEXT
     );
+    CREATE TABLE fitness_certificates (id INTEGER, patient_id INTEGER, user_id INTEGER, status TEXT);
     CREATE TABLE instant_consultation_requests (
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
@@ -171,6 +177,9 @@ function sqliteRows(sql, params) {
   for (const row of db.referrals || []) {
     insert("INSERT INTO referrals (id, patient_id, user_id, doctor_id, reason) VALUES (?, ?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.doctor_id, row.reason);
   }
+  for (const row of db.certificates || []) {
+    insert("INSERT INTO fitness_certificates (id, patient_id, user_id, status) VALUES (?, ?, ?, ?)").run(row.id, row.patient_id, row.user_id, row.status);
+  }
   return database.prepare(text).all(...params);
 }
 
@@ -184,7 +193,7 @@ vi.mock("./db.js", async (importOriginal) => {
       "pharmacy_orders", "service_bookings", "hospitals", "users", "leaflets", "chart_notes",
       "reviews", "refunds", "payments", "legal_documents", "insurances",
       "specializations", "specialization_fees", "help_center_links", "fitness_checklist_questions",
-      "service_bookings", "pharmacy_orders", "referrals",
+      "service_bookings", "pharmacy_orders", "referrals", "fitness_certificates",
     ].includes(name),
     hasColumn: async (table, column) => {
       if (db.columnThrows) throw new Error("columns unreadable");
@@ -209,7 +218,7 @@ vi.mock("./db.js", async (importOriginal) => {
         throw new Error("care unreadable");
       }
       if (db.patientThrows && text.includes("FROM patients")) throw new Error("patients unreadable");
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions|service_bookings|pharmacy_orders|referrals)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions|service_bookings|pharmacy_orders|referrals|fitness_certificates)"?/i.test(text)) {
         return sqliteRows(sql, params);
       }
       return [];
@@ -238,7 +247,7 @@ vi.mock("./db.js", async (importOriginal) => {
       if (text.includes("FROM users") && text.includes("WHERE id")) {
         return db.accounts.find((row) => row.id === Number(params[0])) || null;
       }
-      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions|service_bookings|pharmacy_orders|referrals)"?/i.test(text)) {
+      if (/FROM\s+"?(patients|appointments|instant_consultation_requests|prescriptions|prescription_requests|patient_medical_infos|reviews|refunds|payments|legal_documents|insurances|specializations|specialization_fees|help_center_links|fitness_checklist_questions|service_bookings|pharmacy_orders|referrals|fitness_certificates)"?/i.test(text)) {
         return sqliteRows(sql, params)[0] ?? null;
       }
       if (text.includes("FROM leaflets")) {
@@ -259,7 +268,13 @@ vi.mock("./db.js", async (importOriginal) => {
         release() {},
       }),
     },
-    countWhere: async () => 0,
+    countWhere: async (table, where = "", params = []) => {
+      try {
+        return sqliteRows(`SELECT id FROM "${String(table).replace(/"/g, "")}" ${where}`, params).length;
+      } catch {
+        return 0;
+      }
+    },
   };
 });
 
@@ -968,5 +983,29 @@ describe("resource write authorization", () => {
     });
     expect(profileAppointment.status).toBe(403);
     expect(writes).toEqual([]);
+  });
+
+  it("lists, opens, and counts only account appointments and profile certificates", async () => {
+    const list = await request(users.patient, "GET", "/patient/appointments");
+    const packed = JSON.stringify(list.body);
+    expect(list.status).toBe(200);
+    expect(packed).toContain("own-appointment");
+    expect(packed).not.toContain("profile-only-appointment");
+    expect(packed).not.toContain("contradictory-appointment");
+    expect(list.body.total).toBe(1);
+    expect(list.body.data).toHaveLength(1);
+    const own = await request(users.patient, "GET", "/patient/appointments/5");
+    const profileOnly = await request(users.patient, "GET", "/patient/appointments/8");
+    const contradicted = await request(users.patient, "GET", "/patient/appointments/9");
+    expect(own.status).toBe(200);
+    expect(JSON.stringify(own.body)).toContain("own-appointment");
+    expect(profileOnly.status).toBe(404);
+    expect(JSON.stringify(profileOnly.body)).not.toContain("profile-only-appointment");
+    expect(contradicted.status).toBe(404);
+    expect(JSON.stringify(contradicted.body)).not.toContain("contradictory-appointment");
+    const dashboard = await request(users.patient, "GET", "/patient/dashboard");
+    expect(dashboard.body.period_stats.total_appointments).toBe(list.body.total);
+    expect(dashboard.body.certificates.issued).toBe(1);
+    expect(dashboard.body.certificates.total).toBe(1);
   });
 });
