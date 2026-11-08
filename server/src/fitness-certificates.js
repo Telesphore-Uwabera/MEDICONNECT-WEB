@@ -1173,4 +1173,3 @@ export async function handleFitnessCertificates(req, res, parts) {
 
   return canAccess(req, row) ? false : false;
 }
-}}
