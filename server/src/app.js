@@ -55,6 +55,7 @@ import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, placeInQueue } from "./instant-visit.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
+import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isServerGuestAccount } from "./guest-account.js";
 import { checkSocialLink } from "./social-links.js";
 import {
@@ -83,6 +84,7 @@ import {
   requireAuth,
   requireRole,
   setActiveRole,
+  stampPatientProfileCompletion,
   toUser,
   verifyPassword,
 } from "./auth.js";
@@ -561,6 +563,14 @@ export function appRoutes(router) {
       }
       if (body.password !== body.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match.", errors: { password: ["Password confirmation does not match."] } });
+      }
+      if (body.phone) {
+        const checked = validateIncomingPhone(body.phone, body.country_code || "+250");
+        if (!checked.ok) {
+          return res.status(422).json({ message: checked.message, errors: { phone: [checked.message] } });
+        }
+        body.phone = checked.phone;
+        body.country_code = checked.country_code;
       }
       const existing = await one("SELECT id FROM users WHERE email = ? LIMIT 1", [body.email]);
       if (existing) return res.status(422).json({ message: "Email is already registered.", errors: { email: ["Email is already registered."] } });
@@ -3398,17 +3408,49 @@ export function appRoutes(router) {
     try {
       const table = PROFILE_TABLE[req.params.scope];
       if (!table) return next();
+      if (!scopeRoleAllowed(req.user, req.params.scope)) {
+        return res.status(403).json({ message: "You do not have access to this area." });
+      }
       let id = await loadOwnedId(req.user.id, table);
       if (!id) {
         await createProfile(req.user, req.params.scope);
         id = await loadOwnedId(req.user.id, table);
       }
       if (!id) return res.status(404).json({ message: "Profile not found." });
-      const body = { ...(req.body ?? {}) };
-      delete body.password;
-      delete body.id;
-      await update(table, id, body);
+      const body = stripClientOwners(req.body ?? {});
+      delete body.status;
+      delete body.role;
+      delete body.active_role;
+      delete body.can_be_admin;
+      delete body.profile_completed_at;
+      if (req.params.scope === "patient") {
+        if (body.full_name && !body.name) body.name = body.full_name;
+        if (body.phone) {
+          const checked = validateIncomingPhone(body.phone, body.country_code || req.user.country_code || "+250");
+          if (!checked.ok) return res.status(422).json({ message: checked.message });
+          body.phone = checked.phone;
+          body.country_code = checked.country_code;
+        }
+        if (body.date_of_birth != null && body.date_of_birth !== "") {
+          const birth = plausibleDateOfBirth(body.date_of_birth);
+          if (!birth.ok) return res.status(422).json({ message: birth.message });
+          body.date_of_birth = birth.value;
+        }
+      }
+      if (Object.keys(body).length) await update(table, id, body);
+      if (req.params.scope === "patient") {
+        const userPatch = {};
+        if (body.phone) userPatch.phone = body.phone;
+        if (body.gender) userPatch.gender = body.gender;
+        if (body.name) userPatch.name = body.name;
+        if (body.country_code) userPatch.country_code = body.country_code;
+        if (Object.keys(userPatch).length) await update("users", req.user.id, userPatch);
+      }
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+      if (req.params.scope === "patient") {
+        const freshUser = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+        await stampPatientProfileCompletion(row, freshUser);
+      }
       res.json({ message: "Profile saved.", data: row, [req.params.scope]: row, ...(row ?? {}) });
     } catch (error) {
       next(error);

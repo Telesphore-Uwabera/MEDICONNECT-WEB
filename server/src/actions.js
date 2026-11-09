@@ -5,6 +5,7 @@ import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, prese
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
+import { sniffedUploadExtension } from "./input-checks.js";
 import { DOCTOR_WORK_STATUSES, VISIT_TABLES, insuranceCatalogWhere, isPublicCatalog, mayReadRow, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
@@ -58,12 +59,12 @@ function tableFor(name, RESOURCES) {
   return RESOURCES[name] || name.replace(/-/g, "_");
 }
 
-function saveUpload(file, prefix) {
+function saveUpload(file, prefix, extension = ".webp") {
   const dir = process.env.UPLOAD_DIR
     ? path.join(process.env.UPLOAD_DIR, "doctors-webp")
     : path.resolve("storage", "doctors-webp");
   fs.mkdirSync(dir, { recursive: true });
-  const filename = `${prefix}_${Date.now()}.webp`;
+  const filename = `${prefix}_${Date.now()}${extension}`;
   fs.writeFileSync(path.join(dir, filename), file.buffer);
   return `https://mediconnect.rw/api/v1/media/${filename}`;
 }
@@ -624,13 +625,23 @@ async function fillGap(req, res, parts) {
   }
 
   if (parts[1] === "profile" && parts[2]) {
+    if (!scopeRoleAllowed(req.user, parts[0])) {
+      res.status(403).json({ message: "You do not have access to this area." });
+      return true;
+    }
     const table = PROFILE_TABLES[parts[0]];
     if (!table) return false;
     const id = await loadOwnedId(req.user.id, table);
     const file = req.files?.[0];
     if (file && id) {
-      const url = saveUpload(file, `${parts[0]}_${parts[2]}`);
       const requested = parts[2] === "documents" ? (req.body?.type || "document") : parts[2] === "avatar" ? "avatar" : parts[2];
+      const sniffed = sniffedUploadExtension(file.buffer);
+      const imageOnly = ["avatar", "logo", "signature", "image", "photo"].includes(requested);
+      if (!sniffed || (imageOnly && sniffed === ".pdf")) {
+        res.status(422).json({ message: imageOnly ? "Choose a PNG, JPEG, or WEBP image." : "Choose a PNG, JPEG, WEBP, or PDF file." });
+        return true;
+      }
+      const url = saveUpload(file, `${parts[0]}_${parts[2]}`, sniffed);
       const column = FILE_COLUMNS[requested] || requested;
       if (parts[0] === "doctor" && column === "medical_license_document") {
         const current = await one("SELECT medical_license_document FROM doctors WHERE id = ?", [id]);
