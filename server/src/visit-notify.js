@@ -1,6 +1,7 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { broadcast } from "./realtime.js";
+import { beginReadyMail, finishReadyMail, renewReadyMail, READY_CLAIM_RENEW_MS, READY_MAIL_TIMEOUT_MS } from "./ready-mail.js";
 import { visitAwaitsPayment } from "./visit-rules.js";
 
 const reminded = new Set();
@@ -17,7 +18,12 @@ async function notifyInApp(userId, title, message, type) {
   const now = new Date();
   if (await hasColumn("notifications", "created_at")) fields.created_at = now;
   if (await hasColumn("notifications", "updated_at")) fields.updated_at = now;
-  await insert("notifications", fields).catch(() => null);
+  try {
+    await insert("notifications", fields);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ─── Contact resolution helpers ───────────────────────────────────────────────
@@ -146,8 +152,9 @@ async function patientContact(row) {
 async function deliver({ userId, email, subject, text, html, type }) {
   if (userId) await notifyInApp(userId, subject, text, type);
   if (email && email.includes("@")) {
-    await sendMail({ to: email, subject, text, html });
+    return (await sendMail({ to: email, subject, text, html })) !== false;
   }
+  return true;
 }
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
@@ -524,18 +531,26 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyDoctorReady
 // ─────────────────────────────────────────────────────────────────────────────
-const readyMailSent = new Set();
 
-export async function notifyDoctorReady(row) {
-  const key = row?.id ? `instant:${row.id}` : "";
-  if (!key || visitAwaitsPayment(row) || readyMailSent.has(key)) return;
-  const patient = await patientContact(row);
-  if (!patient) return;
-  readyMailSent.add(key);
+async function readyNotice(visitKey, patient, subject, text) {
+  if (!patient?.userId) return;
+  const noticeKey = `${visitKey}:notice`;
+  let claim;
+  try {
+    claim = await beginReadyMail(noticeKey);
+  } catch (error) {
+    console.error("Ready notice was not recorded:", error?.message || error);
+    return;
+  }
+  if (!claim.send) return;
+  const stored = await notifyInApp(patient.userId, subject, text, "visit.ready");
+  await finishReadyMail(noticeKey, claim.attempt, stored, stored ? "" : "notice was not stored");
+}
+
+async function composeReadyMessage(row, patient) {
   const doctor = await doctorContact(row.doctor_id);
   const subject = `Your doctor is ready for consultation #${row.id}`;
   const text = `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`;
-
   const html = buildEmailHtml({
     title: "Your doctor is ready!",
     preheader: text,
@@ -555,8 +570,64 @@ export async function notifyDoctorReady(row) {
       ${emailP("If you have trouble joining, please contact us at admin@mediconnect.rw.", "font-size:12px;color:#9ca3af;")}
     `,
   });
+  return { subject, text, html };
+}
 
-  await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.ready" });
+export async function notifyDoctorReady(row) {
+  const key = row?.id ? `instant:${row.id}` : "";
+  if (!key || visitAwaitsPayment(row)) return;
+  const patient = await patientContact(row);
+  if (!patient) return;
+  const mailKey = `${key}:mail`;
+  let claim;
+  try {
+    claim = await beginReadyMail(mailKey);
+  } catch (error) {
+    console.error("Ready mail was not sent:", error?.message || error);
+    throw error;
+  }
+  if (!claim.send) {
+    if (claim.reason === "sent" || claim.reason === "local-sent") {
+      try {
+        const message = await composeReadyMessage(row, patient);
+        await readyNotice(key, patient, message.subject, message.text);
+      } catch (error) {
+        console.error("Ready notice was not recorded:", error?.message || error);
+      }
+    }
+    return;
+  }
+  let renew;
+  try {
+    renew = setInterval(() => {
+      renewReadyMail(mailKey, claim.attempt).catch((error) => {
+        console.error("Ready mail lease renew failed:", error?.message || error);
+      });
+    }, READY_CLAIM_RENEW_MS);
+    const message = await composeReadyMessage(row, patient);
+    await readyNotice(key, patient, message.subject, message.text);
+    let emailed = true;
+    if (patient.email && patient.email.includes("@")) {
+      emailed = (await sendMail({
+        to: patient.email,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        timeoutMs: READY_MAIL_TIMEOUT_MS,
+      })) !== false;
+    }
+    if (!emailed) {
+      await finishReadyMail(mailKey, claim.attempt, false, "mailer declined");
+      return;
+    }
+    await finishReadyMail(mailKey, claim.attempt, true);
+  } catch (error) {
+    await finishReadyMail(mailKey, claim.attempt, false, error?.message || "send failed");
+    console.error("Ready mail was not sent:", error?.message || error);
+    throw error;
+  } finally {
+    if (renew) clearInterval(renew);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

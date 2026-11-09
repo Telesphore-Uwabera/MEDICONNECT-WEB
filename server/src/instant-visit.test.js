@@ -25,11 +25,34 @@ function row(partial) {
 describe("instant visit queue", () => {
   it("does not call position 8 next when people_ahead was not stored", () => {
     expect(queueLabel(8, null)).toEqual({
+      state: "waiting",
       queue_position: 8,
       people_ahead: 7,
       you_are_next: false,
     });
-    expect(queueLabel(1, 0).you_are_next).toBe(true);
+    expect(queueLabel(1, 0)).toEqual({
+      state: "next",
+      queue_position: 1,
+      people_ahead: 0,
+      you_are_next: true,
+    });
+    expect(queueLabel(25, 7)).toEqual({
+      state: "unknown",
+      queue_position: null,
+      people_ahead: null,
+      you_are_next: false,
+    });
+  });
+
+  it("keeps an earlier unpaid request ahead of a later paid one", () => {
+    const early = row({ id: 1, created_at: "2026-11-08 06:00:00", status: "pending", payment_status: null });
+    const paid = row({ id: 2, created_at: "2026-11-08 06:10:00", status: "confirmed", payment_status: "paid" });
+    expect(placeInQueue(paid, [early, paid], NOW)).toMatchObject({ queue_position: 2, people_ahead: 1 });
+    expect(placeInQueue(early, [early, paid], NOW)).toMatchObject({
+      queue_position: 1,
+      people_ahead: 0,
+      you_are_next: true,
+    });
   });
 
   it("places a named request only among that doctor's open rows", () => {

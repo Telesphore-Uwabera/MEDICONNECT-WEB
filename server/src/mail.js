@@ -225,15 +225,20 @@ export function emailOtpBlock(code) {
 /**
  * @param {{ to: string, subject: string, text: string, html?: string, replyTo?: string }} opts
  */
-export async function sendMail({ to, subject, text, html, replyTo }) {
+export async function sendMail({ to, subject, text, html, replyTo, timeoutMs }) {
   const config = mailConfig();
   if (!config || !to) return false;
+  const bounded = Number(timeoutMs);
+  const timeouts = Number.isFinite(bounded) && bounded > 0
+    ? { connectionTimeout: bounded, greetingTimeout: bounded, socketTimeout: bounded }
+    : {};
   try {
     const transport = nodemailer.createTransport({
       host: config.host,
       port: config.port,
       secure: config.secure,
       auth: config.auth,
+      ...timeouts,
       // Increase deliverability: identify ourselves properly
       name: "mediconnect.rw",
     });

@@ -2062,6 +2062,8 @@ export function appRoutes(router) {
         // column is absent in production, where a paid visit is only marked by
         // status='confirmed'). Naming it in ORDER BY makes the whole query fail,
         // and the catch below would then report an empty queue to every doctor.
+        // Paid and accepted rows stay first in this doctor list. That eligibility
+        // order is separate from queue_position, which remains the arrival place.
         const paidFirst = await hasColumn(table, "payment_status")
           ? "CASE WHEN LOWER(payment_status) = 'paid' THEN 0 ELSE 1 END ASC,"
           : "";
@@ -2174,7 +2176,9 @@ export function appRoutes(router) {
       const roomName = updated.daily_room_name || updated.room_name || `instant-${updated.id}`;
       const roomUrl = updated.daily_room_url || updated.room_url || `/consultation/${roomName}`;
       const doctorToken = instantDoctorToken(updated, roomName);
-      notifyDoctorReady(updated).catch(() => null);
+      notifyDoctorReady(updated).catch((error) => {
+        console.error("Ready mail was not sent:", error?.message || error);
+      });
       res.json({
         message: "Request accepted.",
         room_url: roomUrl,

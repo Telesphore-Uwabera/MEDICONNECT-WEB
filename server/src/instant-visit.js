@@ -238,13 +238,26 @@ export function canJoinInstant(row) {
   return JOINABLE_STATUSES.includes(String(row?.status || "").toLowerCase());
 }
 
-/** Browser copy: never treat a missing ahead-count as "next" when the position is already past 1. */
+/**
+ * Same rule as placeInQueue: people ahead is the place minus one.
+ * A missing ahead count uses that rule. Any other ahead count is not a
+ * current value, so the line stays unknown instead of quoting both numbers.
+ * Place 1 with nobody ahead is the next case.
+ */
 export function queueLabel(position, ahead) {
-  const queuePosition = Math.max(1, Number(position) || 1);
-  const peopleAhead = ahead == null || ahead === "" ? Math.max(0, queuePosition - 1) : Math.max(0, Number(ahead) || 0);
+  const parsed = Number(position);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return { state: "unknown", queue_position: null, people_ahead: null, you_are_next: false };
+  }
+  const queuePosition = Math.floor(parsed);
+  const expected = queuePosition - 1;
+  if (ahead != null && ahead !== "" && Math.floor(Number(ahead)) !== expected) {
+    return { state: "unknown", queue_position: null, people_ahead: null, you_are_next: false };
+  }
   return {
+    state: queuePosition === 1 ? "next" : "waiting",
     queue_position: queuePosition,
-    people_ahead: peopleAhead,
-    you_are_next: queuePosition === 1 && peopleAhead === 0,
+    people_ahead: expected,
+    you_are_next: queuePosition === 1,
   };
 }
