@@ -6,7 +6,7 @@ import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } f
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { sniffedUploadExtension } from "./input-checks.js";
-import { DOCTOR_WORK_STATUSES, VISIT_TABLES, insuranceCatalogWhere, isPublicCatalog, mayReadRow, mayWriteRow, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, insuranceCatalogWhere, isPublicCatalog, mayReadRow, mayWriteRow, profileFormBody, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -658,13 +658,8 @@ async function fillGap(req, res, parts) {
       return true;
     }
     if (id && ["POST", "PUT", "PATCH"].includes(req.method)) {
-      const body = { ...(req.body ?? {}) };
-      delete body.password;
-      if (parts[0] === "doctor") {
-        delete body.license_expires_at;
-        delete body.license_expiry_reminded_for;
-      }
-      await update(table, id, body);
+      const body = profileFormBody(req.body ?? {}, { doctor: parts[0] === "doctor" });
+      if (Object.keys(body).length) await update(table, id, body);
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
       if (parts[0] === "patient") {
         const userRow = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
