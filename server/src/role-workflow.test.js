@@ -1,3 +1,6 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
 import express from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +16,7 @@ vi.mock("./db.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
+    pool: { query: async () => [[]] },
     tableExists: async (name) => db.profileTables && ["patients", "hospitals", "doctors", "pharmacies", "users"].includes(name),
     hasColumn: async () => true,
     presentRow: async (_table, row) => row,
@@ -33,6 +37,10 @@ vi.mock("./db.js", async (importOriginal) => {
       }
       if (text.includes("FROM roles")) return { id: 4 };
       if (text.includes("FROM users") && text.includes("email =")) return null;
+      if (text.includes("doctors")) {
+        return { id: 31, user_id: 77, status: "pending", name: "Dr Jane", user_name: "Dr Jane", user_gender: "female" };
+      }
+      if (text.includes("hospitals")) return { id: 4, user_id: 77, name: "Kigali Clinic" };
       if (text.includes("FROM users")) {
         return {
           id: 77,
@@ -57,16 +65,18 @@ function listen() {
   app.use(express.json());
   const router = express.Router();
   router.use((req, _res, next) => {
-    if (req.headers.authorization) {
+    const header = String(req.headers.authorization || "");
+    if (header) {
+      const role = header.includes("role:doctor") ? "doctor" : header.includes("role:hospital") ? "hospital" : "patient";
       req.user = {
         id: 77,
-        name: "Amina Uwase",
+        name: role === "hospital" ? "Kigali Clinic" : role === "doctor" ? "Dr Jane" : "Amina Uwase",
         email: "amina@example.com",
         phone: "788100100",
         country_code: "+250",
-        role: "patient",
-        active_role: "patient",
-        available_roles: ["patient"],
+        role,
+        active_role: role,
+        available_roles: [role],
         profile_complete: true,
       };
     }
@@ -85,7 +95,7 @@ function listen() {
 
 async function request(server, path, { method = "POST", json, form, contentType, auth = false } = {}) {
   const headers = {};
-  if (auth) headers.Authorization = "Bearer 1|secret";
+  if (auth) headers.Authorization = `Bearer 1|secret role:${auth === true ? "patient" : auth}`;
   let body;
   if (json) {
     headers["Content-Type"] = "application/json";
@@ -212,6 +222,81 @@ describe("role signup and profile workflows", () => {
     expect(patientUpdate.data.status).toBeUndefined();
     expect(patientUpdate.data.user_id).toBeUndefined();
     expect(writes.some((write) => write.op === "update" && write.table === "users" && write.data.phone === "789107304")).toBe(true);
+    await stop();
+  });
+
+  it("ignores owner fields on a profile subsection and accepts real image bytes", async () => {
+    db.profileTables = true;
+    const uploadRoot = path.join(os.tmpdir(), `mediconnect-profile-${process.pid}`);
+    process.env.UPLOAD_DIR = uploadRoot;
+    try {
+      const section = await request(server, "/patient/profile/medical-info", {
+        auth: true,
+        json: {
+          blood_type: "O+",
+          status: "approved",
+          user_id: 8,
+          role: "admin",
+          active_role: "admin",
+          can_be_admin: true,
+          profile_completed_at: "2020-01-01",
+          hospital_id: 9,
+        },
+      });
+      expect(section.status).toBe(200);
+      const saved = writes.find((write) => write.op === "update" && write.table === "patients");
+      expect(saved.data).toEqual({ blood_type: "O+" });
+
+      const images = [
+        ["png", Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ".png"],
+        ["jpeg", Buffer.from([0xff, 0xd8, 0xff, 0xd9]), ".jpg"],
+        ["webp", Buffer.concat([Buffer.from("RIFF"), Buffer.from([8, 0, 0, 0]), Buffer.from("WEBP")]), ".webp"],
+      ];
+      for (const [name, bytes, extension] of images) {
+        writes.length = 0;
+        const boundary = `----${name}`;
+        const file = Buffer.concat([
+          Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="avatar"; filename="photo.${name}"\r\nContent-Type: image/${name}\r\n\r\n`),
+          bytes,
+          Buffer.from(`\r\n--${boundary}--\r\n`),
+        ]);
+        const uploaded = await request(server, "/patient/profile/avatar", {
+          auth: true,
+          form: file,
+          contentType: `multipart/form-data; boundary=${boundary}`,
+        });
+        expect(uploaded.status).toBe(200);
+        const update = writes.find((write) => write.op === "update" && write.table === "patients");
+        expect(update.data.avatar.endsWith(extension)).toBe(true);
+        const filename = update.data.avatar.split("/").pop();
+        const stored = fs.readFileSync(path.join(uploadRoot, "doctors-webp", filename));
+        expect(stored.subarray(0, bytes.length)).toEqual(bytes);
+      }
+    } finally {
+      delete process.env.UPLOAD_DIR;
+      fs.rmSync(uploadRoot, { recursive: true, force: true });
+      await stop();
+    }
+  });
+
+  it("saves a doctor's own profile and a hospital's own profile", async () => {
+    db.profileTables = true;
+    const doctor = await request(server, "/doctor/profile", {
+      auth: "doctor",
+      json: { bio_en: "I treat children", status: "approved", user_id: 8 },
+    });
+    const hospital = await request(server, "/hospital/profile", {
+      auth: "hospital",
+      json: { name: "Kigali Clinic", city: "Kigali", status: "approved", user_id: 8 },
+    });
+    expect(doctor.status).toBe(200);
+    expect(hospital.status).toBe(200);
+    const doctorUpdate = writes.find((write) => write.op === "update" && write.table === "doctors" && write.data.bio_en);
+    expect(doctorUpdate.data).toEqual({ bio_en: "I treat children" });
+    const hospitalUpdate = writes.find((write) => write.op === "update" && write.table === "hospitals");
+    expect(hospitalUpdate.data).toMatchObject({ name: "Kigali Clinic", city: "Kigali" });
+    expect(hospitalUpdate.data.status).toBeUndefined();
+    expect(hospitalUpdate.data.user_id).toBeUndefined();
     await stop();
   });
 });

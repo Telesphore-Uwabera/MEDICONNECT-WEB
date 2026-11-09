@@ -36,6 +36,7 @@ import {
   resolveCreateBody,
   patientOwnsInstant,
   releaseSlot,
+  profileFormBody,
   scopeRoleAllowed,
   stripClientOwners,
   visitAwaitsPayment,
@@ -3417,12 +3418,7 @@ export function appRoutes(router) {
         id = await loadOwnedId(req.user.id, table);
       }
       if (!id) return res.status(404).json({ message: "Profile not found." });
-      const body = stripClientOwners(req.body ?? {});
-      delete body.status;
-      delete body.role;
-      delete body.active_role;
-      delete body.can_be_admin;
-      delete body.profile_completed_at;
+      const body = profileFormBody(req.body ?? {}, { doctor: req.params.scope === "doctor" });
       if (req.params.scope === "patient") {
         if (body.full_name && !body.name) body.name = body.full_name;
         if (body.phone) {

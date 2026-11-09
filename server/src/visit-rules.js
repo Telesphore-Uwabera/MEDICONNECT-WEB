@@ -179,6 +179,21 @@ export function stripClientOwners(body, { keep = false } = {}) {
   return safe;
 }
 
+/** Fields a profile form must not be able to set on its own row. */
+export function profileFormBody(body, { doctor = false } = {}) {
+  const safe = stripClientOwners(body);
+  delete safe.status;
+  delete safe.role;
+  delete safe.active_role;
+  delete safe.can_be_admin;
+  delete safe.profile_completed_at;
+  if (doctor) {
+    delete safe.license_expires_at;
+    delete safe.license_expiry_reminded_for;
+  }
+  return safe;
+}
+
 async function profileId(user, scope) {
   const table = PROFILE_TABLE[scope];
   if (!table) return null;
