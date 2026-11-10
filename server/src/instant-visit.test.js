@@ -1,3 +1,4 @@
+import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import {
   ageSeconds,
@@ -6,6 +7,7 @@ import {
   countsInInstantQueue,
   isPaidStatus,
   ownsInstant,
+  paidMarkerSql,
   placeInQueue,
   queueLabel,
   UNPAID_LIMIT_SEC,
@@ -136,5 +138,31 @@ describe("instant visit queue", () => {
     expect(countsInInstantQueue(row({ status: "confirmed", payment_status: "paid", doctor_id: null }), 31)).toBe(true);
     expect(countsInInstantQueue(row({ status: "pending", payment_status: null, doctor_id: null }), 31)).toBe(false);
     expect(countsInInstantQueue(row({ status: "confirmed", payment_status: "paid", doctor_id: 99 }), 31)).toBe(false);
+    expect(isPaidStatus(row({ status: "pending", payment_status: "unpaid", consultation_fee: 0 }))).toBe(true);
+    expect(isPaidStatus(row({ status: "pending", payment_status: "unpaid", consultation_fee: null, patient_pays: 0 }))).toBe(true);
+    expect(isPaidStatus(row({ status: "confirmed", payment_status: "unpaid", consultation_fee: 5000 }))).toBe(false);
+  });
+
+  it("counts a zero fee as paid in the dashboard SQL", () => {
+    const database = new DatabaseSync(":memory:");
+    database.exec(`
+      CREATE TABLE visits (
+        id INTEGER, status TEXT, payment_status TEXT,
+        consultation_fee REAL, patient_pays REAL, amount_due REAL
+      );
+    `);
+    const insert = database.prepare("INSERT INTO visits (id, status, payment_status, consultation_fee, patient_pays, amount_due) VALUES (?, ?, ?, ?, ?, ?)");
+    insert.run(1, "pending", "pending", 5000, null, null);
+    insert.run(2, "confirmed", "paid", 5000, null, null);
+    insert.run(3, "pending", "unpaid", 0, null, null);
+    insert.run(4, "pending", "unpaid", null, 0, null);
+    insert.run(5, "confirmed", "", null, null, null);
+    insert.run(6, "confirmed", "unpaid", 1000, null, null);
+    const marker = paidMarkerSql(["consultation_fee", "patient_pays", "amount_due"]).replace(/`/g, "\"");
+    const ids = database.prepare(`SELECT id FROM visits WHERE ${marker} ORDER BY id`).all().map((item) => item.id);
+    expect(ids).toEqual([2, 3, 4, 5]);
+    const withoutPayment = paidMarkerSql(["consultation_fee"], { paymentColumn: false }).replace(/`/g, "\"");
+    const legacyIds = database.prepare(`SELECT id FROM visits WHERE ${withoutPayment} ORDER BY id`).all().map((item) => item.id);
+    expect(legacyIds).toEqual([2, 3, 5, 6]);
   });
 });

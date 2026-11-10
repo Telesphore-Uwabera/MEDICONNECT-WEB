@@ -17,6 +17,15 @@ export const JOINABLE_STATUSES = ["accepted", "in_progress"];
 export const UNPAID_LIMIT_SEC = 15 * 60;
 
 const PAID = new Set(["paid", "completed", "success", "successful"]);
+const LEGACY_PAID_STATUSES = ["confirmed", "accepted", "in_progress", "completed", "done"];
+const FEE_COLUMNS = ["consultation_fee", "patient_pays", "amount_due"];
+
+export const UNPAID_APPOINTMENT_JOIN_MESSAGE = "Pay for this visit and wait for the doctor to confirm it before joining.";
+export const UNPAID_INSTANT_JOIN_MESSAGE = "This consultation is not paid yet. The patient must complete payment before you can join.";
+
+export function unpaidJoinMessage(table) {
+  return table === "appointments" ? UNPAID_APPOINTMENT_JOIN_MESSAGE : UNPAID_INSTANT_JOIN_MESSAGE;
+}
 
 export function ageSeconds(value, now = new Date()) {
   if (value == null || value === "") return null;
@@ -39,7 +48,31 @@ export function isPaidStatus(row) {
   if (raw != null && String(raw).trim() !== "") return false;
   // Older rows have no payment column. Only the payment callback's confirmed
   // marker, or a visit the doctor already took after that, counts as paid.
-  return ["confirmed", "accepted", "in_progress", "completed", "done"].includes(String(row?.status || "").toLowerCase());
+  return LEGACY_PAID_STATUSES.includes(String(row?.status || "").toLowerCase());
+}
+
+function zeroFeeSql(feeColumns) {
+  const present = FEE_COLUMNS.filter((name) => feeColumns.includes(name));
+  if (!present.length) return null;
+  const chosen = present
+    .map((name) => `WHEN \`${name}\` IS NOT NULL AND TRIM(CAST(\`${name}\` AS CHAR)) <> '' THEN \`${name}\` + 0`)
+    .join(" ");
+  return `(CASE ${chosen} ELSE NULL END = 0)`;
+}
+
+/**
+ * SQL twin of isPaidStatus for a count that cannot load each row.
+ * A stored zero fee is paid even when payment_status says unpaid. An empty
+ * fee falls through to a verified payment, then to a legacy visit status.
+ * Deployments without a payment column still count an explicit zero fee.
+ */
+export function paidMarkerSql(feeColumns = FEE_COLUMNS, { paymentColumn = true } = {}) {
+  const zero = zeroFeeSql(feeColumns);
+  const legacyStatuses = `LOWER(\`status\`) IN (${LEGACY_PAID_STATUSES.map((status) => `'${status}'`).join(",")})`;
+  if (!paymentColumn) return zero ? `(${zero} OR ${legacyStatuses})` : legacyStatuses;
+  const verified = "LOWER(COALESCE(`payment_status`, '')) IN ('paid','completed','success','successful')";
+  const legacy = `((\`payment_status\` IS NULL OR \`payment_status\` = '') AND ${legacyStatuses})`;
+  return zero ? `(${zero} OR ${verified} OR ${legacy})` : `(${verified} OR ${legacy})`;
 }
 
 /** Paid, still waiting for this doctor. Unassigned requests count only when paid. */
