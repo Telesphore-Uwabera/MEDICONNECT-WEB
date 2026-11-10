@@ -53,7 +53,7 @@ import {
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
-import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, placeInQueue } from "./instant-visit.js";
+import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_APPOINTMENT_JOIN_MESSAGE, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -1889,9 +1889,13 @@ export function appRoutes(router) {
       // One rule for the dashboard, the queue tab, and Today waiting: a verified
       // payment, still waiting, for this doctor (or a paid "any doctor" request).
       const hasPayColumn = instantTable ? await hasColumn(instantTable, "payment_status") : false;
-      const paidMarker = hasPayColumn
-        ? "(LOWER(COALESCE(payment_status, '')) IN ('paid','completed','success','successful') OR ((payment_status IS NULL OR payment_status = '') AND LOWER(status) IN ('confirmed','accepted','in_progress','completed','done')))"
-        : "LOWER(status) IN ('confirmed','accepted','in_progress','completed','done')";
+      const feeColumns = [];
+      if (instantTable) {
+        for (const name of ["consultation_fee", "patient_pays", "amount_due"]) {
+          if (await hasColumn(instantTable, name)) feeColumns.push(name);
+        }
+      }
+      const paidMarker = paidMarkerSql(feeColumns, { paymentColumn: hasPayColumn });
       const instantQueueSql = `${paidMarker} AND LOWER(status) IN ('confirmed','pending','queued','waiting','payment_pending')`;
       const instantCreated = instantTable && (await firstColumn(instantTable, ["created_at", "updated_at"]));
       const instantCompletedAt = instantTable && (await firstColumn(instantTable, ["completed_at", "ended_at", "updated_at", "created_at"]));
@@ -2279,7 +2283,7 @@ export function appRoutes(router) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
       }
       if (!isPaidStatus(row)) {
-        return res.status(422).json({ message: "This consultation is not paid yet. The patient must complete payment before you can join." });
+        return res.status(422).json({ message: UNPAID_INSTANT_JOIN_MESSAGE });
       }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
@@ -2401,7 +2405,7 @@ export function appRoutes(router) {
         return res.status(422).json({ message: "This appointment is no longer open." });
       }
       if (!isPaidStatus(appointment) || !visitIsSettled(appointment)) {
-        return res.status(422).json({ message: "Pay for this visit and wait for the doctor to confirm it before joining." });
+        return res.status(422).json({ message: UNPAID_APPOINTMENT_JOIN_MESSAGE });
       }
       const window = appointmentJoinWindow(appointment);
       if (!window.ok) {

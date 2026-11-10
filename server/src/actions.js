@@ -7,6 +7,7 @@ import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { sniffedUploadExtension } from "./input-checks.js";
 import { DOCTOR_WORK_STATUSES, VISIT_TABLES, insuranceCatalogWhere, isPublicCatalog, mayReadRow, mayWriteRow, profileFormBody, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
+import { isPaidStatus, unpaidJoinMessage } from "./instant-visit.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -52,6 +53,12 @@ const FILE_COLUMNS = {
 
 function segments(req) {
   return req.path.split("/").filter(Boolean);
+}
+
+function rejectUnpaidJoin(res, table, row) {
+  if (!VISIT_TABLES.has(table) || isPaidStatus(row)) return false;
+  res.status(422).json({ message: unpaidJoinMessage(table) });
+  return true;
 }
 
 function tableFor(name, RESOURCES) {
@@ -724,6 +731,7 @@ async function fillGap(req, res, parts) {
       res.status(404).json({ message: "Record not found." });
       return true;
     }
+    if (rejectUnpaidJoin(res, table, current)) return true;
     res.json({
       message: "Join ready.",
       data: row,
@@ -997,6 +1005,7 @@ export function registerActions(router, RESOURCES) {
             message: currentRow ? "You do not have access to this record." : "Record not found.",
           });
         }
+        if (action === "join" && rejectUnpaidJoin(res, table, currentRow)) return;
         return res.json({ data: await presentRow(table, currentRow), items: [] });
       }
       if (await fillGap(req, res, parts)) return;

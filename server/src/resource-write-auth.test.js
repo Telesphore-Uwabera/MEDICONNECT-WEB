@@ -106,13 +106,17 @@ function sqliteRows(sql, params) {
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
       status TEXT, notes TEXT, daily_guest_token TEXT,
-      appointment_date TEXT, appointment_time TEXT, consultation_fee INTEGER
+      appointment_date TEXT, appointment_time TEXT, consultation_fee INTEGER,
+      payment_status TEXT, patient_pays REAL, amount_due REAL,
+      daily_room_name TEXT, room_url TEXT
     );
     CREATE TABLE fitness_certificates (id INTEGER, patient_id INTEGER, user_id INTEGER, status TEXT);
     CREATE TABLE instant_consultation_requests (
       id INTEGER, doctor_id INTEGER, patient_id INTEGER, user_id INTEGER,
       pharmacy_id INTEGER, hospital_id INTEGER,
-      status TEXT, notes TEXT, daily_guest_token TEXT
+      status TEXT, notes TEXT, daily_guest_token TEXT,
+      payment_status TEXT, consultation_fee REAL, patient_pays REAL, amount_due REAL,
+      daily_room_name TEXT, room_url TEXT
     );
     CREATE TABLE prescriptions (
       id INTEGER, doctor_id INTEGER, prescriber_id INTEGER, patient_id INTEGER,
@@ -129,13 +133,15 @@ function sqliteRows(sql, params) {
     insert("INSERT INTO patients (id, user_id, name, email, phone) VALUES (?, ?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email, row.phone ?? null);
   }
   for (const row of db.appointments) {
-    insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, consultation_fee) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+    insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, consultation_fee, payment_status, patient_pays, amount_due, daily_room_name, room_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       row.id, row.doctor_id, row.patient_id, row.user_id, row.pharmacy_id ?? null, row.hospital_id ?? null, row.status, row.notes || null, row.daily_guest_token || null, row.consultation_fee ?? null,
+      row.payment_status ?? null, row.patient_pays ?? null, row.amount_due ?? null, row.daily_room_name || null, row.room_url || null,
     );
   }
   for (const row of db.instants) {
-    insert("INSERT INTO instant_consultation_requests (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+    insert("INSERT INTO instant_consultation_requests (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, payment_status, consultation_fee, patient_pays, amount_due, daily_room_name, room_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       row.id, row.doctor_id, row.patient_id, row.user_id, row.pharmacy_id ?? null, row.hospital_id ?? null, row.status, row.notes || null, row.daily_guest_token || null,
+      row.payment_status ?? null, row.consultation_fee ?? null, row.patient_pays ?? null, row.amount_due ?? null, row.daily_room_name || null, row.room_url || null,
     );
   }
   for (const row of db.prescriptions) {
@@ -1220,5 +1226,47 @@ describe("resource write authorization", () => {
     });
     expect(moved.status).toBe(200);
     expect(writes.some((write) => write.op === "update" && write.table === "appointments" && write.data.appointment_date === "2026-12-15")).toBe(true);
+  });
+
+  it("keeps an unpaid visit out of the generic join routes and the dashboard count", async () => {
+    const room = { daily_guest_token: "room-token", daily_room_name: "visit-room", room_url: "/consultation/visit-room" };
+    db.appointments.push(
+      { id: 21, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "pending", consultation_fee: 5000, ...room },
+      { id: 22, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, ...room },
+      { id: 23, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "pending", payment_status: "unpaid", consultation_fee: 0, ...room },
+    );
+    db.instants.push(
+      { id: 21, doctor_id: 31, patient_id: 55, user_id: null, status: "pending", payment_status: "pending", consultation_fee: 5000, ...room },
+      { id: 22, doctor_id: 31, patient_id: 55, user_id: null, status: "confirmed", payment_status: "paid", consultation_fee: 5000, ...room },
+      { id: 23, doctor_id: 31, patient_id: 55, user_id: null, status: "pending", payment_status: "unpaid", consultation_fee: 0, ...room },
+    );
+
+    const unpaidAppointment = await request(users.patient, "POST", "/patient/my-visits/21/join");
+    const unpaidInstant = await request(users.patient, "POST", "/patient/instant-consultations/21/join");
+    const unpaidDoctor = await request(users.doctor, "GET", "/doctor/appointments/21/join");
+    const unpaidHospital = await request(users.hospital, "POST", "/hospital/appointments/21/join");
+    for (const result of [unpaidAppointment, unpaidInstant, unpaidDoctor, unpaidHospital]) {
+      expect(result.status).toBe(422);
+      expect(result.body.message).toMatch(/pay/i);
+      expect(JSON.stringify(result.body)).not.toMatch(/room-token|visit-room/);
+    }
+    expect(unpaidAppointment.body.message).toBe("Pay for this visit and wait for the doctor to confirm it before joining.");
+    expect(unpaidInstant.body.message).toBe("This consultation is not paid yet. The patient must complete payment before you can join.");
+
+    const paidAppointment = await request(users.patient, "POST", "/patient/my-visits/22/join");
+    const paidInstant = await request(users.doctor, "GET", "/doctor/instant_consultation_requests/22/join");
+    const zeroAppointment = await request(users.hospital, "POST", "/hospital/appointments/23/join");
+    const zeroInstant = await request(users.patient, "POST", "/patient/records/instant-consultations/23/join");
+    for (const result of [paidAppointment, paidInstant, zeroAppointment, zeroInstant]) {
+      expect(result.status).toBe(200);
+      expect(JSON.stringify(result.body)).toMatch(/room-token|visit-room/);
+    }
+
+    const dashboard = await request(users.doctor, "GET", "/doctor/dashboard");
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.body.today.waiting).toBe(2);
+    expect(dashboard.body.today.instant_queue).toBe(2);
+    expect(dashboard.body.instant.paid_waiting).toBe(2);
+    expect(dashboard.body.instant.current_queue).toBe(2);
   });
 });
