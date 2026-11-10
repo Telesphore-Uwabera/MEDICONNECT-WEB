@@ -6,7 +6,7 @@
   NODE_VERSION = "20"
   VITE_APP_BASE_URL = "/api/v1"
   VITE_REVERB_APP_KEY = "mediconnect-staging-key"
-  VITE_REVERB_HOST = "makers-chip-laboratories-maintains.trycloudflare.com"
+  VITE_REVERB_HOST = "pros-vampire-merit-hawaii.trycloudflare.com"
   VITE_REVERB_PORT = "443"
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
@@ -16,44 +16,44 @@
 # phpMyAdmin, or the WebSocket page based on the original hostname.
 [[redirects]]
   from = "https://api.mediconnect.rw/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/:splat"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://api.mediconnect.rw/"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://ws.mediconnect.rw/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/ws/:splat"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/__host/ws/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://ws.mediconnect.rw/"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/ws/"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/__host/ws/"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://db.mediconnect.rw/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/db/:splat"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/__host/db/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "https://db.mediconnect.rw/"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/db/"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/__host/db/"
   status = 200
   force = true
 
 # Same-origin API used by the website.
 [[redirects]]
   from = "/api/v1/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"
+  to = "https://pros-vampire-merit-hawaii.trycloudflare.com/api/v1/:splat"
   status = 200
   force = true
 
