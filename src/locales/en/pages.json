@@ -335,7 +335,10 @@
     "final_note": "You'll be asked to confirm one more time before deletion is finalized. Make sure you no longer need any data associated with this account before proceeding."
   },
   "patient": {
-    "overview_title": "Welcome back",
+    "overview_title": "Welcome",
+    "overview_title_named": "Welcome, {{name}}",
+    "overview_title_back": "Welcome back",
+    "overview_title_back_named": "Welcome back, {{name}}",
     "overview_sub": "Here's what's happening with your care today",
     "stat_upcoming": "Upcoming",
     "stat_active_rx": "Active Rx",
@@ -2588,7 +2591,8 @@
     "th_items": "Items",
     "profile_title": "My Pharmacy Profile",
     "th_total": "Total",
-    "overview_title": "Welcome back",
+    "overview_title": "Welcome",
+    "overview_title_back": "Welcome back",
     "overview_sub": "Manage your inventory, view incoming prescriptions, and fulfill orders for delivery",
     "care_loop": "Care loop",
     "care_loop_sub": "Doctors send prescriptions here. Patients place orders from those prescriptions or from the marketplace.",
@@ -3211,7 +3215,8 @@
   },
   "admin": {
     "overview_sub": "Dashboard Overview",
-    "overview_title": "Welcome back, {{name}}",
+    "overview_title": "Welcome, {{name}}",
+    "overview_title_back": "Welcome back, {{name}}",
     "doctors_sub": "Manage doctors and medical staff",
     "doctors_title": "Doctors",
     "patients_title": "Patients",

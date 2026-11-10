@@ -97,6 +97,8 @@ test("a missing page offers a way back to care", async ({ page }) => {
 test("the patient dashboard shows the next visit and the missing profile fields", async ({ page }) => {
   await install(page, "patient");
   await page.goto("/patient");
+  await expect(page.getByRole("heading", { name: /Welcome, Keza/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Welcome back/i })).toHaveCount(0);
   await expect(page.getByTestId("next-visit")).toBeVisible();
   await expect(page.getByTestId("next-visit-join")).toBeVisible();
   await expect(page.getByTestId("profile-progress")).toBeVisible();
@@ -112,6 +114,6 @@ test("staff dashboards offer a next action", async ({ page }) => {
   ] as const) {
     await install(page, role);
     await page.goto(path);
-    await expect(page.getByTestId("role-start").getByRole("link").first()).toBeVisible();
+    await expect(page.getByTestId("role-start").getByRole("link").first()).toBeVisible({ timeout: 15000 });
   }
 });

@@ -42,6 +42,7 @@ import {
 import { useGetPharmacyProfile } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { Link } from "react-router-dom";
 import { RoleStart } from "@/components/flow/RoleStart";
+import { hasPriorSignIn } from "@/lib/visit-greeting";
 import { DateField } from "@/components/ui/date-field";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -740,7 +741,7 @@ function PharmacyDashboard() {
     <DashboardLayout role="pharmacy">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.pharmacy.overview_title")}
+          title={t(hasPriorSignIn() ? "pages.pharmacy.overview_title_back" : "pages.pharmacy.overview_title")}
           subtitle={t("pages.pharmacy.overview_sub")}
         />
 
@@ -776,7 +777,7 @@ function PharmacyDashboard() {
           ) : (
             <>
               {/* Live status */}
-              <StatusBanner todayOrders={data?.today.orders} loading={isLoading} />
+              <StatusBanner todayOrders={data?.today?.orders} loading={isLoading} />
 
               {/* External sync banner (only renders if applicable) */}
               {data?.external_sync && <ExternalSyncBanner sync={data.external_sync} />}
@@ -884,7 +885,7 @@ function PharmacyDashboard() {
                           <SkeletonBox className="h-7 w-16" />
                         </div>
                       ))
-                      : data && (
+                      : data?.period_stats && data.revenue && data.inventory && (
                         <>
                           <StatCard label={t("pages.pharmacy.total_orders")} value={fmtNum(data.period_stats.orders.total)} icon={ShoppingBag} accent="primary" />
                           <StatCard label={t("pages.pharmacy.revenue")} value={fmtRWF(data.revenue.total)} icon={TrendingUp} accent="success" />
@@ -898,7 +899,7 @@ function PharmacyDashboard() {
                   </div>
 
                   {/* Today's 4 quick counters */}
-                  {!isLoading && data && (
+                  {!isLoading && data?.today && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: t("pages.pharmacy.today_pending_orders"), value: data.today.orders.pending, bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900", cls: "text-amber-600 dark:text-amber-400" },

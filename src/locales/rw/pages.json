@@ -336,6 +336,9 @@
   },
   "patient": {
     "overview_title": "Murakaza neza",
+    "overview_title_named": "Murakaza neza, {{name}}",
+    "overview_title_back": "Turakwakira kandi",
+    "overview_title_back_named": "Turakwakira kandi, {{name}}",
     "overview_sub": "Dore ibibera mu kuvuzwa kwawe uyu munsi",
     "stat_upcoming": "Bizaza",
     "stat_active_rx": "Imiti ikora",
@@ -2611,6 +2614,7 @@
     "marked_filled": "Yashyizweho ko yatanzwe",
     "filled_desc": "Umurwayi {{name}} yamenyeshejwe",
     "overview_title": "Murakaza neza",
+    "overview_title_back": "Turakwakira kandi",
     "overview_sub": "Cunga ububiko, reba imiti yandikiwe yinjiye, kandi utegure ibitumizwa byo kugeza ku bakiriya",
     "cancel": "Kureka",
     "save_changes": "Bika impinduka",
@@ -3212,6 +3216,7 @@
   "admin": {
     "overview_sub": "Incamake y'urubuga rwose",
     "overview_title": "Murakaza neza, {{name}}",
+    "overview_title_back": "Turakwakira kandi, {{name}}",
     "doctors_sub": "Gucunga abaganga n'abakozi b'ubuvuzi",
     "doctors_title": "Abaganga",
     "patients_title": "Abarwayi",
