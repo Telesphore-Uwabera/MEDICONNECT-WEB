@@ -41,7 +41,7 @@ export default function ManagePatients() {
         { value: "suspended", label: t("admin.status.suspended") },
         { value: "rejected", label: t("admin.status.rejected") },
       ],
-      onChange: (v: string) => set("status", v as any),
+      onChange: (v: string) => set("status", v as StatusFilter),
     }
   ], [filters.status, set, t]);
 

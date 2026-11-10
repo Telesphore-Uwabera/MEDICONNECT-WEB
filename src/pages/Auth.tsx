@@ -13,7 +13,7 @@ import SignInForm from "@/components/auth/SignInForm";
 import { useMe } from "@/hooks/useAuth";
 import TopBar from "@/components/landing/TopBar"; 
 import { HeroHeader } from "@/components/landing/HeroHeader";
-import { usePublicSettings,usePublicUserStats } from "@/hooks/use-public-settings";
+import { usePublicSettings, usePublicUserStats, type PublicGeneralSettings, type PublicSettings } from "@/hooks/use-public-settings";
 import Footer from "@/components/landing/Footer";
 
 const Auth = () => {
@@ -62,9 +62,8 @@ const Auth = () => {
     { id: "signup" as const, label: t("auth.tab_signup") },
   ];
 const { data: publicSettings } = usePublicSettings();
-  const publicPayload = publicSettings as any;
-
- const generalSettings =publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
+  const publicPayload = publicSettings as (PublicSettings & { settings?: PublicGeneralSettings }) | undefined;
+  const generalSettings: PublicGeneralSettings = publicPayload?.general ?? publicPayload?.settings ?? {};
 
  const {data: publicUserStats} = usePublicUserStats();
  
