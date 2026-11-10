@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/auth-session";
+import { noteSuccessfulLogin } from "@/lib/visit-greeting";
 import type {
   RegisterPayload, RegisterResponse,
   SendOtpPayload, SendOtpResponse,
@@ -68,6 +69,7 @@ export const useVerifyOtp = () => {
         body: payload,
       }),
     onSuccess: (data) => {
+      noteSuccessfulLogin();
       saveToken(data.token);
       persistSession(qc, data.user);
     },
@@ -83,6 +85,7 @@ export const useLogin = () => {
         body: payload,
       }),
     onSuccess: (data) => {
+      noteSuccessfulLogin();
       saveToken(data.token);
       persistSession(qc, data.user);
     },

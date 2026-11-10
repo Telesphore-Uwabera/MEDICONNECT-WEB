@@ -4,7 +4,7 @@ export function isServerGuestAccount(email: string | null | undefined) {
 }
 
 /** Fields the patient profile form treats as required before the account can be used. */
-const REQUIRED_PROFILE_FIELDS = [
+export const REQUIRED_PROFILE_FIELDS = [
   "date_of_birth",
   "gender",
   "national_id",

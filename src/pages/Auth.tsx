@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { hasPriorSignIn } from "@/lib/visit-greeting";
 import { motion, AnimatePresence } from "framer-motion";
 import { postAuthPath } from "@/lib/auth-store";
 import { getAuthToken, loginReturnPath } from "@/lib/auth-session";
@@ -240,7 +241,7 @@ const { data: publicSettings } = usePublicSettings();
                       >
                         <div className="mb-8 lg:mb-14">
                           <h1 className="text-base font-bold text-foreground tracking-tight">
-                            {t("auth.signin_title")}
+                            {t(hasPriorSignIn() ? "auth.signin_title_back" : "auth.signin_title")}
                           </h1>
                           <p className="text-xs text-muted-foreground mt-1">
                             {t("auth.signin_sub")}

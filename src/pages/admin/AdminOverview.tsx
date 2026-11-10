@@ -30,6 +30,7 @@ import {
   type AdminDashboardFilters,
 } from "@/hooks/admin/use-admin-overview";
 import { DateField } from "@/components/ui/date-field";
+import { RoleStart } from "@/components/flow/RoleStart";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -276,6 +277,14 @@ const AdminOverview = () => {
       />
 
       <div className="p-5 space-y-5">
+        <RoleStart
+          actions={[
+            { to: "/admin/approvals", title: t("clinical.flow.admin_approvals"), hint: t("clinical.flow.admin_approvals_hint") },
+            { to: "/admin/manage-doctors", title: t("clinical.flow.admin_doctors"), hint: t("clinical.flow.admin_doctors_hint") },
+            { to: "/admin/manage-appointments", title: t("clinical.flow.admin_visits"), hint: t("clinical.flow.admin_visits_hint") },
+            { to: "/admin/users", title: t("clinical.flow.admin_users"), hint: t("clinical.flow.admin_users_hint") },
+          ]}
+        />
 
         {/* ── Filters ── */}
         <div className="flex items-center justify-between flex-wrap gap-3">

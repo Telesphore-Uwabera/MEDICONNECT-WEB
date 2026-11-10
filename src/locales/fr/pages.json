@@ -335,7 +335,10 @@
     "final_note": "Une dernière confirmation vous sera demandée avant la finalisation de la suppression. Assurez-vous de ne plus avoir besoin des données associées à ce compte avant de continuer."
   },
   "patient": {
-    "overview_title": "Bon retour",
+    "overview_title": "Bienvenue",
+    "overview_title_named": "Bienvenue, {{name}}",
+    "overview_title_back": "Bon retour",
+    "overview_title_back_named": "Bon retour, {{name}}",
     "overview_sub": "Voici l'actualité de vos soins aujourd'hui",
     "stat_upcoming": "À venir",
     "stat_active_rx": "Ordonnances actives",
@@ -2610,7 +2613,8 @@
     "declined": "Refusée",
     "marked_filled": "Marquée comme délivrée",
     "filled_desc": "Le patient {{name}} a été notifié",
-    "overview_title": "Bon retour",
+    "overview_title": "Bienvenue",
+    "overview_title_back": "Bon retour",
     "overview_sub": "Gérez votre stock, consultez les ordonnances entrantes et préparez les commandes pour la livraison",
     "care_loop": "Boucle de soins",
     "care_loop_sub": "Les medecins envoient les ordonnances ici. Les patients commandent a partir de ces ordonnances ou du marche.",
@@ -3211,7 +3215,8 @@
   },
   "admin": {
     "overview_sub": "Aperçu du tableau de bord",
-    "overview_title": "Content de te revoir, {{name}}",
+    "overview_title": "Bienvenue, {{name}}",
+    "overview_title_back": "Bon retour, {{name}}",
     "doctors_sub": "Gérer les médecins et le personnel médical",
     "doctors_title": "Médecins",
     "patients_title": "Patients",

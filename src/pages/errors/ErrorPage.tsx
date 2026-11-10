@@ -184,10 +184,11 @@ export default function ErrorPage({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeSection, setActiveSection] = useState("doctors");
 
-    const publicPayload = publicSettings as any;
-
-    const generalSettings =
-        publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
+    const publicPayload = (publicSettings ?? {}) as {
+        general?: Record<string, string>;
+        settings?: Record<string, string>;
+    };
+    const generalSettings: Record<string, string | undefined> = publicPayload.general ?? publicPayload.settings ?? {};
 
     const logo =
         generalSettings?.app_logo_url ||
@@ -247,11 +248,11 @@ export default function ErrorPage({
                     </p>
 
                     <h1 className="mt-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                        {title ?? fallback.title}
+                        {title ?? (status === 404 ? t("clinical.flow.not_found_title") : fallback.title)}
                     </h1>
 
                     <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                        {description ?? technicalMessage ?? fallback.description}
+                        {description ?? technicalMessage ?? (status === 404 ? t("clinical.flow.not_found_body") : fallback.description)}
                     </p>
 
                     {technicalMessage && description && (
@@ -271,7 +272,7 @@ export default function ErrorPage({
                                 className="h-10 rounded-[6px] sm:col-span-2"
                                 onClick={() => navigate("/auth")}
                             >
-                                Sign in
+                                {t("clinical.flow.sign_in")}
                             </Button>
                         )}
 
@@ -286,7 +287,7 @@ export default function ErrorPage({
                                     })
                                 }
                             >
-                                Switch role
+                                {t("clinical.flow.switch_role")}
                             </Button>
                         )}
 
@@ -295,8 +296,19 @@ export default function ErrorPage({
                                 className="h-10 rounded-[6px] sm:col-span-2"
                                 onClick={() => navigate("/auth")}
                             >
-                                Sign in
+                                {t("clinical.flow.sign_in")}
                             </Button>
+                        )}
+
+                        {status === 404 && (
+                            <>
+                                <Link to="/patient/search-doctors" className="sm:col-span-1">
+                                    <Button className="h-10 w-full rounded-[6px]">{t("clinical.flow.find_doctor")}</Button>
+                                </Link>
+                                <Link to="/help" className="sm:col-span-1">
+                                    <Button variant="outline" className="h-10 w-full rounded-[6px]">{t("clinical.flow.get_help")}</Button>
+                                </Link>
+                            </>
                         )}
 
                         {showBackButton && (
@@ -306,14 +318,14 @@ export default function ErrorPage({
                                 onClick={() => navigate(-1)}
                             >
                                 <ArrowLeft className="mr-2 h-4 w-4" />
-                                Back
+                                {t("clinical.flow.back")}
                             </Button>
                         )}
 
                         <Link to="/" className="sm:col-span-1">
                             <Button variant="outline" className="h-10 w-full rounded-[6px]">
                                 <Home className="mr-2 h-4 w-4" />
-                                Home
+                                {t("clinical.flow.home")}
                             </Button>
                         </Link>
                     </div>

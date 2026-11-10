@@ -91,6 +91,11 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
 }
 
 import { useState, useRef, useEffect } from "react";
+import { PatientNextVisit } from "@/components/flow/PatientNextVisit";
+import { ProfileProgress } from "@/components/flow/ProfileProgress";
+import { useGetProfile } from "@/hooks/use-patient-profile";
+import { useMe } from "@/hooks/useAuth";
+import { firstName, hasEarlierVisit, hasPriorSignIn, welcomeMode } from "@/lib/visit-greeting";
 
 const PatientOverview = () => {
   const { t, i18n } = useTranslation();
@@ -134,6 +139,8 @@ const PatientOverview = () => {
   };
 
   // ── Appointments (real API) ──────────────────────────────────────────────
+  const { data: me } = useMe();
+  const { data: profile } = useGetProfile();
   const { data: dash } = useGetPatientStats({ period: "all" });
   const { data: appointmentsData, isLoading: appointmentsLoading } =
     useGetPatientAppointments({ per_page: 50 });
@@ -161,6 +168,14 @@ const PatientOverview = () => {
   const dashToday = (dash as { today?: { confirmed?: number; instant_active?: number } } | undefined)?.today;
   const dashInstant = (dash as { instant?: { active_now?: number; total?: number } } | undefined)?.instant;
   const dashRx = (dash as { prescriptions?: { total?: number; active?: number } } | undefined)?.prescriptions;
+  const name = firstName(me?.name);
+  const greeting = welcomeMode({
+    priorSignIn: hasPriorSignIn(),
+    earlierVisit: hasEarlierVisit(appointmentRows),
+  });
+  const overviewTitle = greeting === "back"
+    ? (name ? t("pages.patient.overview_title_back_named", { name }) : t("pages.patient.overview_title_back"))
+    : (name ? t("pages.patient.overview_title_named", { name }) : t("pages.patient.overview_title"));
   const upcomingCount = dashToday?.confirmed || upcomingAppointments.length;
   const instantCount = dashInstant?.active_now || dashToday?.instant_active || 0;
   const rxCount = dashRx?.active || dashRx?.total || 0;
@@ -180,12 +195,16 @@ const PatientOverview = () => {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.overview_title")}
+          title={overviewTitle}
           subtitle={t("pages.patient.overview_sub")}
         />
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 space-y-6">
+            <div className="grid gap-3 lg:grid-cols-2">
+              <PatientNextVisit appointment={upcomingAppointments[0]} />
+              <ProfileProgress profile={profile} />
+            </div>
             <PatientCareNext />
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {[

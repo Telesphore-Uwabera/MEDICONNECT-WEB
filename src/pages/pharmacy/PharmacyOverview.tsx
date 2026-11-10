@@ -41,6 +41,8 @@ import {
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 import { useGetPharmacyProfile } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { Link } from "react-router-dom";
+import { RoleStart } from "@/components/flow/RoleStart";
+import { hasPriorSignIn } from "@/lib/visit-greeting";
 import { DateField } from "@/components/ui/date-field";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -739,11 +741,19 @@ function PharmacyDashboard() {
     <DashboardLayout role="pharmacy">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.pharmacy.overview_title")}
+          title={t(hasPriorSignIn() ? "pages.pharmacy.overview_title_back" : "pages.pharmacy.overview_title")}
           subtitle={t("pages.pharmacy.overview_sub")}
         />
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <RoleStart
+            actions={[
+              { to: "/pharmacy/orders", title: t("clinical.flow.pharmacy_orders"), hint: t("clinical.flow.pharmacy_orders_hint") },
+              { to: "/pharmacy/prescriptions", title: t("clinical.flow.pharmacy_rx"), hint: t("clinical.flow.pharmacy_rx_hint") },
+              { to: "/pharmacy/inventory", title: t("clinical.flow.pharmacy_stock"), hint: t("clinical.flow.pharmacy_stock_hint") },
+              { to: "/pharmacy/deliveries", title: t("clinical.flow.pharmacy_delivery"), hint: t("clinical.flow.pharmacy_delivery_hint") },
+            ]}
+          />
 
           {/* Period / chart-group controls */}
           <PeriodBar
@@ -762,12 +772,12 @@ function PharmacyDashboard() {
                 <AlertCircle className="w-6 h-6 text-red-500" />
               </div>
               <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.failed_load_dashboard")}</p>
-              <p className="text-[11px] text-muted-foreground/70">{(error as any)?.message ?? t("pages.pharmacy.something_went_wrong")}</p>
+              <p className="text-[11px] text-muted-foreground/70">{error instanceof Error ? error.message : t("pages.pharmacy.something_went_wrong")}</p>
             </div>
           ) : (
             <>
               {/* Live status */}
-              <StatusBanner todayOrders={data?.today.orders} loading={isLoading} />
+              <StatusBanner todayOrders={data?.today?.orders} loading={isLoading} />
 
               {/* External sync banner (only renders if applicable) */}
               {data?.external_sync && <ExternalSyncBanner sync={data.external_sync} />}
@@ -875,7 +885,7 @@ function PharmacyDashboard() {
                           <SkeletonBox className="h-7 w-16" />
                         </div>
                       ))
-                      : data && (
+                      : data?.period_stats && data.revenue && data.inventory && (
                         <>
                           <StatCard label={t("pages.pharmacy.total_orders")} value={fmtNum(data.period_stats.orders.total)} icon={ShoppingBag} accent="primary" />
                           <StatCard label={t("pages.pharmacy.revenue")} value={fmtRWF(data.revenue.total)} icon={TrendingUp} accent="success" />
@@ -889,7 +899,7 @@ function PharmacyDashboard() {
                   </div>
 
                   {/* Today's 4 quick counters */}
-                  {!isLoading && data && (
+                  {!isLoading && data?.today && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: t("pages.pharmacy.today_pending_orders"), value: data.today.orders.pending, bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900", cls: "text-amber-600 dark:text-amber-400" },

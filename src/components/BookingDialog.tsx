@@ -31,6 +31,8 @@ import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
 import { useConvertGuest, useCreateGuest, useMe } from "@/hooks/useAuth";
 import { clearAuthToken, setAuthToken } from "@/lib/auth-session";
 import { Input } from "@/components/ui/input";
+import { FlowSteps } from "@/components/flow/FlowSteps";
+import { GuestAccessCard } from "@/components/flow/GuestAccessCard";
 import {
   bookableDates,
   calendarDayKind,
@@ -684,14 +686,17 @@ export const BookingDialog = ({
       >
 
         {/* Header */}
-        {guestAccess && (
-          <div className="mx-6 mt-4 rounded-[6px] border border-primary/30 bg-primary/5 p-3 space-y-2">
-            <p className="text-sm font-semibold text-foreground">{t("clinical.chart.guest_access_title")}</p>
-            <p className="text-xs text-muted-foreground">{t("clinical.chart.guest_access_body")}</p>
-            <Input value={guestAccess.email} readOnly />
-            <Input data-testid="guest-temp-password" value={guestAccess.password} readOnly />
-          </div>
-        )}
+        <FlowSteps
+          steps={[
+            t("clinical.flow.step_doctor"),
+            t("clinical.flow.step_time"),
+            t("clinical.flow.step_details"),
+            t("clinical.flow.step_payment"),
+            t("clinical.flow.step_password"),
+          ]}
+          current={guestAccess ? 4 : verifyingPayment ? 3 : needsAccount ? 2 : time ? 1 : 0}
+        />
+        {guestAccess && <GuestAccessCard email={guestAccess.email} password={guestAccess.password} />}
         <div className="px-6 pt-6 pb-4 border-b border-border/60 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
