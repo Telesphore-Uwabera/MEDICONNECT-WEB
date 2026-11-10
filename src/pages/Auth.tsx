@@ -13,7 +13,7 @@ import SignInForm from "@/components/auth/SignInForm";
 import { useMe } from "@/hooks/useAuth";
 import TopBar from "@/components/landing/TopBar"; 
 import { HeroHeader } from "@/components/landing/HeroHeader";
-import { usePublicSettings,usePublicUserStats } from "@/hooks/use-public-settings";
+import { usePublicSettings, usePublicUserStats, type PublicGeneralSettings, type PublicSettings } from "@/hooks/use-public-settings";
 import Footer from "@/components/landing/Footer";
 
 const Auth = () => {
@@ -31,8 +31,8 @@ const Auth = () => {
   const idleMessage = sessionReason === "idle_timeout" || sessionReason === "session_replaced"
     ? ((location.state as { message?: string } | null)?.message
     ?? (sessionReason === "session_replaced"
-        ? "You were signed out because this account signed in on another tab or device."
-        : "You were logged out after 1 hour of inactivity."))
+        ? t("common.session_replaced")
+        : t("common.idle_timeout")))
     : null;
   useEffect(() => {
   setTab(location.pathname === "/auth/register" || params.get("mode") === "signup" ? "signup" : "signin");
@@ -62,9 +62,8 @@ const Auth = () => {
     { id: "signup" as const, label: t("auth.tab_signup") },
   ];
 const { data: publicSettings } = usePublicSettings();
-  const publicPayload = publicSettings as any;
-
- const generalSettings =publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
+  const publicPayload = publicSettings as (PublicSettings & { settings?: PublicGeneralSettings }) | undefined;
+  const generalSettings: PublicGeneralSettings = publicPayload?.general ?? publicPayload?.settings ?? {};
 
  const {data: publicUserStats} = usePublicUserStats();
  

@@ -11,7 +11,7 @@ import {
 import { toast as sonnerToast } from "sonner";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { usePharmacyFilters, getErrorMessage, SORT_OPTIONS } from "./components/Pharmacy/config";
+import { usePharmacyFilters, getErrorMessage, SORT_OPTIONS, type SortOption, type StatusFilter } from "./components/Pharmacy/config";
 import {
   PharmacyTable, PharmacyPanel,
 } from "./components/Pharmacy/components";
@@ -97,7 +97,7 @@ function ManagePharmacies() {
         { value: "suspended", label: "Suspended" },
         { value: "rejected", label: "Rejected" },
       ],
-      onChange: (v: string) => set("status", v as any)
+      onChange: (v: string) => set("status", v as StatusFilter)
     },
     ...(cities.length > 0 ? [{
       type: "select" as const,
@@ -179,7 +179,7 @@ function ManagePharmacies() {
               <CustomSelect
                 value={filters.sort}
                 options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                onChange={(val) => set("sort", val as any)}
+                onChange={(val) => set("sort", val as SortOption)}
                 compact
                 className="w-[140px]"
               />
@@ -205,8 +205,8 @@ function ManagePharmacies() {
           <div className="p-3 sm:p-4">
             {isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <p className="text-[12px] font-semibold text-destructive">Failed to load pharmacies</p>
-                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+                <p className="text-[12px] font-semibold text-destructive">{t("admin.ui.failed_pharmacies")}</p>
+                <p className="text-[11px] text-muted-foreground/70">{t("admin.ui.check_connection")}</p>
               </div>
             ) : (
               <PharmacyTable

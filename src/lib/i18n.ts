@@ -17,6 +17,7 @@ import enProfile from "@/locales/en/profile.json";
 import enHospital from "@/locales/en/hospital.json";
 import enDoctorProfile from "@/locales/en/doctorProfile.json";
 import enFitness from "@/locales/en/fitness.json";
+import enClinical from "@/locales/en/clinical.json";
 
 import frCommon from "@/locales/fr/common.json";
 import frNav from "@/locales/fr/nav.json";
@@ -33,6 +34,7 @@ import frProfile from "@/locales/fr/profile.json";
 import frHospital from "@/locales/fr/hospital.json";
 import frDoctorProfile from "@/locales/fr/doctorProfile.json";
 import frFitness from "@/locales/fr/fitness.json";
+import frClinical from "@/locales/fr/clinical.json";
 
 import rwCommon from "@/locales/rw/common.json";
 import rwNav from "@/locales/rw/nav.json";
@@ -49,10 +51,13 @@ import rwProfile from "@/locales/rw/profile.json";
 import rwHospital from "@/locales/rw/hospital.json";
 import rwDoctorProfile from "@/locales/rw/doctorProfile.json";
 import rwFitness from "@/locales/rw/fitness.json";
+import rwClinical from "@/locales/rw/clinical.json";
+
+type LocaleTree = Record<string, unknown>;
 
 const bundle = (
-  common: any, nav: any, sidebar: any, hero: any, booking: any, rx: any, pages: any, admin: any, auth: any, header: any, consult: any, profile: any, hospital: any, doctorProfile: any, fitness: any,
-) => ({ common, nav, sidebar, hero, booking, rx, pages, admin, auth, header, consult, profile, hospital, doctorProfile, fitness });
+  common: LocaleTree, nav: LocaleTree, sidebar: LocaleTree, hero: LocaleTree, booking: LocaleTree, rx: LocaleTree, pages: LocaleTree, admin: LocaleTree, auth: LocaleTree, header: LocaleTree, consult: LocaleTree, profile: LocaleTree, hospital: LocaleTree, doctorProfile: LocaleTree, fitness: LocaleTree, clinical: LocaleTree,
+) => ({ common, nav, sidebar, hero, booking, rx, pages, admin, auth, header, consult, profile, hospital, doctorProfile, fitness, clinical });
 
 export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", nativeLabel: "English" },
@@ -65,9 +70,9 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: bundle(enCommon, enNav, enSidebar, enHero, enBooking, enRx, enPages, enAdmin, enAuth, enHeader, enConsult, enProfile, enHospital, enDoctorProfile, enFitness) },
-      fr: { translation: bundle(frCommon, frNav, frSidebar, frHero, frBooking, frRx, frPages, frAdmin, frAuth, frHeader, frConsult, frProfile, frHospital, frDoctorProfile, frFitness) },
-      rw: { translation: bundle(rwCommon, rwNav, rwSidebar, rwHero, rwBooking, rwRx, rwPages, rwAdmin, rwAuth, rwHeader, rwConsult, rwProfile, rwHospital, rwDoctorProfile, rwFitness) },
+      en: { translation: bundle(enCommon, enNav, enSidebar, enHero, enBooking, enRx, enPages, enAdmin, enAuth, enHeader, enConsult, enProfile, enHospital, enDoctorProfile, enFitness, enClinical) },
+      fr: { translation: bundle(frCommon, frNav, frSidebar, frHero, frBooking, frRx, frPages, frAdmin, frAuth, frHeader, frConsult, frProfile, frHospital, frDoctorProfile, frFitness, frClinical) },
+      rw: { translation: bundle(rwCommon, rwNav, rwSidebar, rwHero, rwBooking, rwRx, rwPages, rwAdmin, rwAuth, rwHeader, rwConsult, rwProfile, rwHospital, rwDoctorProfile, rwFitness, rwClinical) },
     },
     fallbackLng: "en",
     supportedLngs: ["en", "fr", "rw"],

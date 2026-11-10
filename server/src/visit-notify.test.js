@@ -138,7 +138,18 @@ describe("visit notifications", () => {
     db.lastMail = null;
     db.noticeFails = false;
     db.templateThrows = false;
+    for (const user of db.users) user.preferred_language = null;
     claims.exec("DELETE FROM ready_mail_claims");
+  });
+
+  it("uses the patient's saved language for the ready notice", async () => {
+    const owner = db.users.find((user) => user.id === 77);
+    owner.preferred_language = "fr";
+    await notifyDoctorReady({ id: 7, patient_id: 9, doctor_id: 31, status: "accepted" });
+    expect(sent[0].subject).toBe("Votre médecin est prêt pour la consultation n° 7");
+    expect(sent[0].html).toContain("Bonjour, Amina");
+    expect(sent[0].html).toContain("Des soins à portée de main");
+    owner.preferred_language = null;
   });
 
   it("addresses the profile owner and cites the consultation, once", async () => {

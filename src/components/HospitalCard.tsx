@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   MapPin,
@@ -7,7 +7,6 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HospitalInfo, useHospitalSchedule } from "@/lib/hospital-store";
 import { HospitalBookingDialog } from "@/components/HospitalBookingDialog";
 import { cn } from "@/lib/utils";
 import HospitalViewDrawer from "./hospital/HospitalViewDrawer";
@@ -35,17 +34,7 @@ export const HospitalCard = ({ hospital }) => {
   const hospitalName = localizedHospitalName(hospital, i18n.language);
   const [bookOpen, setBookOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const schedule = useHospitalSchedule(hospital.name_en);
-
-  const stats = useMemo(() => {
-    const days = schedule?.days ?? [];
-    const active = days.filter((d) => d.active);
-    const openSpots = active.reduce(
-      (sum, d) => sum + Math.max(0, d.capacity - d.booked),
-      0,
-    );
-    return { activeDays: active.length, openSpots };
-  }, [schedule]);
+  const departmentCount = hospital.departments_count ?? hospital.departments?.length ?? 0;
 
   const initial = hospitalName.charAt(0).toUpperCase() || "H";
   const topDepartments = hospital.departments?.slice(0, 2) ?? [];
@@ -68,9 +57,9 @@ export const HospitalCard = ({ hospital }) => {
                 : "text-muted-foreground",
             )}
           >
-            {hospital.is_accepting_bookings && stats.openSpots > 0
-              ? t("pages.cards.spots", { count: stats.openSpots })
-              : t("pages.cards.fully_booked")}
+            {hospital.is_accepting_bookings
+              ? t("pages.cards.bookings_open")
+              : t("pages.cards.bookings_closed")}
           </span>
         </div>
 
@@ -109,9 +98,9 @@ export const HospitalCard = ({ hospital }) => {
             <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/20">
               <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">
-                {stats.activeDays}
+                {departmentCount}
               </span>
-              <span className="text-[10px] text-muted-foreground">{t("pages.cards.open_days_label")}</span>
+              <span className="text-[10px] text-muted-foreground">{t("pages.cards.departments_label")}</span>
             </div>
           </div>
 

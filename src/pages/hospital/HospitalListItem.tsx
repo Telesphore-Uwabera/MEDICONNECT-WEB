@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, Clock, Shield, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useHospitalSchedule } from "@/lib/hospital-store";
 import { HospitalBookingDialog } from "@/components/HospitalBookingDialog";
 import type { ApiHospital } from "@/hooks/patient/use-patient-search-hospital";
 import { localizedHospitalName } from "@/components/HospitalCard";
@@ -27,14 +26,6 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
   };
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
-
-  const schedule = useHospitalSchedule(hospital.name_en);
-
-  const stats = useMemo(() => {
-    const active = (schedule?.days ?? []).filter((d) => d.active);
-    const openSpots = active.reduce((sum, d) => sum + Math.max(0, d.capacity - d.booked), 0);
-    return { openSpots };
-  }, [schedule]);
 
   const initial = hospitalName.charAt(0).toUpperCase() || "H";
 
@@ -64,11 +55,6 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
               <span className="flex items-center gap-0.5 px-1 py-px text-[9px] font-semibold rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                 <Clock className="w-2.5 h-2.5" />
                 {t("pages.patient.hours_24_short")}
-              </span>
-            )}
-            {stats.openSpots > 0 && (
-              <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
-                {t("pages.patient.spots_available", { count: stats.openSpots })}
               </span>
             )}
           </div>

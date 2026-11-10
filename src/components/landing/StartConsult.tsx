@@ -5,6 +5,7 @@ import { Video, Calendar, ArrowRight, Download } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useMe } from "@/hooks/useAuth";
 import { ConnectDialogContent } from "../ConnectDialog";
+import { StoreBadge } from "./StoreBadge";
 
 const StartConsult = () => {
   const { t } = useTranslation();
@@ -145,26 +146,18 @@ const StartConsult = () => {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <a
-              href="#"
-              className="flex h-9 items-center justify-center overflow-hidden rounded-[6px] bg-black"
-            >
-              <img
-                src="/images/apple.png"
-                alt={t("pages.landing.app_store_alt")}
-                className="h-9 w-auto object-contain"
-              />
-            </a>
-            <a
-              href="#"
-              className="flex h-9 items-center justify-center overflow-hidden rounded-[6px] bg-black"
-            >
-              <img
-                src="/images/android.png"
-                alt={t("pages.landing.google_play_alt")}
-                className="h-9 w-auto object-contain"
-              />
-            </a>
+            <StoreBadge
+              href={import.meta.env.VITE_APP_STORE_URL}
+              src="/images/apple.png"
+              alt={t("pages.landing.app_store_alt")}
+              soonLabel={t("pages.landing.store_coming_soon")}
+            />
+            <StoreBadge
+              href={import.meta.env.VITE_PLAY_STORE_URL}
+              src="/images/android.png"
+              alt={t("pages.landing.google_play_alt")}
+              soonLabel={t("pages.landing.store_coming_soon")}
+            />
           </div>
         </div>
       </div>

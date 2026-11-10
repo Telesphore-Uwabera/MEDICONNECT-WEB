@@ -137,6 +137,7 @@ function FilterBar({
   filters: AdminDashboardFilters;
   onChange: (f: AdminDashboardFilters) => void;
 }) {
+  const { t } = useTranslation();
   const hasFilters = Object.values(filters).some(Boolean);
 
   return (
@@ -147,13 +148,13 @@ function FilterBar({
         {/* Search */}
         <div className="flex flex-col gap-1 flex-1 min-w-0">
           <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Search
+            {t("admin.overview.search")}
           </label>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Name, phone, invoice…"
+              placeholder={t("admin.overview.search_placeholder")}
               value={filters.q ?? ""}
               onChange={(e) => onChange({ ...filters, q: e.target.value || undefined })}
               className="pl-6 pr-3 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
@@ -164,7 +165,7 @@ function FilterBar({
         {/* Exact date */}
         <div className="flex flex-col gap-1 flex-1 min-w-0">
           <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Exact date
+            {t("admin.overview.exact_date")}
           </label>
           <div className="relative">
             <CalendarDays className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -287,7 +288,7 @@ const AdminOverview = () => {
           )}
         </div>
 
-        {isError && <ErrorBanner message="Failed to load dashboard data. Please try again." />}
+        {isError && <ErrorBanner message={t("admin.overview.load_error")} />}
 
         {/* ── Row 1: KPI cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -300,7 +301,7 @@ const AdminOverview = () => {
             loading={isLoading}
           />
           <KpiCard
-            label="Pending appointments"
+            label={t("admin.overview.pending_appointments")}
             value={appointments?.pending ?? 0}
             icon={UserCheck}
             sub={appointments ? `${appointments.today} today` : undefined}
@@ -310,14 +311,14 @@ const AdminOverview = () => {
             label={t("admin.overview.active_users")}
             value={consultations?.active ?? 0}
             icon={Activity}
-            sub="Active consultations"
+            sub={t("admin.overview.active_consultations")}
             loading={isLoading}
           />
           <KpiCard
-            label="Open certificates"
+            label={t("admin.overview.open_certificates")}
             value={certificates?.pending ?? 0}
             icon={ShieldAlert}
-            sub="Awaiting approval"
+            sub={t("admin.overview.awaiting_approval")}
             loading={isLoading}
           />
         </div>
@@ -327,7 +328,7 @@ const AdminOverview = () => {
 
           {/* Role breakdown */}
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Users by role" href="/admin/users" linkLabel="Manage" />
+            <SectionHeader title={t("admin.overview.by_role")} href="/admin/users" linkLabel={t("admin.overview.manage")} />
             {isLoading ? (
               <div className="grid grid-cols-2 gap-2">
                 {[...Array(4)].map((_, i) => <SkeletonBlock key={i} className="h-20" />)}
@@ -380,7 +381,7 @@ const AdminOverview = () => {
 
           {/* Appointments */}
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Appointments" href="/admin/manage-appointments" linkLabel="View all" />
+            <SectionHeader title={t("admin.overview.appointments")} href="/admin/manage-appointments" linkLabel={t("admin.overview.view_all")} />
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, i) => <SkeletonBlock key={i} className="h-14" />)}
@@ -388,9 +389,9 @@ const AdminOverview = () => {
             ) : (
               <div className="grid grid-cols-1 gap-2">
                 {[
-                  { label: "Total", value: appointments?.total ?? 0, icon: ClipboardList, color: "text-foreground bg-muted" },
-                  { label: "Today", value: appointments?.today ?? 0, icon: TrendingUp, color: "text-primary bg-primary/10" },
-                  { label: "Pending", value: appointments?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
+                  { label: t("admin.overview.total"), value: appointments?.total ?? 0, icon: ClipboardList, color: "text-foreground bg-muted" },
+                  { label: t("admin.overview.today"), value: appointments?.today ?? 0, icon: TrendingUp, color: "text-primary bg-primary/10" },
+                  { label: t("admin.overview.pending"), value: appointments?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
                 ].map(({ label, value, icon: Icon, color }) => (
                   <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5 flex items-center gap-3">
                     <div className={cn("w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0", color)}>
@@ -408,7 +409,7 @@ const AdminOverview = () => {
 
           {/* Certificates */}
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Certificates" href="/admin/fitness-certificates" linkLabel="Track" />
+            <SectionHeader title={t("admin.overview.certificates")} href="/admin/fitness-certificates" linkLabel={t("admin.overview.track")} />
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(2)].map((_, i) => <SkeletonBlock key={i} className="h-14" />)}
@@ -417,9 +418,9 @@ const AdminOverview = () => {
               <>
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   {[
-                    { label: "Issued", value: certificates?.approved ?? 0, icon: CheckCircle2, color: "text-success bg-success/10" },
-                    { label: "With doctor", value: certificates?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
-                    { label: "Awaiting pay", value: certificates?.awaiting_payment ?? 0, icon: Clock, color: "text-amber-600 bg-amber-500/10" },
+                    { label: t("admin.overview.issued"), value: certificates?.approved ?? 0, icon: CheckCircle2, color: "text-success bg-success/10" },
+                    { label: t("admin.overview.with_doctor"), value: certificates?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
+                    { label: t("admin.overview.awaiting_pay"), value: certificates?.awaiting_payment ?? 0, icon: Clock, color: "text-amber-600 bg-amber-500/10" },
                   ].map(({ label, value, icon: Icon, color }) => (
                     <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5">
                       <div className={cn("w-6 h-6 rounded-[6px] flex items-center justify-center mb-1.5", color)}>
@@ -456,7 +457,7 @@ const AdminOverview = () => {
         {/* ── Row 3: Revenue ── */}
         <div className="grid lg:grid-cols-3 gap-3">
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Revenue" />
+            <SectionHeader title={t("admin.overview.revenue")} />
             {isLoading ? (
               <div className="space-y-2">
                 {[...Array(4)].map((_, i) => <SkeletonBlock key={i} className="h-12" />)}
@@ -465,10 +466,10 @@ const AdminOverview = () => {
               <>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Total revenue", value: `${currency} ${Number(payments?.total_revenue ?? 0).toLocaleString()}`, icon: ClipboardList, color: "text-foreground bg-muted" },
-                    { label: "Today's revenue", value: `${currency} ${Number(payments?.revenue_today ?? 0).toLocaleString()}`, icon: TrendingUp, color: "text-primary bg-primary/10" },
-                    { label: "Pending payments", value: payments?.pending_count ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
-                    { label: "Currency", value: currency, icon: XCircle, color: "text-muted-foreground bg-muted" },
+                    { label: t("admin.overview.total_revenue"), value: `${currency} ${Number(payments?.total_revenue ?? 0).toLocaleString()}`, icon: ClipboardList, color: "text-foreground bg-muted" },
+                    { label: t("admin.overview.todays_revenue"), value: `${currency} ${Number(payments?.revenue_today ?? 0).toLocaleString()}`, icon: TrendingUp, color: "text-primary bg-primary/10" },
+                    { label: t("admin.overview.pending_payments"), value: payments?.pending_count ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
+                    { label: t("admin.overview.currency"), value: currency, icon: XCircle, color: "text-muted-foreground bg-muted" },
                   ].map(({ label, value, icon: Icon, color }) => (
                     <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5">
                       <div className={cn("w-6 h-6 rounded-[6px] flex items-center justify-center mb-1.5", color)}>
@@ -493,14 +494,14 @@ const AdminOverview = () => {
 
           {/* Quick actions — span remaining 2 cols */}
           <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm lg:col-span-2">
-            <SectionHeader title="Quick actions" />
+            <SectionHeader title={t("admin.overview.quick_actions")} />
             <div className="flex flex-wrap gap-2">
               {[
-                { label: "Manage users", href: "/admin/users", icon: Users },
-                { label: "Pending approvals", href: "/admin/approvals", icon: UserCheck },
-                { label: "Flagged accounts", href: "/admin/moderation", icon: ShieldAlert },
-                { label: "System reports", href: "/admin/analytics", icon: BarChart3 },
-                { label: "Appointments", href: "/admin/manage-appointments", icon: CalendarDays },
+                { label: t("admin.overview.manage_users"), href: "/admin/users", icon: Users },
+                { label: t("admin.overview.pending_approvals"), href: "/admin/approvals", icon: UserCheck },
+                { label: t("admin.overview.flagged_accounts"), href: "/admin/moderation", icon: ShieldAlert },
+                { label: t("admin.overview.system_reports"), href: "/admin/analytics", icon: BarChart3 },
+                { label: t("admin.overview.appointments"), href: "/admin/manage-appointments", icon: CalendarDays },
               ].map(({ label, href, icon: Icon }) => (
                 <Link key={href} to={href}>
                   <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-border bg-muted/40 hover:border-primary/40 hover:bg-primary/5 text-[11px] font-medium text-foreground transition-all">

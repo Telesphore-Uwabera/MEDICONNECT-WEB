@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { greeting as greetPerson, normalizeLang, phrase, pick } from "./user-text.js";
 
 // ─── Brand constants ──────────────────────────────────────────────────────────
 const BRAND = {
@@ -46,11 +47,12 @@ function mailConfig() {
  * @param {string} opts.body        - Inner HTML content (paragraphs, buttons, etc.)
  * @param {string} [opts.accentHex] - Override the header accent color
  */
-export function buildEmailHtml({ title, preheader = "", body, accentHex }) {
+export function buildEmailHtml({ title, preheader = "", body, accentHex, lang = "en" }) {
   const accent = accentHex || BRAND.primary;
+  const language = normalizeLang(lang);
   const year = new Date().getFullYear();
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${language === "rw" ? "rw" : language}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -99,7 +101,7 @@ export function buildEmailHtml({ title, preheader = "", body, accentHex }) {
                     </table>
                   </td>
                   <td align="right" style="color:rgba(255,255,255,.65);font-size:11px;font-family:'Segoe UI',Arial,sans-serif;">
-                    Bringing Care to Your Fingertips
+                    ${escHtml(phrase(language, "tagline"))}
                   </td>
                 </tr>
               </table>
@@ -134,13 +136,13 @@ export function buildEmailHtml({ title, preheader = "", body, accentHex }) {
                     <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">🌐 <a href="https://mediconnect.rw" style="color:${BRAND.accent};">mediconnect.rw</a></p>
                   </td>
                   <td align="right" valign="top" class="hide-mobile">
-                    <p style="margin:0;font-size:10px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">© ${year} MediConnect Ltd.<br/>All rights reserved.</p>
+                    <p style="margin:0;font-size:10px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">© ${year} MediConnect Ltd.<br/>${escHtml(phrase(language, "rights"))}</p>
                   </td>
                 </tr>
                 <tr>
                   <td colspan="2" style="padding-top:16px;">
                     <p style="margin:0;font-size:10px;color:${BRAND.footerText};opacity:.65;font-family:'Segoe UI',Arial,sans-serif;">
-                      You received this email because you have an account on MediConnect. If you believe this was sent in error, please contact us at <a href="mailto:admin@mediconnect.rw" style="color:${BRAND.footerText};">admin@mediconnect.rw</a>.
+                      ${escHtml(phrase(language, "received"))} <a href="mailto:admin@mediconnect.rw" style="color:${BRAND.footerText};">admin@mediconnect.rw</a>.
                     </p>
                   </td>
                 </tr>
@@ -277,59 +279,97 @@ export async function sendMail({ to, subject, text, html, replyTo, timeoutMs }) 
 
 // ─── Auth email builders ──────────────────────────────────────────────────────
 
-function greeting(name) {
-  const first = String(name || "").split(" ")[0] || "there";
-  return `Hello, ${first}!`;
+function greeting(name, lang = "en") {
+  const first = String(name || "").split(" ")[0] || "";
+  if (!first || first.toLowerCase() === "there") return greetPerson(lang, "");
+  return greetPerson(lang, name);
 }
 
 /**
  * Branded OTP email for password reset and phone/email verification.
  * Called from app.js for forgot-password and send-otp flows.
  */
-export function buildOtpEmail({ code, type = "verification", recipientName }) {
+export function buildOtpEmail({ code, type = "verification", recipientName, lang = "en" }) {
   const isReset = String(type).includes("reset") || String(type).includes("password");
-  const title = isReset ? "Reset your password" : "Your verification code";
-  const preheader = `Your MediConnect ${isReset ? "password reset" : "verification"} code is ${code}`;
+  const title = pick(lang, {
+    en: isReset ? "Reset your password" : "Your verification code",
+    fr: isReset ? "Réinitialisez votre mot de passe" : "Votre code de vérification",
+    rw: isReset ? "Ongera ushyire ijambo ry'ibanga" : "Kode yo kwemeza",
+  });
+  const preheader = pick(lang, {
+    en: `Your MediConnect ${isReset ? "password reset" : "verification"} code is ${code}`,
+    fr: `Votre code MediConnect de ${isReset ? "réinitialisation" : "vérification"} est ${code}`,
+    rw: `Kode yawe ya MediConnect yo ${isReset ? "guhindura ijambo ry'ibanga" : "kwemeza"} ni ${code}`,
+  });
   const accentHex = isReset ? "#d97706" : BRAND.primary;
+  const lead = isReset
+    ? pick(lang, {
+      en: "We received a request to reset the password on your MediConnect account. Use the 6-digit code below — it expires in <strong>10 minutes</strong>.",
+      fr: "Nous avons reçu une demande de réinitialisation du mot de passe de votre compte MediConnect. Utilisez le code à 6 chiffres ci-dessous — il expire dans <strong>10 minutes</strong>.",
+      rw: "Twakiriye icyifuzo cyo guhindura ijambo ry'ibanga rya konti yawe ya MediConnect. Koresha kode y'imibare 6 iri hepfo — irangira mu <strong>iminota 10</strong>.",
+    })
+    : pick(lang, {
+      en: "Use the one-time code below to verify your MediConnect account. This code expires in <strong>10 minutes</strong>.",
+      fr: "Utilisez le code à usage unique ci-dessous pour vérifier votre compte MediConnect. Ce code expire dans <strong>10 minutes</strong>.",
+      rw: "Koresha kode y'inshuro imwe iri hepfo wemeze konti yawe ya MediConnect. Iyi kode irangira mu <strong>iminota 10</strong>.",
+    });
+  const ignore = pick(lang, {
+    en: "If you did not request this, you can safely ignore this email — your account remains secure.",
+    fr: "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail — votre compte reste en sécurité.",
+    rw: "Niba utabisabye, wirengagize iyi imeri — konti yawe ikomeza kuba itekanye.",
+  });
 
   const body = `
-    ${emailP(greeting(recipientName))}
-    ${emailHtml(isReset
-      ? "We received a request to reset the password on your MediConnect account. Use the 6-digit code below — it expires in <strong>10 minutes</strong>."
-      : "Use the one-time code below to verify your MediConnect account. This code expires in <strong>10 minutes</strong>."
-    )}
+    ${emailP(greeting(recipientName, lang))}
+    ${emailHtml(lead)}
     ${emailOtpBlock(code)}
-    ${emailP("If you did not request this, you can safely ignore this email — your account remains secure.", "font-size:12px;color:#6b7280;")}
+    ${emailP(ignore, "font-size:12px;color:#6b7280;")}
     ${isReset
-      ? `<p style="margin:0;font-size:12px;color:#9ca3af;font-family:'Segoe UI',Arial,sans-serif;">For your security, never share this code with anyone — MediConnect staff will never ask for it.</p>`
+      ? `<p style="margin:0;font-size:12px;color:#9ca3af;font-family:'Segoe UI',Arial,sans-serif;">${escHtml(pick(lang, {
+        en: "For your security, never share this code with anyone — MediConnect staff will never ask for it.",
+        fr: "Pour votre sécurité, ne partagez jamais ce code — le personnel de MediConnect ne vous le demandera jamais.",
+        rw: "Ku mutekano wawe, ntukoreshe iyi kode ku wundi muntu — abakozi ba MediConnect ntibayisaba.",
+      }))}</p>`
       : ""}
   `;
 
-  return buildEmailHtml({ title, preheader, body, accentHex });
+  return buildEmailHtml({ title, preheader, body, accentHex, lang });
 }
 
 /**
  * Welcome email sent right after account creation.
  */
-export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.rw/auth" }) {
+export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.rw/auth", lang = "en" }) {
   const roleLabel = {
-    patient: "Patient",
-    doctor: "Doctor",
-    hospital: "Hospital / Facility",
-    pharmacy: "Pharmacy",
-    admin: "Administrator",
-  }[role] || "Member";
+    patient: pick(lang, { en: "Patient", fr: "Patient", rw: "Umurwayi" }),
+    doctor: pick(lang, { en: "Doctor", fr: "Médecin", rw: "Umuganga" }),
+    hospital: pick(lang, { en: "Hospital / Facility", fr: "Hôpital / établissement", rw: "Ibitaro / ikigo" }),
+    pharmacy: pick(lang, { en: "Pharmacy", fr: "Pharmacie", rw: "Farumasi" }),
+    admin: pick(lang, { en: "Administrator", fr: "Administrateur", rw: "Umuyobozi" }),
+  }[role] || pick(lang, { en: "Member", fr: "Membre", rw: "Umunyamuryango" });
 
   const patientProfile = role === "patient";
   const actionUrl = patientProfile ? "https://mediconnect.rw/patient/profile" : loginUrl;
-  const actionLabel = patientProfile ? "Complete your profile" : "Sign In to MediConnect";
-  const title = patientProfile ? "Complete your MediConnect profile" : "Welcome to MediConnect!";
+  const actionLabel = patientProfile
+    ? pick(lang, { en: "Complete your profile", fr: "Complétez votre profil", rw: "Uzuza umwirondoro wawe" })
+    : pick(lang, { en: "Sign In to MediConnect", fr: "Se connecter à MediConnect", rw: "Injira muri MediConnect" });
+  const title = patientProfile
+    ? pick(lang, { en: "Complete your MediConnect profile", fr: "Complétez votre profil MediConnect", rw: "Uzuza umwirondoro wawe wa MediConnect" })
+    : pick(lang, { en: "Welcome to MediConnect!", fr: "Bienvenue sur MediConnect !", rw: "Murakaza neza kuri MediConnect!" });
   const preheader = patientProfile
-    ? "Finish your patient profile before you book or start a consultation."
-    : `Your ${roleLabel} account is ready. Sign in to get started.`;
+    ? pick(lang, {
+      en: "Finish your patient profile before you book or start a consultation.",
+      fr: "Terminez votre profil patient avant de réserver ou de commencer une consultation.",
+      rw: "Uzuza umwirondoro wawe w'umurwayi mbere yo gufata gahunda cyangwa gutangira ikiganiro.",
+    })
+    : pick(lang, {
+      en: `Your ${roleLabel} account is ready. Sign in to get started.`,
+      fr: `Votre compte ${roleLabel} est prêt. Connectez-vous pour commencer.`,
+      rw: `Konti yawe ya ${roleLabel} iriteguye. Injira utangire.`,
+    });
 
   const body = `
-    ${emailP(greeting(name))}
+    ${emailP(greeting(name, lang))}
     ${emailHtml(patientProfile
       ? `Your MediConnect <strong>Patient</strong> account has been created. Complete your profile next — date of birth, gender, phone, and address — so doctors have your file before any consultation.`
       : `Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
@@ -359,5 +399,5 @@ export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.
     ${emailP("If you have any questions, our support team is always happy to help.", "font-size:12px;color:#6b7280;")}
   `;
 
-  return buildEmailHtml({ title, preheader, body });
+  return buildEmailHtml({ title, preheader, body, lang });
 }

@@ -17,6 +17,7 @@ import type { Referral } from "@/hooks/doctor/use-doctor-referrals";
 import { toast } from "sonner";
 import { ClinicalResultViewer } from "@/components/clinical/ClinicalResultViewer";
 import { useDownloadClinicalDocument } from "@/hooks/use-clinical-document";
+import { clinicalKindLabel, clinicalStoredLabel } from "@/lib/clinical-i18n";
 
 function iconFor(type: string) {
   if (type === "pharmacy_packet") return Pill;
@@ -25,7 +26,22 @@ function iconFor(type: string) {
   return Stethoscope;
 }
 
+const DECISION_KEYS: Record<string, string> = {
+  ADVICE_ONLY: "clinical.inbox.decision_advice",
+  PRESCRIPTION: "clinical.inbox.decision_prescription",
+  INVESTIGATION: "clinical.inbox.decision_investigation",
+  SPECIALIST_BOOKING: "clinical.inbox.decision_specialist",
+  REFERRAL_LETTER: "clinical.inbox.decision_referral",
+  INPATIENT_REFERRAL: "clinical.inbox.decision_inpatient",
+};
+
+function labeled(t: (key: string, options?: { defaultValue?: string }) => string, prefix: string, value: string) {
+  const key = `${prefix}${String(value || "").toLowerCase()}`;
+  return t(key, { defaultValue: String(value || "").replace(/_/g, " ") });
+}
+
 function Snapshot({ order }: { order: CareOrder }) {
+  const { t } = useTranslation();
   const snap = (order.snapshot || {}) as {
     allergies?: string | null;
     current_medications?: string | null;
@@ -38,28 +54,28 @@ function Snapshot({ order }: { order: CareOrder }) {
   };
   return (
     <div className="mt-2 space-y-1 rounded-[6px] border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11px]">
-      {order.patient_code ? <p className="font-semibold text-foreground">Patient ID {order.patient_code}</p> : null}
+      {order.patient_code ? <p className="font-semibold text-foreground">{t("clinical.inbox.patient_id", { code: order.patient_code })}</p> : null}
       {snap.patient?.name ? <p>{snap.patient.name}{snap.patient.phone ? ` · ${snap.patient.phone}` : ""}</p> : null}
-      {snap.diagnosis ? <p><span className="font-semibold">Diagnosis:</span> {snap.diagnosis}</p> : null}
-      {snap.chief_complaint ? <p><span className="font-semibold">What the patient reported:</span> {snap.chief_complaint}</p> : null}
+      {snap.diagnosis ? <p><span className="font-semibold">{t("clinical.inbox.diagnosis")}:</span> {snap.diagnosis}</p> : null}
+      {snap.chief_complaint ? <p><span className="font-semibold">{t("clinical.inbox.reported")}:</span> {snap.chief_complaint}</p> : null}
       {order.doctor_message || snap.doctor_message ? (
-        <p><span className="font-semibold">Doctor’s message:</span> {order.doctor_message || snap.doctor_message}</p>
+        <p><span className="font-semibold">{t("clinical.inbox.doctor_message")}:</span> {order.doctor_message || snap.doctor_message}</p>
       ) : null}
-      {order.clinical_notes ? <p><span className="font-semibold">Consult notes:</span> {order.clinical_notes}</p> : null}
-      {snap.allergies ? <p><span className="font-semibold">Allergies:</span> {snap.allergies}</p> : null}
-      {snap.current_medications ? <p><span className="font-semibold">Current medicines:</span> {snap.current_medications}</p> : null}
-      {snap.chronic_conditions ? <p><span className="font-semibold">Conditions:</span> {snap.chronic_conditions}</p> : null}
+      {order.clinical_notes ? <p><span className="font-semibold">{t("clinical.inbox.consult_notes")}:</span> {order.clinical_notes}</p> : null}
+      {snap.allergies ? <p><span className="font-semibold">{t("clinical.inbox.allergies")}:</span> {snap.allergies}</p> : null}
+      {snap.current_medications ? <p><span className="font-semibold">{t("clinical.inbox.medicines")}:</span> {snap.current_medications}</p> : null}
+      {snap.chronic_conditions ? <p><span className="font-semibold">{t("clinical.inbox.conditions")}:</span> {snap.chronic_conditions}</p> : null}
       {!!order.protocol?.length && (
-        <p><span className="font-semibold">Protocol:</span> {order.protocol.join(" · ")}</p>
+        <p><span className="font-semibold">{t("clinical.inbox.protocol")}:</span> {order.protocol.map((step) => clinicalStoredLabel(t, step)).join(" · ")}</p>
       )}
       {!!order.items?.length && (
-        <p><span className="font-semibold">Requested:</span> {order.items.join(", ")}</p>
+        <p><span className="font-semibold">{t("clinical.inbox.requested")}:</span> {order.items.map((item) => clinicalStoredLabel(t, item)).join(", ")}</p>
       )}
       {order.result_notes || snap.hospital_results ? (
-        <p><span className="font-semibold">Facility reply:</span> {order.result_notes || snap.hospital_results}</p>
+        <p><span className="font-semibold">{t("clinical.inbox.facility_reply")}:</span> {order.result_notes || snap.hospital_results}</p>
       ) : null}
       {order.handover_status ? (
-        <p><span className="font-semibold">Handover:</span> {order.handover_status}</p>
+        <p><span className="font-semibold">{t("clinical.inbox.handover")}:</span> {labeled(t, "clinical.inbox.handover_", order.handover_status)}</p>
       ) : null}
       <ClinicalResultViewer files={order.result_files} fallbackUrl={order.result_file_url} />
     </div>
@@ -75,25 +91,26 @@ function OrderActions({
   order: CareOrder;
   onSendPharmacy?: (order: CareOrder) => void;
 }) {
+  const { t } = useTranslation();
   const action = useCareOrderAction(scope === "patient" ? "doctor" : scope === "doctor" ? "doctor" : scope);
   const [reply, setReply] = useState(order.result_notes || "");
   const [files, setFiles] = useState<File[]>([]);
   if (scope === "patient") {
     const type = String(order.order_type);
-    const handover = order.handover_status ? order.handover_status.replace(/_/g, " ").toLowerCase() : "";
+    const handover = order.handover_status ? labeled(t, "clinical.inbox.handover_", order.handover_status) : "";
     const line = type === "admission" && handover
-      ? `Admission: ${handover}.`
+      ? t("clinical.inbox.admission_line", { handover })
       : order.status === "pending"
-        ? (type === "pharmacy_packet" ? "Waiting for the pharmacy." : type === "follow_up" || type === "home_care" ? "Your doctor still has this step open." : "Waiting for the facility.")
+        ? (type === "pharmacy_packet" ? t("clinical.inbox.waiting_pharmacy") : type === "follow_up" || type === "home_care" ? t("clinical.inbox.doctor_step_open") : t("clinical.inbox.waiting_facility"))
         : order.status === "accepted"
-          ? (type === "pharmacy_packet" ? "The pharmacy has your packet." : "The facility has accepted you.")
+          ? (type === "pharmacy_packet" ? t("clinical.inbox.pharmacy_has_packet") : t("clinical.inbox.facility_accepted"))
           : order.status === "rejected"
-            ? "This step was declined."
+            ? t("clinical.inbox.step_declined")
             : order.status === "completed" && type === "pharmacy_packet"
-              ? "The pharmacy marked this dispensed. Your doctor has the reply."
+              ? t("clinical.inbox.pharmacy_dispensed")
               : order.status === "completed"
-                ? "This step is done. Your doctor has the update."
-                : order.status;
+                ? t("clinical.inbox.step_done")
+                : labeled(t, "clinical.inbox.status_", String(order.status || ""));
     return <p className="mt-3 text-[11px] text-muted-foreground">{line}</p>;
   }
 
@@ -108,8 +125,8 @@ function OrderActions({
         files: next === "complete" ? files : undefined,
       },
       {
-        onSuccess: () => toast.success(scope === "doctor" ? "Step recorded." : next === "complete" ? "Reply sent to the referring doctor." : "Updated."),
-        onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update this packet."),
+        onSuccess: () => toast.success(scope === "doctor" ? t("clinical.inbox.step_recorded") : next === "complete" ? t("clinical.inbox.reply_sent") : t("clinical.inbox.updated")),
+        onError: (error: unknown) => toast.error(error instanceof Error ? error.message : t("clinical.inbox.update_failed")),
       },
     );
   };
@@ -121,7 +138,7 @@ function OrderActions({
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           rows={3}
-          placeholder={scope === "pharmacy" ? "Dispensing notes for the doctor" : "Results and findings for the referring doctor"}
+          placeholder={scope === "pharmacy" ? t("clinical.inbox.pharmacy_notes") : t("clinical.inbox.facility_notes")}
           className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-[12px] outline-none focus:border-primary/50"
         />
         {scope === "hospital" && (
@@ -135,11 +152,11 @@ function OrderActions({
         <div className="flex flex-wrap gap-2">
           {order.status === "pending" && (
             <button type="button" onClick={() => run("accept")} className="h-8 rounded-[5px] border border-border px-3 text-[11px] font-semibold hover:bg-muted">
-              Accept patient
+              {t("clinical.inbox.accept_patient")}
             </button>
           )}
           <button type="button" onClick={() => run("complete")} className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90">
-            {scope === "pharmacy" ? "Mark dispensed and reply" : "Send results to doctor"}
+            {scope === "pharmacy" ? t("clinical.inbox.mark_dispensed") : t("clinical.inbox.send_results")}
           </button>
           {scope === "hospital" && String(order.order_type) === "admission" && ["RECEIVED", "IN_TRANSIT", "ADMITTED", "TRANSFERRED", "DISCHARGED"].map((status) => (
             <button
@@ -155,13 +172,13 @@ function OrderActions({
                   handover_status: status,
                 },
                 {
-                  onSuccess: () => toast.success(`Admission set to ${status.replace(/_/g, " ").toLowerCase()}.`),
-                  onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not update admission."),
+                  onSuccess: () => toast.success(t("clinical.inbox.admission_set", { status: labeled(t, "clinical.inbox.handover_", status) })),
+                  onError: (error: unknown) => toast.error(error instanceof Error ? error.message : t("clinical.inbox.admission_failed")),
                 },
               )}
               className="h-8 rounded-[5px] border border-border px-3 text-[11px] font-semibold hover:bg-muted"
             >
-              {status.replace("_", " ")}
+              {labeled(t, "clinical.inbox.handover_", status)}
             </button>
           ))}
         </div>
@@ -177,7 +194,7 @@ function OrderActions({
           onClick={() => run("complete")}
           className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          Mark this step done
+          {t("clinical.inbox.mark_done")}
         </button>
       </div>
     );
@@ -189,7 +206,7 @@ function OrderActions({
       <div className="mt-3 space-y-2">
         {needsReview ? <DoctorReviewForm order={order} /> : (
           <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-            Reviewed{order.management_decision ? ` · ${order.management_decision}` : ""}. An uploaded result does not close the episode by itself.
+            {t("clinical.inbox.reviewed")}{order.management_decision ? ` · ${DECISION_KEYS[order.management_decision] ? t(DECISION_KEYS[order.management_decision]) : order.management_decision}` : ""}. {t("clinical.inbox.review_keeps_episode")}
           </p>
         )}
         {!needsReview && (
@@ -198,7 +215,7 @@ function OrderActions({
             onClick={() => onSendPharmacy?.(order)}
             className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            Send this patient to a registered pharmacy
+            {t("clinical.inbox.send_pharmacy")}
           </button>
         )}
       </div>
@@ -208,20 +225,21 @@ function OrderActions({
 }
 
 function DoctorReviewForm({ order }: { order: CareOrder }) {
+  const { t } = useTranslation();
   const review = useReviewCareOrder();
   const [interpretation, setInterpretation] = useState(order.doctor_interpretation || "");
   const [decision, setDecision] = useState(order.management_decision || "ADVICE_ONLY");
   return (
     <div className="space-y-2 rounded-[6px] border border-amber-500/30 bg-amber-500/5 p-3">
-      <p className="text-[11px] font-semibold text-foreground">Clinical review required</p>
+      <p className="text-[11px] font-semibold text-foreground">{t("clinical.inbox.review_required")}</p>
       <p className="text-[11px] text-muted-foreground">
-        The facility uploaded results. Document your interpretation and next management decision. This does not mark the pharmacy as served.
+        {t("clinical.inbox.review_help")}
       </p>
       <textarea
         value={interpretation}
         onChange={(e) => setInterpretation(e.target.value)}
         rows={3}
-        placeholder="Findings, interpretation, and plan"
+        placeholder={t("clinical.inbox.interpretation_placeholder")}
         className="w-full rounded-[5px] border border-border bg-background px-3 py-2 text-[12px] outline-none focus:border-primary/50"
       />
       <select
@@ -229,12 +247,12 @@ function DoctorReviewForm({ order }: { order: CareOrder }) {
         onChange={(e) => setDecision(e.target.value)}
         className="h-8 w-full rounded-[5px] border border-border bg-background px-2 text-[12px]"
       >
-        <option value="ADVICE_ONLY">Advice and monitoring</option>
-        <option value="PRESCRIPTION">Prescribe medication</option>
-        <option value="INVESTIGATION">Further investigations</option>
-        <option value="SPECIALIST_BOOKING">Book in-person specialist</option>
-        <option value="REFERRAL_LETTER">Referral letter</option>
-        <option value="INPATIENT_REFERRAL">Urgent / inpatient</option>
+        <option value="ADVICE_ONLY">{t("clinical.inbox.decision_advice")}</option>
+        <option value="PRESCRIPTION">{t("clinical.inbox.decision_prescription")}</option>
+        <option value="INVESTIGATION">{t("clinical.inbox.decision_investigation")}</option>
+        <option value="SPECIALIST_BOOKING">{t("clinical.inbox.decision_specialist")}</option>
+        <option value="REFERRAL_LETTER">{t("clinical.inbox.decision_referral")}</option>
+        <option value="INPATIENT_REFERRAL">{t("clinical.inbox.decision_inpatient")}</option>
       </select>
       <button
         type="button"
@@ -243,14 +261,14 @@ function DoctorReviewForm({ order }: { order: CareOrder }) {
           review.mutate(
             { id: order.id, interpretation: interpretation.trim(), management_decision: decision },
             {
-              onSuccess: () => toast.success("Review saved. The episode stays open only if another clinical task is still needed."),
-              onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Could not save the review."),
+              onSuccess: () => toast.success(t("clinical.inbox.review_saved")),
+              onError: (error: unknown) => toast.error(error instanceof Error ? error.message : t("clinical.inbox.review_failed")),
             },
           )
         }
         className="h-8 rounded-[5px] bg-primary px-3 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       >
-        {review.isPending ? "Saving…" : "Record review"}
+        {review.isPending ? t("clinical.inbox.saving") : t("clinical.inbox.record_review")}
       </button>
     </div>
   );
@@ -286,13 +304,13 @@ export function IncomingCareInbox({
         {!!referrals?.length && (
           <div className="space-y-2">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              {scope === "pharmacy" ? "Patients directed here with a prescription" : "Patients referred to this clinic or hospital"}
+              {scope === "pharmacy" ? t("clinical.inbox.referrals_pharmacy") : t("clinical.inbox.referrals_facility")}
             </h3>
             {referrals.map((row) => (
               <article key={`ref-${row.id}`} className="rounded-[6px] border border-border bg-card p-4">
-                <p className="text-sm font-semibold text-foreground">{row.patient?.name || "Patient"}</p>
+                <p className="text-sm font-semibold text-foreground">{row.patient?.name || t("clinical.inbox.patient_fallback")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{row.reason}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">{row.status} · {row.referring_doctor?.name || "Doctor"}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{labeled(t, "clinical.inbox.status_", String(row.status || ""))} · {row.referring_doctor?.name || t("clinical.inbox.doctor_fallback")}</p>
               </article>
             ))}
           </div>
@@ -301,12 +319,15 @@ export function IncomingCareInbox({
           <p className="text-sm text-muted-foreground">{t("common.loading", "Loading…")}</p>
         ) : orders.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            {t("pages.care.empty", "When a doctor sends labs, imaging, procedures or a medicine packet, it appears here with the patient identity and protocol.")}
+            {t("clinical.inbox.empty")}
           </p>
         ) : (
           orders.map((order) => {
             const Icon = iconFor(String(order.order_type));
-            const label = CLINICAL_CATALOG[order.order_type as keyof typeof CLINICAL_CATALOG]?.label || order.title || order.order_type;
+            const fallback = CLINICAL_CATALOG[order.order_type as keyof typeof CLINICAL_CATALOG]?.label || order.title || order.order_type;
+            const label = CLINICAL_CATALOG[order.order_type as keyof typeof CLINICAL_CATALOG]
+              ? clinicalKindLabel(t, String(order.order_type), fallback)
+              : clinicalStoredLabel(t, String(order.title || order.order_type));
             return (
               <article key={order.id} className="rounded-[6px] border border-border bg-card p-4">
                 <div className="flex items-start gap-3">
@@ -316,10 +337,10 @@ export function IncomingCareInbox({
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-foreground">{label}</p>
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      {order.status}
-                      {order.review_status ? ` · review ${order.review_status}` : ""}
+                      {labeled(t, "clinical.inbox.status_", String(order.status || ""))}
+                      {order.review_status ? ` · ${t("clinical.inbox.review_status", { status: order.review_status })}` : ""}
                       {" · "}
-                      {order.patient_code || "packet"} · {order.urgency || "medium"}
+                      {order.patient_code || t("clinical.inbox.packet")} · {labeled(t, "clinical.inbox.urgency_", String(order.urgency || "medium"))}
                     </p>
                     <Snapshot order={order} />
                     <button
@@ -332,7 +353,7 @@ export function IncomingCareInbox({
                         })
                       }
                     >
-                      {t("clinical.docs.investigation_pdf", "Download investigation request PDF")}
+                      {t("clinical.inbox.download_pdf")}
                     </button>
                     <OrderActions scope={scope} order={order} onSendPharmacy={setPharmacyFrom} />
                   </div>

@@ -41,7 +41,7 @@ export default function ManagePatients() {
         { value: "suspended", label: t("admin.status.suspended") },
         { value: "rejected", label: t("admin.status.rejected") },
       ],
-      onChange: (v: string) => set("status", v as any),
+      onChange: (v: string) => set("status", v as StatusFilter),
     }
   ], [filters.status, set, t]);
 
@@ -186,7 +186,7 @@ export default function ManagePatients() {
                       <tr>
                         <th className="text-left px-4 py-3 font-semibold">{t("admin.users.name")}</th>
                         <th className="text-left px-4 py-3 font-semibold">{t("admin.users.contact")}</th>
-                        <th className="text-left px-4 py-3 font-semibold">Date of birth</th>
+                        <th className="text-left px-4 py-3 font-semibold">{t("admin.ui.date_of_birth")}</th>
                         <th className="text-left px-4 py-3 font-semibold">{t("admin.users.status")}</th>
                         <th className="text-left px-4 py-3 font-semibold">{t("admin.users.joined")}</th>
                         <th className="px-4 py-3" />

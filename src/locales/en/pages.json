@@ -313,7 +313,8 @@
     "choose_store": "Play Store or App Store",
     "download_app_sub": "Access healthcare anytime, anywhere.",
     "instant_consultation_sub": "Connect with a doctor in seconds.",
-    "book_appointment_sub": "Schedule your convenient time."
+    "book_appointment_sub": "Schedule your convenient time.",
+    "store_coming_soon": "Coming soon"
   },
   "delete_account": {
     "how_to_delete_account": "How to delete your account",
@@ -3344,7 +3345,10 @@
     "day_thursday_short": "Thu",
     "day_friday_short": "Fri",
     "day_saturday_short": "Sat",
-    "day_sunday_short": "Sun"
+    "day_sunday_short": "Sun",
+    "bookings_open": "Accepting bookings",
+    "bookings_closed": "Bookings closed",
+    "departments_label": "departments"
   },
   "header": {
     "search": "Search…"

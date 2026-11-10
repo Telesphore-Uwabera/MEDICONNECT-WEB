@@ -15,6 +15,11 @@ dist-ssr
 # Compiled output folders inside src (should never be committed)
 src/**/dist/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
 # Env (keep .env.example)
 .env
 .env.*

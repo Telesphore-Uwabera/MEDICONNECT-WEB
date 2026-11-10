@@ -90,6 +90,7 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { sendMail, buildOtpEmail, buildWelcomeEmail, buildEmailHtml, emailP, emailBtn } from "./mail.js";
+import { languageFromUserRow, pick } from "./user-text.js";
 
 const PROFILE_TABLE = {
   patient: "patients",
@@ -598,7 +599,7 @@ export function appRoutes(router) {
 
       // Send welcome email (best-effort — never block the response)
       if (created?.email) {
-        const html = buildWelcomeEmail({ name: created.name, role });
+        const html = buildWelcomeEmail({ name: created.name, role, lang: created.preferred_language });
         const isPatient = role === "patient";
         sendMail({
           to: created.email,
@@ -692,7 +693,7 @@ export function appRoutes(router) {
 
       // Send by email when available
       if (row.email) {
-        const html = buildOtpEmail({ code, type: "password_reset", recipientName: row.name });
+        const html = buildOtpEmail({ code, type: "password_reset", recipientName: row.name, lang: row.preferred_language });
         await sendMail({
           to: row.email,
           subject: "MediConnect — Password reset code",
@@ -734,6 +735,7 @@ export function appRoutes(router) {
           subject: "MediConnect — Your password has been changed",
           text: `Hi ${row.name || "there"},\n\nYour MediConnect password was successfully changed.\n\nIf you did not make this change, contact us immediately at admin@mediconnect.rw.\n\nThe MediConnect Team`,
           html: buildEmailHtml({
+            lang: row.preferred_language,
             title: "Password changed successfully",
             preheader: "Your MediConnect password has been updated.",
             accentHex: "#38a169",
@@ -772,14 +774,30 @@ export function appRoutes(router) {
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "),
       });
 
-      // Deliver the code by email when an address was provided
+      // Deliver the code by email when an address was provided.
+      // The lookup uses the same SELECT for every address. A missing account and
+      // an existing one both continue into sendMail and the same JSON response.
       if (req.body?.email) {
-        const typeLabel = req.body?.type === "password_reset" ? "password reset" : "verification";
-        const html = buildOtpEmail({ code, type: req.body?.type || "verification", recipientName: req.body?.name });
+        const account = await findUserByLogin({ email: req.body.email });
+        const lang = languageFromUserRow(account);
+        const typeLabel = pick(lang, {
+          en: req.body?.type === "password_reset" ? "password reset" : "verification",
+          fr: req.body?.type === "password_reset" ? "réinitialisation" : "vérification",
+          rw: req.body?.type === "password_reset" ? "guhindura ijambo ry'ibanga" : "kwemeza",
+        });
+        const html = buildOtpEmail({ code, type: req.body?.type || "verification", recipientName: account?.name || req.body?.name, lang });
         await sendMail({
           to: req.body.email,
-          subject: `MediConnect — Your ${typeLabel} code`,
-          text: `Your MediConnect ${typeLabel} code is: ${code}\n\nThis code expires in 10 minutes.`,
+          subject: pick(lang, {
+            en: `MediConnect — Your ${typeLabel} code`,
+            fr: `MediConnect — Votre code de ${typeLabel}`,
+            rw: `MediConnect — Kode yawe yo ${typeLabel}`,
+          }),
+          text: pick(lang, {
+            en: `Your MediConnect ${typeLabel} code is: ${code}\n\nThis code expires in 10 minutes.`,
+            fr: `Votre code MediConnect de ${typeLabel} est : ${code}\n\nCe code expire dans 10 minutes.`,
+            rw: `Kode yawe ya MediConnect yo ${typeLabel} ni : ${code}\n\nIyi kode irangira mu minota 10.`,
+          }),
           html,
         });
       }
