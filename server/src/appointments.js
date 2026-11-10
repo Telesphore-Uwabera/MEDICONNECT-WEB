@@ -4,6 +4,7 @@ import { loadOwnedId } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
 import { notifyAppointmentConfirmed, notifyBookedVisit } from "./visit-notify.js";
+import { reissueGuestPassword } from "./guest-password.js";
 import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot, patientOwnsAppointment } from "./visit-rules.js";
 import { withNamedLock } from "./named-lock.js";
 
@@ -162,7 +163,16 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         }
       }
       const row = await decorateAppointments(await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [id])));
-      notifyBookedVisit({ ...row, user_id: req.user.id, patient_id: req.user.id, doctor_id: doctorId, patient_pays: amount, consultation_fee: amount }).catch(() => null);
+      const issued = await reissueGuestPassword(req.user.id).catch(() => null);
+      notifyBookedVisit({
+        ...row,
+        user_id: req.user.id,
+        patient_id: req.user.id,
+        doctor_id: doctorId,
+        patient_pays: amount,
+        consultation_fee: amount,
+        account_plain: issued?.plain || null,
+      }).catch(() => null);
       res.status(201).json({
         message: amount > 0
           ? "Appointment reserved. Pay before the doctor can confirm it."
@@ -171,6 +181,8 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         amount,
         data: row,
         ...(row ?? {}),
+        temp_password: issued?.plain || null,
+        account_email: req.user.email || null,
       });
       });
     } catch (error) {

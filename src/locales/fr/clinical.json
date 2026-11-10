@@ -1,4 +1,25 @@
 {
+  "chart": {
+    "city": "Ville",
+    "province": "Province",
+    "country": "Pays",
+    "blood_type": "Groupe sanguin",
+    "emergency_name": "Contact d'urgence",
+    "emergency_relation": "Lien",
+    "emergency_phone": "Téléphone d'urgence",
+    "conditions": "Maladies en cours",
+    "save": "Enregistrer le profil invité",
+    "update": "Mettre à jour le profil",
+    "must_change_title": "Choisissez un nouveau mot de passe",
+    "must_change_body": "Ce mot de passe temporaire a fonctionné. Choisissez-en un que vous seul connaissez avant de continuer.",
+    "new_password": "Nouveau mot de passe",
+    "confirm_password": "Confirmez le mot de passe",
+    "save_password": "Enregistrer le mot de passe",
+    "password_rules": "Utilisez au moins 8 caractères et saisissez deux fois le même mot de passe.",
+    "password_failed": "Impossible d'enregistrer le nouveau mot de passe.",
+    "guest_access_title": "Votre accès temporaire",
+    "guest_access_body": "Nous avons aussi envoyé ce mot de passe par e-mail. Il cesse de fonctionner après la connexion ou l'entrée dans la visite, et vous devrez le changer."
+  },
   "catalog": {
     "lab": "Analyses de laboratoire",
     "imaging": "Imagerie et ECG",

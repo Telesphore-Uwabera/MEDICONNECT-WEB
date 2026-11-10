@@ -115,6 +115,22 @@ async function medicalRow(patient) {
   return { table, row };
 }
 
+async function saveIntakeMedical(patient, body) {
+  if (!patient?.id) return;
+  const { table, row } = await medicalRow(patient);
+  if (!table) return;
+  const payload = {};
+  for (const key of ["blood_type", "chronic_conditions", "known_allergies", "current_medications"]) {
+    if (body[key] !== undefined && body[key] !== null && body[key] !== "" && await hasColumn(table, key)) {
+      payload[key] = body[key];
+    }
+  }
+  if (await hasColumn(table, "allergies") && body.known_allergies) payload.allergies = body.known_allergies;
+  if (!Object.keys(payload).length) return;
+  if (row?.id) await update(table, row.id, payload);
+  else await insert(table, { ...payload, patient_id: patient.id });
+}
+
 function shapeRecord(patient, row, user) {
   return {
     id: row?.id || null,
@@ -249,10 +265,14 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         date_of_birth: birth.value,
         gender: body.gender || null,
         national_id: body.national_id || null,
+        blood_type: body.blood_type || null,
         address: body.address || null,
         city: body.city || null,
         province: body.province || null,
         country: body.country || "Rwanda",
+        emergency_contact_name: body.emergency_contact_name || null,
+        emergency_contact_relation: body.emergency_contact_relation || null,
+        emergency_contact_phone: body.emergency_contact_phone || null,
         status: "pending",
       };
       const doctorId = await loadOwnedId(req.user.id, "doctors");
@@ -306,6 +326,7 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         await update("appointments", linked.appointment.id, { patient_id: Number(saved.user_id) });
       }
       const patient = await presentRow("patients", await one("SELECT * FROM patients WHERE id = ?", [patientId]));
+      await saveIntakeMedical(patient, body);
       res.status(201).json({ message: "Patient profile saved.", patient, data: patient, patient_id: patientId });
     } catch (error) {
       next(error);

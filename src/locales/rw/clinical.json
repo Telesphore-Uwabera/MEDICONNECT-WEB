@@ -1,4 +1,25 @@
 {
+  "chart": {
+    "city": "Umujyi",
+    "province": "Intara",
+    "country": "Igihugu",
+    "blood_type": "Ubwoko bw'amaraso",
+    "emergency_name": "Uhura mu byihutirwa",
+    "emergency_relation": "Isano",
+    "emergency_phone": "Telefoni y'ibyihutirwa",
+    "conditions": "Indwara zikomeza",
+    "save": "Bika umwirondoro w'umushyitsi",
+    "update": "Vugurura umwirondoro",
+    "must_change_title": "Hitamo ijambo ry'ibanga rishya",
+    "must_change_body": "Iryo jambo ry'igihe gito ryakoze. Shiraho iryo wowe wenyine uzi mbere yo gukomeza.",
+    "new_password": "Ijambo ry'ibanga rishya",
+    "confirm_password": "Emeza ijambo ry'ibanga",
+    "save_password": "Bika ijambo ry'ibanga",
+    "password_rules": "Koresha byibuze inyuguti 8 kandi wandike ijambo ry'ibanga inshuro ebyiri.",
+    "password_failed": "Ntibishoboye kubika ijambo ry'ibanga rishya.",
+    "guest_access_title": "Uko winjira by'igihe gito",
+    "guest_access_body": "Twohereje iri jambo ry'ibanga no kuri imeri. Rihagarara nyuma yo kwinjira cyangwa kwinjira mu kiganiro, kandi uzabazwa kurihindura."
+  },
   "catalog": {
     "lab": "Ibizamini bya laboratwari",
     "imaging": "Amashusho na ECG",

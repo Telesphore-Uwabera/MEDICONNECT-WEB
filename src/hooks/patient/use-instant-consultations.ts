@@ -13,6 +13,7 @@ export interface InstantConsultationRequestPayload {
   guest_email?: string;
   description?: string;
   password?: string;
+  preferred_language?: string;
 }
 
 export interface InstantConsultationRequestAnyPayload {
@@ -22,6 +23,7 @@ export interface InstantConsultationRequestAnyPayload {
   guest_email?: string;
   description?: string;
   password?: string;
+  preferred_language?: string;
 }
 
 export interface InstantConsultationRequestResponse {

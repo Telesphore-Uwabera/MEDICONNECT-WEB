@@ -16,8 +16,10 @@ import {
   useLogin,
 } from "@/hooks/useAuth";
 import { postAuthPath } from "@/lib/auth-store";
+import type { User } from "@/types/auth";
 import { loginReturnPath } from "@/lib/auth-session";
 import ForgotPasswordForm from "./ForgotPasswordForm";
+import { ForcePasswordChange } from "./ForcePasswordChange";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 
@@ -33,6 +35,8 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const navigate = useNavigate();
   const [method, setMethod] = useState<"email" | "phone">("email");
   const [showForgot, setShowForgot] = useState(false);
+  const [mustChange, setMustChange] = useState(false);
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
 
   // email fields
   const [email, setEmail] = useState("");
@@ -58,10 +62,15 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
         { email, auth_method: "password" as const, password },
         {
           onSuccess: (data) => {
+            if (data.must_change_password) {
+              setPendingUser(data.user);
+              setMustChange(true);
+              return;
+            }
             onSuccess();
             navigate(postAuthPath(data.user, loginReturnPath()), { replace: true });
           },
-          onError: (err: any) => {
+          onError: (err: Error) => {
             const msg = err?.message ?? t("auth.errors.unknown");
             toast.error(msg);
           },
@@ -86,10 +95,15 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
       },
       {
         onSuccess: (data) => {
+          if (data.must_change_password) {
+            setPendingUser(data.user);
+            setMustChange(true);
+            return;
+          }
           onSuccess();
           navigate(postAuthPath(data.user, loginReturnPath()), { replace: true });
         },
-        onError: (err: any) => {
+        onError: (err: Error) => {
           const msg = err?.message ?? t("auth.errors.unknown");
           toast.error(msg);
         },
@@ -102,7 +116,15 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   return (
     <AnimatePresence mode="wait">
-      {showForgot ? (
+      {mustChange ? (
+        <ForcePasswordChange
+          onDone={() => {
+            setMustChange(false);
+            onSuccess();
+            if (pendingUser) navigate(postAuthPath(pendingUser, loginReturnPath()), { replace: true });
+          }}
+        />
+      ) : showForgot ? (
         <motion.div
           key="forgot"
           initial={{ opacity: 0, x: 12 }}
