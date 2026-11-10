@@ -91,6 +91,9 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
 }
 
 import { useState, useRef, useEffect } from "react";
+import { PatientNextVisit } from "@/components/flow/PatientNextVisit";
+import { ProfileProgress } from "@/components/flow/ProfileProgress";
+import { useGetProfile } from "@/hooks/use-patient-profile";
 
 const PatientOverview = () => {
   const { t, i18n } = useTranslation();
@@ -134,6 +137,7 @@ const PatientOverview = () => {
   };
 
   // ── Appointments (real API) ──────────────────────────────────────────────
+  const { data: profile } = useGetProfile();
   const { data: dash } = useGetPatientStats({ period: "all" });
   const { data: appointmentsData, isLoading: appointmentsLoading } =
     useGetPatientAppointments({ per_page: 50 });
@@ -186,6 +190,10 @@ const PatientOverview = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 space-y-6">
+            <div className="grid gap-3 lg:grid-cols-2">
+              <PatientNextVisit appointment={upcomingAppointments[0]} />
+              <ProfileProgress profile={profile} />
+            </div>
             <PatientCareNext />
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {[

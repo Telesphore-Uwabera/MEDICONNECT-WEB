@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIdleLogout } from "@/hooks/useIdleLogout";
 import { useSessionSync } from "@/hooks/useSessionSync";
@@ -28,109 +28,109 @@ import { goToSignIn } from "@/lib/auth-session";
 import { usePatientProfileLocked } from "@/hooks/use-patient-profile-gate";
 import Index from "./pages/Index.tsx"; 
 import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 import ConsultationRoomPage from "./pages/ConsultationRoom.tsx"; 
-import DeleteAccount from "./pages/DeleteAccount.tsx";
+const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
 
 /* ── Patient ── */
-import PatientOverview from "./pages/patient/PatientOverview";
-import PatientDoctors from "./pages/patient/PatientDoctors";
-import PatientHospitals from "./pages/patient/PatientHospitals";
-import PatientInstant from "./pages/patient/PatientInstant";
-import PatientAppointments from "./pages/patient/PatientAppointments";
-import PatientPrescriptions from "./pages/patient/PatientPrescriptions";
-import PatientMedicalRecords from "./pages/patient/PatientMedicalRecords.tsx";
-import PatientPharmacy from "./pages/patient/PatientPharmacy";
-import PatientProfile from "./pages/patient/PatientProfile.tsx";
-import PatientFitnessCertificates from "./pages/patient/FitnessCertificates.tsx";
-import PatientReferrals from "./pages/patient/PatientReferrals.tsx";
-import PatientCareOrders from "./pages/patient/PatientCareOrders.tsx";
-import PatientEpisodes from "./pages/patient/PatientEpisodes.tsx";
-import MedicalInfo from "./pages/patient/MedicalInfo.tsx";
-import PatientInsurence from "./pages/patient/PatientInsurence.tsx";
-import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
-import MyReviews from "./pages/patient/MyReviews.tsx";
-import PatientSettings from "./pages/patient/PatientSettings.tsx";
-import Orders from "./pages/patient/Orders.tsx";
-import PatientDocuments from "./pages/patient/PatientDocuments.tsx";
-import PatientFamily from "./pages/patient/PatientFamily.tsx";
-import PatientBills from "./pages/patient/PatientBills.tsx";
+const PatientOverview = lazy(() => import("./pages/patient/PatientOverview"));
+const PatientDoctors = lazy(() => import("./pages/patient/PatientDoctors"));
+const PatientHospitals = lazy(() => import("./pages/patient/PatientHospitals"));
+const PatientInstant = lazy(() => import("./pages/patient/PatientInstant"));
+const PatientAppointments = lazy(() => import("./pages/patient/PatientAppointments"));
+const PatientPrescriptions = lazy(() => import("./pages/patient/PatientPrescriptions"));
+const PatientMedicalRecords = lazy(() => import("./pages/patient/PatientMedicalRecords"));
+const PatientPharmacy = lazy(() => import("./pages/patient/PatientPharmacy"));
+const PatientProfile = lazy(() => import("./pages/patient/PatientProfile"));
+const PatientFitnessCertificates = lazy(() => import("./pages/patient/FitnessCertificates"));
+const PatientReferrals = lazy(() => import("./pages/patient/PatientReferrals"));
+const PatientCareOrders = lazy(() => import("./pages/patient/PatientCareOrders"));
+const PatientEpisodes = lazy(() => import("./pages/patient/PatientEpisodes"));
+const MedicalInfo = lazy(() => import("./pages/patient/MedicalInfo"));
+const PatientInsurence = lazy(() => import("./pages/patient/PatientInsurence"));
+const ServiceBookings = lazy(() => import("./pages/patient/ServiceBookings"));
+const MyReviews = lazy(() => import("./pages/patient/MyReviews"));
+const PatientSettings = lazy(() => import("./pages/patient/PatientSettings"));
+const Orders = lazy(() => import("./pages/patient/Orders"));
+const PatientDocuments = lazy(() => import("./pages/patient/PatientDocuments"));
+const PatientFamily = lazy(() => import("./pages/patient/PatientFamily"));
+const PatientBills = lazy(() => import("./pages/patient/PatientBills"));
 
 /* ── Doctor ── */
-import DoctorOverview from "./pages/doctor/DoctorOverview";
-import DoctorAvailability from "./pages/doctor/DoctorAvailability";
-import DoctorAppointments from "./pages/doctor/DoctorAppointments";
-import DoctorPatients from "./pages/doctor/DoctorPatients";
-import DoctorPrescriptions from "./pages/doctor/DoctorPrescriptions";
-import DoctorConsultationSummaries from "./pages/doctor/DoctorConsultationSummaries";
-import DoctorProfile from "./pages/doctor/DoctorProfile.tsx";
-import DoctorFitnessCertificates from "./pages/doctor/FitnessCertificates.tsx";
-import MyReferrals from "./pages/doctor/MyReferrals.tsx";
-import DoctorCareOrders from "./pages/doctor/DoctorCareOrders.tsx";
-import DoctorSettings from "./pages/doctor/DoctorSettings.tsx";
-import DoctorEarnings from "./pages/doctor/DoctorEarnings.tsx";
-import DoctorFollowUps from "./pages/doctor/DoctorFollowUps.tsx";
-import DoctorInbox from "./pages/doctor/DoctorInbox.tsx";
+const DoctorOverview = lazy(() => import("./pages/doctor/DoctorOverview"));
+const DoctorAvailability = lazy(() => import("./pages/doctor/DoctorAvailability"));
+const DoctorAppointments = lazy(() => import("./pages/doctor/DoctorAppointments"));
+const DoctorPatients = lazy(() => import("./pages/doctor/DoctorPatients"));
+const DoctorPrescriptions = lazy(() => import("./pages/doctor/DoctorPrescriptions"));
+const DoctorConsultationSummaries = lazy(() => import("./pages/doctor/DoctorConsultationSummaries"));
+const DoctorProfile = lazy(() => import("./pages/doctor/DoctorProfile"));
+const DoctorFitnessCertificates = lazy(() => import("./pages/doctor/FitnessCertificates"));
+const MyReferrals = lazy(() => import("./pages/doctor/MyReferrals"));
+const DoctorCareOrders = lazy(() => import("./pages/doctor/DoctorCareOrders"));
+const DoctorSettings = lazy(() => import("./pages/doctor/DoctorSettings"));
+const DoctorEarnings = lazy(() => import("./pages/doctor/DoctorEarnings"));
+const DoctorFollowUps = lazy(() => import("./pages/doctor/DoctorFollowUps"));
+const DoctorInbox = lazy(() => import("./pages/doctor/DoctorInbox"));
 
 /* ── Hospital ── */
-import HospitalAnalytics from "./pages/hospital/HospitalAnalytics";
-import HospitalAppointments from "./pages/hospital/HospitalAppointments";
-import HospitalDoctors from "./pages/hospital/HospitalDoctors";
-import HospitalDepartments from "./pages/hospital/HospitalDepartments";
-import HospitalSchedule from "./pages/hospital/HospitalSchedule";
-import HospitalPrescriptions from "./pages/hospital/HospitalPrescriptions";
-import HospitalProfile from "./pages/hospital/HospitalProfile.tsx";
-import HospitalInsurances from "./pages/hospital/HospitalInsurances.tsx";
-import HospitalServiceBookings from "./pages/hospital/HospitalServiceBookings.tsx";
-import HospitalReferrals from "./pages/hospital/HospitalReferrals.tsx";
-import HospitalCareOrders from "./pages/hospital/HospitalCareOrders.tsx";
-import HospitalSettings from "./pages/hospital/HospitalSettings.tsx";
+const HospitalAnalytics = lazy(() => import("./pages/hospital/HospitalAnalytics"));
+const HospitalAppointments = lazy(() => import("./pages/hospital/HospitalAppointments"));
+const HospitalDoctors = lazy(() => import("./pages/hospital/HospitalDoctors"));
+const HospitalDepartments = lazy(() => import("./pages/hospital/HospitalDepartments"));
+const HospitalSchedule = lazy(() => import("./pages/hospital/HospitalSchedule"));
+const HospitalPrescriptions = lazy(() => import("./pages/hospital/HospitalPrescriptions"));
+const HospitalProfile = lazy(() => import("./pages/hospital/HospitalProfile"));
+const HospitalInsurances = lazy(() => import("./pages/hospital/HospitalInsurances"));
+const HospitalServiceBookings = lazy(() => import("./pages/hospital/HospitalServiceBookings"));
+const HospitalReferrals = lazy(() => import("./pages/hospital/HospitalReferrals"));
+const HospitalCareOrders = lazy(() => import("./pages/hospital/HospitalCareOrders"));
+const HospitalSettings = lazy(() => import("./pages/hospital/HospitalSettings"));
 
 /* ── Pharmacy ── */
-import PharmacyOverview from "./pages/pharmacy/PharmacyOverview.tsx";
-import PharmacyOrders from "./pages/pharmacy/PharmacyOrders";
-import PharmacyInventory from "./pages/pharmacy/PharmacyInventory";
-import PharmacyPrescriptions from "./pages/pharmacy/PharmacyPrescriptions";
-import PharmacyProfile from "./pages/pharmacy/PmarmacyProfile.tsx";
-import PharmacyCategories from "./pages/pharmacy/PharmacyCategories.tsx";
-import PharmacyDeliveries from "./pages/pharmacy/PharmacyDeliveries.tsx";
-import PharmacySettings from "./pages/pharmacy/PharmacySettings.tsx";
-import RestockRequests from "./pages/pharmacy/RestockRequests.tsx";
-import PharmacyCareOrders from "./pages/pharmacy/PharmacyCareOrders.tsx";
+const PharmacyOverview = lazy(() => import("./pages/pharmacy/PharmacyOverview"));
+const PharmacyOrders = lazy(() => import("./pages/pharmacy/PharmacyOrders"));
+const PharmacyInventory = lazy(() => import("./pages/pharmacy/PharmacyInventory"));
+const PharmacyPrescriptions = lazy(() => import("./pages/pharmacy/PharmacyPrescriptions"));
+const PharmacyProfile = lazy(() => import("./pages/pharmacy/PmarmacyProfile"));
+const PharmacyCategories = lazy(() => import("./pages/pharmacy/PharmacyCategories"));
+const PharmacyDeliveries = lazy(() => import("./pages/pharmacy/PharmacyDeliveries"));
+const PharmacySettings = lazy(() => import("./pages/pharmacy/PharmacySettings"));
+const RestockRequests = lazy(() => import("./pages/pharmacy/RestockRequests"));
+const PharmacyCareOrders = lazy(() => import("./pages/pharmacy/PharmacyCareOrders"));
 
 /* ── Admin ── */
-import AdminOverview from "./pages/admin/AdminOverview";
-import AdminApprovals from "./pages/admin/AdminApprovals";
-import AdminUsers from "./pages/admin/AdminUsers";
-import ManageDoctors from "./pages/admin/ManageDoctors";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminModeration from "./pages/admin/AdminModeration";
-import AdminProfile from "./pages/admin/AdminProfile.tsx";
-import AdminSettings from "./pages/admin/AdminSettings.tsx";
-import AdminReviews from "./pages/admin/AdminReviews.tsx";
-import ManagePharmacies from "./pages/admin/ManagePharmacies.tsx";
-import ManageHospitals from "./pages/admin/ManageHospitals.tsx";
-import ManageAppointments from "./pages/admin/ManageApointments.tsx";
-import ManageInsurances from "./pages/admin/ManageInsurances.tsx";
-import ManageServicePricing from "./pages/admin/ManageServicePricing.tsx";
-import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
-import ManageCertificationDoctor from "./pages/admin/ManageCertificationDoctor.tsx";
-import ManageFitnessCertificates from "./pages/admin/ManageFitnessCertificates.tsx";
-import ManageHelpCenterLinks from "./pages/admin/ManageHelpCenterLinks.tsx";
-import ManageSpecialities from "./pages/admin/ManageSpecialities.tsx";
-import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
-import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
-import AdminOurTeam from "./pages/admin/AdminOurTeam.tsx";
-import AdminServices from "./pages/admin/AdminServices.tsx";
-import AdminRefunds from "./pages/admin/AdminRefunds.tsx";
-import AdminSystemSettings from "./pages/admin/AdminSystemSettings.tsx";
-import Help from "./pages/Help.tsx";
+const AdminOverview = lazy(() => import("./pages/admin/AdminOverview"));
+const AdminApprovals = lazy(() => import("./pages/admin/AdminApprovals"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const ManageDoctors = lazy(() => import("./pages/admin/ManageDoctors"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
+const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
+const ManagePharmacies = lazy(() => import("./pages/admin/ManagePharmacies"));
+const ManageHospitals = lazy(() => import("./pages/admin/ManageHospitals"));
+const ManageAppointments = lazy(() => import("./pages/admin/ManageApointments"));
+const ManageInsurances = lazy(() => import("./pages/admin/ManageInsurances"));
+const ManageServicePricing = lazy(() => import("./pages/admin/ManageServicePricing"));
+const ManageInstantDoctors = lazy(() => import("./pages/admin/ManageInstantDoctors"));
+const ManageCertificationDoctor = lazy(() => import("./pages/admin/ManageCertificationDoctor"));
+const ManageFitnessCertificates = lazy(() => import("./pages/admin/ManageFitnessCertificates"));
+const ManageHelpCenterLinks = lazy(() => import("./pages/admin/ManageHelpCenterLinks"));
+const ManageSpecialities = lazy(() => import("./pages/admin/ManageSpecialities"));
+const ChecklistQuestions = lazy(() => import("./pages/admin/ChecklistQuestions"));
+const ManageAdminWallet = lazy(() => import("./pages/admin/ManageAdminWallet"));
+const AdminOurTeam = lazy(() => import("./pages/admin/AdminOurTeam"));
+const AdminServices = lazy(() => import("./pages/admin/AdminServices"));
+const AdminRefunds = lazy(() => import("./pages/admin/AdminRefunds"));
+const AdminSystemSettings = lazy(() => import("./pages/admin/AdminSystemSettings"));
+const Help = lazy(() => import("./pages/Help"));
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotFound from "@/pages/errors/NotFound";
-import VerifyCertificate from "./pages/VerifyCertificate.tsx";
-import AdminSystemCommunication from "./pages/admin/AdminSystemCommunication.tsx";
-import Terms from "./pages/terms.tsx";
-import Privacy from "./pages/privacy.tsx";
+const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate"));
+const AdminSystemCommunication = lazy(() => import("./pages/admin/AdminSystemCommunication"));
+const Terms = lazy(() => import("./pages/terms"));
+const Privacy = lazy(() => import("./pages/privacy"));
 /* ─────────────────────────────────────────────────────────────────
    RequireAuth
    Shows a confirmation dialog instead of hard-redirecting.
@@ -336,6 +336,7 @@ const App = () => (
           <AccessPromptManager />
           <ErrorBoundary>
           <RequirePatientProfile>
+          <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}>
           <Routes>
             {/* ── Public ──────────────────────────────────────── */}
             <Route path="/" element={<Index />} />
@@ -1035,6 +1036,7 @@ const App = () => (
             {/* ── 404 ─────────────────────────────────────────── */}
               <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </RequirePatientProfile>
         </ErrorBoundary>
         </CallProvider>

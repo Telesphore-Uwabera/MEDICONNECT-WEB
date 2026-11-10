@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { RoleStart } from "@/components/flow/RoleStart";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { cn } from "@/lib/utils";
@@ -393,6 +394,14 @@ const HospitalAnalytics = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
+            <RoleStart
+              actions={[
+                { to: "/hospital/appointments", title: t("clinical.flow.hospital_visits"), hint: t("clinical.flow.hospital_visits_hint") },
+                { to: "/hospital/doctors", title: t("clinical.flow.hospital_doctors"), hint: t("clinical.flow.hospital_doctors_hint") },
+                { to: "/hospital/referrals", title: t("clinical.flow.hospital_referrals"), hint: t("clinical.flow.hospital_referrals_hint") },
+                { to: "/hospital/schedule", title: t("clinical.flow.hospital_schedule"), hint: t("clinical.flow.hospital_schedule_hint") },
+              ]}
+            />
             <div className="rounded-[6px] border border-border/70 bg-card shadow-sm overflow-hidden">
               <div className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
                 <div className="flex items-center gap-2 min-w-0">

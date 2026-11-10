@@ -66,6 +66,7 @@ import {
   useRequestDoctorWithdrawal,
 } from "@/hooks/doctor/use-doctor-wallet";
 import { NavLink } from "@/components/NavLink";
+import { RoleStart } from "@/components/flow/RoleStart";
 import { CustomSelect } from "@/components/ui/custom-select";
 
  
@@ -451,6 +452,17 @@ const DoctorOverview = () => {
             count: today?.total ?? todayPending ?? 0,
           })}
         />
+
+        <div className="px-4 pt-3">
+          <RoleStart
+            actions={[
+              { to: "/doctor/appointments", title: t("clinical.flow.doctor_agenda"), hint: t("clinical.flow.doctor_agenda_hint") },
+              { to: "/doctor/prescriptions", title: t("clinical.flow.doctor_rx"), hint: t("clinical.flow.doctor_rx_hint") },
+              { to: "/doctor/consultation-summaries", title: t("clinical.flow.doctor_summary"), hint: t("clinical.flow.doctor_summary_hint") },
+              { to: "/doctor/follow-ups", title: t("clinical.flow.doctor_follow"), hint: t("clinical.flow.doctor_follow_hint") },
+            ]}
+          />
+        </div>
 
         {noUpcomingAvailability && (
           <div className="mx-4 mt-3 rounded-[6px] border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100">
@@ -843,142 +855,6 @@ const DoctorOverview = () => {
                     </div>
 
                     {/* Toggles + today quick stats  */}
-                    {false && (
-                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-                        {/* Instant Consultation toggle */}
-                        <div
-                          className={cn(
-                            "rounded-[6px] border p-4 shadow-soft flex flex-col justify-between gap-4",
-                            toggleState.instant_consultation
-                              ? "bg-success/5 border-success/20"
-                              : "bg-card border-border/70",
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div
-                              className={cn(
-                                "h-8 w-8 rounded-[6px] flex items-center justify-center",
-                                toggleState.instant_consultation
-                                  ? "bg-success/15 text-success"
-                                  : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {toggleState.instant_consultation ? (
-                                <Zap className="h-4 w-4" />
-                              ) : (
-                                <ZapOff className="h-4 w-4" />
-                              )}
-                            </div>
-                            <Switch
-                              checked={toggleState.instant_consultation}
-                              onCheckedChange={toggleInstantConsultation}
-                              disabled={toggleLoading["instant_consultation"]}
-                              className="data-[state=checked]:bg-success"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              {t("pages.doctor.instant_title")}
-                            </p>
-                            <p
-                              className={cn(
-                                "text-xs mt-1",
-                                toggleState.instant_consultation
-                                  ? "text-success"
-                                  : "text-muted-foreground",
-                              )}
-                            >
-                              {toggleState.instant_consultation
-                                ? t("pages.doctor.instant_visible")
-                                : t("pages.doctor.instant_hidden")}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* {t("pages.doctor.pause_bookings")} toggle */}
-                        <div
-                          className={cn(
-                            "rounded-[6px] border p-4 shadow-soft flex flex-col justify-between gap-4",
-                            toggleState.bookings_paused
-                              ? "bg-warning/5 border-warning/20"
-                              : "bg-card border-border/70",
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div
-                              className={cn(
-                                "h-8 w-8 rounded-[6px] flex items-center justify-center",
-                                toggleState.bookings_paused
-                                  ? "bg-warning/15 text-warning"
-                                  : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {toggleState.bookings_paused ? (
-                                <PauseCircle className="h-4 w-4" />
-                              ) : (
-                                <PlayCircle className="h-4 w-4" />
-                              )}
-                            </div>
-                            <Switch
-                              checked={toggleState.bookings_paused}
-                              onCheckedChange={togglePauseBookings}
-                              disabled={toggleLoading["bookings_paused"]}
-                              className="data-[state=checked]:bg-warning"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              {t("pages.doctor.pause_bookings")}
-                            </p>
-                            <p
-                              className={cn(
-                                "text-xs mt-1",
-                                toggleState.bookings_paused
-                                  ? "text-warning"
-                                  : "text-muted-foreground",
-                              )}
-                            >
-                              {toggleState.bookings_paused
-                                ? t("pages.doctor.no_new_bookings_allowed")
-                                : t("pages.doctor.accepting_bookings")}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Today quick stats */}
-                        {quickStats.map((s) => {
-                          const Icon = s.icon;
-                          return (
-                            <div
-                              key={s.label}
-                              className="rounded-[6px] border border-border/70 bg-card p-4 shadow-soft flex items-center gap-4"
-                            >
-                              <div
-                                className={cn(
-                                  "h-10 w-10 rounded-[6px] flex items-center justify-center flex-shrink-0",
-                                  s.color,
-                                )}
-                              >
-                                <Icon className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p
-                                  className={cn(
-                                    " leading-none font-bold text-foreground text-sm tabular-nums leading-none",
-                                    loading && "opacity-40",
-                                  )}
-                                >
-                                  {s.value}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {t("pages.doctor.today_stat_label", { label: s.label })}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
 
                   </>
                 )}
@@ -1528,156 +1404,6 @@ const DoctorOverview = () => {
                     </div>
                   </div>
 
-                  {false && (
-                    <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground">
-                          {t("pages.doctor.request_payout")}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {t("pages.doctor.request_payout_desc")}
-                        </p>
-                      </div>
-
-                      <form onSubmit={handleWithdrawalSubmit} className="space-y-3">
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="space-y-1.5">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                              {t("pages.doctor.amount")}
-                            </span>
-                            <input
-                              type="number"
-                              min="1"
-                              step="1"
-                              value={withdrawalForm.amount}
-                              onChange={(event) =>
-                                setWithdrawalForm((prev) => ({ ...prev, amount: event.target.value }))
-                              }
-                              placeholder="500"
-                              className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                            />
-                          </label>
-
-                          <label className="space-y-1.5">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                              {t("pages.doctor.method")}
-                            </span>
-                            <CustomSelect
-                              value={withdrawalForm.method}
-                              onChange={(val) =>
-                                setWithdrawalForm((prev) => ({ ...prev, method: val }))
-                              }
-                              options={[
-                                { value: "bank_transfer", label: t("pages.doctor.payout_method.bank_transfer") },
-                                { value: "mobile_money", label: t("pages.doctor.payout_method.mobile_money") },
-                              ]}
-                              className="w-full"
-                            />
-                          </label>
-                        </div>
-
-                        <label className="space-y-1.5 block">
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            {t("pages.doctor.account_name")}
-                          </span>
-                          <input
-                            value={withdrawalForm.account_name}
-                            onChange={(event) =>
-                              setWithdrawalForm((prev) => ({ ...prev, account_name: event.target.value }))
-                            }
-                            placeholder={t("pages.doctor.account_name_placeholder")}
-                            className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                          />
-                        </label>
-
-                        <label className="space-y-1.5 block">
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            {t("pages.doctor.account_number")}
-                          </span>
-                          <input
-                            value={withdrawalForm.account_number}
-                            onChange={(event) =>
-                              setWithdrawalForm((prev) => ({ ...prev, account_number: event.target.value }))
-                            }
-                            placeholder="1234567890"
-                            className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                          />
-                        </label>
-
-                        <label className="space-y-1.5 block">
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            {t("pages.doctor.note")}
-                          </span>
-                          <textarea
-                            value={withdrawalForm.note}
-                            onChange={(event) =>
-                              setWithdrawalForm((prev) => ({ ...prev, note: event.target.value }))
-                            }
-                            placeholder={t("pages.doctor.withdrawal_note_placeholder")}
-                            rows={3}
-                            className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
-                          />
-                        </label>
-
-                        <button
-                          type="submit"
-                          disabled={
-                            requestWithdrawal.isPending ||
-                            !withdrawalForm.amount ||
-                            !withdrawalForm.account_name.trim() ||
-                            !withdrawalForm.account_number.trim()
-                          }
-                          className="h-9 w-full rounded-[6px] bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {requestWithdrawal.isPending ? t("pages.doctor.requesting") : t("pages.doctor.request_payout")}
-                        </button>
-                      </form>
-
-                      <div className="border-t border-border/50 pt-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                          {t("pages.doctor.pending_requests")}
-                        </p>
-                        {withdrawalsLoading ? (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {t("pages.doctor.loading_payout_requests")}
-                          </p>
-                        ) : payoutRequests.length === 0 ? (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {t("pages.doctor.no_pending_payout_requests")}
-                          </p>
-                        ) : (
-                          <div className="space-y-2 mt-2">
-                            {payoutRequests.map((withdrawal, index) => (
-                              <div
-                                key={String(getPayoutId(withdrawal) ?? withdrawal.local_id ?? index)}
-                                className="rounded-[6px] border border-border/60 bg-secondary/20 p-3 flex items-center justify-between gap-3"
-                              >
-                                <div className="min-w-0">
-                                  <p className="text-xs font-semibold text-foreground">
-                                    {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
-                                  </p>
-                                  <p className="text-[11px] text-muted-foreground truncate">
-                                    {translatePayoutValue("payout_method", getPayoutMethod(withdrawal))}
-                                    {withdrawal.status ? ` - ${translatePayoutValue("payout_status", withdrawal.status)}` : ""}
-                                  </p>
-                                </div>
-                                {Number.isFinite(Number(getPayoutId(withdrawal))) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCancelWithdrawal(getPayoutId(withdrawal))}
-                                    disabled={cancelWithdrawal.isPending}
-                                    className="h-7 rounded-[6px] border border-destructive/30 px-2 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
-                                  >
-                                    {t("common.cancel")}
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="rounded-[6px] border border-primary/25 bg-primary/5 p-5 shadow-soft flex flex-col gap-4">
                     <div className="flex items-start justify-between gap-3">

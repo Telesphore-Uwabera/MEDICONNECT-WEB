@@ -41,6 +41,7 @@ import {
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 import { useGetPharmacyProfile } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { Link } from "react-router-dom";
+import { RoleStart } from "@/components/flow/RoleStart";
 import { DateField } from "@/components/ui/date-field";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -744,6 +745,14 @@ function PharmacyDashboard() {
         />
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <RoleStart
+            actions={[
+              { to: "/pharmacy/orders", title: t("clinical.flow.pharmacy_orders"), hint: t("clinical.flow.pharmacy_orders_hint") },
+              { to: "/pharmacy/prescriptions", title: t("clinical.flow.pharmacy_rx"), hint: t("clinical.flow.pharmacy_rx_hint") },
+              { to: "/pharmacy/inventory", title: t("clinical.flow.pharmacy_stock"), hint: t("clinical.flow.pharmacy_stock_hint") },
+              { to: "/pharmacy/deliveries", title: t("clinical.flow.pharmacy_delivery"), hint: t("clinical.flow.pharmacy_delivery_hint") },
+            ]}
+          />
 
           {/* Period / chart-group controls */}
           <PeriodBar
@@ -762,7 +771,7 @@ function PharmacyDashboard() {
                 <AlertCircle className="w-6 h-6 text-red-500" />
               </div>
               <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.failed_load_dashboard")}</p>
-              <p className="text-[11px] text-muted-foreground/70">{(error as any)?.message ?? t("pages.pharmacy.something_went_wrong")}</p>
+              <p className="text-[11px] text-muted-foreground/70">{error instanceof Error ? error.message : t("pages.pharmacy.something_went_wrong")}</p>
             </div>
           ) : (
             <>
