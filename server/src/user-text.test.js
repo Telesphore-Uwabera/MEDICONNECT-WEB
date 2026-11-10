@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { greeting, normalizeLang, pick } from "./user-text.js";
+import { greeting, languageFromUserRow, normalizeLang, pick } from "./user-text.js";
 
 describe("user-facing language", () => {
   it("keeps English greetings and switches when the account language is known", () => {
@@ -12,5 +12,8 @@ describe("user-facing language", () => {
     expect(greeting("fr", "patient")).toBe("Bonjour !");
     expect(pick("rw", { en: "Ready", fr: "Prêt", rw: "Biteguye" })).toBe("Biteguye");
     expect(pick("de", { en: "Ready", fr: "Prêt", rw: "Biteguye" })).toBe("Ready");
+    expect(languageFromUserRow({ preferred_language: "fr" })).toBe("fr");
+    expect(languageFromUserRow({})).toBe("en");
+    expect(languageFromUserRow(null)).toBe("en");
   });
 });

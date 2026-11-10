@@ -46,6 +46,13 @@ export function phrase(lang, key, vars) {
   return fill(template, vars);
 }
 
+/** Language already loaded on a user row. Missing column or blank value stays English. */
+export function languageFromUserRow(row) {
+  const value = row?.preferred_language;
+  if (value == null || String(value).trim() === "") return "en";
+  return normalizeLang(value);
+}
+
 export function greeting(lang, name) {
   const parts = String(name || "").replace(/\s+/g, " ").trim().split(" ").filter((part) => part && !/^dr\.?$/i.test(part));
   const first = parts[0] || "";

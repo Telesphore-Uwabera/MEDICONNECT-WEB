@@ -90,7 +90,7 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { sendMail, buildOtpEmail, buildWelcomeEmail, buildEmailHtml, emailP, emailBtn } from "./mail.js";
-import { pick } from "./user-text.js";
+import { languageFromUserRow, pick } from "./user-text.js";
 
 const PROFILE_TABLE = {
   patient: "patients",
@@ -774,10 +774,12 @@ export function appRoutes(router) {
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "),
       });
 
-      // Deliver the code by email when an address was provided
+      // Deliver the code by email when an address was provided.
+      // The lookup uses the same SELECT for every address. A missing account and
+      // an existing one both continue into sendMail and the same JSON response.
       if (req.body?.email) {
-        const account = await one("SELECT name, preferred_language FROM users WHERE email = ? LIMIT 1", [req.body.email]).catch(() => null);
-        const lang = account?.preferred_language;
+        const account = await findUserByLogin({ email: req.body.email });
+        const lang = languageFromUserRow(account);
         const typeLabel = pick(lang, {
           en: req.body?.type === "password_reset" ? "password reset" : "verification",
           fr: req.body?.type === "password_reset" ? "réinitialisation" : "vérification",

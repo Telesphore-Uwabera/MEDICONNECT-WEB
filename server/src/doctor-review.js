@@ -4,6 +4,7 @@ import path from "path";
 import * as db from "./db.js";
 import { sendMail } from "./mail.js";
 import { pick } from "./user-text.js";
+import { languageForUserId } from "./user-language.js";
 import { ensureVerifierColumns } from "./verification.js";
 
 const { columns, hasColumn, insert, one, pool, q, update } = db;
@@ -66,9 +67,7 @@ async function adminRecipients() {
 }
 
 async function languageFor(userId) {
-  if (!userId || !(await hasColumn("users", "preferred_language").catch(() => false))) return "en";
-  const row = await one("SELECT preferred_language FROM users WHERE id = ?", [userId]).catch(() => null);
-  return row?.preferred_language || "en";
+  return languageForUserId(userId);
 }
 
 async function notifyInApp(userId, title, message) {

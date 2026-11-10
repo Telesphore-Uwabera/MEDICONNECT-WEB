@@ -1,6 +1,7 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { greeting as greetPerson, pick } from "./user-text.js";
+import { languageForUserId } from "./user-language.js";
 import { broadcast } from "./realtime.js";
 import { beginReadyMail, finishReadyMail, renewReadyMail, READY_CLAIM_RENEW_MS, READY_MAIL_TIMEOUT_MS } from "./ready-mail.js";
 import { visitAwaitsPayment } from "./visit-rules.js";
@@ -30,14 +31,13 @@ async function notifyInApp(userId, title, message, type) {
 // ─── Contact resolution helpers ───────────────────────────────────────────────
 async function doctorContact(doctorId) {
   if (!doctorId) return null;
-  const langColumn = await hasColumn("users", "preferred_language").catch(() => false);
   const row = await one(
-    `SELECT d.id, u.id AS user_id, u.name, u.email, u.phone${langColumn ? ", u.preferred_language" : ""}
+    `SELECT d.id, u.id AS user_id, u.name, u.email, u.phone
      FROM doctors d JOIN users u ON u.id = d.user_id WHERE d.id = ? LIMIT 1`,
     [doctorId],
   ).catch(() => null);
   if (!row) return null;
-  return { ...row, lang: row.preferred_language };
+  return { ...row, lang: await languageForUserId(row.user_id) };
 }
 
 // A "any available doctor" request carries no doctor_id, so nobody is the
@@ -82,11 +82,10 @@ function agreed(primary, secondary, phone = false) {
 async function provenAccount(userId) {
   let user;
   try {
-    const langColumn = await hasColumn("users", "preferred_language").catch(() => false);
     user = await one(
-    `SELECT id, name, email, phone${langColumn ? ", preferred_language" : ""} FROM users WHERE id = ? LIMIT 1`,
-    [userId],
-  );
+      "SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1",
+      [userId],
+    );
   } catch {
     return null;
   }
@@ -96,7 +95,7 @@ async function provenAccount(userId) {
     name: cleanContact(user.name) || "Patient",
     email: cleanContact(user.email),
     phone: cleanContact(user.phone),
-    lang: user.preferred_language,
+    lang: await languageForUserId(user.id),
   };
 }
 
