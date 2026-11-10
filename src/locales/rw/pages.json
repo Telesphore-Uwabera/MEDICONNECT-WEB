@@ -111,7 +111,7 @@
     "footer_role_admin": "Umuyobozi",
     "footer_legal_privacy": "Ibanga",
     "footer_legal_terms": "Amabwiriza",
-    "footer_legal_cookies": "Cookies",
+    "footer_legal_cookies": "Amakuki",
     "footer_start_care": "Tangira kwivuza nonaha",
     "footer_cta_title": "Shaka umuganga cyangwa ufate gahunda yo kwivuza mu minota mike.",
     "footer_cta_sub": "Shakisha inzobere, ibigo nderabuzima, na serivisi za farumasi ku rubuga rumwe ruhuza ubuvuzi.",
@@ -312,26 +312,28 @@
     "choose_store": "Play Store cyangwa App Store",
     "download_app_sub": "Bona ubuvuzi aho uri hose, igihe cyose.",
     "instant_consultation_sub": "Vugana n'umuganga mu masegonda.",
-    "book_appointment_sub": "Fata gahunda yo kubonana n'umuganga."
+    "book_appointment_sub": "Fata gahunda yo kubonana n'umuganga.",
+    "store_coming_soon": "Biraza vuba",
+    "Browse by speciality": "Shakisha ukurikije ubuhanga"
   },
   "delete_account": {
-  "how_to_delete_account": "Uko wasiba konti yawe",
-  "eyebrow": "Igenamiterere rya konti",
-  "title": "Uko wasiba konti yawe ya {{appName}}",
-  "subtitle": "Kurikira intambwe zikurikira uhereye kuri konti yawe kugira ngo usibe burundu umwirondoro n'amakuru yawe.",
-  "warning_title": "Iki gikorwa ntigishobora gusubizwa inyuma",
-  "warning_desc": "Igihe wemeje gusiba konti, umwirondoro wawe, gahunda z'ubuvuzi, n'amakuru yawe bwite bizasibwa burundu. Nta buryo bwo kubigarura nyuma yuko iki gikorwa kirangiye.",
-  "steps_heading": "Intambwe zo gusiba konti",
-  "step1_t": "Injira kuri konti yawe",
-  "step1_d": "Injira ukoresheje email n'ijambobanga bifitanye isano na konti yawe.",
-  "step2_t": "Jya kuri Igenamiterere (Settings)",
-  "step2_d": "Fungura menu ya konti yawe uhitemo Igenamiterere.",
-  "step3_t": "Hindukira kuri tab yitwa Danger",
-  "step3_d": "Muri Igenamiterere, koresha tab zo ku ruhande rw'ibumoso uhitemo Danger.",
-  "step4_t": "Kanda Delete Account",
-  "step4_d": "Hitamo Delete Account hanyuma wemeze igihe ubisabwa.",
-  "final_note": "Uzasabwa kwemeza incuro imwe yiyongera mbere yuko gusiba konti birangira burundu. Menya neza ko udakeneye amakuru ari kuri iyi konti mbere yo gukomeza."
-},
+    "how_to_delete_account": "Uko wasiba konti yawe",
+    "eyebrow": "Igenamiterere rya konti",
+    "title": "Uko wasiba konti yawe ya {{appName}}",
+    "subtitle": "Kurikira intambwe zikurikira uhereye kuri konti yawe kugira ngo usibe burundu umwirondoro n'amakuru yawe.",
+    "warning_title": "Iki gikorwa ntigishobora gusubizwa inyuma",
+    "warning_desc": "Igihe wemeje gusiba konti, umwirondoro wawe, gahunda z'ubuvuzi, n'amakuru yawe bwite bizasibwa burundu. Nta buryo bwo kubigarura nyuma yuko iki gikorwa kirangiye.",
+    "steps_heading": "Intambwe zo gusiba konti",
+    "step1_t": "Injira kuri konti yawe",
+    "step1_d": "Injira ukoresheje email n'ijambobanga bifitanye isano na konti yawe.",
+    "step2_t": "Jya kuri Igenamiterere (Settings)",
+    "step2_d": "Fungura menu ya konti yawe uhitemo Igenamiterere.",
+    "step3_t": "Hindukira kuri tab yitwa Danger",
+    "step3_d": "Muri Igenamiterere, koresha tab zo ku ruhande rw'ibumoso uhitemo Danger.",
+    "step4_t": "Kanda Delete Account",
+    "step4_d": "Hitamo Delete Account hanyuma wemeze igihe ubisabwa.",
+    "final_note": "Uzasabwa kwemeza incuro imwe yiyongera mbere yuko gusiba konti birangira burundu. Menya neza ko udakeneye amakuru ari kuri iyi konti mbere yo gukomeza."
+  },
   "patient": {
     "overview_title": "Murakaza neza",
     "overview_sub": "Dore ibibera mu kuvuzwa kwawe uyu munsi",
@@ -361,7 +363,7 @@
     "match_anyone": "Mpa undi wese",
     "responds_in": "asubiza mu munsi 2",
     "profile_title": "Umwirondoro bwite",
-    "video": "Video",
+    "video": "Videwo",
     "voice": "Ijwi",
     "appts_title": "Gahunda zanjye",
     "appts_sub": "Inama zashize n'izizaza",
@@ -1087,7 +1089,10 @@
     "bill_service_appointment": "Gahunda",
     "bill_service_pharmacy_order": "Icyifuzo cya farumasi",
     "bill_service_service_booking": "Serivisi y'ikigo",
-    "bill_service_other": "Ibindi"
+    "bill_service_other": "Ibindi",
+    "doctors_sub_one": "Umuganga {{count}} wemejwe muri uru rusobe",
+    "doctors_sub_other": "Abaganga {{count}} bemejwe muri uru rusobe",
+    "pharmacy_orders": "Ibisabwa muri farumasi"
   },
   "doctor": {
     "profile_title": "Umwirondoro w'Umuganga",
@@ -1099,7 +1104,7 @@
     "instant_title": "Kwivuza ako kanya",
     "instant_visible": "Urebwa n'abarwayi bashaka ubufasha bwihuse",
     "instant_hidden": "Urahishwe ku rutonde rw'ako kanya",
-    "set_availability":"Shyiraho Iboneka",
+    "set_availability": "Shyiraho Iboneka",
     "available": "Uhari",
     "off": "Ntubonetse",
     "stat_today": "Uyu munsi",
@@ -1366,7 +1371,7 @@
     "oldest_first": "Ibya kera mbere",
     "latest_first": "Ibishya mbere",
     "patient_name_az": "Izina ry umurwayi A-Z",
-    "video": "Video",
+    "video": "Videwo",
     "in_person": "Imbonankubone",
     "view_details": "Reba ibisobanuro",
     "reschedule": "Hindura igihe",
@@ -1574,7 +1579,7 @@
     "low_risk": "Ibyago bike",
     "high_risk_count": "{{count}} ibyago byinshi",
     "no_patients_match": "Nta barwayi bahuye na muyungurure",
-    "consultation_summaries_title": "Consultations",
+    "consultation_summaries_title": "Ibiganiro",
     "consultation_summaries_subtitle": "Inyandiko z ubuvuzi zandikwa nyuma ya appointments na consultations zihuse",
     "consultations_table_subtitle": "Buri saha ni umurongo umwe. Shakisha, yungurura, fungura dosiye.",
     "consult_type": "Ubwoko",
@@ -1679,7 +1684,7 @@
     "patient_number": "Umurwayi #{{id}}",
     "condition_hypertension": "Umuvuduko w amaraso",
     "condition_bronchitis": "Bronchite",
-    "condition_eczema": "Eczema",
+    "condition_eczema": "Egzema",
     "condition_routine_checkup": "Isuzuma risanzwe",
     "condition_post_op_cardiac": "Nyuma yo kubagwa umutima",
     "ros_system_general": "Rusange",
@@ -2086,7 +2091,14 @@
       "red_flag_severe_chest_pain": "Kubabara mu gatuza cyane",
       "red_flag_severe_breathing": "Kubura umwuka bikabije",
       "red_flag_severe_bleeding": "Kuva amaraso bikabije / bidashobora kugenzurwa"
-    }
+    },
+    "facility_visits": "Gusura ivuriro",
+    "facility_visits_hint": "Gahunda zo kugana ivuriro ubwite",
+    "referrals": "Kohereza umurwayi",
+    "referrals_hint": "Ohereza abarwayi ku wundi muganga cyangwa ku kigo nderabuzima",
+    "pharmacy_rx": "Ordonansi ya farumasi",
+    "pharmacy_rx_hint": "Ordonansi umurwayi ashobora kohereza muri farumasi",
+    "paid_requests_appear_here": "Ibisabwa byishyuwe 5.000 FRW bigaragara hano kugira ngo bisuzumwe, haboneke umwirondoro kuri videwo, hakanasinywe."
   },
   "hospital": {
     "overview": "Incamake",
@@ -2554,7 +2566,14 @@
     "settings_toast_password_required": "Ijambo ry'ibanga rirasabwa",
     "settings_toast_account_deleted": "Konti yasibwe neza.",
     "settings_title": "Igenamiterere",
-    "settings_sub": "Cunga umwirondoro wawe, umutekano, na konti yawe"
+    "settings_sub": "Cunga umwirondoro wawe, umutekano, na konti yawe",
+    "care_loop": "Urugendo rw'ubuvuzi",
+    "care_loop_sub": "Gahunda z'abarwayi, gusura abaganga bafatanije, kohereza abarwayi, n'ordonansi zo mu rusobe rumwe rw'ubuvuzi.",
+    "patient_bookings": "Gahunda z'abarwayi",
+    "doctor_visits": "Gusura abaganga",
+    "referrals_in": "Kohereza umurwayi",
+    "linked_rx": "Ordonansi z'abaganga",
+    "period_all": "Igihe cyose"
   },
   "pharmacy": {
     "orders_title": "Komande",
@@ -3182,7 +3201,13 @@
     "updated": "Byahinduwe",
     "prescription_rejected": "Urupapuro rw'imiti rwanzwe",
     "prescription_approved": "Urupapuro rw'imiti rwemejwe",
-    "prescription_fulfilled": "Urupapuro rw'imiti rwuzujwe"
+    "prescription_fulfilled": "Urupapuro rw'imiti rwuzujwe",
+    "care_loop": "Urugendo rw'ubuvuzi",
+    "care_loop_sub": "Abaganga bohereza ordonansi hano. Abarwayi basaba imiti bashingiye kuri izo ordonansi cyangwa ku isoko.",
+    "doctor_rx": "Ordonansi z'abaganga",
+    "awaiting_rx": "Bitegereje igikorwa",
+    "patient_orders": "Ibisabwa n'abarwayi",
+    "period_all": "Igihe cyose"
   },
   "admin": {
     "overview_sub": "Incamake y'urubuga rwose",
@@ -3320,7 +3345,10 @@
     "day_thursday_short": "Kan",
     "day_friday_short": "Gt5",
     "day_saturday_short": "Gt6",
-    "day_sunday_short": "Cyu"
+    "day_sunday_short": "Cyu",
+    "bookings_open": "Gahunda ziri gufungura",
+    "bookings_closed": "Gahunda zafunze",
+    "departments_label": "ibice"
   },
   "header": {
     "search": "Shakisha…"
@@ -3389,7 +3417,7 @@
     "invalid_help": "Ongera urebe neza nomero y'icyemezo hanyuma ugerageze, cyangwa uvugane n'umuganga wagitanze niba ubona ari ikosa.",
     "powered_by": "Bikozwe na MediConnect - Kuzana ubuvuzi mu ntoki zawe"
   },
-    "card":{
-    "feeNotAvailable":"Amafaranga Ntiyashyizweho"
+  "card": {
+    "feeNotAvailable": "Amafaranga Ntiyashyizweho"
   }
 }

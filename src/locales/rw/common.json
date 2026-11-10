@@ -82,5 +82,7 @@
   "status_approved": "wemejwe",
   "status_active": "ukora",
   "status_rejected": "wanze",
-  "status_suspended": "wahagaritswe"
+  "status_suspended": "wahagaritswe",
+  "session_replaced": "Wasohotse kuko iyi konti yinjiye mu kindi kiganiro cyangwa ku kindi gikoresho.",
+  "idle_timeout": "Wasohotse nyuma y'isaha imwe utakoze ikintu."
 }

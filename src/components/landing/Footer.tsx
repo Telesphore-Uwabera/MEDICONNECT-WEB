@@ -12,6 +12,7 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
+import { StoreBadge } from "@/components/landing/StoreBadge";
 import { cn } from "@/lib/utils";
 
 interface FooterProps {
@@ -185,28 +186,18 @@ function Footer({ className, hideTopBorder, containerClassName }: FooterProps = 
               ))}
             </div>
             <div className="flex lg:flex-row lg:flex-nowrap flex-wrap gap-2 mt-5">
-              <a
-                href="#"
-                role="menuitem"
-                className="group flex   items-center transition-all"
-              >
-                <img
-                  src="/images/android.png"
-                  alt={t("pages.landing.app_store_alt")}
-                  className="max-h-9 max-w-full object-contain"
-                />
-              </a>
-              <a
-                href="#"
-                role="menuitem"
-                className="group flex   items-center transition-all"
-              >
-                <img
-                  src="/images/apple.png"
-                  alt={t("pages.landing.app_store_alt")}
-                  className="max-h-9 max-w-full object-contain"
-                />
-              </a>
+              <StoreBadge
+                href={import.meta.env.VITE_PLAY_STORE_URL}
+                src="/images/android.png"
+                alt={t("pages.landing.google_play_alt")}
+                soonLabel={t("pages.landing.store_coming_soon")}
+              />
+              <StoreBadge
+                href={import.meta.env.VITE_APP_STORE_URL}
+                src="/images/apple.png"
+                alt={t("pages.landing.app_store_alt")}
+                soonLabel={t("pages.landing.store_coming_soon")}
+              />
             </div>
           </div>
 

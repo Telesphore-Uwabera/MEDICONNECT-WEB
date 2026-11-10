@@ -31,8 +31,8 @@ const Auth = () => {
   const idleMessage = sessionReason === "idle_timeout" || sessionReason === "session_replaced"
     ? ((location.state as { message?: string } | null)?.message
     ?? (sessionReason === "session_replaced"
-        ? "You were signed out because this account signed in on another tab or device."
-        : "You were logged out after 1 hour of inactivity."))
+        ? t("common.session_replaced")
+        : t("common.idle_timeout")))
     : null;
   useEffect(() => {
   setTab(location.pathname === "/auth/register" || params.get("mode") === "signup" ? "signup" : "signin");

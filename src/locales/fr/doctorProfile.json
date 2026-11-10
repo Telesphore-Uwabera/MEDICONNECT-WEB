@@ -22,7 +22,7 @@
     },
     "qualifications": {
       "label": "Qualifications",
-      "title": "Certifications & qualifications",
+      "title": "Certifications et qualifications",
       "desc": "Certifications et licences"
     },
     "documents": {
@@ -67,7 +67,7 @@
     "saturday": "Sam",
     "sunday": "Dim"
   },
-  "bio_label": "Bio ({{lang}})",
+  "bio_label": "Biographie ({{lang}})",
   "save_section": "Enregistrer la section",
   "saved": "Enregistré",
   "badge_error": "Erreur",
@@ -123,7 +123,7 @@
   "sub_specialities_pick": "Sous-spécialités · choisissez-en une ou plusieurs",
   "loading": "Chargement…",
   "couldnt_load_subspecialities": "Impossible de charger les sous-spécialités.",
-  "no_subspecialities_available": "Aucune sous-spécialité disponible pour celle-ci.",
+  "no_subspecialities_available": "Aucune sous-spécialité disponible",
   "needs_approval": "nécessite une approbation",
   "spec_sub_label": "Spécialité & sous-spécialité",
   "step1_speciality": "Étape 1 : Spécialité",
@@ -142,7 +142,6 @@
   "no_match_specialities": "Aucune spécialité ne correspond à « {{query}} »",
   "no_match_subspecialities": "Aucune sous-spécialité ne correspond à « {{query}} »",
   "start_typing_search": "Commencez à taper pour rechercher des spécialités",
-  "no_subspecialities_available": "Aucune sous-spécialité disponible",
   "select_speciality_first": "Sélectionnez d'abord une spécialité",
   "failed_to_load_retry": "Échec du chargement. Veuillez réessayer.",
   "primary_speciality": "Spécialité principale",

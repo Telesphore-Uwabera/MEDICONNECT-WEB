@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 
 export function AdminBookingDesk() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [patientId, setPatientId] = useState("");
   const [hospitalId, setHospitalId] = useState("");
@@ -34,7 +36,7 @@ export function AdminBookingDesk() {
 
   return (
     <section className="mx-4 mt-4 rounded-[6px] border border-border bg-card p-4">
-      <h2 className="text-sm font-semibold text-foreground">Support booking desk</h2>
+      <h2 className="text-sm font-semibold text-foreground">{t("admin.ui.support_booking_desk")}</h2>
       <p className="mt-1 text-[11px] text-muted-foreground">
         Book a facility visit on behalf of a patient. Your user ID is stored as the agent. The platform fee is RWF 1,000 and does not replace the hospital service price.
       </p>

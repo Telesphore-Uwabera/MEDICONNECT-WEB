@@ -20,7 +20,7 @@
   "optional": "facultatif",
   "required": "requis",
   "unknown": "inconnu",
-  "age": "Age",
+  "age": "Âge",
   "specSelect": {
     "anySpecialityPlaceholder": "Toute spécialité…",
     "searchSpecialitiesPlaceholder": "Rechercher des spécialités…",
@@ -82,5 +82,7 @@
   "status_approved": "approuve",
   "status_active": "actif",
   "status_rejected": "rejete",
-  "status_suspended": "suspendu"
+  "status_suspended": "suspendu",
+  "session_replaced": "Vous avez été déconnecté car ce compte s'est connecté dans un autre onglet ou sur un autre appareil.",
+  "idle_timeout": "Vous avez été déconnecté après 1 heure d'inactivité."
 }

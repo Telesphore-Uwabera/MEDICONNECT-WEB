@@ -9,6 +9,8 @@ import { useSearchPharmacies, type Pharmacy } from "@/hooks/patient/use-patient-
 import { useCreateCareOrder, type CareOrderType } from "@/hooks/doctor/use-care-orders";
 import { usePatientMedicalRecord } from "@/hooks/doctor/use-doctor-patient-record";
 import { CLINICAL_CATALOG, HOSPITAL_PROTOCOL, PHARMACY_PROTOCOL } from "./clinical-catalog";
+import { clinicalItemLabel, clinicalKindLabel, clinicalProtocolLabel } from "@/lib/clinical-i18n";
+import { localizedHospitalName } from "@/components/HospitalCard";
 
 interface Props {
   open: boolean;
@@ -41,8 +43,9 @@ export function ClinicalOrderModal({
   onSkip,
   onCreated,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const catalog = CLINICAL_CATALOG[kind];
+  const protocolScope = catalog?.needsPharmacy ? "pharmacy" as const : "hospital" as const;
   const protocol = catalog?.needsPharmacy ? PHARMACY_PROTOCOL : HOSPITAL_PROTOCOL;
   const [query, setQuery] = useState("");
   const debounced = useDebounce(query, 300);
@@ -127,7 +130,7 @@ export function ClinicalOrderModal({
       <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-border p-4">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">{catalog.label}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{clinicalKindLabel(t, kind, catalog.label)}</h3>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               {patientName ? `${patientName} · ` : ""}
               {t("pages.doctor.care_order_share", "Allergies, current medicines and this consult are attached automatically.")}
@@ -146,15 +149,15 @@ export function ClinicalOrderModal({
               {record?.patient?.email ? ` · ${record.patient.email}` : ""}
               {patientId ? ` · ID ${patientId}` : ""}
             </p>
-            {defaultDiagnosis ? <p className="mt-1"><span className="font-semibold">Diagnosis:</span> {defaultDiagnosis}</p> : null}
-            {defaultNotes ? <p className="mt-1"><span className="font-semibold">What the patient reported:</span> {defaultNotes}</p> : null}
-            {hospitalResults ? <p className="mt-1"><span className="font-semibold">Facility results:</span> {hospitalResults}</p> : null}
+            {defaultDiagnosis ? <p className="mt-1"><span className="font-semibold">{t("clinical.inbox.diagnosis")}:</span> {defaultDiagnosis}</p> : null}
+            {defaultNotes ? <p className="mt-1"><span className="font-semibold">{t("clinical.inbox.reported")}:</span> {defaultNotes}</p> : null}
+            {hospitalResults ? <p className="mt-1"><span className="font-semibold">{t("clinical.inbox.facility_results")}:</span> {hospitalResults}</p> : null}
           </div>
           {(record?.known_allergies || record?.current_medications || record?.chronic_conditions) && (
             <div className="rounded-[6px] border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-foreground">
-              {record.known_allergies ? <p><span className="font-semibold">Allergies:</span> {record.known_allergies}</p> : null}
-              {record.current_medications ? <p className="mt-1"><span className="font-semibold">Current medicines:</span> {record.current_medications}</p> : null}
-              {record.chronic_conditions ? <p className="mt-1"><span className="font-semibold">Conditions:</span> {record.chronic_conditions}</p> : null}
+              {record.known_allergies ? <p><span className="font-semibold">{t("clinical.inbox.allergies")}:</span> {record.known_allergies}</p> : null}
+              {record.current_medications ? <p className="mt-1"><span className="font-semibold">{t("clinical.inbox.medicines")}:</span> {record.current_medications}</p> : null}
+              {record.chronic_conditions ? <p className="mt-1"><span className="font-semibold">{t("clinical.inbox.conditions")}:</span> {record.chronic_conditions}</p> : null}
             </div>
           )}
 
@@ -164,12 +167,12 @@ export function ClinicalOrderModal({
               setQuery={setQuery}
               loading={loadingHospitals}
               placeholder={t("pages.doctor.search_facilities", "Search partner facilities…")}
-              rows={hospitals.map((item) => ({ id: item.id, title: item.name_en, sub: [item.city, item.address].filter(Boolean).join(" · ") }))}
+              rows={hospitals.map((item) => ({ id: item.id, title: localizedHospitalName(item, i18n.language), sub: [item.city, item.address].filter(Boolean).join(" · ") }))}
               onPick={(id) => setHospital(hospitals.find((row) => row.id === id) || null)}
             />
           )}
           {hospital && (
-            <Chosen name={hospital.name_en} onClear={() => setHospital(null)} />
+            <Chosen name={localizedHospitalName(hospital, i18n.language)} onClear={() => setHospital(null)} />
           )}
           {catalog.needsPharmacy && !pharmacy && (
             <SearchList
@@ -187,7 +190,7 @@ export function ClinicalOrderModal({
             {catalog.items.map((item) => (
               <label key={item} className={cn("flex items-start gap-2 rounded-[6px] border px-2.5 py-2 text-[11px]", selected.includes(item) ? "border-primary/40 bg-primary/5" : "border-border")}>
                 <input type="checkbox" checked={selected.includes(item)} onChange={() => toggle(item)} className="mt-0.5" />
-                {item}
+                {clinicalItemLabel(t, item)}
               </label>
             ))}
           </div>
@@ -202,7 +205,7 @@ export function ClinicalOrderModal({
               {t("pages.doctor.care_protocol", "Protocol the next team must follow")}
             </p>
             <div className="space-y-1.5">
-              {protocol.map((step) => (
+              {protocol.map((step, index) => (
                 <label key={step} className="flex items-start gap-2 rounded-[6px] border border-border px-2.5 py-2 text-[11px]">
                   <input
                     type="checkbox"
@@ -214,7 +217,7 @@ export function ClinicalOrderModal({
                     }
                     className="mt-0.5"
                   />
-                  {step}
+                  {clinicalProtocolLabel(t, protocolScope, index, step)}
                 </label>
               ))}
             </div>

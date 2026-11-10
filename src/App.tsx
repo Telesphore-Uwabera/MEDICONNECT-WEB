@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useIdleLogout } from "@/hooks/useIdleLogout";
 import { useSessionSync } from "@/hooks/useSessionSync";
 import {
@@ -136,6 +137,7 @@ import Privacy from "./pages/privacy.tsx";
    User chooses: go to /auth (preserving return path) or go back.
 ───────────────────────────────────────────────────────────────── */
 const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthenticated = !!localStorage.getItem("auth_token");
@@ -173,13 +175,13 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
                 <ShieldAlert className="h-4 w-4 text-primary" />
               </div>
               <p className="text-[13px] font-bold text-foreground">
-                Sign in required
+                {t("admin.ui.sign_in_required")}
               </p>
             </div>
             <button
               onClick={handleGoBack}
               className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
-              aria-label="Dismiss"
+              aria-label={t("pages.cards.dismiss")}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -188,8 +190,7 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
           {/* Body */}
           <div className="px-5 py-4">
             <p className="text-[12px] text-muted-foreground leading-relaxed">
-              This page requires an account. Sign in or create a free account to
-              continue — or go back and keep browsing without signing in.
+              {t("admin.ui.sign_in_required_body")}
             </p>
           </div>
 
@@ -201,13 +202,13 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors"
             >
               <LogIn className="h-3.5 w-3.5" />
-              Sign in
+              {t("common.signIn")}
             </button>
             <button
               onClick={handleGoBack}
               className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-[6px] border border-border/60 text-muted-foreground text-[12px] font-semibold hover:bg-secondary/70 hover:text-foreground transition-colors"
             >
-              Go back
+              {t("admin.ui.go_back")}
             </button>
           </div>
         </div>
@@ -217,6 +218,7 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AccessPromptManager = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const [loginPrompt, setLoginPrompt] = useState<AccessPromptDetail | null>(null);
 
@@ -248,24 +250,24 @@ const AccessPromptManager = () => {
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-foreground">
-                    Sign in required
+                    {t("admin.ui.sign_in_required")}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    Continue with your MediConnect account
+                    {t("admin.ui.continue_account")}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setLoginPrompt(null)}
                 className="rounded-[6px] p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                aria-label="Close"
+                aria-label={t("common.close")}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="px-5 py-4">
               <p className="text-[12px] leading-relaxed text-muted-foreground">
-                {loginPrompt.message ?? "Please sign in to continue."}
+                {loginPrompt.message ?? t("admin.ui.please_sign_in")}
               </p>
             </div>
             <div className="flex gap-2 px-5 pb-5">
@@ -275,13 +277,13 @@ const AccessPromptManager = () => {
                 className="flex h-10 flex-1 items-center justify-center gap-2 rounded-[6px] bg-primary px-4 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 <LogIn className="h-3.5 w-3.5" />
-                Sign in
+                {t("common.signIn")}
               </button>
               <button
                 onClick={() => setLoginPrompt(null)}
                 className="h-10 rounded-[6px] border border-border px-4 text-[12px] font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </div>

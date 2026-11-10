@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import * as db from "./db.js";
 import { sendMail } from "./mail.js";
+import { pick } from "./user-text.js";
 import { ensureVerifierColumns } from "./verification.js";
 
 const { columns, hasColumn, insert, one, pool, q, update } = db;
@@ -62,6 +63,12 @@ async function adminRecipients() {
   if (rows.length) return rows;
   const fallback = process.env.ADMIN_NOTIFY_EMAIL || process.env.MAIL_FROM_ADDRESS || "";
   return fallback ? [{ id: null, email: fallback, name: "Admin" }] : [];
+}
+
+async function languageFor(userId) {
+  if (!userId || !(await hasColumn("users", "preferred_language").catch(() => false))) return "en";
+  const row = await one("SELECT preferred_language FROM users WHERE id = ?", [userId]).catch(() => null);
+  return row?.preferred_language || "en";
 }
 
 async function notifyInApp(userId, title, message) {
@@ -163,20 +170,45 @@ export async function reviewDoctor(id, action, message, adminUserId = null) {
   }
   await update("doctors", id, patch);
   const updated = await one("SELECT * FROM doctors WHERE id = ?", [id]);
+  const lang = await languageFor(updated.user_id);
   if (action === "approve") {
     await notifyDoctorReview(updated, {
-      subject: "Your MediConnect profile is approved",
-      message: "An admin approved your profile. You can now use your doctor tools, including appointments, consultations, and your wallet.",
+      subject: pick(lang, {
+        en: "Your MediConnect profile is approved",
+        fr: "Votre profil MediConnect est approuvé",
+        rw: "Umwirondoro wawe wa MediConnect wemewe",
+      }),
+      message: pick(lang, {
+        en: "An admin approved your profile. You can now use your doctor tools, including appointments, consultations, and your wallet.",
+        fr: "Un administrateur a approuvé votre profil. Vous pouvez maintenant utiliser vos outils de médecin, y compris les rendez-vous, les consultations et votre portefeuille.",
+        rw: "Umuyobozi yemeje umwirondoro wawe. Ubu ushobora gukoresha ibikoresho by'umuganga, harimo gahunda, ibiganiro, n'ikofi yawe.",
+      }),
     });
   } else if (action === "reject") {
     await notifyDoctorReview(updated, {
-      subject: "Your MediConnect profile was not approved",
-      message: `An admin did not approve your profile.\n\nMessage: ${note}\n\nUpdate your profile and save it again to send it back for review.`,
+      subject: pick(lang, {
+        en: "Your MediConnect profile was not approved",
+        fr: "Votre profil MediConnect n'a pas été approuvé",
+        rw: "Umwirondoro wawe wa MediConnect ntiwemewe",
+      }),
+      message: pick(lang, {
+        en: `An admin did not approve your profile.\n\nMessage: ${note}\n\nUpdate your profile and save it again to send it back for review.`,
+        fr: `Un administrateur n'a pas approuvé votre profil.\n\nMessage : ${note}\n\nMettez à jour votre profil et enregistrez-le à nouveau pour le renvoyer en révision.`,
+        rw: `Umuyobozi ntiyemeje umwirondoro wawe.\n\nUbutumwa: ${note}\n\nVugurura umwirondoro wawe ubike kugira ngo wongere woherezwa gusuzumwa.`,
+      }),
     });
   } else {
     await notifyDoctorReview(updated, {
-      subject: "Action needed on your MediConnect profile",
-      message: `An admin asked you to update your profile before it can be approved.\n\nMessage: ${note}`,
+      subject: pick(lang, {
+        en: "Action needed on your MediConnect profile",
+        fr: "Action requise sur votre profil MediConnect",
+        rw: "Hakenewe igikorwa ku mwirondoro wawe wa MediConnect",
+      }),
+      message: pick(lang, {
+        en: `An admin asked you to update your profile before it can be approved.\n\nMessage: ${note}`,
+        fr: `Un administrateur vous demande de mettre à jour votre profil avant qu'il puisse être approuvé.\n\nMessage : ${note}`,
+        rw: `Umuyobozi yagusabye kuvugurura umwirondoro wawe mbere y'uko wemezwa.\n\nUbutumwa: ${note}`,
+      }),
     });
   }
   return updated;
@@ -239,11 +271,17 @@ export async function remindExpiringLicenses() {
   for (const doctor of rows) {
     const when = String(doctor.license_expires_at).slice(0, 10);
     const days = daysUntil(when);
-    const timing = days < 0
+    const doctorLang = await languageFor(doctor.user_id);
+    const timingEn = days < 0
       ? `expired on ${when}`
       : days === 0
         ? `expires today (${when})`
         : `expires on ${when} (${days} day${days === 1 ? "" : "s"} left)`;
+    const timing = pick(doctorLang, {
+      en: timingEn,
+      fr: days < 0 ? `a expiré le ${when}` : days === 0 ? `expire aujourd'hui (${when})` : `expire le ${when} (${days} jour${days === 1 ? "" : "s"} restant${days === 1 ? "" : "s"})`,
+      rw: days < 0 ? `rwarangiye ku wa ${when}` : days === 0 ? `rurangira uyu munsi (${when})` : `rurangira ku wa ${when} (hasigaye ${days === 1 ? "umunsi umwe" : `iminsi ${days}`})`,
+    });
     const user = doctor.user_id
       ? await one("SELECT name, email FROM users WHERE id = ?", [doctor.user_id])
       : null;
@@ -251,7 +289,7 @@ export async function remindExpiringLicenses() {
     const admins = await adminRecipients();
     const adminSubject = `License renewal needed: ${name}`;
     const adminText = [
-      `${name}'s medical license ${timing}.`,
+      `${name}'s medical license ${timingEn}.`,
       doctor.medical_license ? `License number: ${doctor.medical_license}` : "",
       "",
       "Upload the renewed license and set the new expiry date. Only an admin can change the expiry date.",
@@ -261,8 +299,16 @@ export async function remindExpiringLicenses() {
       await notifyInApp(admin.id, adminSubject, adminText);
     }
     await notifyDoctorReview(doctor, {
-      subject: "Your medical license needs renewal",
-      message: `Your medical license ${timing}. Please contact an admin so they can upload the renewed license and update the expiry date. You cannot change the expiry date yourself.`,
+      subject: pick(doctorLang, {
+        en: "Your medical license needs renewal",
+        fr: "Votre licence médicale doit être renouvelée",
+        rw: "Uruhushya rwawe rw'ubuvuzi rukeneye kuvugururwa",
+      }),
+      message: pick(doctorLang, {
+        en: `Your medical license ${timing}. Please contact an admin so they can upload the renewed license and update the expiry date. You cannot change the expiry date yourself.`,
+        fr: `Votre licence médicale ${timing}. Contactez un administrateur pour qu'il téléverse la licence renouvelée et mette à jour la date d'expiration. Vous ne pouvez pas modifier cette date vous-même.`,
+        rw: `Uruhushya rwawe rw'ubuvuzi ${timing}. Vugana n'umuyobozi kugira ngo ashyireho uruhushya rushya avugurure itariki yo kurangira. Ntushobora guhindura iyo tariki ubwe.`,
+      }),
     });
     await update("doctors", doctor.id, { license_expiry_reminded_for: when });
   }

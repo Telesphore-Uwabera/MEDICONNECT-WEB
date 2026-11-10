@@ -1,5 +1,6 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
+import { greeting as greetPerson, pick } from "./user-text.js";
 import { broadcast } from "./realtime.js";
 import { beginReadyMail, finishReadyMail, renewReadyMail, READY_CLAIM_RENEW_MS, READY_MAIL_TIMEOUT_MS } from "./ready-mail.js";
 import { visitAwaitsPayment } from "./visit-rules.js";
@@ -29,11 +30,14 @@ async function notifyInApp(userId, title, message, type) {
 // ─── Contact resolution helpers ───────────────────────────────────────────────
 async function doctorContact(doctorId) {
   if (!doctorId) return null;
-  return one(
-    `SELECT d.id, u.id AS user_id, u.name, u.email, u.phone
+  const langColumn = await hasColumn("users", "preferred_language").catch(() => false);
+  const row = await one(
+    `SELECT d.id, u.id AS user_id, u.name, u.email, u.phone${langColumn ? ", u.preferred_language" : ""}
      FROM doctors d JOIN users u ON u.id = d.user_id WHERE d.id = ? LIMIT 1`,
     [doctorId],
   ).catch(() => null);
+  if (!row) return null;
+  return { ...row, lang: row.preferred_language };
 }
 
 // A "any available doctor" request carries no doctor_id, so nobody is the
@@ -78,7 +82,11 @@ function agreed(primary, secondary, phone = false) {
 async function provenAccount(userId) {
   let user;
   try {
-    user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [userId]);
+    const langColumn = await hasColumn("users", "preferred_language").catch(() => false);
+    user = await one(
+    `SELECT id, name, email, phone${langColumn ? ", preferred_language" : ""} FROM users WHERE id = ? LIMIT 1`,
+    [userId],
+  );
   } catch {
     return null;
   }
@@ -88,6 +96,7 @@ async function provenAccount(userId) {
     name: cleanContact(user.name) || "Patient",
     email: cleanContact(user.email),
     phone: cleanContact(user.phone),
+    lang: user.preferred_language,
   };
 }
 
@@ -134,7 +143,7 @@ async function patientContact(row) {
     const email = cleanContact(found.profile.email);
     const phone = cleanContact(found.profile.phone);
     if (!email && !phone) return null;
-    return { userId: null, name: cleanContact(found.profile.name) || "Patient", email, phone };
+    return { userId: null, name: cleanContact(found.profile.name) || "Patient", email, phone, lang: "en" };
   }
   const email = agreed(row?.guest_email, row?.email);
   const phone = agreed(row?.guest_phone, row?.phone, true);
@@ -145,6 +154,7 @@ async function patientContact(row) {
     name: cleanContact(row?.guest_name || row?.patient_name || row?.name) || "Patient",
     email,
     phone,
+    lang: "en",
   };
 }
 
@@ -158,11 +168,8 @@ async function deliver({ userId, email, subject, text, html, type }) {
 }
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
-function greeting(name) {
-  const parts = String(name || "").replace(/\s+/g, " ").trim().split(" ").filter((part) => part && !/^dr\.?$/i.test(part));
-  const first = parts[0] || "";
-  if (!first || first.toLowerCase() === "patient" || first.includes("@")) return "Hello!";
-  return `Hello, ${first}!`;
+function greeting(name, lang = "en") {
+  return greetPerson(lang, name);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -208,7 +215,7 @@ export async function notifyPaidVisit(payment, account = null) {
       title: subjectDoctor,
       preheader: textDoctor,
       body: `
-        ${emailP(greeting(doctor.name))}
+        ${emailP(greeting(doctor.name, doctor.lang))}
         ${emailHtml(instant
           ? `A patient has paid for an instant consultation${amountStr ? ` of <strong>${amountStr}</strong>` : ""} and is waiting for you.`
           : `<strong>${patient.name}</strong> has paid for an ${amountStr ? `<strong>${amountStr}</strong> ` : ""}appointment on <strong>${when}</strong>. Please review their details and confirm the visit.`
@@ -262,7 +269,7 @@ export async function notifyPaidVisit(payment, account = null) {
       preheader: textPatient,
       accentHex: "#38a169",
       body: `
-        ${emailP(greeting(patient.name))}
+        ${emailP(greeting(patient.name, patient.lang))}
         ${emailHtml(instant
           ? `Your payment has been confirmed. ${doctor?.name ? `Dr. <strong>${doctor.name}</strong> will join you shortly.` : "A doctor will join your consultation shortly."}`
           : `Your payment${amountStr ? ` of <strong>${amountStr}</strong>` : ""} has been received. Your appointment is now pending the doctor's confirmation — you'll receive another email once they confirm.`
@@ -327,15 +334,24 @@ export async function notifyBookedVisit(row) {
 
   // ── Patient notification ──
   if (patient.email || patient.userId) {
-    const subject = `Pay to secure appointment #${row?.id ?? ""}`.trim();
-    const text = `Appointment #${row?.id ?? ""}${doctor?.name ? ` with ${doctor.name}` : ""} is reserved for ${when}. Pay ${amountStr} at ${payUrl} before the doctor can confirm it.`;
+    const subject = pick(patient.lang, {
+      en: `Pay to secure appointment #${row?.id ?? ""}`.trim(),
+      fr: `Payez pour confirmer le rendez-vous n° ${row?.id ?? ""}`.trim(),
+      rw: `Ishyura wemeze gahunda ya #${row?.id ?? ""}`.trim(),
+    });
+    const text = pick(patient.lang, {
+      en: `Appointment #${row?.id ?? ""}${doctor?.name ? ` with ${doctor.name}` : ""} is reserved for ${when}. Pay ${amountStr} at ${payUrl} before the doctor can confirm it.`,
+      fr: `Le rendez-vous n° ${row?.id ?? ""}${doctor?.name ? ` avec ${doctor.name}` : ""} est réservé pour ${when}. Payez ${amountStr} sur ${payUrl} avant que le médecin ne puisse le confirmer.`,
+      rw: `Gahunda ya #${row?.id ?? ""}${doctor?.name ? ` na ${doctor.name}` : ""} yarafashwe kuri ${when}. Ishyura ${amountStr} kuri ${payUrl} mbere y'uko umuganga ayemeza.`,
+    });
 
     const html = buildEmailHtml({
-      title: "Your appointment is reserved",
+      lang: patient.lang,
+      title: pick(patient.lang, { en: "Your appointment is reserved", fr: "Votre rendez-vous est réservé", rw: "Gahunda yawe yarafashwe" }),
       preheader: text,
       accentHex: "#0BA59B",
       body: `
-        ${emailP(greeting(patient.name))}
+        ${emailP(greeting(patient.name, patient.lang))}
         ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is successfully reserved for <strong>${when}</strong>.`)}
         ${emailHtml("To hold your slot, please complete payment. The appointment will remain <em>pending</em> until payment is received.")}
         ${emailInfoBox([
@@ -360,7 +376,7 @@ export async function notifyBookedVisit(row) {
       title: "New appointment request",
       preheader: text,
       body: `
-        ${emailP(greeting(doctor?.name))}
+        ${emailP(greeting(doctor?.name, doctor?.lang))}
         ${emailHtml(`<strong>${patient.name}</strong> has requested an appointment on <strong>${when}</strong>.`)}
         ${emailHtml(`The appointment is <strong>pending</strong> until the patient completes payment of ${amountStr}. You'll receive a confirmation notification once they pay.`)}
         ${emailInfoBox([
@@ -395,7 +411,7 @@ export async function notifyAppointmentConfirmed(row) {
       preheader: text,
       accentHex: "#38a169",
       body: `
-        ${emailP(greeting(patient.name))}
+        ${emailP(greeting(patient.name, patient.lang))}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
           <tr>
             <td style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;border-left:4px solid #38a169;">
@@ -426,7 +442,7 @@ export async function notifyAppointmentConfirmed(row) {
       preheader: text,
       accentHex: "#38a169",
       body: `
-        ${emailP(greeting(doctor?.name))}
+        ${emailP(greeting(doctor?.name, doctor?.lang))}
         ${emailHtml(`You have successfully confirmed <strong>${patient.name}</strong>'s appointment for <strong>${when}</strong>.`)}
         ${emailInfoBox([
           ["Patient", patient.name],
@@ -455,7 +471,7 @@ export async function notifyAppointmentRescheduled(row) {
       preheader: text,
       accentHex: "#0ea5e9",
       body: `
-        ${emailP(greeting(patient.name))}
+        ${emailP(greeting(patient.name, patient.lang))}
         ${emailHtml(`<strong>${doctor?.name ? `Dr. ${doctor.name}` : "Your doctor"}</strong> has moved your appointment to <strong>${when}</strong>.`)}
         ${emailInfoBox([
           doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
@@ -487,7 +503,7 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
       preheader: text,
       accentHex: "#0BA59B",
       body: `
-        ${emailP(greeting(patient.name))}
+        ${emailP(greeting(patient.name, patient.lang))}
         ${emailHtml(`Your ${kindLabel}${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} has been marked as complete.`)}
         ${emailP("Your doctor may have added notes, a diagnosis summary, or a prescription to your profile. You can view and download them from your MediConnect account.")}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
@@ -517,7 +533,7 @@ export async function notifyVisitCompleted(row, kind = "consultation") {
       preheader: text,
       accentHex: "#0BA59B",
       body: `
-        ${emailP(greeting(doctor?.name))}
+        ${emailP(greeting(doctor?.name, doctor?.lang))}
         ${emailHtml(`<strong>${patient.name}</strong>'s ${kindLabel} has been marked as complete.`)}
         ${emailP("You can review and update any consultation notes, prescriptions, or follow-up bookings from your dashboard.")}
         ${emailBtn("Go to Dashboard", "https://mediconnect.rw/doctor", "#0BA59B")}
@@ -549,14 +565,24 @@ async function readyNotice(visitKey, patient, subject, text) {
 
 async function composeReadyMessage(row, patient) {
   const doctor = await doctorContact(row.doctor_id);
-  const subject = `Your doctor is ready for consultation #${row.id}`;
-  const text = `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`;
+  const lang = patient.lang;
+  const subject = pick(lang, {
+    en: `Your doctor is ready for consultation #${row.id}`,
+    fr: `Votre médecin est prêt pour la consultation n° ${row.id}`,
+    rw: `Umuganga wawe arategereje ikiganiro cya #${row.id}`,
+  });
+  const text = pick(lang, {
+    en: `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`,
+    fr: `${doctor?.name || "Votre médecin"} est dans la consultation n° ${row.id} et vous attend. Ouvrez MediConnect et rejoignez maintenant.`,
+    rw: `${doctor?.name || "Umuganga wawe"} ari mu kiganiro cya #${row.id} akurindirira. Fungura MediConnect winjire ubu.`,
+  });
   const html = buildEmailHtml({
-    title: "Your doctor is ready!",
+    lang,
+    title: pick(lang, { en: "Your doctor is ready!", fr: "Votre médecin est prêt !", rw: "Umuganga wawe arategereje!" }),
     preheader: text,
     accentHex: "#7c3aed",
     body: `
-      ${emailP(greeting(patient.name))}
+      ${emailP(greeting(patient.name, patient.lang))}
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
         <tr>
           <td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:16px 20px;border-left:4px solid #7c3aed;">
@@ -679,7 +705,7 @@ export async function remindUpcomingVisits() {
           preheader: text,
           accentHex: "#0BA59B",
           body: `
-            ${emailP(greeting(patient.name))}
+            ${emailP(greeting(patient.name, patient.lang))}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td style="background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;padding:16px 20px;border-left:4px solid #0BA59B;">
@@ -711,7 +737,7 @@ export async function remindUpcomingVisits() {
           preheader: text,
           accentHex: "#0BA59B",
           body: `
-            ${emailP(greeting(doctor?.name))}
+            ${emailP(greeting(doctor?.name, doctor?.lang))}
             ${emailHtml(`<strong>${patient.name}</strong> has an appointment with you at <strong>${time}</strong> today — in approximately 1 hour.`)}
             ${emailInfoBox([
               ["Patient", patient.name],
@@ -741,7 +767,7 @@ export async function remindUpcomingVisits() {
           preheader: text,
           accentHex: "#d97706",
           body: `
-            ${emailP(greeting(patient.name))}
+            ${emailP(greeting(patient.name, patient.lang))}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px 20px;border-left:4px solid #d97706;">
@@ -769,7 +795,7 @@ export async function remindUpcomingVisits() {
           preheader: text,
           accentHex: "#d97706",
           body: `
-            ${emailP(greeting(doctor?.name))}
+            ${emailP(greeting(doctor?.name, doctor?.lang))}
             ${emailHtml(`<strong>${patient.name}</strong> has an appointment with you at <strong>${time}</strong> — starting in approximately 30 minutes.`)}
             ${emailInfoBox([
               ["Patient", patient.name],

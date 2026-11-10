@@ -205,8 +205,8 @@ function ManagePharmacies() {
           <div className="p-3 sm:p-4">
             {isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <p className="text-[12px] font-semibold text-destructive">Failed to load pharmacies</p>
-                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+                <p className="text-[12px] font-semibold text-destructive">{t("admin.ui.failed_pharmacies")}</p>
+                <p className="text-[11px] text-muted-foreground/70">{t("admin.ui.check_connection")}</p>
               </div>
             ) : (
               <PharmacyTable
