@@ -1,16 +1,13 @@
 import { hasColumn, one, pool, q, tableExists } from "./db.js";
 import { hashPassword, loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
-import { instantOwnedWhere, ownsInstant } from "./instant-visit.js";
+import { instantOwnedWhere, isPaidStatus, ownsInstant } from "./instant-visit.js";
 
 /**
- * Visit rules shared by the patient, doctor and payment routes.
- *
- * `status = 'confirmed'` is the settled marker for both visit kinds: an instant
- * row only reaches it through a paid invoice, and an appointment only reaches it
- * through the doctor's confirm step, which already rejects unpaid visits. Keeping
- * that one fact here stops every doctor-facing action from re-deriving it — and
- * production's instant table has no payment_status column to derive it from.
+ * A visit is settled only after a verified payment (or a zero fee) and a
+ * status the doctor can act on. An explicit unpaid payment_status is never
+ * settled, even when status is confirmed. When the payment column is absent,
+ * status confirmed/accepted is the marker the payment callback leaves behind.
  */
 
 const SETTLED = new Set(["confirmed", "accepted", "in_progress", "completed", "done"]);
@@ -28,23 +25,18 @@ export function clockTime(value) {
 
 export function visitIsSettled(row) {
   const status = String(row?.status || "").toLowerCase();
-  if (String(row?.payment_status || "").toLowerCase() === "paid") return true;
-  if (SETTLED.has(status)) return true;
-  // A doctor who charges nothing has no payment to wait for. Only applies when
-  // the row actually carries a fee column — instant rows do not, so they can
-  // only ever be settled by their status.
-  const fee = row?.consultation_fee ?? row?.patient_pays ?? row?.amount_due;
-  if (fee != null && fee !== "" && Number(fee) === 0) return true;
-  return false;
+  if (!isPaidStatus(row)) return false;
+  return SETTLED.has(status);
 }
 
 export function visitIsClosed(row) {
   return CLOSED.has(String(row?.status || "").toLowerCase());
 }
 
-/** A visit that is neither settled nor finished — the patient has not paid yet. */
+/** The patient has not made a verified payment, and the visit is still open. */
 export function visitAwaitsPayment(row) {
-  return !visitIsSettled(row) && !visitIsClosed(row);
+  if (visitIsClosed(row)) return false;
+  return !isPaidStatus(row);
 }
 
 /**

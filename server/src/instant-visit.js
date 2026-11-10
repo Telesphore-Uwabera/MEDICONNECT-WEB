@@ -29,9 +29,27 @@ export function ageSeconds(value, now = new Date()) {
 }
 
 export function isPaidStatus(row) {
-  const payment = String(row?.payment_status || "").toLowerCase();
+  const fee = row?.consultation_fee ?? row?.patient_pays ?? row?.amount_due;
+  if (fee != null && fee !== "" && Number(fee) === 0) return true;
+  const raw = row?.payment_status;
+  const payment = String(raw || "").toLowerCase();
   if (PAID.has(payment)) return true;
-  return String(row?.status || "").toLowerCase() === "confirmed";
+  // An explicit unpaid status wins over a visit status. A confirmed or accepted
+  // row that never received a verified payment stays out of the queue.
+  if (raw != null && String(raw).trim() !== "") return false;
+  // Older rows have no payment column. Only the payment callback's confirmed
+  // marker, or a visit the doctor already took after that, counts as paid.
+  return ["confirmed", "accepted", "in_progress", "completed", "done"].includes(String(row?.status || "").toLowerCase());
+}
+
+/** Paid, still waiting for this doctor. Unassigned requests count only when paid. */
+export function countsInInstantQueue(row, doctorId) {
+  if (!row || !isPaidStatus(row)) return false;
+  const status = String(row.status || "").toLowerCase();
+  if (!["confirmed", "pending", "queued", "waiting", "payment_pending"].includes(status)) return false;
+  const named = row.doctor_id == null || row.doctor_id === "" ? null : Number(row.doctor_id);
+  if (named == null) return true;
+  return named === Number(doctorId);
 }
 
 export function isUnpaidOpen(row, now = new Date()) {
@@ -51,7 +69,7 @@ export function placeInQueue(request, peers = [], now = new Date()) {
   const doctorId = request?.doctor_id == null || request.doctor_id === "" ? null : Number(request.doctor_id);
   const open = peers.filter((row) => {
     const status = String(row?.status || "").toLowerCase();
-    if (!OPEN_INSTANT_STATUSES.includes(status)) return false;
+    if (!OPEN_INSTANT_STATUSES.includes(status) || !isPaidStatus(row)) return false;
     const rowDoctor = row?.doctor_id == null || row.doctor_id === "" ? null : Number(row.doctor_id);
     return rowDoctor === doctorId;
   });
@@ -235,7 +253,7 @@ export function canPayInstant(row) {
 }
 
 export function canJoinInstant(row) {
-  return JOINABLE_STATUSES.includes(String(row?.status || "").toLowerCase());
+  return isPaidStatus(row) && JOINABLE_STATUSES.includes(String(row?.status || "").toLowerCase());
 }
 
 /**

@@ -323,12 +323,9 @@ const DoctorOverview = () => {
     Number(wallet?.balance ?? 0) ||
     Number((earnings as { summary?: { total_earned?: unknown } } | undefined)?.summary?.total_earned ?? 0) ||
     Number(revenue?.total ?? 0);
-  const todayPending =
-    Number((today as { waiting?: number } | undefined)?.waiting ?? 0) ||
-    ((today?.pending ?? 0) + (today?.confirmed ?? 0)) ||
-    Number(instantStats?.current_queue ?? 0);
+  const todayPending = Number((today as { waiting?: number } | undefined)?.waiting ?? 0);
   const todayCompleted = today?.completed ?? 0;
-  const instantQueue = instantStats?.current_queue ?? today?.instant_queue ?? 0;
+  const instantQueue = Number(instantStats?.current_queue ?? today?.instant_queue ?? 0);
 
   
   const payoutRequests = uniquePayoutRequests([
