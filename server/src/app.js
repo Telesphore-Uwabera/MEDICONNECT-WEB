@@ -53,7 +53,7 @@ import {
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
-import { ageSeconds, placeInQueue } from "./instant-visit.js";
+import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, placeInQueue } from "./instant-visit.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -1883,12 +1883,16 @@ export function appRoutes(router) {
       // otherwise the dashboard stat and the queue tab can never agree.
       const instantOwned = instantTable && (await hasColumn(instantTable, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=0";
       const instantParams = instantOwned === "1=0" ? [] : [doctorId];
-      const instantStatus = async (extra) => instantTable
-        ? count(`SELECT COUNT(*) AS total FROM \`${instantTable}\` WHERE ${instantOwned} AND ${extra}`, instantParams)
+      const instantStatus = async (extra, extraParams = []) => instantTable
+        ? count(`SELECT COUNT(*) AS total FROM \`${instantTable}\` WHERE ${instantOwned} AND ${extra}`, [...instantParams, ...extraParams])
         : 0;
-      // A patient who has just paid moves to 'confirmed', so the live queue has to
-      // include it — counting only unpaid statuses hides the patients waiting on the doctor.
-      const instantQueueSql = "status IN ('pending','queued','waiting','confirmed','accepted','in_progress')";
+      // One rule for the dashboard, the queue tab, and Today waiting: a verified
+      // payment, still waiting, for this doctor (or a paid "any doctor" request).
+      const hasPayColumn = instantTable ? await hasColumn(instantTable, "payment_status") : false;
+      const paidMarker = hasPayColumn
+        ? "(LOWER(COALESCE(payment_status, '')) IN ('paid','completed','success','successful') OR ((payment_status IS NULL OR payment_status = '') AND LOWER(status) IN ('confirmed','accepted','in_progress','completed','done')))"
+        : "LOWER(status) IN ('confirmed','accepted','in_progress','completed','done')";
+      const instantQueueSql = `${paidMarker} AND LOWER(status) IN ('confirmed','pending','queued','waiting','payment_pending')`;
       const instantCreated = instantTable && (await firstColumn(instantTable, ["created_at", "updated_at"]));
       const instantCompletedAt = instantTable && (await firstColumn(instantTable, ["completed_at", "ended_at", "updated_at", "created_at"]));
       if (instantTable && instantCreated) {
@@ -1899,7 +1903,8 @@ export function appRoutes(router) {
         today.completed += await instantStatus(`status IN ('completed','done') AND DATE(\`${instantCompletedAt}\`) = CURDATE()`);
       }
       today.total = today.pending + today.confirmed + today.completed + today.cancelled;
-      today.waiting = today.pending + today.confirmed;
+      const paidWaiting = await instantStatus(instantQueueSql);
+      today.waiting = paidWaiting;
 
       res.json({
         filters_applied: {
@@ -1910,7 +1915,7 @@ export function appRoutes(router) {
           search: req.query.search || null,
           chart_group: chartGroup,
         },
-        today: { ...today, instant_queue: await instantStatus(instantQueueSql) },
+        today: { ...today, instant_queue: paidWaiting },
         period_stats: {
           unique_patients: uniquePatients,
           total_appointments: periodStats.total,
@@ -1951,8 +1956,8 @@ export function appRoutes(router) {
           completed: await instantStatus("status IN ('completed','done')"),
           declined: await instantStatus("status IN ('declined','rejected','cancelled','canceled')"),
           pending: await instantStatus("status IN ('pending','queued','waiting')"),
-          current_queue: await instantStatus(instantQueueSql),
-          paid_waiting: await instantStatus("status = 'confirmed'"),
+          current_queue: paidWaiting,
+          paid_waiting: paidWaiting,
           avg_duration_min: 0,
         },
         prescriptions: {
@@ -2180,13 +2185,7 @@ export function appRoutes(router) {
           owner.includes("?") ? [doctorId] : [],
         ).catch(() => ({ total: 0 })))?.total ?? 0);
       }
-      const liveQueue = queue.filter((item) => {
-        if (Number(item.doctor_id) !== Number(doctorId)) return false;
-        const paid = item.payment_status === "paid" || item.status === "confirmed";
-        const unpaidOpen = ["pending", "queued", "waiting", "payment_pending"].includes(item.status) && !paid;
-        if (unpaidOpen) return (item.age_seconds ?? 0) < 15 * 60;
-        return ["pending", "queued", "waiting", "confirmed"].includes(item.status);
-      });
+      const liveQueue = queue.filter((item) => countsInInstantQueue(item, doctorId));
       res.json({
         queue,
         stats: {
@@ -2219,8 +2218,8 @@ export function appRoutes(router) {
       }
       // 'confirmed' is the only state a patient can reach by paying, so anything
       // still pending is an unpaid queue row the doctor must not be able to take.
-      if (visitAwaitsPayment(row)) {
-        return res.status(422).json({ message: "This patient has not paid yet." });
+      if (!isPaidStatus(row)) {
+        return res.status(422).json({ message: "This consultation is not paid yet. The patient must complete payment before you can accept it." });
       }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
@@ -2279,8 +2278,8 @@ export function appRoutes(router) {
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
       }
-      if (visitAwaitsPayment(row)) {
-        return res.status(422).json({ message: "This patient has not paid yet." });
+      if (!isPaidStatus(row)) {
+        return res.status(422).json({ message: "This consultation is not paid yet. The patient must complete payment before you can join." });
       }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
@@ -2401,7 +2400,7 @@ export function appRoutes(router) {
       if (visitIsClosed(appointment)) {
         return res.status(422).json({ message: "This appointment is no longer open." });
       }
-      if (!visitIsSettled(appointment)) {
+      if (!isPaidStatus(appointment) || !visitIsSettled(appointment)) {
         return res.status(422).json({ message: "Pay for this visit and wait for the doctor to confirm it before joining." });
       }
       const window = appointmentJoinWindow(appointment);
@@ -2529,7 +2528,7 @@ export function appRoutes(router) {
         `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND status IN ('accepted','in_progress') ORDER BY id DESC LIMIT 1`,
         params,
       ).catch(() => null);
-      if (!row) return res.json({ data: null });
+      if (!row || !canJoinInstant(row)) return res.json({ data: null });
       await markGuestPasswordUsed(req.user.id).catch(() => null);
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       res.json({
@@ -2580,6 +2579,9 @@ export function appRoutes(router) {
           return res.status(403).json({ message: "This appointment belongs to another patient." });
         }
         return res.json(await presentRow("appointments", appointment));
+      }
+      if (!canJoinInstant(row)) {
+        return res.status(422).json({ message: "Pay for this consultation before joining the video call." });
       }
       await markGuestPasswordUsed(req.user.id).catch(() => null);
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;

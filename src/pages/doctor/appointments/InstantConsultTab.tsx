@@ -48,7 +48,7 @@ type ItemAction = {
 } | null;
 
 function attachPatientToCallToken(
-  token: any,
+  token: Record<string, unknown> | null | undefined,
   item?: InstantConsultQueueItem | null,
   live?: LiveSessionResponse | null,
 ) {
@@ -227,8 +227,12 @@ export function InstantConsultTab() {
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
   const stats = queueData?.stats;
 
-  const isPaid = (item: InstantConsultQueueItem) =>
-    item.payment_status === "paid" || item.status === "confirmed";
+  const isPaid = (item: InstantConsultQueueItem) => {
+    const pay = String(item.payment_status || "").toLowerCase();
+    if (["paid", "completed", "success", "successful"].includes(pay)) return true;
+    if (pay) return false;
+    return item.status === "confirmed" || item.status === "accepted" || item.status === "in_progress";
+  };
   const unpaidStatuses = ["pending", "queued", "waiting", "payment_pending"];
   const UNPAID_LIMIT_SEC = 15 * 60;
   const itemAgeSec = (item: InstantConsultQueueItem) => {
@@ -242,7 +246,7 @@ export function InstantConsultTab() {
 
   const newestFirst = (items: InstantConsultQueueItem[]) =>
     [...items].sort((a, b) => b.id - a.id);
-  const visibleQueue = queue.filter((i) => i.status !== "declined" && i.status !== "withdrawn");
+  const visibleQueue = queue.filter((i) => isPaid(i) && i.status !== "declined" && i.status !== "withdrawn");
   const finishedStatuses = ["completed", "expired", "payment_expired"];
   const finished = newestFirst(visibleQueue.filter((i) => finishedStatuses.includes(i.status)));
   const activeItems = newestFirst(visibleQueue.filter((i) => !finishedStatuses.includes(i.status)));
@@ -299,7 +303,7 @@ export function InstantConsultTab() {
 
         const consultationId = Number(item.id);
         let enrichedToken = res.doctor_token;
-        let decodedToken: any;
+        let decodedToken: Record<string, unknown> | null = null;
         try {
           decodedToken = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
           // The token natively carries the real instant_consultations id — capture
@@ -359,7 +363,7 @@ export function InstantConsultTab() {
   const patientIdOf = (item: InstantConsultQueueItem | null): number | null =>
     item == null
       ? null
-      : ((item as any).user_id ?? (item as any).patient_id ?? (item as any).patient?.id ?? null);
+      : (item.user_id ?? item.patient_id ?? null);
 
   // Resolve the real `instant_consultations` id for the summary payload, since
   // the queue item only carries the request id.

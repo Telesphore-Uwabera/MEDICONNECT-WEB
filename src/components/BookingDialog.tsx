@@ -568,7 +568,7 @@ export const BookingDialog = ({
                   },
                   (msg) => {
                     setVerifyingPayment(false);
-                    toast.error(t("booking.doctorAppointment.paymentVerificationFailed"), { description: msg });
+                    toast.error(t("booking.doctorAppointment.paymentVerificationFailed"), { description: msg || t("booking.doctorAppointment.payRetry") });
                   }
                 );
               }
@@ -777,10 +777,14 @@ export const BookingDialog = ({
 
               {/* Verifying payment */}
               {verifyingPayment && (
-                <p className="text-sm text-primary mt-2 flex items-center justify-center gap-1.5 font-medium">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("booking.doctorAppointment.verifyingPayment")}
-                </p>
+                <div data-testid="payment-steps" className="mt-3 space-y-1 text-sm">
+                  <p className="text-muted-foreground">{t("booking.doctorAppointment.payStep")}</p>
+                  <p className="text-primary flex items-center justify-center gap-1.5 font-medium">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("booking.doctorAppointment.verifyingPayment")}
+                  </p>
+                  <p className="text-muted-foreground">{t("booking.doctorAppointment.afterPay")}</p>
+                </div>
               )}
             </div>
             <Button onClick={() => onOpenChange(false)} className="px-8">

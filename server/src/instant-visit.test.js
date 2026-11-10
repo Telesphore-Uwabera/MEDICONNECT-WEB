@@ -3,6 +3,8 @@ import {
   ageSeconds,
   canJoinInstant,
   canPayInstant,
+  countsInInstantQueue,
+  isPaidStatus,
   ownsInstant,
   placeInQueue,
   queueLabel,
@@ -44,11 +46,11 @@ describe("instant visit queue", () => {
     });
   });
 
-  it("keeps an earlier unpaid request ahead of a later paid one", () => {
-    const early = row({ id: 1, created_at: "2026-11-08 06:00:00", status: "pending", payment_status: null });
+  it("keeps an unpaid request out of the paid queue", () => {
+    const early = row({ id: 1, created_at: "2026-11-08 06:00:00", status: "pending", payment_status: "pending" });
+    const confirmedUnpaid = row({ id: 3, created_at: "2026-11-08 06:05:00", status: "confirmed", payment_status: "unpaid" });
     const paid = row({ id: 2, created_at: "2026-11-08 06:10:00", status: "confirmed", payment_status: "paid" });
-    expect(placeInQueue(paid, [early, paid], NOW)).toMatchObject({ queue_position: 2, people_ahead: 1 });
-    expect(placeInQueue(early, [early, paid], NOW)).toMatchObject({
+    expect(placeInQueue(paid, [early, confirmedUnpaid, paid], NOW)).toMatchObject({
       queue_position: 1,
       people_ahead: 0,
       you_are_next: true,
@@ -56,12 +58,13 @@ describe("instant visit queue", () => {
   });
 
   it("places a named request only among that doctor's open rows", () => {
-    const mine = row({ id: 106, created_at: "2026-11-08 06:17:00" });
+    const mine = row({ id: 106, status: "confirmed", payment_status: "paid", created_at: "2026-11-08 06:17:00" });
     const peers = [
-      row({ id: 100, created_at: "2026-11-08 06:00:00" }),
-      row({ id: 90, doctor_id: null, created_at: "2026-11-08 05:00:00" }),
-      row({ id: 101, doctor_id: 99, created_at: "2026-11-08 05:30:00" }),
-      row({ id: 102, status: "completed", created_at: "2026-11-08 04:00:00" }),
+      row({ id: 100, status: "confirmed", payment_status: "paid", created_at: "2026-11-08 06:00:00" }),
+      row({ id: 90, doctor_id: null, status: "confirmed", payment_status: "paid", created_at: "2026-11-08 05:00:00" }),
+      row({ id: 101, doctor_id: 99, status: "confirmed", payment_status: "paid", created_at: "2026-11-08 05:30:00" }),
+      row({ id: 102, status: "completed", payment_status: "paid", created_at: "2026-11-08 04:00:00" }),
+      row({ id: 103, status: "pending", payment_status: "pending", created_at: "2026-11-08 05:45:00" }),
       mine,
     ];
     expect(placeInQueue(mine, peers, NOW)).toMatchObject({
@@ -116,8 +119,22 @@ describe("instant visit queue", () => {
     )).toBe(true);
   });
 
-  it("offers join only after the doctor has accepted", () => {
+  it("offers join only after the doctor has accepted a paid visit", () => {
     expect(canJoinInstant(row({ status: "accepted", payment_status: "paid" }))).toBe(true);
     expect(canJoinInstant(row({ status: "pending", payment_status: "paid" }))).toBe(false);
+    expect(canJoinInstant(row({ status: "accepted", payment_status: "pending" }))).toBe(false);
+    expect(canJoinInstant(row({ status: "confirmed", payment_status: "unpaid" }))).toBe(false);
+  });
+
+  it("counts only a paid open request for this doctor, including a paid any-doctor request", () => {
+    expect(isPaidStatus(row({ status: "confirmed", payment_status: "paid" }))).toBe(true);
+    expect(isPaidStatus(row({ status: "confirmed", payment_status: null }))).toBe(true);
+    expect(isPaidStatus(row({ status: "confirmed", payment_status: "pending" }))).toBe(false);
+    expect(isPaidStatus(row({ status: "pending", payment_status: null }))).toBe(false);
+    expect(countsInInstantQueue(row({ status: "confirmed", payment_status: "paid", doctor_id: 31 }), 31)).toBe(true);
+    expect(countsInInstantQueue(row({ status: "pending", payment_status: "pending", doctor_id: 31 }), 31)).toBe(false);
+    expect(countsInInstantQueue(row({ status: "confirmed", payment_status: "paid", doctor_id: null }), 31)).toBe(true);
+    expect(countsInInstantQueue(row({ status: "pending", payment_status: null, doctor_id: null }), 31)).toBe(false);
+    expect(countsInInstantQueue(row({ status: "confirmed", payment_status: "paid", doctor_id: 99 }), 31)).toBe(false);
   });
 });
