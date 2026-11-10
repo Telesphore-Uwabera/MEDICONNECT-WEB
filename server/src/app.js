@@ -58,6 +58,7 @@ import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isServerGuestAccount } from "./guest-account.js";
+import { checkGuestLogin, createGuestPassword, guestAccessLine, markGuestPasswordUsed } from "./guest-password.js";
 import { checkSocialLink } from "./social-links.js";
 import {
   countWhere,
@@ -90,7 +91,7 @@ import {
   verifyPassword,
 } from "./auth.js";
 import { sendMail, buildOtpEmail, buildWelcomeEmail, buildEmailHtml, emailP, emailBtn } from "./mail.js";
-import { languageFromUserRow, pick } from "./user-text.js";
+import { languageFromUserRow, normalizeLang, pick } from "./user-text.js";
 
 const PROFILE_TABLE = {
   patient: "patients",
@@ -542,13 +543,15 @@ export function appRoutes(router) {
   router.post("/auth/login", async (req, res, next) => {
     try {
       const row = await findUserByLogin(req.body ?? {});
-      if (!row || !(await verifyPassword(req.body?.password, row.password))) {
-        return res.status(401).json({ message: "Incorrect password." });
+      const decision = row ? await checkGuestLogin(row, req.body?.password) : { ok: false, message: "Incorrect password." };
+      if (!decision.ok) {
+        return res.status(401).json({ message: decision.message || "Incorrect password." });
       }
       if (row.status === "suspended") return res.status(403).json({ message: "This account is suspended." });
+      if (decision.markUsed) await markGuestPasswordUsed(row.id).catch(() => null);
       const user = await toUser(row);
       const token = await issueToken(row.id, user.active_role);
-      res.json({ message: "Signed in.", token, user });
+      res.json({ message: "Signed in.", token, user, must_change_password: Boolean(decision.mustChange) });
     } catch (error) {
       next(error);
     }
@@ -725,7 +728,11 @@ export function appRoutes(router) {
       if (req.body?.password !== req.body?.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match." });
       }
-      await update("users", row.id, { password: await hashPassword(req.body.password) });
+      await update("users", row.id, {
+        password: await hashPassword(req.body.password),
+        password_must_change: 0,
+        temp_password_used_at: new Date(),
+      });
       await pool.query("DELETE FROM otps WHERE id = ?", [otp.id]);
 
       // Send confirmation email
@@ -897,7 +904,32 @@ export function appRoutes(router) {
         active_role: req.body?.role || "patient",
       });
       if (req.body?.role) await ensureRole(row.tokenable_id, req.body.role);
-      res.json({ message: "Guest account saved.", user_id: Number(row.tokenable_id) });
+      const issued = await createGuestPassword();
+      const lang = normalizeLang(req.body?.preferred_language);
+      await update("users", row.tokenable_id, {
+        password: issued.password,
+        preferred_language: lang,
+        ...issued.extra,
+      });
+      let tempPassword = null;
+      if (!issued.extra.password_must_change && req.body?.email && issued.plain) {
+        tempPassword = issued.plain;
+        const line = guestAccessLine(lang, req.body.email, issued.plain);
+        await sendMail({
+          to: req.body.email,
+          subject: pick(lang, {
+            en: "Your MediConnect temporary password",
+            fr: "Votre mot de passe temporaire MediConnect",
+            rw: "Ijambo ry'ibanga ry'igihe gito rya MediConnect",
+          }),
+          text: line,
+        }).catch(() => null);
+      }
+      res.json({
+        message: "Guest account saved.",
+        user_id: Number(row.tokenable_id),
+        temp_password: tempPassword,
+      });
     } catch (error) {
       next(error);
     }
@@ -2388,6 +2420,7 @@ export function appRoutes(router) {
         consultationId: appointment.id,
         name: "Patient",
       });
+      await markGuestPasswordUsed(req.user.id).catch(() => null);
       res.json({
         message: "Session ready.",
         room_url: `/consultation/${room}`,
@@ -2497,6 +2530,7 @@ export function appRoutes(router) {
         params,
       ).catch(() => null);
       if (!row) return res.json({ data: null });
+      await markGuestPasswordUsed(req.user.id).catch(() => null);
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       res.json({
         data: {
@@ -2547,6 +2581,7 @@ export function appRoutes(router) {
         }
         return res.json(await presentRow("appointments", appointment));
       }
+      await markGuestPasswordUsed(req.user.id).catch(() => null);
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       res.json({
         id: row.id,

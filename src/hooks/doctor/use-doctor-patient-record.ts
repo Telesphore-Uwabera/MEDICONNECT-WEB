@@ -83,7 +83,14 @@ export interface PatientDemographics {
   date_of_birth?: string | null;
   gender?: string | null;
   national_id?: string | null;
+  blood_type?: string | null;
   address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  country?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_relation?: string | null;
+  emergency_contact_phone?: string | null;
   user?: { id?: number; name?: string | null; email?: string | null; phone?: string | null } | null;
 }
 
@@ -109,6 +116,16 @@ export type PatientIntakePayload = {
   gender?: string;
   national_id?: string;
   address?: string;
+  blood_type?: string;
+  city?: string;
+  province?: string;
+  country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  emergency_contact_phone?: string;
+  chronic_conditions?: string;
+  known_allergies?: string;
+  current_medications?: string;
   appointment_id?: number | null;
   instant_consultation_id?: number | null;
 };

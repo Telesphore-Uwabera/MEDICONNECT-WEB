@@ -82,6 +82,7 @@ export interface LoginResponse {
   message: string;
   token: string;
   user: User;
+  must_change_password?: boolean;
 }
 
 // ── Me ────────────────────────────────────────────────
@@ -109,9 +110,11 @@ export interface ConvertGuestPayload {
   country_code: string;
   role: Role;
   email?: string;
+  preferred_language?: string;
 }
 
 export interface ConvertGuestResponse {
   message: string;
   user_id: number;
+  temp_password?: string | null;
 }

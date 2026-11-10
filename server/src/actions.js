@@ -538,7 +538,11 @@ async function fillGap(req, res, parts) {
   if (parts[0] === "settings") {
     if (req.method === "GET" && !parts[1]) return false;
     if (parts[1] === "password" && req.body?.password) {
-      await update("users", req.user.id, { password: await hashPassword(req.body.password) });
+      await update("users", req.user.id, {
+        password: await hashPassword(req.body.password),
+        password_must_change: 0,
+        temp_password_used_at: new Date(),
+      });
       res.json({ message: "Password updated." });
       return true;
     }

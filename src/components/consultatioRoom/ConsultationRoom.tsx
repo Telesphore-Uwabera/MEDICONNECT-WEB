@@ -29,8 +29,24 @@ interface ConsultationToken {
   is_owner: boolean;
   ice_servers: IceServer[];
   consultation_id?: number;
+  consultationId?: number;
+  instant_consultation_request_id?: number;
+  instant_consultation_id?: number;
+  id?: number;
   appointment_duration_minutes?: number;
   sig?: string;
+  doctor_id?: number;
+  doctorId?: number;
+  doctor?: { id?: number; doctor_id?: number };
+  chat_mode?: string;
+  patient_id?: number;
+  patientId?: number;
+  patient?: { id?: number; name?: string; phone?: string };
+  user_id?: number;
+  patient_name?: string;
+  guest_name?: string;
+  patient_phone?: string;
+  guest_phone?: string;
 }
 
 interface ConsultationRoomProps {
@@ -161,7 +177,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const remoteStreamRef = useRef<MediaStream | null>(null);
   remoteStreamRef.current = remoteStream;
   const [chatOpen, setChatOpen] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("notes") === "1";
+  });
   const [proofsOpen, setProofsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadProofCount, setUnreadProofCount] = useState(0);
@@ -174,7 +193,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   const startScreenShare = useCallback(async () => {
     try {
-      const stream = await (navigator.mediaDevices as any).getDisplayMedia({
+      const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 15, max: 30 } },
         audio: false,
       });
@@ -191,8 +210,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       sendSignalRef.current?.("screen-sharing", { active: true });
       // Auto-stop when user stops via browser UI
       videoTrack.onended = () => stopScreenShare();
-    } catch (e: any) {
-      if (e?.name !== "NotAllowedError") toast.error("Could not start screen share.");
+    } catch (e: unknown) {
+      const name = e instanceof Error ? e.name : "";
+      if (name !== "NotAllowedError") toast.error("Could not start screen share.");
     }
   }, []);
 
@@ -250,7 +270,20 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         let rtt = 0; let lost = 0; let packets = 0;
         let chosen: { localCandidateId?: string; remoteCandidateId?: string; selected?: boolean; state?: string; rank: number } | null = null;
         const candidateTypes = new Map<string, string>();
-        stats.forEach((s: any) => {
+        stats.forEach((report) => {
+          const s = report as {
+            type?: string;
+            kind?: string;
+            id?: string;
+            roundTripTime?: number;
+            packetsLost?: number;
+            packetsReceived?: number;
+            candidateType?: string;
+            selected?: boolean;
+            state?: string;
+            localCandidateId?: string;
+            remoteCandidateId?: string;
+          };
           if (s.type === "remote-inbound-rtp" && s.kind === "video") {
             rtt = s.roundTripTime ?? 0;
             lost = s.packetsLost ?? 0;
@@ -310,7 +343,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // in the room name. This keeps chat working even if token enrichment was
   // skipped or lost a value somewhere upstream.
   const consultationId = useMemo<number | null>(() => {
-    const t = token as any;
+    const t = token;
     const candidates = [
       t?.consultation_id,
       t?.consultationId,
@@ -333,7 +366,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // Prefer our own token's id; fall back to the one the peer shared over signaling.
   const effectiveConsultationId = consultationId ?? peerConsultationId;
   const doctorId = useMemo(() => {
-    const t = token as any;
+    const t = token;
     const candidates = [t?.doctor_id, t?.doctorId, t?.doctor?.id, t?.doctor?.doctor_id];
     for (const candidate of candidates) {
       const id = Number(candidate);
@@ -344,12 +377,12 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   // Scheduled appointments tag the token so chat uses the appointment endpoints.
   const chatMode: "instant" | "appointment" =
-    (token as any)?.chat_mode === "appointment" ? "appointment" : "instant";
+    token.chat_mode === "appointment" ? "appointment" : "instant";
   const { data: notesAppointment } = useGetAppointment(
     isOwner && chatMode === "appointment" ? (effectiveConsultationId ?? 0) : 0,
   );
   const notesPatientId = useMemo(() => {
-    const t = token as any;
+    const t = token;
     const candidates = [
       notesAppointment?.appointment?.patient?.id,
       t?.patient_id,
@@ -365,15 +398,15 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   }, [notesAppointment, token]);
   const notesPatientName =
     notesAppointment?.appointment?.patient?.name ||
-    (token as any)?.patient_name ||
-    (token as any)?.patient?.name ||
-    (token as any)?.guest_name ||
+    token.patient_name ||
+    token.patient?.name ||
+    token.guest_name ||
     "";
   const notesPatientPhone =
     notesAppointment?.appointment?.patient?.phone ||
-    (token as any)?.patient_phone ||
-    (token as any)?.patient?.phone ||
-    (token as any)?.guest_phone ||
+    token.patient_phone ||
+    token.patient?.phone ||
+    token.guest_phone ||
     "";
   const isGenericCallName = (value?: string | null) =>
     !value || /^(doctor|patient|you)$/i.test(value.trim());
@@ -387,7 +420,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const proofInstantConsultationId = chatMode === "instant" ? effectiveConsultationId : null;
   const isInstantRoom = chatMode === "instant" && /instant/i.test(roomName ?? "");
   const appointmentDurationSeconds = useMemo(() => {
-    const duration = Number((token as any)?.appointment_duration_minutes);
+    const duration = Number(token.appointment_duration_minutes);
     return Number.isFinite(duration) && duration > 0 ? duration * 60 : null;
   }, [token]);
   const durationWarningThresholdSeconds = useMemo(() => {
@@ -721,7 +754,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     }
   }, [remoteStream]);
 
-  const handleSignalRef = useRef<((payload: any) => void) | null>(null);
+  const handleSignalRef = useRef<((payload: { type: string; data: unknown; from: string; id?: number }) => void) | null>(null);
 
   // Drains the signal queue one item at a time — ensures serialized processing.
   const drainSignalQueue = useRef<(() => void) | null>(null);
@@ -753,7 +786,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     // SDP-based deduplication for offer/answer — the same SDP can arrive via
     // both WebSocket and HTTP poll. Use first 120 chars as a stable fingerprint.
     if (payload.type === "offer" || payload.type === "answer") {
-      const sdp = (payload.data as any)?.sdp;
+      const sdp = (payload.data as { sdp?: string } | null)?.sdp;
       if (sdp) {
         const fingerprint = `${payload.type}:${String(sdp).slice(0, 120)}`;
         if (seenSdpHashes.current.has(fingerprint)) return;
@@ -803,7 +836,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     const sanitizeSDP = (sdp: string) => {
       if (!sdp) return sdp;
-      let normalized = sdp.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+      const normalized = sdp.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
       return normalized
         .split(/\r?\n/)
         .map(line => line.trim())
@@ -912,7 +945,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           toast.info(isOwner ? "✋ Patient raised their hand." : "✋ You raised your hand — the doctor has been notified.", { duration: 5000 });
           // Play a subtle notification sound if doctor
           if (isOwner) {
-            try { new Audio("/audio/new-notification-057-494255.mp3").play().catch(() => {}); } catch {}
+            try { new Audio("/audio/new-notification-057-494255.mp3").play().catch(() => undefined); } catch { /* optional chime */ }
           }
         }
       }
@@ -966,11 +999,12 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         }
         localStreamRef.current = stream;
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error("[WebRTC] Media access denied", e);
-        if (e.name === "NotReadableError") {
+        const name = e instanceof Error ? e.name : "";
+        if (name === "NotReadableError") {
           alert(t("consult.call.media_in_use"));
-        } else if (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") {
+        } else if (name === "NotAllowedError" || name === "PermissionDeniedError") {
           alert(t("consult.call.grant_perms"));
         }
       }
@@ -980,7 +1014,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       const subscribeToChannel = () => {
         const channel = echo.channel(`consultation.${roomName}`);
         channelRef.current = channel;
-        channel.listen(".webrtc.signal", (payload: any) => {
+        channel.listen(".webrtc.signal", (payload: { type: string; data: unknown; from: string; id?: number }) => {
           handleSignalRef.current?.(payload);
         });
       };

@@ -93,6 +93,7 @@ function MiniInput({
   placeholder,
   dark,
   type = "text",
+  testId,
 }: {
   label: string;
   value: string;
@@ -100,6 +101,7 @@ function MiniInput({
   placeholder?: string;
   dark?: boolean;
   type?: string;
+  testId?: string;
 }) {
   return (
     <label className="block space-y-1 min-w-0">
@@ -109,6 +111,7 @@ function MiniInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        data-testid={testId}
         className={cn(
           "w-full rounded-[6px] border px-2 py-1.5 text-[12px] focus:outline-none focus:ring-1 focus:ring-primary/40",
           dark
@@ -216,6 +219,14 @@ export function InstantNotesSidebar({
       fill("date_of_birth", demographics?.date_of_birth ? String(demographics.date_of_birth).slice(0, 10) : null);
       fill("gender", demographics?.gender);
       fill("address", demographics?.address);
+      fill("city", demographics?.city);
+      fill("province", demographics?.province);
+      fill("country", demographics?.country);
+      fill("blood_type", demographics?.blood_type || medicalRecord?.blood_type);
+      fill("emergency_contact_name", demographics?.emergency_contact_name);
+      fill("emergency_contact_relation", demographics?.emergency_contact_relation);
+      fill("emergency_contact_phone", demographics?.emergency_contact_phone);
+      fill("chronic_conditions", medicalRecord?.chronic_conditions);
       if (match) {
         if (!next.chief_complaint.trim()) next.chief_complaint = summaryFieldText(match.chief_complaint, "main_complaint");
         if (!next.medication_history.trim()) next.medication_history = summaryFieldText(match.medication_history);
@@ -391,15 +402,25 @@ export function InstantNotesSidebar({
               <div className="col-span-2">
                 <MiniInput dark={dark} label={t("consult.notes.address")} value={chart.identity.address} onChange={(address) => patchIdentity({ address })} placeholder={t("consult.notes.ph_address")} />
               </div>
+              <MiniInput dark={dark} testId="guest-profile-city" label={t("clinical.chart.city")} value={chart.identity.city} onChange={(city) => patchIdentity({ city })} />
+              <MiniInput dark={dark} label={t("clinical.chart.province")} value={chart.identity.province} onChange={(province) => patchIdentity({ province })} />
+              <MiniInput dark={dark} label={t("clinical.chart.country")} value={chart.identity.country} onChange={(country) => patchIdentity({ country })} />
+              <MiniInput dark={dark} label={t("clinical.chart.blood_type")} value={chart.identity.blood_type} onChange={(blood_type) => patchIdentity({ blood_type })} />
+              <MiniInput dark={dark} label={t("clinical.chart.emergency_name")} value={chart.identity.emergency_contact_name} onChange={(emergency_contact_name) => patchIdentity({ emergency_contact_name })} />
+              <MiniInput dark={dark} label={t("clinical.chart.emergency_relation")} value={chart.identity.emergency_contact_relation} onChange={(emergency_contact_relation) => patchIdentity({ emergency_contact_relation })} />
+              <MiniInput dark={dark} label={t("clinical.chart.emergency_phone")} value={chart.identity.emergency_contact_phone} onChange={(emergency_contact_phone) => patchIdentity({ emergency_contact_phone })} />
+              <div className="col-span-2">
+                <MiniInput dark={dark} label={t("clinical.chart.conditions")} value={chart.identity.chronic_conditions} onChange={(chronic_conditions) => patchIdentity({ chronic_conditions })} />
+              </div>
               <div className="col-span-2">
                 <MiniInput dark={dark} label={t("consult.notes.patient_id")} value={chart.identity.patient_id} onChange={(patient_id) => patchIdentity({ patient_id })} placeholder={t("consult.notes.ph_patient_id")} />
               </div>
               {isRegisteredPatient ? (
                 <p className={cn("col-span-2 text-[10px] leading-snug", dark ? "text-emerald-300/90" : "text-emerald-700")}>
-                  {t("consult.notes.profile_autofilled", "Patient file loaded from their account.")}
+                  {t("consult.notes.profile_autofilled", "Patient file loaded from their account. You can correct it below.")}
                 </p>
-              ) : (
-                <div className="col-span-2 space-y-1.5">
+              ) : null}
+              <div className="col-span-2 space-y-1.5">
                   {missingOfficialId && (
                     <p className={cn("text-[10px] leading-snug", dark ? "text-amber-200/90" : "text-amber-700")}>
                       {t("consult.notes.patient_id_needed")}
@@ -416,7 +437,17 @@ export function InstantNotesSidebar({
                           date_of_birth: chart.identity.date_of_birth || undefined,
                           gender: chart.identity.gender || undefined,
                           national_id: chart.identity.national_id || undefined,
+                          blood_type: chart.identity.blood_type || undefined,
                           address: chart.identity.address || undefined,
+                          city: chart.identity.city || undefined,
+                          province: chart.identity.province || undefined,
+                          country: chart.identity.country || undefined,
+                          emergency_contact_name: chart.identity.emergency_contact_name || undefined,
+                          emergency_contact_relation: chart.identity.emergency_contact_relation || undefined,
+                          emergency_contact_phone: chart.identity.emergency_contact_phone || undefined,
+                          chronic_conditions: chart.identity.chronic_conditions || undefined,
+                          known_allergies: chart.allergy_history || undefined,
+                          current_medications: chart.medication_history || undefined,
                           appointment_id: isAppointment ? consultationId : null,
                           instant_consultation_id: isAppointment ? null : summaryInstantId,
                         },
@@ -439,10 +470,11 @@ export function InstantNotesSidebar({
                   >
                     {intake.isPending
                       ? t("consult.notes.saving")
-                      : t("consult.notes.add_profile", "Add profile")}
+                      : isRegisteredPatient
+                        ? t("clinical.chart.update")
+                        : t("clinical.chart.save")}
                   </button>
                 </div>
-              )}
             </div>
           )}
         </div>

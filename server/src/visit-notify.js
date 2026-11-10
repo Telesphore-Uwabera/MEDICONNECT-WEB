@@ -1,6 +1,7 @@
 import { hasColumn, insert, one, q, tableExists, update } from "./db.js";
 import { sendMail, buildEmailHtml, emailBtn, emailInfoBox, emailP, emailHtml, emailOtpBlock } from "./mail.js";
 import { greeting as greetPerson, pick } from "./user-text.js";
+import { guestAccessLine, reissueGuestPassword } from "./guest-password.js";
 import { languageForUserId } from "./user-language.js";
 import { broadcast } from "./realtime.js";
 import { beginReadyMail, finishReadyMail, renewReadyMail, READY_CLAIM_RENEW_MS, READY_MAIL_TIMEOUT_MS } from "./ready-mail.js";
@@ -171,10 +172,27 @@ function greeting(name, lang = "en") {
   return greetPerson(lang, name);
 }
 
+/** Include a fresh temporary password until the guest has signed in or joined. */
+async function guestAccess(userId, lang, email, existingPlain) {
+  let plain = existingPlain || null;
+  let address = email || "";
+  if (!plain && userId) {
+    const issued = await reissueGuestPassword(userId).catch(() => null);
+    if (issued?.plain) {
+      plain = issued.plain;
+      address = issued.email || address;
+    }
+  }
+  if (!plain) return { text: "", html: "", plain: null };
+  const line = guestAccessLine(lang, address, plain);
+  return { text: `\n${line}\n`, html: emailP(line), plain };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyPaidVisit
 // ─────────────────────────────────────────────────────────────────────────────
 export async function notifyPaidVisit(payment, account = null) {
+  let tempPassword = null;
   const payableType = String(payment?.payable_type || "");
   const payableId = payment?.payable_id;
   if (!payableId) return;
@@ -236,9 +254,11 @@ export async function notifyPaidVisit(payment, account = null) {
     const subjectPatient = instant
       ? `Payment confirmed — consultation #${payableId} is ready`
       : `Payment received for appointment #${payableId}`;
-    const textPatient = instant
+    const access = await guestAccess(patient.userId, patient.lang, patient.email, account?.plain);
+    tempPassword = access.plain || tempPassword;
+    const textPatient = (instant
       ? `Your payment is confirmed${doctor?.name ? ` with ${doctor.name}` : ""}. Sign in to join when the doctor is ready.`
-      : `Your payment${amountStr ? ` of ${amountStr}` : ""} was received${doctor?.name ? ` for your appointment with Dr. ${doctor.name}` : ""}. The doctor will confirm your appointment shortly.`;
+      : `Your payment${amountStr ? ` of ${amountStr}` : ""} was received${doctor?.name ? ` for your appointment with Dr. ${doctor.name}` : ""}. The doctor will confirm your appointment shortly.`) + access.text;
 
     const infoRows = [
       doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
@@ -275,6 +295,7 @@ export async function notifyPaidVisit(payment, account = null) {
         )}
         ${infoRows.length ? emailInfoBox(infoRows, "#38a169") : ""}
         ${credentialsBlock}
+        ${access.html}
         ${emailBtn(
           instant ? "Sign In & Join Consultation" : "View My Appointments",
           instant ? "https://mediconnect.rw/auth" : "https://mediconnect.rw/patient/appointments",
@@ -318,12 +339,14 @@ export async function notifyPaidVisit(payment, account = null) {
       });
     }
   }
+  return { tempPassword };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  notifyBookedVisit  — new appointment booked (awaiting payment)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function notifyBookedVisit(row) {
+  let tempPassword = null;
   const doctor = await doctorContact(row?.doctor_id);
   const patient = await patientNotice(row);
   const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" at ") || "the scheduled time";
@@ -333,6 +356,8 @@ export async function notifyBookedVisit(row) {
 
   // ── Patient notification ──
   if (patient.email || patient.userId) {
+    const access = await guestAccess(patient.userId, patient.lang, patient.email, row?.account_plain || null);
+    tempPassword = access.plain || tempPassword;
     const subject = pick(patient.lang, {
       en: `Pay to secure appointment #${row?.id ?? ""}`.trim(),
       fr: `Payez pour confirmer le rendez-vous n° ${row?.id ?? ""}`.trim(),
@@ -342,7 +367,7 @@ export async function notifyBookedVisit(row) {
       en: `Appointment #${row?.id ?? ""}${doctor?.name ? ` with ${doctor.name}` : ""} is reserved for ${when}. Pay ${amountStr} at ${payUrl} before the doctor can confirm it.`,
       fr: `Le rendez-vous n° ${row?.id ?? ""}${doctor?.name ? ` avec ${doctor.name}` : ""} est réservé pour ${when}. Payez ${amountStr} sur ${payUrl} avant que le médecin ne puisse le confirmer.`,
       rw: `Gahunda ya #${row?.id ?? ""}${doctor?.name ? ` na ${doctor.name}` : ""} yarafashwe kuri ${when}. Ishyura ${amountStr} kuri ${payUrl} mbere y'uko umuganga ayemeza.`,
-    });
+    }) + access.text;
 
     const html = buildEmailHtml({
       lang: patient.lang,
@@ -358,6 +383,7 @@ export async function notifyBookedVisit(row) {
           ["Scheduled", when],
           ["Amount due", amountStr],
         ].filter(Boolean), "#0BA59B")}
+        ${access.html}
         ${emailBtn("Pay Now to Confirm", payUrl)}
         ${emailP("If you did not book this appointment, please contact us immediately.", "font-size:12px;color:#9ca3af;")}
       `,
@@ -390,6 +416,7 @@ export async function notifyBookedVisit(row) {
 
     await deliver({ userId: doctor?.user_id, email: doctor?.email, subject, text, html, type: "visit.booked" });
   }
+  return { tempPassword };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -402,8 +429,9 @@ export async function notifyAppointmentConfirmed(row) {
 
   // ── Patient ──
   if (patient.email || patient.userId) {
+    const access = await guestAccess(patient.userId, patient.lang, patient.email, null);
     const subject = "Your appointment is confirmed ✓";
-    const text = `${doctor?.name || "Your doctor"} confirmed your appointment for ${when}. Sign in to view details.`;
+    const text = `${doctor?.name || "Your doctor"} confirmed your appointment for ${when}. Sign in to view details.` + access.text;
 
     const html = buildEmailHtml({
       title: "Appointment confirmed",
@@ -424,6 +452,7 @@ export async function notifyAppointmentConfirmed(row) {
           ["Date & Time", when],
         ].filter(Boolean), "#38a169")}
         ${emailP("You will receive a reminder before your appointment starts. Please be on time and ensure you have a stable internet connection for video consultations.")}
+        ${access.html}
         ${emailBtn("View My Appointments", "https://mediconnect.rw/patient/appointments", "#38a169")}
       `,
     });
@@ -565,6 +594,7 @@ async function readyNotice(visitKey, patient, subject, text) {
 async function composeReadyMessage(row, patient) {
   const doctor = await doctorContact(row.doctor_id);
   const lang = patient.lang;
+  const access = await guestAccess(patient.userId, lang, patient.email, null);
   const subject = pick(lang, {
     en: `Your doctor is ready for consultation #${row.id}`,
     fr: `Votre médecin est prêt pour la consultation n° ${row.id}`,
@@ -574,7 +604,7 @@ async function composeReadyMessage(row, patient) {
     en: `${doctor?.name || "Your doctor"} is in consultation #${row.id} and waiting for you. Open MediConnect and join now.`,
     fr: `${doctor?.name || "Votre médecin"} est dans la consultation n° ${row.id} et vous attend. Ouvrez MediConnect et rejoignez maintenant.`,
     rw: `${doctor?.name || "Umuganga wawe"} ari mu kiganiro cya #${row.id} akurindirira. Fungura MediConnect winjire ubu.`,
-  });
+  }) + access.text;
   const html = buildEmailHtml({
     lang,
     title: pick(lang, { en: "Your doctor is ready!", fr: "Votre médecin est prêt !", rw: "Umuganga wawe arategereje!" }),
@@ -591,6 +621,7 @@ async function composeReadyMessage(row, patient) {
       </table>
       ${emailHtml(`<strong>Dr. ${doctor?.name || "Your doctor"}</strong> is currently in the consultation room and waiting for you to join.`)}
       ${emailP("Please join immediately to avoid missing your appointment slot.")}
+      ${access.html}
       ${emailBtn("Join Consultation Now →", "https://mediconnect.rw/patient/appointments", "#7c3aed")}
       ${emailP("If you have trouble joining, please contact us at admin@mediconnect.rw.", "font-size:12px;color:#9ca3af;")}
     `,
@@ -693,12 +724,13 @@ export async function remindUpcomingVisits() {
       reminded.add(`appt-60-${row.id}`);
 
       if (patient.email || patient.userId) {
+        const access = await guestAccess(patient.userId, patient.lang, patient.email, null);
         const subject = unpaid
           ? `Payment still due for appointment #${row.id}`
           : "Reminder: your appointment starts in 1 hour";
-        const text = unpaid
+        const text = (unpaid
           ? `Appointment #${row.id} at ${time} is still unpaid. Pay before the doctor can confirm it.`
-          : `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in to join.`;
+          : `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in to join.`) + access.text;
         const html = buildEmailHtml({
           title: "Appointment in 1 hour",
           preheader: text,
@@ -722,6 +754,7 @@ export async function remindUpcomingVisits() {
               doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
               ["Time", time],
             ].filter(Boolean), "#0BA59B")}
+            ${access.html}
             ${emailBtn(unpaid ? "Review payment" : "View My Appointments", "https://mediconnect.rw/patient/appointments", "#0BA59B")}
           `,
         });
@@ -755,12 +788,13 @@ export async function remindUpcomingVisits() {
       reminded.add(`appt-30-${row.id}`);
 
       if (patient.email || patient.userId) {
+        const access = await guestAccess(patient.userId, patient.lang, patient.email, null);
         const subject = unpaid
           ? `Payment still due for appointment #${row.id}`
           : "Reminder: your appointment starts in 30 minutes";
-        const text = unpaid
+        const text = (unpaid
           ? `Appointment #${row.id} at ${time} is still unpaid. Pay before the doctor can confirm it.`
-          : `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in and get ready.`;
+          : `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in and get ready.`) + access.text;
         const html = buildEmailHtml({
           title: "Appointment in 30 minutes",
           preheader: text,
@@ -780,6 +814,7 @@ export async function remindUpcomingVisits() {
             ${emailP(unpaid
               ? "This reminder is about payment, not a live visit."
               : "Please ensure you have a stable internet connection and your camera/microphone are working.")}
+            ${access.html}
             ${emailBtn(unpaid ? "Review payment" : "Join Appointment Now", "https://mediconnect.rw/patient/appointments", "#d97706")}
           `,
         });

@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { countWhere, hasColumn, insert, paginateList, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
-import { ensureRole, hashPassword } from "./auth.js";
+import { ensureRole } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
+import { createGuestPassword } from "./guest-password.js";
 import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
 import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
@@ -13,6 +14,7 @@ import { insuranceCatalogWhere, loadInstantViewer, releaseSlot } from "./visit-r
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
 import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
+import { normalizeLang } from "./user-text.js";
 import { withNamedLock } from "./named-lock.js";
 
 function pathOf(req) {
@@ -489,45 +491,6 @@ export async function expireUnpaidPayments() {
   return { expired };
 }
 
-function temporaryPassword() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes = crypto.randomBytes(10);
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
-}
-
-const tempPasswordCache = new Map();
-
-function cacheGuestCredentials(keys, creds) {
-  if (!creds?.plain && !creds?.tempPassword) return;
-  const tempPassword = creds.plain || creds.tempPassword;
-  const email = creds.email || null;
-  const entry = {
-    email,
-    tempPassword,
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-  };
-  for (const k of keys) {
-    if (k !== undefined && k !== null && k !== "") {
-      tempPasswordCache.set(String(k), entry);
-    }
-  }
-}
-
-function getCachedGuestCredentials(keys) {
-  const now = Date.now();
-  for (const k of keys) {
-    if (k === undefined || k === null || k === "") continue;
-    const entry = tempPasswordCache.get(String(k));
-    if (entry) {
-      if (entry.expiresAt > now) {
-        return entry;
-      }
-      tempPasswordCache.delete(String(k));
-    }
-  }
-  return null;
-}
-
 async function payerRecord(payment) {
   const payableType = String(payment?.payable_type || "");
   const payableId = payment?.payable_id;
@@ -552,25 +515,9 @@ async function attachPayerAccount(payment) {
   const { table, row } = found;
   const email = String(row.guest_email || row.email || row.patient_email || "").trim().toLowerCase();
 
-  const lookupKeys = [
-    payment?.invoice_number,
-    payment?.id,
-    payment?.uuid,
-    payment?.transaction_id,
-    payment?.payable_id,
-    row?.id,
-    row?.guest_token,
-    email,
-  ];
-  const cached = getCachedGuestCredentials(lookupKeys);
-
   if (row.user_id) {
     const existing = await one("SELECT email FROM users WHERE id = ? LIMIT 1", [row.user_id]).catch(() => null);
-    return {
-      created: Boolean(cached),
-      email: existing?.email || email || null,
-      plain: cached?.tempPassword || null,
-    };
+    return { created: false, email: existing?.email || email || null, plain: null };
   }
 
   if (!email.includes("@")) return { created: false, email: null, plain: null };
@@ -579,23 +526,29 @@ async function attachPayerAccount(payment) {
 
   let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]).catch(() => null);
   let created = false;
-  let plain = cached?.tempPassword || null;
+  let plain = null;
 
   if (!user && isReservedAccountEmail(email)) {
     return { created: false, email: null, plain: null };
   }
 
   if (!user) {
-    plain = temporaryPassword();
+    const issued = await createGuestPassword();
+    plain = issued.plain;
+    const rawLang = row.preferred_language || row.language || "";
     try {
       const id = await insert("users", {
         name,
         email,
         phone: phone || null,
-        password: await hashPassword(plain),
+        password: issued.password,
         status: "active",
         active_role: "patient",
         is_verified: 1,
+        ...(rawLang && await hasColumn("users", "preferred_language")
+          ? { preferred_language: normalizeLang(rawLang) }
+          : {}),
+        ...issued.extra,
       });
       await ensureRole(id, "patient");
       user = await one("SELECT * FROM users WHERE id = ?", [id]);
@@ -607,54 +560,6 @@ async function attachPayerAccount(payment) {
         return { created: false, email, plain: null };
       }
     }
-  }
-
-  if (plain) {
-    cacheGuestCredentials(lookupKeys, { email, tempPassword: plain });
-  }
-
-  if (created && plain) {
-    const firstName = String(name || "").split(" ")[0] || "there";
-    const html = buildEmailHtml({
-      title: "Your MediConnect account is ready",
-      preheader: "Your payment is confirmed. Sign in with your temporary credentials to join.",
-      accentHex: "#0BA59B",
-      body: `
-        ${emailP(`Hello, ${firstName}!`)}
-        ${emailP("Your payment is confirmed. We created a MediConnect account so you can sign in, join your consultation, and access your medical records.")}
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-radius:8px;border:1px solid #d0ecea;background:#f0fafa;overflow:hidden;">
-          <tr>
-            <td style="padding:20px 24px;border-left:4px solid #0BA59B;">
-              <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Your sign-in credentials</p>
-              <p style="margin:4px 0;font-size:13px;color:#1a2e2d;font-family:'Segoe UI',Arial,sans-serif;"><strong>Email:</strong> ${email}</p>
-              <p style="margin:4px 0;font-size:13px;color:#1a2e2d;font-family:'Segoe UI',Arial,sans-serif;"><strong>Temporary password:</strong></p>
-              <p style="margin:8px 0 0;font-size:22px;font-weight:800;letter-spacing:4px;color:#0BA59B;font-family:'Courier New',monospace;">${plain}</p>
-            </td>
-          </tr>
-        </table>
-        ${emailHtml("You can change this password from your <strong>Account Settings</strong> after signing in.")}
-        ${emailBtn("Sign In & Join Consultation", "https://mediconnect.rw/auth")}
-        ${emailP("If you did not make this payment, contact us immediately at admin@mediconnect.rw.", "font-size:12px;color:#dc2626;")}
-      `,
-    });
-    sendMail({
-      to: email,
-      subject: "Your MediConnect account — sign in to join your consultation",
-      text: [
-        `Hello ${name},`,
-        "",
-        "Your payment is confirmed. We created a MediConnect account so your doctor can keep your visit details.",
-        "",
-        `Email: ${email}`,
-        `Temporary password: ${plain}`,
-        "",
-        "Sign in at https://mediconnect.rw/auth with these credentials to join your consultation or appointment.",
-        "You can change the password from Account Settings after signing in.",
-      ].join("\n"),
-      html,
-    }).catch((err) => {
-      console.warn("Payer account email error:", err?.message || err);
-    });
   }
 
   if (user && await tableExists("patients") && !(await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null))) {
@@ -1824,16 +1729,11 @@ export function publicRoutes(router) {
           payment.account_email = account?.email || null;
           payment.account_temp_password = account?.plain || null;
           // Notify with account so patient email includes sign-in credentials
-          notifyPaidVisit(payment, account).catch(() => null);
+          const notice = await notifyPaidVisit(payment, account).catch(() => null);
+          if (notice?.tempPassword) payment.account_temp_password = notice.tempPassword;
         }
-        const cached = getCachedGuestCredentials([
-          invoiceNumber,
-          payment?.id,
-          payment?.uuid,
-          payment?.payable_id,
-        ]);
-        const tempPassword = payment?.account_temp_password || account?.plain || cached?.tempPassword || null;
-        const accountEmail = payment?.account_email || account?.email || cached?.email || null;
+        const tempPassword = payment?.account_temp_password || account?.plain || null;
+        const accountEmail = payment?.account_email || account?.email || null;
         const accountCreated = Boolean(payment?.account_created || account?.created || tempPassword);
 
         return res.json({
@@ -1881,7 +1781,8 @@ export function publicRoutes(router) {
           payment.account_created = Boolean(account?.created);
           payment.account_email = account?.email || null;
           payment.account_temp_password = account?.plain || null;
-          notifyPaidVisit(payment, account).catch(() => null);
+          const notice = await notifyPaidVisit(payment, account).catch(() => null);
+          if (notice?.tempPassword) payment.account_temp_password = notice.tempPassword;
         } else {
           payment = await expirePaymentRecord(payment);
         }
@@ -1894,15 +1795,8 @@ export function publicRoutes(router) {
           payment.account_temp_password = account.plain || payment.account_temp_password;
         }
       }
-      const cached = getCachedGuestCredentials([
-        invoice,
-        payment?.invoice_number,
-        payment?.id,
-        payment?.uuid,
-        payment?.payable_id,
-      ]);
-      const tempPassword = payment?.account_temp_password || account?.plain || cached?.tempPassword || null;
-      const accountEmail = payment?.account_email || account?.email || cached?.email || null;
+      const tempPassword = payment?.account_temp_password || account?.plain || null;
+      const accountEmail = payment?.account_email || account?.email || null;
       const accountCreated = Boolean(payment?.account_created || account?.created || tempPassword);
 
       res.json({
@@ -1994,24 +1888,13 @@ export function publicRoutes(router) {
       const account = await attachPayerAccount(confirmed).catch(() => null);
       // Notify with the account so a new guest's email actually carries their credentials.
       notifyPaidVisit(confirmed, account).catch(() => null);
-      const cached = getCachedGuestCredentials([
-        invoiceNumber,
-        confirmed?.id,
-        confirmed?.uuid,
-        confirmed?.payable_id,
-        payload.transactionId,
-      ]);
-      const tempPassword = account?.plain || cached?.tempPassword || null;
-      const accountEmail = account?.email || cached?.email || null;
-      const accountCreated = Boolean(account?.created || tempPassword);
+      const accountCreated = Boolean(account?.created || account?.plain);
 
       res.json({
         received: true,
         processed: true,
         payment_id: confirmed.id,
         account_created: accountCreated,
-        account_email: accountEmail,
-        temp_password: tempPassword,
       });
     } catch (error) {
       // Always return 200 to IremboPay so it doesn't retry forever;

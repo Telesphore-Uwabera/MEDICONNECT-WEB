@@ -43,6 +43,7 @@ import { useCallContext } from "@/context/CallContext";
 import { useNavigate } from "react-router-dom";
 import { ChatPanel } from "./consultatioRoom/ChatPanel";
 import { decodeCallToken } from "@/lib/scheduled-call";
+import { ForcePasswordChange } from "@/components/auth/ForcePasswordChange";
 import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -285,12 +286,17 @@ interface ConnectDialogContentProps {
 // message with flattened field errors — so check the raw payload too.
 const ACTIVE_SESSION_RE =
   /active consultation session|already have an active|complete or cancel/i;
-const isActiveSessionError = (err: any): boolean => {
-  if (err?.status === 409) return true;
+const isActiveSessionError = (err: unknown): boolean => {
+  const body = (err && typeof err === "object" ? err : {}) as {
+    status?: number;
+    message?: string;
+    data?: { message?: string; errors?: unknown };
+  };
+  if (body.status === 409) return true;
   const blobs = [
-    err?.message,
-    err?.data?.message,
-    err?.data?.errors ? JSON.stringify(err.data.errors) : "",
+    body.message,
+    body.data?.message,
+    body.data?.errors ? JSON.stringify(body.data.errors) : "",
   ];
   return blobs.some((b) => ACTIVE_SESSION_RE.test(String(b ?? "")));
 };
@@ -298,11 +304,12 @@ const isActiveSessionError = (err: any): boolean => {
 // Resolve a rejoin target ({ roomName, token-object }). Prefers the authoritative
 // patient live-session endpoint, then the error payload, then the call we
 // persisted locally this session.
-const resolveRejoinTarget = async (err: any): Promise<RejoinTarget | null> => {
+const resolveRejoinTarget = async (err: unknown): Promise<RejoinTarget | null> => {
   const fromApi = sessionToRejoinTarget(await fetchPatientLiveSession(), "patient");
   if (fromApi) return fromApi;
 
-  const fromError = sessionToRejoinTarget(err?.data, "patient");
+  const data = err && typeof err === "object" && "data" in err ? (err as { data?: unknown }).data : undefined;
+  const fromError = sessionToRejoinTarget(data, "patient");
   if (fromError) return fromError;
 
   return rejoinFromPersistedCall();
@@ -386,6 +393,7 @@ export const ConnectDialogContent = ({
   const [loginCountryCode, setLoginCountryCode] = useState("+250");
   const [loginPassword, setLoginPassword] = useState("");
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [showTempPwd, setShowTempPwd] = useState(false);
   const [guestDescription, setGuestDescription] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
@@ -401,7 +409,7 @@ export const ConnectDialogContent = ({
   const callAlertedRef = useRef(false);
   // Set when the backend rejects a new request because one is already active —
   // holds the in-progress consultation so we can offer a one-click rejoin.
-  const [activeRejoin, setActiveRejoin] = useState<{ roomName: string; token: any } | null>(null);
+  const [activeRejoin, setActiveRejoin] = useState<{ roomName: string; token: Record<string, unknown> } | null>(null);
   // A backend-confirmed in-progress instant for this doctor (or any, for general).
   // When present, the idle screen offers "Join" instead of starting a new one.
   const [activeInstant, setActiveInstant] = useState<{ id: number } | null>(null);
@@ -697,7 +705,7 @@ export const ConnectDialogContent = ({
       return;
     }
     let cancelled = false;
-    apiFetch<{ data: Array<any> }>("/patient/quick")
+    apiFetch<{ data: Array<{ id?: number; booking_type?: string; status?: string; doctor?: { id?: number } }> }>("/patient/quick")
       .then((res) => {
         if (cancelled) return;
         const list = res?.data ?? [];
@@ -715,15 +723,14 @@ export const ConnectDialogContent = ({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, isGeneral, doctor?.id]);
+    }, [isLoggedIn, isGeneral, doctor?.id]);
 
   // Join the existing instant via its /patient/quick/{id} detail (patient token).
   const handleJoinActiveInstant = useCallback(async () => {
     if (!activeInstant) return;
     setJoiningActive(true);
     try {
-      const detail = await apiFetch<any>(`/patient/quick/${activeInstant.id}`);
+      const detail = await apiFetch<{ daily_guest_token?: string; daily_room_name?: string; daily_room_url?: string }>(`/patient/quick/${activeInstant.id}`);
       const decoded = decodeCallToken(detail?.daily_guest_token);
       const roomName = detail?.daily_room_name || decoded?.room;
       if (decoded && roomName) {
@@ -798,6 +805,7 @@ export const ConnectDialogContent = ({
           guest_email: email || undefined,
           password: override?.password ?? guestPassword,
           description: guestDescription,
+          preferred_language: i18n.language,
         });
       } else {
         const payload: InstantConsultationRequestPayload = {
@@ -808,6 +816,7 @@ export const ConnectDialogContent = ({
           guest_email: email || undefined,
           password: override?.password ?? guestPassword,
           description: guestDescription,
+          preferred_language: i18n.language,
         };
         res = await requestMutation.mutateAsync(payload);
       }
@@ -835,7 +844,11 @@ export const ConnectDialogContent = ({
       setGuestChatAuth(guestToken);
 
       // Fallback for different backend keys
-      const extractedId = res.id ?? responseData?.id ?? (res as any).instant_consultation_request_id ?? (res as any).instant_consultation_id ?? null;
+      const extra = res as InstantConsultationRequestResponse & {
+        instant_consultation_request_id?: number;
+        instant_consultation_id?: number;
+      };
+      const extractedId = res.id ?? responseData?.id ?? extra.instant_consultation_request_id ?? extra.instant_consultation_id ?? null;
       setConsultationId(extractedId);
 
 
@@ -963,6 +976,10 @@ export const ConnectDialogContent = ({
             auth_method: "password",
             password: tempPwd,
           }).then(async (data) => {
+            if (data.must_change_password) {
+              setMustChangePassword(true);
+              return;
+            }
             const currentName = splitName(data.user.name);
             setGuestName(data.user.name);
             setGuestFirstName(currentName.firstName);
@@ -992,7 +1009,7 @@ export const ConnectDialogContent = ({
           }),
         );
       }
-      if (!(window as any).IremboPay?.initiate) {
+      if (!window.IremboPay?.initiate) {
         throw new Error(
           t("consult.connect.err_payment_widget_missing", {
             defaultValue: "Payment widget failed to load. Refresh and try again.",
@@ -1008,7 +1025,7 @@ export const ConnectDialogContent = ({
         { maxAttempts: 200, intervalMs: 3_000 },
       );
 
-      (window as any).IremboPay.initiate({
+      window.IremboPay.initiate({
         publicKey: payRes.public_key,
         invoiceNumber: payRes.invoice_number,
         locale: window.IremboPay.locale.EN,
@@ -1104,6 +1121,11 @@ export const ConnectDialogContent = ({
             password: passwordToUse,
           },
       );
+      if (data.must_change_password) {
+        setMustChangePassword(true);
+        setPhase("create_account");
+        return;
+      }
       const currentName = splitName(data.user.name);
       setGuestName(data.user.name);
       setGuestFirstName(currentName.firstName);
@@ -1126,8 +1148,8 @@ export const ConnectDialogContent = ({
         countryCode: data.user.country_code,
         email: data.user.email,
       });
-    } catch (err: any) {
-      setGuestError(err?.message || t("consult.connect.err_login_failed"));
+    } catch (err: unknown) {
+      setGuestError(err instanceof Error ? err.message : t("consult.connect.err_login_failed"));
     }
   };
 
@@ -1639,7 +1661,19 @@ export const ConnectDialogContent = ({
               </div>
             </div>
           )}
-          {phase === "create_account" && (
+          {phase === "create_account" && mustChangePassword && (
+            <ForcePasswordChange
+              onDone={() => {
+                setMustChangePassword(false);
+                if (consultationToken) {
+                  session.save(consultationToken, guestName, guestPhone, consultationId ?? undefined);
+                }
+                onCloseCompletely();
+                navigate("/patient/instant");
+              }}
+            />
+          )}
+          {phase === "create_account" && !mustChangePassword && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
@@ -1692,6 +1726,7 @@ export const ConnectDialogContent = ({
                         type={showTempPwd ? "text" : "password"}
                         placeholder={t("consult.connect.password_placeholder")}
                         value={loginPassword}
+                        data-testid="guest-temp-password"
                         onChange={(e) => setLoginPassword(e.target.value)}
                         className="h-9 text-sm pr-10"
                         onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
@@ -1804,7 +1839,7 @@ export const ConnectDialogContent = ({
                     <button
                       key={doc.id}
                       onClick={() => {
-                        setSelectedDoctor(doc as any);
+                        setSelectedDoctor(doc);
                         setPhase(isProfileComplete ? "idle" : "guest_form");
                       }}
                       className="w-full flex items-center justify-between p-3 rounded-[6px] border border-border bg-card hover:bg-muted/50 transition-colors text-left"

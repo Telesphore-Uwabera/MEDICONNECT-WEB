@@ -9,7 +9,15 @@ export type PatientIdentity = {
   date_of_birth: string;
   gender: string;
   national_id: string;
+  blood_type: string;
   address: string;
+  city: string;
+  province: string;
+  country: string;
+  emergency_contact_name: string;
+  emergency_contact_relation: string;
+  emergency_contact_phone: string;
+  chronic_conditions: string;
 };
 
 export type CallProofFile = {
@@ -47,7 +55,15 @@ export const emptyIdentity = (): PatientIdentity => ({
   date_of_birth: "",
   gender: "",
   national_id: "",
+  blood_type: "",
   address: "",
+  city: "",
+  province: "",
+  country: "",
+  emergency_contact_name: "",
+  emergency_contact_relation: "",
+  emergency_contact_phone: "",
+  chronic_conditions: "",
 });
 
 export const emptyCallChart = (): CallChart => ({

@@ -929,6 +929,47 @@ describe("resource write authorization", () => {
     expect(writes).toEqual([]);
   });
 
+  it("refuses intake from a patient, another doctor, and another patient's phone", async () => {
+    const asPatient = await request(users.patient, "POST", "/doctor/patients/intake", {
+      full_name: "Amina",
+      phone: "788100100",
+      appointment_id: 8,
+    });
+    const otherDoctor = await request(users.otherDoctor, "POST", "/doctor/patients/intake", {
+      full_name: "Amina",
+      phone: "788100100",
+      appointment_id: 8,
+    });
+    const otherPhone = await request(users.doctor, "POST", "/doctor/patients/intake", {
+      full_name: "Other",
+      phone: "788200200",
+      appointment_id: 8,
+    });
+    expect(asPatient.status).toBe(403);
+    expect(otherDoctor.status).toBe(403);
+    expect(otherPhone.status).toBe(403);
+    expect(writes).toEqual([]);
+  });
+
+  it("marks the temporary password used when a patient receives an instant token", async () => {
+    const account = db.accounts.find((row) => row.id === 77);
+    account.password_must_change = 1;
+    account.temp_password_expires_at = new Date(Date.now() + 86_400_000);
+    account.temp_password_used_at = null;
+    const ready = await request(users.patient, "GET", "/patient/instant-consultations/ready");
+    const quick = await request(users.patient, "GET", "/patient/quick/9");
+    expect(ready.status).toBe(200);
+    expect(ready.body.data?.daily_guest_token).toBeTruthy();
+    expect(quick.status).toBe(200);
+    expect(quick.body.daily_guest_token).toBeTruthy();
+    const marks = writes.filter((write) => write.op === "update" && write.table === "users" && write.data.temp_password_used_at);
+    expect(marks).toHaveLength(2);
+    expect(marks.every((write) => write.id === 77)).toBe(true);
+    delete account.password_must_change;
+    delete account.temp_password_expires_at;
+    delete account.temp_password_used_at;
+  });
+
   it("refuses an intake that would change a profile before the appointment check fails", async () => {
     db.appointments.push({ id: 7, doctor_id: 31, patient_id: 80, user_id: null, status: "confirmed" });
     const mismatched = await request(users.doctor, "POST", "/doctor/patients/intake", {
@@ -955,6 +996,7 @@ describe("resource write authorization", () => {
     });
     expect(cared.status).toBe(201);
     expect(writes).toEqual([expect.objectContaining({ op: "update", table: "patients", id: 55 })]);
+    expect(writes[0].data.status).toBeUndefined();
   });
 
   it("counts and lists only the id each table stores", async () => {

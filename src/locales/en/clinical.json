@@ -1,4 +1,25 @@
 {
+  "chart": {
+    "city": "City",
+    "province": "Province",
+    "country": "Country",
+    "blood_type": "Blood type",
+    "emergency_name": "Emergency contact",
+    "emergency_relation": "Relationship",
+    "emergency_phone": "Emergency phone",
+    "conditions": "Ongoing conditions",
+    "save": "Save guest profile",
+    "update": "Update patient profile",
+    "must_change_title": "Choose a new password",
+    "must_change_body": "This temporary password worked. Set a password only you know before continuing.",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "save_password": "Save password",
+    "password_rules": "Use at least 8 characters and enter the same password twice.",
+    "password_failed": "Could not save the new password.",
+    "guest_access_title": "Your temporary sign-in",
+    "guest_access_body": "We also emailed this password. It stops working after you sign in or join the visit, and you will be asked to change it."
+  },
   "catalog": {
     "lab": "Laboratory tests",
     "imaging": "Imaging & ECG",
