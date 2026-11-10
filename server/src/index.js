@@ -62,9 +62,7 @@ app.use((req, res, next) => {
   if (publicHost(req) !== "db.mediconnect.rw") return next();
   proxyRequest(req, res, { hostname: "127.0.0.1", port: 80, host: "db.mediconnect.rw" });
 });
-app.use("/minio", (req, res) => {
-  proxyRequest(req, res, { hostname: "10.10.141.148", port: 80, host: "api.mediconnect.rw" });
-});
+app.use("/minio", express.static(process.env.MINIO_DIR || "/var/www/mediconnect-minio"));
 app.use(cors());
 // Keep the untouched bytes for the payment webhook's HMAC check.
 app.use(express.json({
@@ -73,9 +71,6 @@ app.use(express.json({
 }));
 const uploadDir = process.env.UPLOAD_DIR || path.join(root, "storage");
 app.use("/storage", express.static(uploadDir));
-app.use("/storage", (req, res) => {
-  proxyRequest(req, res, { hostname: "10.10.141.148", port: 80, host: "api.mediconnect.rw" });
-});
 app.use("/api/v1/media", express.static(path.join(uploadDir, "doctors-webp")));
 app.use("/api/v1/media", express.static(path.join(uploadDir, "webp")));
 
