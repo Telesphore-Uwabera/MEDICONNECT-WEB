@@ -315,7 +315,9 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
       }
       const id = existingPhone?.id || await insert("patients", payload);
       if (existingPhone?.id) {
-        await update("patients", existingPhone.id, payload);
+        const patch = { ...payload };
+        if (Number(existingPhone.user_id) > 0) delete patch.status;
+        await update("patients", existingPhone.id, patch);
       }
       const patientId = Number(id);
       const saved = existingPhone || await one("SELECT * FROM patients WHERE id = ?", [patientId]);

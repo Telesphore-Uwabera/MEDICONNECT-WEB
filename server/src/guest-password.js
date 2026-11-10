@@ -44,7 +44,7 @@ export function loginDecision(user, passwordOk, now = Date.now()) {
   if (!passwordOk) return { ok: false, status: 401, message: "Incorrect password." };
   const state = guestPasswordState(user, now);
   if (state === "expired") {
-    return { ok: false, status: 401, message: "This temporary password has expired. Ask for a new sign-in email." };
+    return { ok: false, status: 401, message: "This temporary password has expired. Use Forgot password to choose a new one." };
   }
   const mustChange = flagOn(user?.password_must_change);
   if (state === "pending") return { ok: true, markUsed: true, mustChange: true };

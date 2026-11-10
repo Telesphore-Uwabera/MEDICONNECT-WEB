@@ -728,7 +728,11 @@ export function appRoutes(router) {
       if (req.body?.password !== req.body?.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match." });
       }
-      await update("users", row.id, { password: await hashPassword(req.body.password) });
+      await update("users", row.id, {
+        password: await hashPassword(req.body.password),
+        password_must_change: 0,
+        temp_password_used_at: new Date(),
+      });
       await pool.query("DELETE FROM otps WHERE id = ?", [otp.id]);
 
       // Send confirmation email
@@ -2526,6 +2530,7 @@ export function appRoutes(router) {
         params,
       ).catch(() => null);
       if (!row) return res.json({ data: null });
+      await markGuestPasswordUsed(req.user.id).catch(() => null);
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       res.json({
         data: {
@@ -2576,6 +2581,7 @@ export function appRoutes(router) {
         }
         return res.json(await presentRow("appointments", appointment));
       }
+      await markGuestPasswordUsed(req.user.id).catch(() => null);
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       res.json({
         id: row.id,

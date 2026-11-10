@@ -89,6 +89,7 @@ describe("guest temporary password", () => {
       ok: false,
       message: expect.stringMatching(/expired/i),
     });
+    expect((await checkGuestLogin(users.get(2), "still-the-secret")).message).toMatch(/Forgot password/i);
   });
 
   it("still creates a password when the tracking columns are missing", async () => {
