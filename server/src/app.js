@@ -28,6 +28,7 @@ import { selectedBrowseSpecialities } from "./browse-specialities.js";
 import {
   appointmentCollision,
   appointmentJoinWindow,
+  joinBlockMessage,
   appointmentStartIsInPast,
   bookableSlot,
   claimSlot,
@@ -2409,12 +2410,10 @@ export function appRoutes(router) {
       }
       const window = appointmentJoinWindow(appointment);
       if (!window.ok) {
-        const message = window.reason === "too-early"
-          ? "This consultation has not started yet. Join a few minutes before your slot."
-          : window.reason === "too-late"
-            ? "This consultation slot has passed. Contact the doctor to reschedule."
-            : "Consultations can only be joined on the booked day.";
-        return res.status(422).json({ message, reason: window.reason });
+        return res.status(422).json({
+          message: joinBlockMessage(window.reason, req.user?.preferred_language),
+          reason: window.reason,
+        });
       }
       const room = `appointment-${appointment.id}`;
       const token = callToken({

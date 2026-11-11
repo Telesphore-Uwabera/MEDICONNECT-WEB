@@ -5,6 +5,7 @@ import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
 import { createGuestPassword } from "./guest-password.js";
 import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
+import { publicRealtimeConfig } from "./realtime-config.js";
 import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
@@ -1505,6 +1506,13 @@ export function publicRoutes(router) {
       }
       next(error);
     }
+  });
+
+  // The mobile app reads this before opening a socket and falls back to
+  // GET /public/consultations/signal/:room when Reverb is not configured.
+  // No auth: the values are the same public client settings the web bundle ships.
+  router.get("/public/realtime", (_req, res) => {
+    res.json(publicRealtimeConfig());
   });
 
   // Both peers already hold a room token from the join endpoint; presenting it

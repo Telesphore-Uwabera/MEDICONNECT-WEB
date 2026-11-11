@@ -1,7 +1,8 @@
 import { hasColumn, one, pool, q, tableExists } from "./db.js";
 import { hashPassword, loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
-import { instantOwnedWhere, isPaidStatus, ownsInstant } from "./instant-visit.js";
+import { canJoinInstant, instantOwnedWhere, isPaidStatus, ownsInstant, UNPAID_APPOINTMENT_JOIN_MESSAGE, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
+import { pick } from "./user-text.js";
 
 /**
  * A visit is settled only after a verified payment (or a zero fee) and a
@@ -61,6 +62,73 @@ export function appointmentJoinWindow(appointment, now = new Date()) {
   if (kigali.minutes < from - 20) return { ok: false, reason: "too-early" };
   if (kigali.minutes > from + duration + 40) return { ok: false, reason: "too-late" };
   return { ok: true, reason: null };
+}
+
+const APPOINTMENT_JOIN_STATUSES = new Set(["confirmed", "accepted", "in_progress"]);
+const FINISHED = new Set(["completed", "done"]);
+
+const JOIN_BLOCK_COPY = {
+  en: {
+    "unpaid-appointment": UNPAID_APPOINTMENT_JOIN_MESSAGE,
+    "unpaid-instant": UNPAID_INSTANT_JOIN_MESSAGE,
+    "unconfirmed-appointment": "Wait for the doctor to confirm this visit before joining.",
+    "unaccepted-instant": "Wait until the doctor accepts this consultation before joining.",
+    "too-early": "This consultation has not started yet. Join a few minutes before your slot.",
+    "too-late": "This consultation slot has passed. Contact the doctor to reschedule.",
+    "not-today": "Consultations can only be joined on the booked day.",
+    closed: "This visit is no longer open.",
+  },
+  fr: {
+    "unpaid-appointment": "Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.",
+    "unpaid-instant": "Cette consultation n'est pas encore payée. Le patient doit terminer le paiement avant que vous puissiez la rejoindre.",
+    "unconfirmed-appointment": "Attendez que le médecin confirme cette visite avant de la rejoindre.",
+    "unaccepted-instant": "Attendez que le médecin accepte cette consultation avant de la rejoindre.",
+    "too-early": "Cette consultation n'a pas encore commencé. Rejoignez-la quelques minutes avant le créneau.",
+    "too-late": "Ce créneau de consultation est passé. Contactez le médecin pour le reporter.",
+    "not-today": "Une consultation ne peut être rejointe que le jour prévu.",
+    closed: "Cette visite n'est plus ouverte.",
+  },
+  rw: {
+    "unpaid-appointment": "Ishyura iyi konsultasiyo hanyuma utegereze ko muganga ayemeza mbere yo kuyinjiramo.",
+    "unpaid-instant": "Iyi konsultasiyo ntirishyurwa. Umurwayi agomba kurangiza kwishyura mbere yo kuyinjiramo.",
+    "unconfirmed-appointment": "Tegereza ko muganga yemeza iyi konsultasiyo mbere yo kuyinjiramo.",
+    "unaccepted-instant": "Tegereza ko muganga yemera iyi konsultasiyo mbere yo kuyinjiramo.",
+    "too-early": "Iyi konsultasiyo ntiratangira. Injira iminota mike mbere y'isaha yateganyijwe.",
+    "too-late": "Igihe cy'iyi konsultasiyo cyararangiye. Vugana na muganga kugira ngo musubiremo igihe.",
+    "not-today": "Konsultasiyo irinjirwa gusa ku munsi wateganyijwe.",
+    closed: "Iyi konsultasiyo ntikiri ifunguye.",
+  },
+};
+
+export function joinBlockMessage(code, lang = "en") {
+  const key = String(code || "");
+  return pick(lang, {
+    en: JOIN_BLOCK_COPY.en[key],
+    fr: JOIN_BLOCK_COPY.fr[key],
+    rw: JOIN_BLOCK_COPY.rw[key],
+  }) || JOIN_BLOCK_COPY.en[key] || JOIN_BLOCK_COPY.en.closed;
+}
+
+/**
+ * Why a generic join must not mint a room token. Null means the visit can be joined.
+ * Appointments need a verified payment, a doctor confirmation, and the same
+ * booked-day window the dedicated patient join route already uses. Instant
+ * visits need a verified payment and a doctor acceptance.
+ */
+export function visitJoinBlock(table, row, now = new Date()) {
+  if (!VISIT_TABLES.has(table) || !row) return null;
+  const status = String(row.status || "").toLowerCase();
+  if (visitIsClosed(row) || FINISHED.has(status)) return { code: "closed" };
+  const instant = table !== "appointments";
+  if (!isPaidStatus(row)) return { code: instant ? "unpaid-instant" : "unpaid-appointment" };
+  if (instant) {
+    if (!canJoinInstant(row)) return { code: "unaccepted-instant" };
+    return null;
+  }
+  if (!APPOINTMENT_JOIN_STATUSES.has(status)) return { code: "unconfirmed-appointment" };
+  const window = appointmentJoinWindow(row, now);
+  if (!window.ok) return { code: window.reason || "not-today", reason: window.reason };
+  return null;
 }
 
 export function appointmentStartIsInPast(date, time, now = new Date()) {
