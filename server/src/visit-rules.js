@@ -43,14 +43,12 @@ export function visitAwaitsPayment(row) {
 /**
  * Kigali wall clock versus the appointment's own date and time. The window opens
  * 20 minutes early and closes duration + 40 minutes after the start, so a doctor
- * running late can still get in but a visit booked for tomorrow cannot.
+ * running late can still get in but a visit booked for another day cannot.
+ * Confirmed, accepted, and in_progress all use this clock. Skipping it for
+ * accepted would let a visit booked years ahead issue a room token today.
+ * A row with no stored date or time cannot be placed on the clock.
  */
 export function appointmentJoinWindow(appointment, now = new Date()) {
-  // Once the doctor has taken the visit, they are waiting in the room; locking
-  // the patient out at that point would only strand the call.
-  if (["accepted", "in_progress"].includes(String(appointment?.status || "").toLowerCase())) {
-    return { ok: true, reason: null };
-  }
   const date = String(appointment?.appointment_date || "").slice(0, 10);
   const start = clockTime(appointment?.appointment_time);
   if (!date || !start) return { ok: true, reason: null };
@@ -111,9 +109,10 @@ export function joinBlockMessage(code, lang = "en") {
 
 /**
  * Why a generic join must not mint a room token. Null means the visit can be joined.
- * Appointments need a verified payment, a doctor confirmation, and the same
- * booked-day window the dedicated patient join route already uses. Instant
- * visits need a verified payment and a doctor acceptance.
+ * Appointments need a verified payment, a doctor confirmation
+ * (confirmed, accepted, or in_progress), and the booked-day window.
+ * That window applies to every one of those statuses. Instant visits need
+ * a verified payment and a doctor acceptance.
  */
 export function visitJoinBlock(table, row, now = new Date()) {
   if (!VISIT_TABLES.has(table) || !row) return null;

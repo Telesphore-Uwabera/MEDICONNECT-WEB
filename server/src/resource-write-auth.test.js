@@ -1286,8 +1286,10 @@ describe("resource write authorization", () => {
       { id: 31, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "pending", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
       { id: 32, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
       { id: 33, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
-      { id: 34, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "unpaid", consultation_fee: 0, ...room },
+      { id: 34, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "unpaid", consultation_fee: 0, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
       { id: 35, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+      { id: 37, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+      { id: 38, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "in_progress", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
       { id: 36, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "pending", consultation_fee: 5000, ...room },
     );
     db.instants.push(
@@ -1297,7 +1299,9 @@ describe("resource write authorization", () => {
 
     const unconfirmed = await request(users.patient, "POST", "/patient/my-visits/31/join");
     const outside = await request(users.patient, "POST", "/patient/my-visits/32/join");
-    const accepted = await request(users.patient, "POST", "/patient/my-visits/33/join");
+    const acceptedOutside = await request(users.patient, "POST", "/patient/my-visits/33/join");
+    const inProgressOutside = await request(users.patient, "POST", "/patient/my-visits/38/join");
+    const accepted = await request(users.patient, "POST", "/patient/my-visits/37/join");
     const zeroFee = await request(users.hospital, "POST", "/hospital/appointments/34/join");
     const inside = await request(users.doctor, "GET", "/doctor/appointments/35/join");
     const instantUnaccepted = await request(users.patient, "POST", "/patient/instant-consultations/31/join");
@@ -1313,17 +1317,36 @@ describe("resource write authorization", () => {
     expect(outside.status).toBe(422);
     expect(outside.body.message).toBe("Consultations can only be joined on the booked day.");
     expect(outside.body.reason).toBe("not-today");
+    expect(acceptedOutside.status).toBe(422);
+    expect(acceptedOutside.body.reason).toBe("not-today");
+    expect(inProgressOutside.status).toBe(422);
+    expect(inProgressOutside.body.reason).toBe("not-today");
     expect(instantUnaccepted.status).toBe(422);
     expect(instantUnaccepted.body.message).toBe("Wait until the doctor accepts this consultation before joining.");
     expect(french.status).toBe(422);
     expect(french.body.message).toBe("Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.");
-    for (const result of [unconfirmed, outside, instantUnaccepted, french]) {
+    for (const result of [unconfirmed, outside, acceptedOutside, inProgressOutside, instantUnaccepted, french]) {
       expect(JSON.stringify(result.body)).not.toMatch(/ready-token|ready-room|room-token|visit-room/);
     }
     for (const result of [accepted, zeroFee, inside, instantAccepted]) {
       expect(result.status).toBe(200);
       expect(JSON.stringify(result.body)).toMatch(/ready-token|ready-room/);
     }
+
+    const dedicatedUnconfirmed = await request(users.patient, "POST", "/patient/appointments/31/join");
+    const dedicatedOutside = await request(users.doctor, "POST", "/doctor/appointments/33/join");
+    const dedicatedAccepted = await request(users.patient, "POST", "/patient/appointments/37/join");
+    const dedicatedDoctor = await request(users.doctor, "POST", "/doctor/appointments/37/join");
+    expect(dedicatedUnconfirmed.status).toBe(422);
+    expect(dedicatedUnconfirmed.body.message).toBe("Wait for the doctor to confirm this visit before joining.");
+    expect(dedicatedOutside.status).toBe(422);
+    expect(dedicatedOutside.body.reason).toBe("not-today");
+    expect(JSON.stringify(dedicatedUnconfirmed.body) + JSON.stringify(dedicatedOutside.body)).not.toMatch(/token/);
+    expect(dedicatedAccepted.status).toBe(200);
+    expect(dedicatedAccepted.body.token).toBeTruthy();
+    expect(dedicatedDoctor.status).toBe(200);
+    expect(dedicatedDoctor.body.token).toBeTruthy();
+    expect(writes.some((write) => write.op === "update" && write.table === "appointments" && String(write.id) === "37" && write.data.status === "in_progress")).toBe(true);
   });
 
   it("publishes Reverb settings without a secret and still relays call signals", async () => {
