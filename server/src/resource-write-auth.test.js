@@ -1257,17 +1257,13 @@ describe("resource write authorization", () => {
     expect(unpaidInstant.body.message).toBe("This consultation is not paid yet. The patient must complete payment before you can join.");
 
     const paidAppointment = await request(users.patient, "POST", "/patient/my-visits/22/join");
-    expect(paidAppointment.status).toBe(200);
-    expect(JSON.stringify(paidAppointment.body)).toMatch(/room-token|visit-room/);
-    const paidUnaccepted = await request(users.doctor, "GET", "/doctor/instant_consultation_requests/22/join");
-    const zeroUnconfirmed = await request(users.hospital, "POST", "/hospital/appointments/23/join");
-    const zeroUnaccepted = await request(users.patient, "POST", "/patient/records/instant-consultations/23/join");
-    expect(paidUnaccepted.status).toBe(422);
-    expect(paidUnaccepted.body.message).toBe("Wait until the doctor accepts this consultation before joining.");
-    expect(zeroUnconfirmed.status).toBe(422);
-    expect(zeroUnconfirmed.body.message).toBe("Wait for the doctor to confirm this visit before joining.");
-    expect(zeroUnaccepted.status).toBe(422);
-    expect(JSON.stringify(paidUnaccepted.body) + JSON.stringify(zeroUnconfirmed.body) + JSON.stringify(zeroUnaccepted.body)).not.toMatch(/room-token|visit-room/);
+    const paidInstant = await request(users.doctor, "GET", "/doctor/instant_consultation_requests/22/join");
+    const zeroAppointment = await request(users.hospital, "POST", "/hospital/appointments/23/join");
+    const zeroInstant = await request(users.patient, "POST", "/patient/records/instant-consultations/23/join");
+    for (const result of [paidAppointment, paidInstant, zeroAppointment, zeroInstant]) {
+      expect(result.status).toBe(200);
+      expect(JSON.stringify(result.body)).toMatch(/room-token|visit-room/);
+    }
 
     const dashboard = await request(users.doctor, "GET", "/doctor/dashboard");
     expect(dashboard.status).toBe(200);
@@ -1291,29 +1287,33 @@ describe("resource write authorization", () => {
       { id: 37, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
       { id: 38, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "in_progress", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
       { id: 36, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "pending", consultation_fee: 5000, ...room },
+      { id: 39, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "cancelled", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
     );
     db.instants.push(
       { id: 31, doctor_id: 31, patient_id: 55, user_id: null, status: "confirmed", payment_status: "paid", consultation_fee: 5000, ...room },
       { id: 33, doctor_id: 31, patient_id: 55, user_id: null, status: "accepted", payment_status: "paid", consultation_fee: 5000, ...room },
     );
 
-    const unconfirmed = await request(users.patient, "POST", "/patient/my-visits/31/join");
+    const paidPending = await request(users.patient, "POST", "/patient/my-visits/31/join");
     const outside = await request(users.patient, "POST", "/patient/my-visits/32/join");
     const acceptedOutside = await request(users.patient, "POST", "/patient/my-visits/33/join");
     const inProgressOutside = await request(users.patient, "POST", "/patient/my-visits/38/join");
     const accepted = await request(users.patient, "POST", "/patient/my-visits/37/join");
     const zeroFee = await request(users.hospital, "POST", "/hospital/appointments/34/join");
     const inside = await request(users.doctor, "GET", "/doctor/appointments/35/join");
-    const instantUnaccepted = await request(users.patient, "POST", "/patient/instant-consultations/31/join");
+    const instantPaid = await request(users.patient, "POST", "/patient/instant-consultations/31/join");
     const instantAccepted = await request(users.patient, "POST", "/patient/instant-consultations/33/join");
+    const closed = await request(users.patient, "POST", "/patient/my-visits/39/join");
     const french = await request(
       { ...users.patient, preferred_language: "fr" },
       "POST",
       "/patient/my-visits/36/join",
     );
 
-    expect(unconfirmed.status).toBe(422);
-    expect(unconfirmed.body.message).toBe("Wait for the doctor to confirm this visit before joining.");
+    expect(paidPending.status).toBe(200);
+    expect(JSON.stringify(paidPending.body)).toMatch(/ready-token|ready-room/);
+    expect(closed.status).toBe(422);
+    expect(closed.body.message).toBe("This visit is no longer open.");
     expect(outside.status).toBe(422);
     expect(outside.body.message).toBe("Consultations can only be joined on the booked day.");
     expect(outside.body.reason).toBe("not-today");
@@ -1321,27 +1321,27 @@ describe("resource write authorization", () => {
     expect(acceptedOutside.body.reason).toBe("not-today");
     expect(inProgressOutside.status).toBe(422);
     expect(inProgressOutside.body.reason).toBe("not-today");
-    expect(instantUnaccepted.status).toBe(422);
-    expect(instantUnaccepted.body.message).toBe("Wait until the doctor accepts this consultation before joining.");
+    expect(instantPaid.status).toBe(200);
+    expect(JSON.stringify(instantPaid.body)).toMatch(/ready-token|ready-room/);
     expect(french.status).toBe(422);
     expect(french.body.message).toBe("Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.");
-    for (const result of [unconfirmed, outside, acceptedOutside, inProgressOutside, instantUnaccepted, french]) {
+    for (const result of [outside, acceptedOutside, inProgressOutside, closed, french]) {
       expect(JSON.stringify(result.body)).not.toMatch(/ready-token|ready-room|room-token|visit-room/);
     }
-    for (const result of [accepted, zeroFee, inside, instantAccepted]) {
+    for (const result of [accepted, zeroFee, inside, instantAccepted, instantPaid, paidPending]) {
       expect(result.status).toBe(200);
       expect(JSON.stringify(result.body)).toMatch(/ready-token|ready-room/);
     }
 
-    const dedicatedUnconfirmed = await request(users.patient, "POST", "/patient/appointments/31/join");
+    const dedicatedPaid = await request(users.patient, "POST", "/patient/appointments/31/join");
     const dedicatedOutside = await request(users.doctor, "POST", "/doctor/appointments/33/join");
     const dedicatedAccepted = await request(users.patient, "POST", "/patient/appointments/37/join");
     const dedicatedDoctor = await request(users.doctor, "POST", "/doctor/appointments/37/join");
-    expect(dedicatedUnconfirmed.status).toBe(422);
-    expect(dedicatedUnconfirmed.body.message).toBe("Wait for the doctor to confirm this visit before joining.");
+    expect(dedicatedPaid.status).toBe(200);
+    expect(dedicatedPaid.body.token).toBeTruthy();
     expect(dedicatedOutside.status).toBe(422);
     expect(dedicatedOutside.body.reason).toBe("not-today");
-    expect(JSON.stringify(dedicatedUnconfirmed.body) + JSON.stringify(dedicatedOutside.body)).not.toMatch(/token/);
+    expect(JSON.stringify(dedicatedOutside.body)).not.toMatch(/token/);
     expect(dedicatedAccepted.status).toBe(200);
     expect(dedicatedAccepted.body.token).toBeTruthy();
     expect(dedicatedDoctor.status).toBe(200);

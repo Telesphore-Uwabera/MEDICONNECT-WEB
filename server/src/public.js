@@ -11,8 +11,8 @@ import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
-import { insuranceCatalogWhere, loadInstantViewer, releaseSlot } from "./visit-rules.js";
-import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue } from "./instant-visit.js";
+import { insuranceCatalogWhere, loadInstantViewer, releaseSlot, settledAppointmentPatch } from "./visit-rules.js";
+import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue, verifiedPaidAmount } from "./instant-visit.js";
 import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
 import { normalizeLang } from "./user-text.js";
@@ -277,6 +277,7 @@ async function doctorBusyInstant(doctorId, exceptId = null) {
 
 async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
   if (!payment?.id) return payment;
+  if (remote && !verifiedPaidAmount(payment, remote)) return payment;
   const patch = { status: "paid" };
   if (remote?.paidAt) {
     const paidAt = new Date(remote.paidAt);
@@ -310,8 +311,9 @@ async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
   }
   if (payableId && payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
     const appointment = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
-    if (appointment && String(appointment.payment_status || "").toLowerCase() !== "paid") {
-      await update("appointments", appointment.id, { payment_status: "paid" });
+    if (appointment) {
+      const visitPatch = settledAppointmentPatch(appointment);
+      if (Object.keys(visitPatch).length) await update("appointments", appointment.id, visitPatch);
     }
   }
   if (payableId && payableType.toLowerCase().includes("fitness")) {
@@ -1484,8 +1486,8 @@ export function publicRoutes(router) {
         guest_email: email || null,
         guest_phone: phone || null,
         guest_token: guestToken,
-        status: "pending",
-        payment_status: "pending",
+        status: Number(amount) > 0 ? "pending" : "confirmed",
+        payment_status: Number(amount) > 0 ? "pending" : "paid",
         amount,
         currency: "RWF",
       });
@@ -1493,6 +1495,14 @@ export function publicRoutes(router) {
       const place = placeInQueue(request, await queuePeers(table, doctorId));
       const doctorBusy = Boolean(await doctorBusyInstant(doctorId, id));
       const presented = await presentRow(table, request);
+      if (!(Number(amount) > 0)) {
+        notifyPaidVisit({
+          payable_type: "instant_consultation",
+          payable_id: id,
+          amount: 0,
+          status: "paid",
+        }).catch(() => null);
+      }
       res.status(201).json(instantPayload(presented || request, place, {
         amount: Number(request?.amount ?? amount),
         doctorBusy,
@@ -1586,9 +1596,9 @@ export function publicRoutes(router) {
           }
         } else if (payment.invoice_number && !isLocalInvoiceNumber(payment.invoice_number)) {
           const remote = await iremboInvoiceStatus(payment.invoice_number).catch(() => null);
-          if (remote?.paymentStatus === "PAID") {
+          if (verifiedPaidAmount(payment, remote)) {
             await confirmPaidInvoice(payment, remote).catch(() => null);
-          } else {
+          } else if (remote?.paymentStatus !== "PAID") {
             await expirePaymentRecord(payment).catch(() => null);
           }
         } else {
@@ -1728,7 +1738,7 @@ export function publicRoutes(router) {
       }
 
       const remote = await iremboInvoiceStatus(invoiceNumber).catch(() => null);
-      if (remote?.paymentStatus === "PAID") {
+      if (verifiedPaidAmount({ ...payment, amount }, remote)) {
         let account = null;
         if (payment?.id) {
           payment = await confirmPaidInvoice(payment, remote, { notify: false });
@@ -1783,7 +1793,7 @@ export function publicRoutes(router) {
       let account = null;
       if (payment && String(payment.status).toLowerCase() !== "paid") {
         const remote = await iremboInvoiceStatus(payment.invoice_number || invoice).catch(() => null);
-        if (remote?.paymentStatus === "PAID") {
+        if (verifiedPaidAmount(payment, remote)) {
           payment = await confirmPaidInvoice(payment, remote, { notify: false });
           account = await attachPayerAccount(payment).catch(() => null);
           payment.account_created = Boolean(account?.created);
@@ -1885,11 +1895,13 @@ export function publicRoutes(router) {
       const proof = isLocalInvoiceNumber(invoiceNumber)
         ? null
         : await iremboInvoiceStatus(invoiceNumber).catch(() => null);
-      if (proof?.paymentStatus !== "PAID") {
-        return res.status(202).json({ received: true, processed: false, reason: "provider_unverified" });
-      }
-      if (proof.amount != null && Number(payment.amount) > 0 && Number(proof.amount) !== Number(payment.amount)) {
-        return res.status(400).json({ received: true, processed: false, reason: "amount_mismatch" });
+      if (!verifiedPaidAmount(payment, proof)) {
+        const mismatch = proof?.paymentStatus === "PAID" && proof?.amount != null && proof.amount !== "" && Number(proof.amount) !== Number(payment.amount);
+        return res.status(mismatch ? 400 : 202).json({
+          received: true,
+          processed: false,
+          reason: mismatch ? "amount_mismatch" : "provider_unverified",
+        });
       }
       const remote = proof;
       const confirmed = await confirmPaidInvoice(payment, remote, { notify: false });

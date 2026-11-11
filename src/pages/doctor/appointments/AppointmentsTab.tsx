@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import {
   useGetAppointments,
   useAcceptQuick,
-  useConfirmAppointment,
   useJoinSession,
   useReadyNext,
   useCompleteAppointment,
@@ -142,7 +141,6 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const acceptQuick = useAcceptQuick();
   const readyNext = useReadyNext();
   const completeAppointment = useCompleteAppointment();
-  const confirmAppointment = useConfirmAppointment();
 
   const appointments: Appointment[] = data?.data ?? [];
 
@@ -445,7 +443,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
             { label: t("pages.doctor.total_bookings"), value: appointmentStats.total, sub: t("pages.doctor.all_scheduled"), icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60", apply: () => setFilters({ ...INITIAL_FILTERS, sort: filters.sort }) },
             { label: t("pages.doctor.status_confirmed"), value: appointmentStats.confirmed, sub: t("pages.doctor.ready_to_join"), icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20", apply: () => setFilters((f) => ({ ...f, status: "confirmed", today: false, upcoming: false, date: "", page: 1 })) },
             { label: t("pages.doctor.status_in_progress"), value: appointmentStats.in_progress, sub: t("pages.doctor.live_now"), icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20", apply: () => setFilters((f) => ({ ...f, status: "in_progress", today: false, upcoming: false, date: "", page: 1 })) },
-            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_confirmation"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20", apply: () => setFilters((f) => ({ ...f, status: "pending", today: false, upcoming: false, date: "", page: 1 })) },
+            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_payment"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20", apply: () => setFilters((f) => ({ ...f, status: "pending", today: false, upcoming: false, date: "", page: 1 })) },
             { label: t("pages.doctor.today"), value: appointmentStats.today, sub: t("pages.doctor.on_schedule"), icon: Clock, tone: "text-primary bg-primary/10 border-primary/20", apply: () => setFilters((f) => ({ ...f, today: true, upcoming: false, date: "", status: "All", page: 1 })) },
           ].map((item) => {
             const Icon = item.icon;
@@ -613,7 +611,9 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     : filtered.map((a) => {
                       const status = a.status as UIStatus;
-                      const canStart = status === "confirmed";
+                      const rowFee = Number((a as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (a as Appointment & { consultation_fee?: string }).consultation_fee || 0);
+                      const rowPaid = String((a as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() === "paid" || !(rowFee > 0);
+                      const canStart = status === "confirmed" || (status === "pending" && rowPaid);
                       const isInProgress = status === "in_progress";
                       const hasNotes = !!a.notes;
                       return (
@@ -773,25 +773,10 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                               )}
 
                               {/* Notes  completed */}
-                              {status === "pending" && (
-                                Number((a as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (a as Appointment & { consultation_fee?: string }).consultation_fee || 0) > 0
-                                && String((a as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() !== "paid" ? (
-                                  <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-                                    {t("pages.doctor.awaiting_payment")}
-                                  </span>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => confirmAppointment.mutate(a.id, {
-                                      onSuccess: () => toast.success(t("pages.doctor.confirm_appointment")),
-                                      onError: (err: unknown) => toast.error(getErrMsg(err, t("pages.doctor.confirm_appointment"))),
-                                    })}
-                                    disabled={confirmAppointment.isPending}
-                                    className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
-                                  >
-                                    {confirmAppointment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("pages.doctor.confirm_appointment")}
-                                  </Button>
-                                )
+                              {status === "pending" && !rowPaid && (
+                                <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+                                  {t("pages.doctor.awaiting_payment")}
+                                </span>
                               )}
 
                               {!canStart && !isInProgress && status !== "pending" && (

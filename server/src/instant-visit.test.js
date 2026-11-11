@@ -11,6 +11,7 @@ import {
   placeInQueue,
   queueLabel,
   UNPAID_LIMIT_SEC,
+  verifiedPaidAmount,
 } from "./instant-visit.js";
 
 const NOW = new Date("2026-11-08T06:33:00Z"); // 08:33 Africa/Tripoli
@@ -121,11 +122,14 @@ describe("instant visit queue", () => {
     )).toBe(true);
   });
 
-  it("offers join only after the doctor has accepted a paid visit", () => {
+  it("lets a paid instant visit be joined before the doctor accepts it", () => {
+    expect(canJoinInstant(row({ status: "pending", payment_status: "paid" }))).toBe(true);
+    expect(canJoinInstant(row({ status: "confirmed", payment_status: "paid" }))).toBe(true);
     expect(canJoinInstant(row({ status: "accepted", payment_status: "paid" }))).toBe(true);
-    expect(canJoinInstant(row({ status: "pending", payment_status: "paid" }))).toBe(false);
-    expect(canJoinInstant(row({ status: "accepted", payment_status: "pending" }))).toBe(false);
+    expect(canJoinInstant(row({ status: "pending", payment_status: "pending" }))).toBe(false);
     expect(canJoinInstant(row({ status: "confirmed", payment_status: "unpaid" }))).toBe(false);
+    expect(canJoinInstant(row({ status: "completed", payment_status: "paid" }))).toBe(false);
+    expect(canJoinInstant(row({ status: "cancelled", payment_status: "paid" }))).toBe(false);
   });
 
   it("counts only a paid open request for this doctor, including a paid any-doctor request", () => {
@@ -164,5 +168,13 @@ describe("instant visit queue", () => {
     const withoutPayment = paidMarkerSql(["consultation_fee"], { paymentColumn: false }).replace(/`/g, "\"");
     const legacyIds = database.prepare(`SELECT id FROM visits WHERE ${withoutPayment} ORDER BY id`).all().map((item) => item.id);
     expect(legacyIds).toEqual([2, 3, 5, 6]);
+  });
+
+  it("accepts a verified payment only when the amount matches", () => {
+    const payment = { amount: 5000 };
+    expect(verifiedPaidAmount(payment, { paymentStatus: "PAID", amount: 5000 })).toBe(true);
+    expect(verifiedPaidAmount(payment, { paymentStatus: "PAID", amount: 1000 })).toBe(false);
+    expect(verifiedPaidAmount(payment, { paymentStatus: "PENDING", amount: 5000 })).toBe(false);
+    expect(verifiedPaidAmount({ amount: 0 }, { paymentStatus: "PAID", amount: 0 })).toBe(true);
   });
 });

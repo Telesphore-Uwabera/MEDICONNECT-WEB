@@ -285,8 +285,28 @@ export function canPayInstant(row) {
   return !JOINABLE_STATUSES.includes(status);
 }
 
+const INSTANT_CLOSED = new Set([
+  "expired",
+  "cancelled",
+  "canceled",
+  "declined",
+  "rejected",
+  "no_show",
+  "completed",
+  "done",
+]);
+
+/** A verified IremboPay invoice: status PAID and, when the provider sent one, the same amount. */
+export function verifiedPaidAmount(payment, remote) {
+  if (String(remote?.paymentStatus || "").toUpperCase() !== "PAID") return false;
+  if (remote?.amount == null || remote.amount === "") return true;
+  return Number(remote.amount) === Number(payment?.amount);
+}
+
+/** Paid instant visits can be joined immediately. A finished or cancelled one cannot. */
 export function canJoinInstant(row) {
-  return isPaidStatus(row) && JOINABLE_STATUSES.includes(String(row?.status || "").toLowerCase());
+  if (!row || !isPaidStatus(row)) return false;
+  return !INSTANT_CLOSED.has(String(row.status || "").toLowerCase());
 }
 
 /**

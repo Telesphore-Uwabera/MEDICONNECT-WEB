@@ -2450,7 +2450,7 @@ export function appRoutes(router) {
         consultationId: appointment.id,
         name: "Doctor",
       });
-      if (await hasColumn("appointments", "status") && ["confirmed", "accepted"].includes(String(appointment.status || "").toLowerCase())) {
+      if (await hasColumn("appointments", "status") && !["in_progress", "completed", "done"].includes(String(appointment.status || "").toLowerCase())) {
         await update("appointments", appointment.id, { status: "in_progress" });
       }
       res.json({
@@ -2523,7 +2523,7 @@ export function appRoutes(router) {
       }
       if (!clauses.length) return res.json({ data: null });
       const row = await one(
-        `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND status IN ('accepted','in_progress') ORDER BY id DESC LIMIT 1`,
+        `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND LOWER(status) NOT IN ('expired','cancelled','canceled','declined','rejected','no_show','completed','done') ORDER BY id DESC LIMIT 1`,
         params,
       ).catch(() => null);
       if (!row || !canJoinInstant(row)) return res.json({ data: null });

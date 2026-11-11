@@ -215,10 +215,10 @@ export async function notifyPaidVisit(payment, account = null) {
   if (doctor?.email || doctor?.user_id) {
     const subjectDoctor = instant
       ? `New instant consultation #${payableId} — patient is ready`
-      : `New paid appointment #${payableId} awaiting your confirmation`;
+      : `Paid appointment #${payableId} is confirmed`;
     const textDoctor = instant
-      ? `${patient.name} paid for an instant consultation${amountStr ? ` (${amountStr})` : ""}. Open your MediConnect dashboard to accept and join.`
-      : `${patient.name} paid for an appointment on ${when}. Open your appointments, review their details, and confirm the visit.`;
+      ? `${patient.name} paid for an instant consultation${amountStr ? ` (${amountStr})` : ""}. Open your MediConnect dashboard to join.`
+      : `${patient.name} paid for an appointment on ${when}. The visit is confirmed and ready.`;
 
     const infoRows = [
       ["Patient", patient.name],
@@ -234,12 +234,12 @@ export async function notifyPaidVisit(payment, account = null) {
       body: `
         ${emailP(greeting(doctor.name, doctor.lang))}
         ${emailHtml(instant
-          ? `A patient has paid for an instant consultation${amountStr ? ` of <strong>${amountStr}</strong>` : ""} and is waiting for you.`
-          : `<strong>${patient.name}</strong> has paid for an ${amountStr ? `<strong>${amountStr}</strong> ` : ""}appointment on <strong>${when}</strong>. Please review their details and confirm the visit.`
+          ? `A patient has paid for an instant consultation${amountStr ? ` of <strong>${amountStr}</strong>` : ""} and is ready to join.`
+          : `<strong>${patient.name}</strong> has paid for an ${amountStr ? `<strong>${amountStr}</strong> ` : ""}appointment on <strong>${when}</strong>. The visit is confirmed and ready.`
         )}
         ${emailInfoBox(infoRows, "#0BA59B")}
         ${emailBtn(
-          instant ? "Accept & Join Now" : "View Appointment",
+          instant ? "Join now" : "View Appointment",
           instant ? "https://mediconnect.rw/doctor" : "https://mediconnect.rw/doctor/appointments",
         )}
         ${emailP("Sign in to your MediConnect dashboard to take action.", "font-size:12px;color:#9ca3af;")}
@@ -258,7 +258,7 @@ export async function notifyPaidVisit(payment, account = null) {
     tempPassword = access.plain || tempPassword;
     const textPatient = (instant
       ? `Your payment is confirmed${doctor?.name ? ` with ${doctor.name}` : ""}. Sign in to join when the doctor is ready.`
-      : `Your payment${amountStr ? ` of ${amountStr}` : ""} was received${doctor?.name ? ` for your appointment with Dr. ${doctor.name}` : ""}. The doctor will confirm your appointment shortly.`) + access.text;
+      : `Your payment${amountStr ? ` of ${amountStr}` : ""} was received${doctor?.name ? ` for your appointment with Dr. ${doctor.name}` : ""}. The visit is confirmed.`) + access.text;
 
     const infoRows = [
       doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
@@ -291,7 +291,7 @@ export async function notifyPaidVisit(payment, account = null) {
         ${emailP(greeting(patient.name, patient.lang))}
         ${emailHtml(instant
           ? `Your payment has been confirmed. ${doctor?.name ? `Dr. <strong>${doctor.name}</strong> will join you shortly.` : "A doctor will join your consultation shortly."}`
-          : `Your payment${amountStr ? ` of <strong>${amountStr}</strong>` : ""} has been received. Your appointment is now pending the doctor's confirmation — you'll receive another email once they confirm.`
+          : `Your payment${amountStr ? ` of <strong>${amountStr}</strong>` : ""} has been received. Your appointment is confirmed.`
         )}
         ${infoRows.length ? emailInfoBox(infoRows, "#38a169") : ""}
         ${credentialsBlock}
@@ -325,8 +325,8 @@ export async function notifyPaidVisit(payment, account = null) {
       if (!row.doctor_id) {
         await notifyInApp(
           target.user_id,
-          "New instant consultation — patient has paid and is waiting",
-          `A patient is waiting in the instant queue with a paid consultation. Open your MediConnect dashboard to accept and join.`,
+          "New instant consultation — patient has paid and is ready",
+          "A patient is in the instant queue with a paid consultation. Open your MediConnect dashboard to join.",
           "visit.paid",
         ).catch(() => null);
       }

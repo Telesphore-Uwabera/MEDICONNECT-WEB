@@ -537,7 +537,7 @@
     "queue_unknown": "Checking your place",
     "progress_requesting": "Sending consultation request…",
     "progress_payment_verifying": "Confirming your payment with provider…",
-    "progress_polling": "Waiting for doctor to accept…",
+    "progress_polling": "Payment confirmed. You can join now.",
     "progress_accepted": "Doctor is ready — join when you are!",
     "progress_in_progress": "Doctor is in the call — join when ready!",
     "confirm_details": "Please confirm your contact details to continue.",

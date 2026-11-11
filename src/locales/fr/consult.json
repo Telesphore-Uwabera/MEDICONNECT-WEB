@@ -537,7 +537,7 @@
     "queue_unknown": "Vérification de votre place",
     "progress_requesting": "Envoi de la demande de consultation…",
     "progress_payment_verifying": "Confirmation de votre paiement auprès du fournisseur…",
-    "progress_polling": "En attente de l'acceptation du médecin…",
+    "progress_polling": "Paiement confirmé. Vous pouvez rejoindre maintenant.",
     "progress_accepted": "Le médecin est prêt — rejoignez quand vous êtes prêt !",
     "progress_in_progress": "Le médecin est en appel — rejoignez quand vous êtes prêt !",
     "confirm_details": "Veuillez confirmer vos coordonnées pour continuer.",

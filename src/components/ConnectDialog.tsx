@@ -602,7 +602,7 @@ export const ConnectDialogContent = ({
     });
 
     setDoctorBusy(Boolean(statusData.doctor_busy));
-    if (statusData.status === "accepted" || statusData.status === "in_progress") {
+    if (statusData.can_join || statusData.status === "accepted" || statusData.status === "in_progress") {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
