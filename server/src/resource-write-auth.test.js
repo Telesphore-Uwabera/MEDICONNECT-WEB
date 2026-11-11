@@ -1,6 +1,8 @@
 import express from "express";
 import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { callToken } from "./call-token.js";
+import { kigaliClock } from "./doctor-schedule.js";
 
 const writes = [];
 const db = {
@@ -133,9 +135,10 @@ function sqliteRows(sql, params) {
     insert("INSERT INTO patients (id, user_id, name, email, phone) VALUES (?, ?, ?, ?, ?)").run(row.id, row.user_id, row.name, row.email, row.phone ?? null);
   }
   for (const row of db.appointments) {
-    insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, consultation_fee, payment_status, patient_pays, amount_due, daily_room_name, room_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+    insert("INSERT INTO appointments (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, consultation_fee, payment_status, patient_pays, amount_due, daily_room_name, room_url, appointment_date, appointment_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       row.id, row.doctor_id, row.patient_id, row.user_id, row.pharmacy_id ?? null, row.hospital_id ?? null, row.status, row.notes || null, row.daily_guest_token || null, row.consultation_fee ?? null,
       row.payment_status ?? null, row.patient_pays ?? null, row.amount_due ?? null, row.daily_room_name || null, row.room_url || null,
+      row.appointment_date || null, row.appointment_time || null,
     );
   }
   for (const row of db.instants) {
@@ -1268,5 +1271,140 @@ describe("resource write authorization", () => {
     expect(dashboard.body.today.instant_queue).toBe(2);
     expect(dashboard.body.instant.paid_waiting).toBe(2);
     expect(dashboard.body.instant.current_queue).toBe(2);
+  });
+
+  it("joins a generic visit only after payment, confirmation, and the booked window", async () => {
+    const room = { daily_guest_token: "ready-token", daily_room_name: "ready-room", room_url: "/consultation/ready-room" };
+    const clock = kigaliClock();
+    const hour = String(Math.floor(clock.minutes / 60)).padStart(2, "0");
+    const minute = String(clock.minutes % 60).padStart(2, "0");
+    db.appointments.push(
+      { id: 31, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "pending", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+      { id: 32, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
+      { id: 33, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
+      { id: 34, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "unpaid", consultation_fee: 0, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+      { id: 35, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+      { id: 37, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "accepted", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+      { id: 38, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "in_progress", payment_status: "paid", consultation_fee: 5000, appointment_date: "2099-01-01", appointment_time: "09:00", ...room },
+      { id: 36, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "pending", consultation_fee: 5000, ...room },
+      { id: 39, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "cancelled", payment_status: "paid", consultation_fee: 5000, appointment_date: clock.date, appointment_time: `${hour}:${minute}`, ...room },
+    );
+    db.instants.push(
+      { id: 31, doctor_id: 31, patient_id: 55, user_id: null, status: "confirmed", payment_status: "paid", consultation_fee: 5000, ...room },
+      { id: 33, doctor_id: 31, patient_id: 55, user_id: null, status: "accepted", payment_status: "paid", consultation_fee: 5000, ...room },
+    );
+
+    const paidPending = await request(users.patient, "POST", "/patient/my-visits/31/join");
+    const outside = await request(users.patient, "POST", "/patient/my-visits/32/join");
+    const acceptedOutside = await request(users.patient, "POST", "/patient/my-visits/33/join");
+    const inProgressOutside = await request(users.patient, "POST", "/patient/my-visits/38/join");
+    const accepted = await request(users.patient, "POST", "/patient/my-visits/37/join");
+    const zeroFee = await request(users.hospital, "POST", "/hospital/appointments/34/join");
+    const inside = await request(users.doctor, "GET", "/doctor/appointments/35/join");
+    const instantPaid = await request(users.patient, "POST", "/patient/instant-consultations/31/join");
+    const instantAccepted = await request(users.patient, "POST", "/patient/instant-consultations/33/join");
+    const closed = await request(users.patient, "POST", "/patient/my-visits/39/join");
+    const french = await request(
+      { ...users.patient, preferred_language: "fr" },
+      "POST",
+      "/patient/my-visits/36/join",
+    );
+
+    expect(paidPending.status).toBe(200);
+    expect(JSON.stringify(paidPending.body)).toMatch(/ready-token|ready-room/);
+    expect(closed.status).toBe(422);
+    expect(closed.body.message).toBe("This visit is no longer open.");
+    expect(outside.status).toBe(422);
+    expect(outside.body.message).toBe("Consultations can only be joined on the booked day.");
+    expect(outside.body.reason).toBe("not-today");
+    expect(acceptedOutside.status).toBe(422);
+    expect(acceptedOutside.body.reason).toBe("not-today");
+    expect(inProgressOutside.status).toBe(422);
+    expect(inProgressOutside.body.reason).toBe("not-today");
+    expect(instantPaid.status).toBe(200);
+    expect(JSON.stringify(instantPaid.body)).toMatch(/ready-token|ready-room/);
+    expect(french.status).toBe(422);
+    expect(french.body.message).toBe("Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.");
+    for (const result of [outside, acceptedOutside, inProgressOutside, closed, french]) {
+      expect(JSON.stringify(result.body)).not.toMatch(/ready-token|ready-room|room-token|visit-room/);
+    }
+    for (const result of [accepted, zeroFee, inside, instantAccepted, instantPaid, paidPending]) {
+      expect(result.status).toBe(200);
+      expect(JSON.stringify(result.body)).toMatch(/ready-token|ready-room/);
+    }
+
+    const dedicatedPaid = await request(users.patient, "POST", "/patient/appointments/31/join");
+    const dedicatedOutside = await request(users.doctor, "POST", "/doctor/appointments/33/join");
+    const dedicatedAccepted = await request(users.patient, "POST", "/patient/appointments/37/join");
+    const dedicatedDoctor = await request(users.doctor, "POST", "/doctor/appointments/37/join");
+    expect(dedicatedPaid.status).toBe(200);
+    expect(dedicatedPaid.body.token).toBeTruthy();
+    expect(dedicatedOutside.status).toBe(422);
+    expect(dedicatedOutside.body.reason).toBe("not-today");
+    expect(JSON.stringify(dedicatedOutside.body)).not.toMatch(/token/);
+    expect(dedicatedAccepted.status).toBe(200);
+    expect(dedicatedAccepted.body.token).toBeTruthy();
+    expect(dedicatedDoctor.status).toBe(200);
+    expect(dedicatedDoctor.body.token).toBeTruthy();
+    expect(writes.some((write) => write.op === "update" && write.table === "appointments" && String(write.id) === "37" && write.data.status === "in_progress")).toBe(true);
+  });
+
+  it("publishes Reverb settings without a secret and still relays call signals", async () => {
+    const names = ["REVERB_APP_KEY", "REVERB_APP_SECRET", "REVERB_HOST", "REVERB_PORT", "REVERB_SCHEME", "REVERB_ENABLED"];
+    const saved = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+    const restore = () => {
+      for (const name of names) {
+        if (saved[name] == null) delete process.env[name];
+        else process.env[name] = saved[name];
+      }
+    };
+    try {
+      for (const name of names) delete process.env[name];
+      process.env.REVERB_APP_SECRET = "server-only-reverb-secret";
+      const unset = await request(null, "GET", "/public/realtime");
+      expect(unset.status).toBe(200);
+      expect(unset.body.reverb).toEqual({ key: "", host: "", port: null, scheme: "", enabled: false });
+      expect(JSON.stringify(unset.body)).not.toContain("server-only-reverb-secret");
+
+      process.env.REVERB_APP_KEY = "public-key";
+      process.env.REVERB_HOST = "ws.example.rw";
+      process.env.REVERB_PORT = "443";
+      process.env.REVERB_SCHEME = "https";
+      const configured = await request(null, "GET", "/public/realtime");
+      expect(configured.status).toBe(200);
+      expect(configured.body.reverb).toEqual({
+        key: "public-key",
+        host: "ws.example.rw",
+        port: 443,
+        scheme: "https",
+        enabled: true,
+      });
+      expect(JSON.stringify(configured.body)).not.toContain("server-only-reverb-secret");
+
+      process.env.REVERB_ENABLED = "false";
+      const forcedOff = await request(null, "GET", "/public/realtime");
+      expect(forcedOff.body.reverb.enabled).toBe(false);
+      expect(forcedOff.body.reverb.host).toBe("ws.example.rw");
+    } finally {
+      restore();
+    }
+
+    const room = "appointment-signal-31";
+    const token = callToken({ room, role: "patient", consultationId: 31, name: "Patient" });
+    const missing = await request(null, "GET", `/public/consultations/signal/${room}`);
+    expect(missing.status).toBe(401);
+    const posted = await request(null, "POST", "/public/consultations/signal", {
+      room,
+      token,
+      type: "offer",
+      data: { sdp: "v=0" },
+    });
+    expect(posted.status).toBe(200);
+    const polled = await request(null, "GET", `/public/consultations/signal/${encodeURIComponent(room)}?token=${encodeURIComponent(token)}`);
+    expect(polled.status).toBe(200);
+    expect(polled.body.signals).toEqual([
+      expect.objectContaining({ room, type: "offer", data: { sdp: "v=0" } }),
+    ]);
+    expect(JSON.stringify(polled.body)).not.toContain(token);
   });
 });

@@ -70,6 +70,7 @@ vi.mock("./db.js", async (importOriginal) => {
     tableExists: async (name) => {
       if (name === "ready_mail_claims") return db.claimsTable;
       if (name === "patients") return db.patientsAvailable;
+      if (name === "instant_consultation_requests") return Array.isArray(db.instants);
       return ["users", "doctors", "notifications", "appointments"].includes(name);
     },
     hasColumn: async () => true,
@@ -104,12 +105,13 @@ vi.mock("./db.js", async (importOriginal) => {
         return db.users.find((row) => row.id === id) || null;
       }
       if (text.includes("FROM doctors")) return db.doctors.find((row) => row.id === id) || null;
+      if (text.includes("instant_consultation_requests")) return (db.instants || []).find((row) => row.id === id) || null;
       return null;
     },
   };
 });
 
-const { notifyBookedVisit, notifyDoctorReady, remindUpcomingVisits } = await import("./visit-notify.js");
+const { notifyBookedVisit, notifyDoctorReady, notifyPaidVisit, remindUpcomingVisits } = await import("./visit-notify.js");
 const { READY_CLAIM_STALE_MS, READY_MAIL_TIMEOUT_MS } = await import("./ready-mail.js");
 
 function clock(minutesAhead) {
@@ -125,6 +127,7 @@ describe("visit notifications", () => {
     sent.length = 0;
     notes.length = 0;
     db.appointments = [];
+    db.instants = null;
     db.patients = [{ id: 9, user_id: 77, name: "Amina Uwase", email: "owner@example.com", phone: "788000077" }];
     db.patientsAvailable = true;
     db.profileThrows = false;
@@ -189,6 +192,17 @@ describe("visit notifications", () => {
     expect(doctorMail.html).toContain("Hello, Jane!");
     expect(doctorMail.html).not.toContain("Hello, Dr.!");
     expect(JSON.stringify(sent)).not.toContain("stranger@example.com");
+  });
+
+  it("tells the doctor a paid instant visit is ready to join", async () => {
+    db.instants = [{ id: 12, doctor_id: 31, patient_id: 9, status: "confirmed", payment_status: "paid" }];
+    await notifyPaidVisit({ payable_type: "instant_consultation", payable_id: 12, amount: 5000, status: "paid" });
+    const doctorMail = sent.find((message) => message.to === "doctor@example.com");
+    expect(doctorMail).toBeTruthy();
+    expect(doctorMail.text).toMatch(/join/i);
+    expect(doctorMail.text).not.toMatch(/accept/i);
+    expect(doctorMail.subject).toMatch(/ready/i);
+    db.instants = null;
   });
 
   it("tells an unpaid upcoming appointment to pay instead of join", async () => {

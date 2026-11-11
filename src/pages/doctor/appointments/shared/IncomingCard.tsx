@@ -229,7 +229,6 @@ const PreCallModal = ({ item, onJoin, onClose, isJoining }: PreCallModalProps) =
 
 export function IncomingCard({
   item,
-  onAccept,
   onDecline,
   onJoin,
   onComplete,
@@ -350,8 +349,8 @@ export function IncomingCard({
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
 
-            {/* CONFIRMED → Decline + Accept */}
-            {item.status === "confirmed" && (
+            {/* Paid and waiting → Decline + Join. Acceptance is not required. */}
+            {["confirmed", "pending", "queued", "waiting", "payment_pending"].includes(item.status) && (
               <>
                 <button
                   onClick={onDecline}
@@ -364,14 +363,14 @@ export function IncomingCard({
                     : <PhoneOff className="h-3.5 w-3.5" />}
                 </button>
                 <button
-                  onClick={onAccept}
-                  disabled={isBusy}
+                  onClick={onJoin}
+                  disabled={isBusy || !onJoin}
                   className="h-8 px-3 rounded-[5px] bg-[hsl(var(--success))] hover:opacity-90 text-[hsl(var(--success-foreground))] text-[10px] font-semibold flex items-center gap-1.5 transition-smooth shadow-soft active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {isAccepting
+                  {isJoining
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <Phone className="h-3.5 w-3.5" />}
-                  {t('consult.bookings.accept')}
+                  {t("consult.bookings.ready_to_join", { defaultValue: "Join" })}
                 </button>
               </>
             )}

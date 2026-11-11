@@ -1,12 +1,11 @@
-import { Video, MapPin, Calendar, Clock, FileText, Eye, Mail, Phone, CreditCard, CheckCircle2, Loader2 } from "lucide-react";
+import { Video, MapPin, Calendar, Clock, FileText, Eye, Mail, Phone, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { type Appointment, useConfirmAppointment } from "@/hooks/doctor/use-doctor-appointment";
+import { type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
-import { fmtDate, fmtTime, apptLabel, statusLabel, getErrMsg } from "./helpers";
+import { fmtDate, fmtTime, apptLabel, statusLabel } from "./helpers";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 
 interface Props {
   appt: Appointment;
@@ -18,9 +17,7 @@ interface Props {
 
 export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: Props) {
   const { t } = useTranslation();
-  const confirmAppointment = useConfirmAppointment();
   const status = appt.status as UIStatus;
-  const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
 
   type ExtendedAppointment = Appointment & {
@@ -33,7 +30,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
   const fee = Number(raw.patient_pays || raw.consultation_fee || 0);
   const currency = raw.currency || "RWF";
   const isPaid = String(raw.payment_status || "").toLowerCase() === "paid" || !(fee > 0);
-  const canConfirm = status === "pending" && isPaid;
+  const canStart = status === "confirmed" || (status === "pending" && isPaid);
 
   const patientEmail = appt.patient?.email?.trim();
   const patientPhone = appt.patient?.phone?.trim();
@@ -142,23 +139,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           </Button>
         )}
 
-        {/* Pending: Confirm appointment if paid; otherwise Awaiting payment */}
-        {status === "pending" && canConfirm && (
-          <Button
-            size="sm"
-            onClick={() => confirmAppointment.mutate(appt.id, {
-              onSuccess: () => toast.success(t("pages.doctor.confirm_appointment", { defaultValue: "Appointment confirmed" })),
-              onError: (err: unknown) => toast.error(getErrMsg(err, t("pages.doctor.confirm_failed", { defaultValue: "Failed to confirm appointment" }))),
-            })}
-            disabled={confirmAppointment.isPending}
-            className="h-9 px-4 text-sm font-semibold rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1.5"
-          >
-            {confirmAppointment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            {t("pages.doctor.confirm_appointment", { defaultValue: "Confirm appointment" })}
-          </Button>
-        )}
-
-        {status === "pending" && !canConfirm && (
+        {status === "pending" && !isPaid && (
           <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
             {t("pages.doctor.awaiting_payment")}
           </span>

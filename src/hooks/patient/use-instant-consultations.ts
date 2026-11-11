@@ -60,6 +60,7 @@ export interface InstantConsultationStatusResponse {
   queue_position: number;
   people_ahead: number | null;
   payment_status?: string | null;
+  can_join?: boolean;
   doctor_busy?: boolean;
   message?: string | null;
   room_url?: string;

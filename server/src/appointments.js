@@ -3,7 +3,7 @@ import { hasColumn, insert, one, pool, presentRow, q, tableExists, update } from
 import { loadOwnedId } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { createIremboInvoice } from "./public.js";
-import { notifyAppointmentConfirmed, notifyBookedVisit } from "./visit-notify.js";
+import { notifyAppointmentConfirmed, notifyBookedVisit, notifyPaidVisit } from "./visit-notify.js";
 import { reissueGuestPassword } from "./guest-password.js";
 import { appointmentCollision, appointmentStartIsInPast, bookableSlot, claimSlot, patientOwnsAppointment } from "./visit-rules.js";
 import { withNamedLock } from "./named-lock.js";
@@ -139,11 +139,12 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         return res.status(409).json({ message: "This doctor has closed that slot. Choose another time." });
       }
       const amount = await doctorOnlineFee(doctorId);
+      const free = !(Number(amount) > 0);
       const id = await insert("appointments", {
         doctor_id: doctorId,
         patient_id: req.user.id,
         type: body.type || "online",
-        status: "pending",
+        status: free ? "confirmed" : "pending",
         booking_type: "scheduled",
         appointment_date: body.appointment_date,
         appointment_time: body.appointment_time,
@@ -152,7 +153,7 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
         insurance_covered: 0,
         patient_pays: amount,
         currency: "RWF",
-        payment_status: "unpaid",
+        payment_status: free ? "paid" : "unpaid",
       });
       if (slot.found) {
         const claimed = await claimSlot(slot.slot.id, id);
@@ -164,19 +165,28 @@ export function attachAppointmentRoutes(router, { requireAuth, requireRole }) {
       }
       const row = await decorateAppointments(await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [id])));
       const issued = await reissueGuestPassword(req.user.id).catch(() => null);
-      notifyBookedVisit({
-        ...row,
-        user_id: req.user.id,
-        patient_id: req.user.id,
-        doctor_id: doctorId,
-        patient_pays: amount,
-        consultation_fee: amount,
-        account_plain: issued?.plain || null,
-      }).catch(() => null);
+      if (free) {
+        notifyPaidVisit({
+          payable_type: "appointment",
+          payable_id: id,
+          amount: 0,
+          status: "paid",
+        }).catch(() => null);
+      } else {
+        notifyBookedVisit({
+          ...row,
+          user_id: req.user.id,
+          patient_id: req.user.id,
+          doctor_id: doctorId,
+          patient_pays: amount,
+          consultation_fee: amount,
+          account_plain: issued?.plain || null,
+        }).catch(() => null);
+      }
       res.status(201).json({
-        message: amount > 0
-          ? "Appointment reserved. Pay before the doctor can confirm it."
-          : "Appointment reserved.",
+        message: free
+          ? "Appointment confirmed."
+          : "Appointment reserved. Pay to confirm this visit.",
         id,
         amount,
         data: row,

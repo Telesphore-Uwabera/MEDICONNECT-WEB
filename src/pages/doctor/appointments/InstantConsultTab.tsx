@@ -10,7 +10,6 @@ import { toast } from "sonner";
 
 import {
   useGetInstantQueue,
-  useAcceptInstant,
   useDeclineInstant,
   useJoinInstant,
   useCompleteInstant,
@@ -192,7 +191,6 @@ export function InstantConsultTab() {
   const isInCall = call.phase === "connected" && call.role === "doctor";
 
   const { data: queueData, isLoading: queueLoading } = useGetInstantQueue(!isInCall);
-  const acceptInstant = useAcceptInstant();
   const declineInstant = useDeclineInstant();
   const joinInstant = useJoinInstant();
   const completeInstant = useCompleteInstant();
@@ -270,21 +268,6 @@ export function InstantConsultTab() {
     || joined.length > 0
     || (call.phase === "connected" && call.role === "doctor"),
   );
-
-  const handleAccept = (item: InstantConsultQueueItem) => {
-    if (doctorBusy) {
-      toast.message(t("consult.bookings.busy_cannot_accept", {
-        defaultValue: "Finish your current instant consultation first. Other patients stay in the queue. Bookings are still available.",
-      }));
-      return;
-    }
-    setActiveAction({ id: item.id, action: "accepting" });
-    acceptInstant.mutate(item.id, {
-      onSuccess: () => toast.success(t("consult.bookings.request_accepted")),
-      onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_accept"))),
-      onSettled: () => setActiveAction(null),
-    });
-  };
 
   const handleDecline = (item: InstantConsultQueueItem) => {
     setActiveAction({ id: item.id, action: "declining" });
@@ -684,9 +667,7 @@ export function InstantConsultTab() {
                   dotCls="bg-[hsl(var(--success))]"
                   label={doctorBusy
                     ? t("consult.bookings.waiting_in_queue", { defaultValue: "Waiting in queue" })
-                    : confirmed.some(i => i.payment_status === "paid")
-                      ? t("consult.bookings.ready_to_join", { defaultValue: "Paid — Ready to Join" })
-                      : t("consult.bookings.ready_to_accept")}
+                    : t("consult.bookings.ready_to_join", { defaultValue: "Paid — Ready to Join" })}
                   count={confirmed.length}
                 />
                 {confirmed.map((item) => (
@@ -694,37 +675,9 @@ export function InstantConsultTab() {
                     key={item.id}
                     item={item}
                     onOpen={() => openDetail(item)}
-                    onAccept={doctorBusy ? undefined : () => handleAccept(item)}
                     onDecline={() => handleDecline(item)}
-                    isAccepting={activeAction?.id === item.id && activeAction.action === "accepting"}
                     isDeclining={activeAction?.id === item.id && activeAction.action === "declining"}
-                    onJoin={
-                      // Paid / confirmed: doctor can join directly (accept+join in one step)
-                      !doctorBusy
-                        ? () => {
-                            setActiveAction({ id: item.id, action: "accepting" });
-                            acceptInstant.mutate(item.id, {
-                              onSuccess: (res) => {
-                                setActiveAction({ id: item.id, action: "joining" });
-                                const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-                                try {
-                                  const decoded = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
-                                  const nativeCid = Number(decoded?.consultation_id);
-                                  if (Number.isFinite(nativeCid) && nativeCid > 0) {
-                                    if (nativeCid !== item.id) consultIdByRequest.current[item.id] = nativeCid;
-                                    decoded.instant_consultation_id = nativeCid;
-                                  }
-                                  decoded.instant_consultation_request_id = item.id;
-                                  decoded.consultation_id = item.id;
-                                  startCall(roomName, attachPatientToCallToken(decoded, item));
-                                } catch { /* fallback */ }
-                              },
-                              onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_accept"))),
-                              onSettled: () => setActiveAction(null),
-                            });
-                          }
-                        : undefined
-                    }
+                    onJoin={!doctorBusy ? () => handleJoin(item) : undefined}
                   />
                 ))}
               </section>

@@ -6,8 +6,8 @@ import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } f
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { sniffedUploadExtension } from "./input-checks.js";
-import { DOCTOR_WORK_STATUSES, VISIT_TABLES, insuranceCatalogWhere, isPublicCatalog, mayReadRow, mayWriteRow, profileFormBody, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitReadWhere } from "./visit-rules.js";
-import { isPaidStatus, unpaidJoinMessage } from "./instant-visit.js";
+import { DOCTOR_WORK_STATUSES, VISIT_TABLES, insuranceCatalogWhere, isPublicCatalog, joinBlockMessage, mayReadRow, mayWriteRow, profileFormBody, releaseSlot, resolveCreateBody, scopeRoleAllowed, stripClientOwners, visitAwaitsPayment, visitBodyGuard, visitJoinBlock, visitReadWhere } from "./visit-rules.js";
+import { normalizeLang } from "./user-text.js";
 import { notifyAppointmentRescheduled } from "./visit-notify.js";
 import { handleCareReferrals } from "./care-referrals.js";
 import { handleCareOrders } from "./care-orders.js";
@@ -55,9 +55,17 @@ function segments(req) {
   return req.path.split("/").filter(Boolean);
 }
 
-function rejectUnpaidJoin(res, table, row) {
-  if (!VISIT_TABLES.has(table) || isPaidStatus(row)) return false;
-  res.status(422).json({ message: unpaidJoinMessage(table) });
+function requestLang(req) {
+  return normalizeLang(req?.user?.preferred_language || req?.headers?.["accept-language"]);
+}
+
+function rejectBlockedJoin(res, table, row, req) {
+  const block = visitJoinBlock(table, row);
+  if (!block) return false;
+  res.status(422).json({
+    message: joinBlockMessage(block.code, requestLang(req)),
+    ...(block.reason ? { reason: block.reason } : {}),
+  });
   return true;
 }
 
@@ -731,7 +739,7 @@ async function fillGap(req, res, parts) {
       res.status(404).json({ message: "Record not found." });
       return true;
     }
-    if (rejectUnpaidJoin(res, table, current)) return true;
+    if (rejectBlockedJoin(res, table, current, req)) return true;
     res.json({
       message: "Join ready.",
       data: row,
@@ -1005,7 +1013,7 @@ export function registerActions(router, RESOURCES) {
             message: currentRow ? "You do not have access to this record." : "Record not found.",
           });
         }
-        if (action === "join" && rejectUnpaidJoin(res, table, currentRow)) return;
+        if (action === "join" && rejectBlockedJoin(res, table, currentRow, req)) return;
         return res.json({ data: await presentRow(table, currentRow), items: [] });
       }
       if (await fillGap(req, res, parts)) return;

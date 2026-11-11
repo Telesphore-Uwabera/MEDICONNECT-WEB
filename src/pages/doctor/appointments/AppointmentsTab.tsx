@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import {
   useGetAppointments,
   useAcceptQuick,
-  useConfirmAppointment,
   useJoinSession,
   useReadyNext,
   useCompleteAppointment,
@@ -24,7 +23,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AppointmentContext, useCallStore, type Doctor } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
-import { startInAppCallFromJoin } from "@/lib/scheduled-call";
+import { startInAppCallFromJoin, type JoinTokenResponse } from "@/lib/scheduled-call";
 
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -83,11 +82,11 @@ function minutesFromTimeRange(start?: string, end?: string): number | null {
   return diff > 0 ? diff : diff + 24 * 60;
 }
 
-function appointmentDurationMinutes(appt: Appointment): number | null {
+function appointmentDurationMinutes(appt: Appointment & { duration_minutes?: number | string; duration?: number | string }): number | null {
   const slotDuration = minutesFromTimeRange(appt.slot?.start_time, appt.slot?.end_time);
   if (slotDuration) return slotDuration;
 
-  const raw = (appt as any).duration_minutes ?? (appt as any).duration;
+  const raw = appt.duration_minutes ?? appt.duration;
   const duration = Number(raw);
   return Number.isFinite(duration) && duration > 0 ? duration : null;
 }
@@ -142,7 +141,6 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const acceptQuick = useAcceptQuick();
   const readyNext = useReadyNext();
   const completeAppointment = useCompleteAppointment();
-  const confirmAppointment = useConfirmAppointment();
 
   const appointments: Appointment[] = data?.data ?? [];
 
@@ -238,8 +236,8 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       // Open the in-app ConsultationRoom (same call + chat as instant consults)
       // when the join token is our WebRTC format; otherwise fall back to the
       // previous scheduled-call behaviour.
-      const openCall = (res: unknown) => {
-        const started = startInAppCallFromJoin(startCall, res as any, {
+      const openCall = (res: JoinTokenResponse | undefined) => {
+        const started = startInAppCallFromJoin(startCall, res, {
           consultationId: appt.id,
           isOwner: true,
           appointmentDurationMinutes: appointmentDurationMinutes(appt),
@@ -247,8 +245,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         if (!started) {
           call.startScheduledCall(apptCtx, MOCK_DOCTOR);
           setScheduledCallActive(true);
-          const joinUrl = (res as any)?.join_url;
-          if (joinUrl) window.open(joinUrl, "_blank", "noopener,noreferrer");
+          if (res?.join_url) window.open(res.join_url, "_blank", "noopener,noreferrer");
         }
       };
 
@@ -310,16 +307,6 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
     setScheduledCallActive(false);
   }, [call]);
 
-  //  Active call view 
-
-  if (
-    scheduledCallActive &&
-    call.role === "doctor" &&
-    (call.phase === "connected" || call.phase === "ended")
-  ) {
-    return <ScheduledCallView onExit={handleExit} />;
-  }
-
   const filterFields = useMemo(() => [
     {
       type: "select" as const,
@@ -333,7 +320,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         { value: "in_progress", label: t("pages.doctor.status_in_progress") },
         { value: "completed", label: t("pages.doctor.status_completed") },
       ],
-      onChange: (v: string) => setFilters((f) => ({ ...f, status: v as any, page: 1 }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, status: v as FilterState["status"], page: 1 }))
     },
     {
       type: "select" as const,
@@ -345,7 +332,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         { value: "online", label: t("pages.doctor.video_consult") },
         { value: "in_person", label: t("pages.doctor.in_person_visit") },
       ],
-      onChange: (v: string) => setFilters((f) => ({ ...f, type: v as any, page: 1 }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, type: v as FilterState["type"], page: 1 }))
     },
     {
       type: "custom" as const,
@@ -407,6 +394,14 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
     }
   ], [filters, setFilters, t]);
 
+  if (
+    scheduledCallActive &&
+    call.role === "doctor" &&
+    (call.phase === "connected" || call.phase === "ended")
+  ) {
+    return <ScheduledCallView onExit={handleExit} />;
+  }
+
   const isJoining = acceptQuick.isPending || joinSession.isPending;
  
 
@@ -445,7 +440,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
             { label: t("pages.doctor.total_bookings"), value: appointmentStats.total, sub: t("pages.doctor.all_scheduled"), icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60", apply: () => setFilters({ ...INITIAL_FILTERS, sort: filters.sort }) },
             { label: t("pages.doctor.status_confirmed"), value: appointmentStats.confirmed, sub: t("pages.doctor.ready_to_join"), icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20", apply: () => setFilters((f) => ({ ...f, status: "confirmed", today: false, upcoming: false, date: "", page: 1 })) },
             { label: t("pages.doctor.status_in_progress"), value: appointmentStats.in_progress, sub: t("pages.doctor.live_now"), icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20", apply: () => setFilters((f) => ({ ...f, status: "in_progress", today: false, upcoming: false, date: "", page: 1 })) },
-            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_confirmation"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20", apply: () => setFilters((f) => ({ ...f, status: "pending", today: false, upcoming: false, date: "", page: 1 })) },
+            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_payment"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20", apply: () => setFilters((f) => ({ ...f, status: "pending", today: false, upcoming: false, date: "", page: 1 })) },
             { label: t("pages.doctor.today"), value: appointmentStats.today, sub: t("pages.doctor.on_schedule"), icon: Clock, tone: "text-primary bg-primary/10 border-primary/20", apply: () => setFilters((f) => ({ ...f, today: true, upcoming: false, date: "", status: "All", page: 1 })) },
           ].map((item) => {
             const Icon = item.icon;
@@ -519,7 +514,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                 { value: "date-desc", label: t("pages.doctor.latest_first") },
                 { value: "name", label: t("pages.doctor.patient_name_az") },
               ]}
-              onChange={(val) => setFilters((f) => ({ ...f, sort: val as any }))}
+              onChange={(val) => setFilters((f) => ({ ...f, sort: val as FilterState["sort"] }))}
               compact
               className="hidden sm:block w-[140px]"
             />
@@ -613,7 +608,9 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     : filtered.map((a) => {
                       const status = a.status as UIStatus;
-                      const canStart = status === "confirmed";
+                      const rowFee = Number((a as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (a as Appointment & { consultation_fee?: string }).consultation_fee || 0);
+                      const rowPaid = String((a as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() === "paid" || !(rowFee > 0);
+                      const canStart = status === "confirmed" || (status === "pending" && rowPaid);
                       const isInProgress = status === "in_progress";
                       const hasNotes = !!a.notes;
                       return (
@@ -773,25 +770,10 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                               )}
 
                               {/* Notes  completed */}
-                              {status === "pending" && (
-                                Number((a as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (a as Appointment & { consultation_fee?: string }).consultation_fee || 0) > 0
-                                && String((a as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() !== "paid" ? (
-                                  <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-                                    {t("pages.doctor.awaiting_payment")}
-                                  </span>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => confirmAppointment.mutate(a.id, {
-                                      onSuccess: () => toast.success(t("pages.doctor.confirm_appointment")),
-                                      onError: (err: unknown) => toast.error(getErrMsg(err, t("pages.doctor.confirm_appointment"))),
-                                    })}
-                                    disabled={confirmAppointment.isPending}
-                                    className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
-                                  >
-                                    {confirmAppointment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("pages.doctor.confirm_appointment")}
-                                  </Button>
-                                )
+                              {status === "pending" && !rowPaid && (
+                                <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+                                  {t("pages.doctor.awaiting_payment")}
+                                </span>
                               )}
 
                               {!canStart && !isInProgress && status !== "pending" && (

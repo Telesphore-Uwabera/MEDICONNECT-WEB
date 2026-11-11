@@ -27,7 +27,7 @@ import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicate
 import { selectedBrowseSpecialities } from "./browse-specialities.js";
 import {
   appointmentCollision,
-  appointmentJoinWindow,
+  joinBlockMessage,
   appointmentStartIsInPast,
   bookableSlot,
   claimSlot,
@@ -42,7 +42,7 @@ import {
   visitAwaitsPayment,
   visitBodyGuard,
   visitIsClosed,
-  visitIsSettled,
+  visitJoinBlock,
   insuranceCatalogWhere,
   isPublicCatalog,
   mayReadRow,
@@ -53,7 +53,7 @@ import {
 import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
-import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_APPOINTMENT_JOIN_MESSAGE, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
+import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -2401,20 +2401,12 @@ export function appRoutes(router) {
       if (!(await patientOwnsAppointment(appointment, req.user))) {
         return res.status(403).json({ message: "This appointment belongs to another patient." });
       }
-      if (visitIsClosed(appointment)) {
-        return res.status(422).json({ message: "This appointment is no longer open." });
-      }
-      if (!isPaidStatus(appointment) || !visitIsSettled(appointment)) {
-        return res.status(422).json({ message: UNPAID_APPOINTMENT_JOIN_MESSAGE });
-      }
-      const window = appointmentJoinWindow(appointment);
-      if (!window.ok) {
-        const message = window.reason === "too-early"
-          ? "This consultation has not started yet. Join a few minutes before your slot."
-          : window.reason === "too-late"
-            ? "This consultation slot has passed. Contact the doctor to reschedule."
-            : "Consultations can only be joined on the booked day.";
-        return res.status(422).json({ message, reason: window.reason });
+      const block = visitJoinBlock("appointments", appointment);
+      if (block) {
+        return res.status(422).json({
+          message: joinBlockMessage(block.code, req.user?.preferred_language),
+          ...(block.reason ? { reason: block.reason } : {}),
+        });
       }
       const room = `appointment-${appointment.id}`;
       const token = callToken({
@@ -2444,8 +2436,12 @@ export function appRoutes(router) {
       if (appointment.doctor_id && Number(appointment.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This appointment belongs to another doctor." });
       }
-      if (!visitIsSettled(appointment)) {
-        return res.status(422).json({ message: "Confirm this appointment before starting it — the patient has not paid yet." });
+      const block = visitJoinBlock("appointments", appointment);
+      if (block) {
+        return res.status(422).json({
+          message: joinBlockMessage(block.code, req.user?.preferred_language),
+          ...(block.reason ? { reason: block.reason } : {}),
+        });
       }
       const room = `appointment-${appointment.id}`;
       const token = callToken({
@@ -2454,9 +2450,7 @@ export function appRoutes(router) {
         consultationId: appointment.id,
         name: "Doctor",
       });
-      // 'pending' is safe to flip because the settled guard above already ran:
-      // an unpaid visit never reaches this line.
-      if (await hasColumn("appointments", "status") && ["pending", "confirmed", "accepted", "paid"].includes(String(appointment.status || ""))) {
+      if (await hasColumn("appointments", "status") && !["in_progress", "completed", "done"].includes(String(appointment.status || "").toLowerCase())) {
         await update("appointments", appointment.id, { status: "in_progress" });
       }
       res.json({
@@ -2529,7 +2523,7 @@ export function appRoutes(router) {
       }
       if (!clauses.length) return res.json({ data: null });
       const row = await one(
-        `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND status IN ('accepted','in_progress') ORDER BY id DESC LIMIT 1`,
+        `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND LOWER(status) NOT IN ('expired','cancelled','canceled','declined','rejected','no_show','completed','done') ORDER BY id DESC LIMIT 1`,
         params,
       ).catch(() => null);
       if (!row || !canJoinInstant(row)) return res.json({ data: null });

@@ -1,7 +1,8 @@
 import { hasColumn, one, pool, q, tableExists } from "./db.js";
 import { hashPassword, loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
-import { instantOwnedWhere, isPaidStatus, ownsInstant } from "./instant-visit.js";
+import { instantOwnedWhere, isPaidStatus, ownsInstant, UNPAID_APPOINTMENT_JOIN_MESSAGE, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
+import { pick } from "./user-text.js";
 
 /**
  * A visit is settled only after a verified payment (or a zero fee) and a
@@ -42,14 +43,12 @@ export function visitAwaitsPayment(row) {
 /**
  * Kigali wall clock versus the appointment's own date and time. The window opens
  * 20 minutes early and closes duration + 40 minutes after the start, so a doctor
- * running late can still get in but a visit booked for tomorrow cannot.
+ * running late can still get in but a visit booked for another day cannot.
+ * Confirmed, accepted, and in_progress all use this clock. Skipping it for
+ * accepted would let a visit booked years ahead issue a room token today.
+ * A row with no stored date or time cannot be placed on the clock.
  */
 export function appointmentJoinWindow(appointment, now = new Date()) {
-  // Once the doctor has taken the visit, they are waiting in the room; locking
-  // the patient out at that point would only strand the call.
-  if (["accepted", "in_progress"].includes(String(appointment?.status || "").toLowerCase())) {
-    return { ok: true, reason: null };
-  }
   const date = String(appointment?.appointment_date || "").slice(0, 10);
   const start = clockTime(appointment?.appointment_time);
   if (!date || !start) return { ok: true, reason: null };
@@ -61,6 +60,75 @@ export function appointmentJoinWindow(appointment, now = new Date()) {
   if (kigali.minutes < from - 20) return { ok: false, reason: "too-early" };
   if (kigali.minutes > from + duration + 40) return { ok: false, reason: "too-late" };
   return { ok: true, reason: null };
+}
+
+const FINISHED = new Set(["completed", "done"]);
+const ALREADY_CONFIRMED = new Set(["confirmed", "accepted", "in_progress"]);
+
+const JOIN_BLOCK_COPY = {
+  en: {
+    "unpaid-appointment": UNPAID_APPOINTMENT_JOIN_MESSAGE,
+    "unpaid-instant": UNPAID_INSTANT_JOIN_MESSAGE,
+    "too-early": "This consultation has not started yet. Join a few minutes before your slot.",
+    "too-late": "This consultation slot has passed. Contact the doctor to reschedule.",
+    "not-today": "Consultations can only be joined on the booked day.",
+    closed: "This visit is no longer open.",
+  },
+  fr: {
+    "unpaid-appointment": "Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.",
+    "unpaid-instant": "Cette consultation n'est pas encore payée. Le patient doit terminer le paiement avant que vous puissiez la rejoindre.",
+    "too-early": "Cette consultation n'a pas encore commencé. Rejoignez-la quelques minutes avant le créneau.",
+    "too-late": "Ce créneau de consultation est passé. Contactez le médecin pour le reporter.",
+    "not-today": "Une consultation ne peut être rejointe que le jour prévu.",
+    closed: "Cette visite n'est plus ouverte.",
+  },
+  rw: {
+    "unpaid-appointment": "Ishyura iyi konsultasiyo hanyuma utegereze ko muganga ayemeza mbere yo kuyinjiramo.",
+    "unpaid-instant": "Iyi konsultasiyo ntirishyurwa. Umurwayi agomba kurangiza kwishyura mbere yo kuyinjiramo.",
+    "too-early": "Iyi konsultasiyo ntiratangira. Injira iminota mike mbere y'isaha yateganyijwe.",
+    "too-late": "Igihe cy'iyi konsultasiyo cyararangiye. Vugana na muganga kugira ngo musubiremo igihe.",
+    "not-today": "Konsultasiyo irinjirwa gusa ku munsi wateganyijwe.",
+    closed: "Iyi konsultasiyo ntikiri ifunguye.",
+  },
+};
+
+export function joinBlockMessage(code, lang = "en") {
+  const key = String(code || "");
+  return pick(lang, {
+    en: JOIN_BLOCK_COPY.en[key],
+    fr: JOIN_BLOCK_COPY.fr[key],
+    rw: JOIN_BLOCK_COPY.rw[key],
+  }) || JOIN_BLOCK_COPY.en[key] || JOIN_BLOCK_COPY.en.closed;
+}
+
+/**
+ * Fields to store once IremboPay has verified a payment, or the fee is zero.
+ * A cancelled or finished visit stays closed. Any other visit becomes confirmed.
+ */
+export function settledAppointmentPatch(row) {
+  const status = String(row?.status || "").toLowerCase();
+  const patch = {};
+  if (String(row?.payment_status || "").toLowerCase() !== "paid") patch.payment_status = "paid";
+  if (visitIsClosed(row) || FINISHED.has(status) || ALREADY_CONFIRMED.has(status)) return patch;
+  patch.status = "confirmed";
+  return patch;
+}
+
+/**
+ * Why a join must not mint a room token. Null means the visit can be joined.
+ * Payment is enough. An appointment also has to be inside the booked-day
+ * window, whichever status it is in. A cancelled or finished visit stays closed.
+ */
+export function visitJoinBlock(table, row, now = new Date()) {
+  if (!VISIT_TABLES.has(table) || !row) return null;
+  const status = String(row.status || "").toLowerCase();
+  if (visitIsClosed(row) || FINISHED.has(status)) return { code: "closed" };
+  const instant = table !== "appointments";
+  if (!isPaidStatus(row)) return { code: instant ? "unpaid-instant" : "unpaid-appointment" };
+  if (instant) return null;
+  const window = appointmentJoinWindow(row, now);
+  if (!window.ok) return { code: window.reason || "not-today", reason: window.reason };
+  return null;
 }
 
 export function appointmentStartIsInPast(date, time, now = new Date()) {
