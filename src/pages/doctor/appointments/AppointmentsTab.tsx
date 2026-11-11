@@ -23,7 +23,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { AppointmentContext, useCallStore, type Doctor } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
-import { startInAppCallFromJoin } from "@/lib/scheduled-call";
+import { startInAppCallFromJoin, type JoinTokenResponse } from "@/lib/scheduled-call";
 
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
@@ -82,11 +82,11 @@ function minutesFromTimeRange(start?: string, end?: string): number | null {
   return diff > 0 ? diff : diff + 24 * 60;
 }
 
-function appointmentDurationMinutes(appt: Appointment): number | null {
+function appointmentDurationMinutes(appt: Appointment & { duration_minutes?: number | string; duration?: number | string }): number | null {
   const slotDuration = minutesFromTimeRange(appt.slot?.start_time, appt.slot?.end_time);
   if (slotDuration) return slotDuration;
 
-  const raw = (appt as any).duration_minutes ?? (appt as any).duration;
+  const raw = appt.duration_minutes ?? appt.duration;
   const duration = Number(raw);
   return Number.isFinite(duration) && duration > 0 ? duration : null;
 }
@@ -236,8 +236,8 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       // Open the in-app ConsultationRoom (same call + chat as instant consults)
       // when the join token is our WebRTC format; otherwise fall back to the
       // previous scheduled-call behaviour.
-      const openCall = (res: unknown) => {
-        const started = startInAppCallFromJoin(startCall, res as any, {
+      const openCall = (res: JoinTokenResponse | undefined) => {
+        const started = startInAppCallFromJoin(startCall, res, {
           consultationId: appt.id,
           isOwner: true,
           appointmentDurationMinutes: appointmentDurationMinutes(appt),
@@ -245,8 +245,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         if (!started) {
           call.startScheduledCall(apptCtx, MOCK_DOCTOR);
           setScheduledCallActive(true);
-          const joinUrl = (res as any)?.join_url;
-          if (joinUrl) window.open(joinUrl, "_blank", "noopener,noreferrer");
+          if (res?.join_url) window.open(res.join_url, "_blank", "noopener,noreferrer");
         }
       };
 
@@ -308,16 +307,6 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
     setScheduledCallActive(false);
   }, [call]);
 
-  //  Active call view 
-
-  if (
-    scheduledCallActive &&
-    call.role === "doctor" &&
-    (call.phase === "connected" || call.phase === "ended")
-  ) {
-    return <ScheduledCallView onExit={handleExit} />;
-  }
-
   const filterFields = useMemo(() => [
     {
       type: "select" as const,
@@ -331,7 +320,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         { value: "in_progress", label: t("pages.doctor.status_in_progress") },
         { value: "completed", label: t("pages.doctor.status_completed") },
       ],
-      onChange: (v: string) => setFilters((f) => ({ ...f, status: v as any, page: 1 }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, status: v as FilterState["status"], page: 1 }))
     },
     {
       type: "select" as const,
@@ -343,7 +332,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
         { value: "online", label: t("pages.doctor.video_consult") },
         { value: "in_person", label: t("pages.doctor.in_person_visit") },
       ],
-      onChange: (v: string) => setFilters((f) => ({ ...f, type: v as any, page: 1 }))
+      onChange: (v: string) => setFilters((f) => ({ ...f, type: v as FilterState["type"], page: 1 }))
     },
     {
       type: "custom" as const,
@@ -404,6 +393,14 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
       onChange: (v: string) => setFilters((f) => ({ ...f, search: v, page: 1 }))
     }
   ], [filters, setFilters, t]);
+
+  if (
+    scheduledCallActive &&
+    call.role === "doctor" &&
+    (call.phase === "connected" || call.phase === "ended")
+  ) {
+    return <ScheduledCallView onExit={handleExit} />;
+  }
 
   const isJoining = acceptQuick.isPending || joinSession.isPending;
  
@@ -517,7 +514,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                 { value: "date-desc", label: t("pages.doctor.latest_first") },
                 { value: "name", label: t("pages.doctor.patient_name_az") },
               ]}
-              onChange={(val) => setFilters((f) => ({ ...f, sort: val as any }))}
+              onChange={(val) => setFilters((f) => ({ ...f, sort: val as FilterState["sort"] }))}
               compact
               className="hidden sm:block w-[140px]"
             />
