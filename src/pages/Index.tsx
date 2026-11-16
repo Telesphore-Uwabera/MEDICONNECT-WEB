@@ -4,25 +4,16 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
-  ArrowLeft,
   ArrowRight,
-  Calendar,
-  Stethoscope,
   Pill,
-  Activity,
-  Shield,
   Clock,
   ChevronRight,
-  Zap,
-  X,
-  Mail,
   MapPin,
   Phone,
   Building2,
   BadgeCheck,
   Truck,
   Navigation,
-  ShoppingBag,
 } from "lucide-react";
 
 import echo from "@/lib/echo";
@@ -65,6 +56,11 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
 import { RevealSection } from "@/components/RevealSection";
+import HowItWorks from "@/components/landing/HowItWorks";
+import WhyMediconnect from "@/components/landing/WhyMediconnect";
+import AppDownload from "@/components/landing/AppDownload";
+import LandingFaq from "@/components/landing/LandingFaq";
+import FinalCta from "@/components/landing/FinalCta";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
 
@@ -349,29 +345,6 @@ const Index = () => {
 
   // ── Static content ───────────────────────────────────────────────────────────
 
-  const features = [
-    {
-      icon: Calendar,
-      title: t("pages.landing.f_smart_booking_t"),
-      desc: t("pages.landing.f_smart_booking_d"),
-    },
-    {
-      icon: Activity,
-      title: t("pages.landing.f_instant_t"),
-      desc: t("pages.landing.f_instant_d"),
-    },
-    {
-      icon: Stethoscope,
-      title: t("pages.landing.f_records_t"),
-      desc: t("pages.landing.f_records_d"),
-    },
-    {
-      icon: Pill,
-      title: t("pages.landing.f_pharmacy_t"),
-      desc: t("pages.landing.f_pharmacy_d"),
-    },
-  ];
-
   const footerPlatformLinks = [
     { label: "Doctors", to: "/patient/search-doctors" },
     { label: "Hospitals", to: "/patient/search-facilities" },
@@ -438,9 +411,11 @@ const Index = () => {
       </div>
 
       {/* ── Hero ── */}
-      <section id="home" className="relative bg-gradient-hero">
+      <section id="home" className="relative overflow-hidden bg-gradient-hero">
         <HeroSection />
       </section>
+
+      <HowItWorks />
 
       {/* ── Available Doctors Grid ── */}
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
@@ -451,10 +426,10 @@ const Index = () => {
                 {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
               </p>
               <div className="mt-1 flex items-center justify-between gap-2">
-                <h2 className="min-w-0 flex-1 whitespace-normal font-display text-[13px] font-bold leading-tight tracking-tight text-foreground min-[380px]:text-sm sm:whitespace-nowrap sm:text-2xl md:text-3xl">
+                <h2 className="min-w-0 flex-1 font-display text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
                   {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
                 </h2>
-                <Link to="/patient/search-doctors" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-primary hover:underline sm:text-sm">
+                <Link to="/patient/search-doctors" className="inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-primary hover:underline">
                   {t("pages.landing.view_all", { defaultValue: "View all" })}
                   <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Link>
@@ -484,7 +459,7 @@ const Index = () => {
             <div className="mt-8 overflow-hidden rounded-[8px] border border-primary/20 bg-primary/10 p-4 sm:p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <a href={`tel:${contactPhone}`} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                  <a href={`tel:${contactPhone}`} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm" aria-label={contactPhone}>
                     <Phone className="h-6 w-6" />
                   </a>
                   <div>
@@ -496,16 +471,21 @@ const Index = () => {
                     </p>
                   </div>
                 </div>
-                <a href={`tel:${contactPhone}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
+                <a href={`tel:${contactPhone}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
                   <Phone className="h-4 w-4" />
                   {contactPhone}
                 </a>
               </div>
             </div>
           </div>
-          <ServicesShowcase />
         </RevealSection>
       </section>
+      <section className="scroll-mt-24 bg-background py-12 md:py-16">
+        <div className="mx-auto w-full min-w-0 max-w-[1920px] px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+          <ServicesShowcase />
+        </div>
+      </section>
+      <WhyMediconnect />
       {/* Specialities */}
       <section id="specialities" className="scroll-mt-24 bg-background py-12 md:py-14">
         <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
@@ -524,9 +504,9 @@ const Index = () => {
                 {t("pages.landing.verified_facilities_sub")}
               </p>
             </div>
-            <Link
+              <Link
               to={partnerTab === "facilities" ? "/patient/search-facilities" : "/patient/search-pharmacy"}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+              className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary hover:underline"
             >
               {partnerTab === "facilities"
                 ? t("pages.landing.view_all_facilities")
@@ -545,7 +525,7 @@ const Index = () => {
                   setPartnerTab("facilities");
                 }}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
+                  "inline-flex min-h-11 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
                   partnerTab === "facilities"
                     ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
                     : "text-muted-foreground hover:bg-background hover:text-foreground",
@@ -562,7 +542,7 @@ const Index = () => {
                   setPartnerTab("pharmacies");
                 }}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
+                  "inline-flex min-h-11 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
                   partnerTab === "pharmacies"
                     ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
                     : "text-muted-foreground hover:bg-background hover:text-foreground",
@@ -581,7 +561,7 @@ const Index = () => {
                   setPageDir(-1);
                   setPartnerPage((page) => Math.max(0, page - 1));
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                 aria-label={t("pages.landing.previous_cards")}
               >
                 <ChevronRight className="h-4 w-4 rotate-180" />
@@ -593,7 +573,7 @@ const Index = () => {
                   setPageDir(1);
                   setPartnerPage((page) => Math.min(partnerPageCount - 1, page + 1));
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                 aria-label={t("pages.landing.next_cards")}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -657,7 +637,7 @@ const Index = () => {
                           <div className="flex items-start gap-3.5">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[6px] border border-primary/15 bg-primary/10 text-primary shadow-sm">
                               {pharmacy.logo ? (
-                                <img src={pharmacy.logo} alt={pharmacy.name} className="h-full w-full object-cover" />
+                                <img src={pharmacy.logo} alt={pharmacy.name} width={64} height={64} loading="lazy" decoding="async" className="h-full w-full max-w-full object-cover" />
                               ) : (
                                 <Pill className="h-6 w-6" />
                               )}
@@ -772,6 +752,10 @@ const Index = () => {
           <OurTeam />
         </RevealSection>
       </section>
+
+      <AppDownload />
+      <LandingFaq />
+      <FinalCta />
 
    <Footer hideTopBorder className="border-t-0 border-none shadow-none" />
     </div>

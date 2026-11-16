@@ -103,7 +103,7 @@ export const LanguageSwitcher = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size="sm" className="gap-1.5" aria-label={t("common.language")}>
+        <Button variant={variant} size="sm" className="h-11 min-h-11 min-w-11 gap-1.5 px-2" aria-label={t("common.language")}>
           <FlagCircle flag={current.flag} label={current.label} />
           {!compact && <span className="text-xs font-semibold">{current.short}</span>}
         </Button>

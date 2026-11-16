@@ -23,7 +23,7 @@ const StartConsult = () => {
           {/* ── Instant Consultation — continuous wave CTA ── */}
           <Link
             to="/patient/search-doctors?instant=true"
-            className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md"
+            className="group relative flex min-h-11 items-center justify-between gap-3 overflow-hidden rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md"
             style={{ isolation: "isolate" }}
           >
             {/* Wave rings — three expanding rings */}
@@ -102,7 +102,7 @@ const StartConsult = () => {
 
           <Link
             to="/patient/search-doctors"
-            className="group flex items-center justify-between gap-3 rounded-[6px] border border-border bg-card px-4 py-3.5 text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+            className="group flex min-h-11 items-center justify-between gap-3 rounded-[6px] border border-border bg-card px-4 py-3.5 text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
@@ -128,7 +128,7 @@ const StartConsult = () => {
         </div>
 
         {/* Download app row */}
-        <div className="flex flex-col items-start justify-between gap-3 rounded-[6px] border border-border bg-card/60 px-4 py-3.5 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start justify-between gap-3 rounded-[6px] border border-border bg-card/60 px-4 py-3.5 lg:flex-row lg:items-center">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
               <Download className="h-4 w-4" />
@@ -145,7 +145,7 @@ const StartConsult = () => {
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <StoreBadge
               href={import.meta.env.VITE_APP_STORE_URL}
               src="/images/apple.png"
