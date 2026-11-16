@@ -14,21 +14,47 @@ jobs:
       - name: Notify server to pull and restart
         env:
           DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+          EXPECTED_SHA: ${{ github.sha }}
         run: |
+          set -euo pipefail
+          triggered=0
           for i in 1 2 3; do
             RESPONSE=$(curl -s -o /tmp/deploy_resp.txt -w "%{http_code}" \
               -X POST https://api.mediconnect.rw/api/v1/deploy \
               -H "Authorization: Bearer ${DEPLOY_SECRET}" \
+              -H "Content-Type: application/json" \
+              -d "{\"sha\":\"${EXPECTED_SHA}\"}" \
               --max-time 60 \
               --retry 2 \
-              --retry-delay 5)
+              --retry-delay 5 || true)
             echo "Attempt $i — HTTP status: $RESPONSE"
             cat /tmp/deploy_resp.txt || true
             if [ "$RESPONSE" = "202" ]; then
-              echo "Deploy triggered successfully"
+              triggered=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$triggered" != "1" ]; then
+            echo "Deploy webhook did not accept the request"
+            exit 1
+          fi
+
+          echo "Waiting until https://api.mediconnect.rw/api/v1/health reports commit ${EXPECTED_SHA}"
+          for i in $(seq 1 30); do
+            BODY=$(curl -fsS --max-time 20 https://api.mediconnect.rw/api/v1/health || true)
+            echo "Poll $i: $BODY"
+            SHA=$(printf '%s' "$BODY" | python3 -c 'import json,sys
+          try:
+              data=json.load(sys.stdin)
+          except Exception:
+              data={}
+          print(data.get("commit") or data.get("sha") or "")')
+            if [ "$SHA" = "$EXPECTED_SHA" ]; then
+              echo "Deployed commit ${SHA}"
               exit 0
             fi
             sleep 10
           done
-          echo "All attempts failed"
+          echo "Running commit did not match ${EXPECTED_SHA}"
           exit 1
