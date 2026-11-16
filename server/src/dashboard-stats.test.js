@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { average, displayedPaymentStatus, durationMinutes, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliTodayMatchSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { average, displayedPaymentStatus, durationMinutes, earnedAverage, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliTodayMatchSql, kigaliTodaySql } from "./dashboard-stats.js";
 
 describe("dashboard stat helpers", () => {
   it("shifts a timestamp onto the Kigali day without running MySQL", () => {
@@ -14,6 +14,9 @@ describe("dashboard stat helpers", () => {
   it("averages real visit lengths and marks a finished row paid when payment_status is missing", () => {
     expect(durationMinutes("2026-11-11T10:00:00Z", "2026-11-11T10:25:00Z")).toBe(25);
     expect(average([10, 20, null])).toBe(15);
+    expect(earnedAverage(25950, 8, 2)).toBe(2595);
+    expect(earnedAverage(80, 8, 0)).toBe(10);
+    expect(earnedAverage(0, 0, 0)).toBe(0);
     expect(displayedPaymentStatus({ status: "completed" })).toBe("paid");
     expect(displayedPaymentStatus({ status: "pending", payment_status: "unpaid" })).toBe("unpaid");
     expect(displayedPaymentStatus({ status: "pending", consultation_fee: 0 })).toBe("paid");

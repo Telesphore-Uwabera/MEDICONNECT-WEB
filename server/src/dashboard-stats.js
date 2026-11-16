@@ -64,6 +64,13 @@ export function average(values) {
   return Math.round(nums.reduce((sum, value) => sum + value, 0) / nums.length);
 }
 
+/** Average earned per paid visit, counting appointments and instant consults together. */
+export function earnedAverage(totalEarned, paidAppointments, paidInstants) {
+  const count = Math.max(0, Number(paidAppointments) || 0) + Math.max(0, Number(paidInstants) || 0);
+  if (count <= 0) return 0;
+  return Math.round(Number(totalEarned || 0) / count);
+}
+
 const PAID = new Set(["paid", "completed", "success", "successful"]);
 const DONE = new Set(["completed", "done", "accepted", "in_progress", "confirmed"]);
 
