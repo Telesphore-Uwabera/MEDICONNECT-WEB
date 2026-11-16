@@ -74,6 +74,9 @@ export interface ApiDoctor {
   bookings_paused: boolean;
   consultation_type: "instant" | "booking" | "both";
   image: string | null;
+  name?: string;
+  photo?: string | null;
+  avatar?: string | null;
   preferred_language: string;
   city: string | null;
   status: "active" | "inactive";

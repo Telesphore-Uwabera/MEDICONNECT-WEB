@@ -10,7 +10,7 @@ import { publicRealtimeConfig } from "./realtime-config.js";
 import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
-import { autoDisableInstantOutsideSchedule } from "./doctor-schedule.js";
+import { publicDoctor, publicHospital, publicPharmacy, publicSlot } from "./public-profile.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { insuranceCatalogWhere, loadInstantViewer, releaseSlot, settledAppointmentPatch } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue, verifiedPaidAmount } from "./instant-visit.js";
@@ -75,14 +75,12 @@ async function attachDoctorRelations(doctors) {
      WHERE hd.doctor_id IN (${marks})`,
     ids,
   ).catch(() => []);
-  return doctors.map((doctor) => ({
+  return doctors.map((doctor) => publicDoctor({
     ...doctor,
     name: doctor.name || doctor.user_name,
-    email: doctor.email || doctor.user_email,
-    user: { id: doctor.user_id, name: doctor.user_name, avatar: doctor.user_avatar ?? null },
-    specializations: specs.filter((row) => row.doctor_id === doctor.id).map(({ id, name }) => ({ id, name })),
-    hospitals: hospitals.filter((row) => row.doctor_id === doctor.id).map(({ id, name, city, address }) => ({ id, name, city, address })),
-    sub_specializations: Array.isArray(doctor.sub_specializations) ? doctor.sub_specializations : [],
+    user_avatar: doctor.user_avatar,
+    hospitals: hospitals.filter((row) => row.doctor_id === doctor.id).map(({ name, city }) => ({ name, city })),
+    specializations: specs.filter((row) => row.doctor_id === doctor.id).map(({ name }) => name),
   }));
 }
 
@@ -777,7 +775,6 @@ export function publicRoutes(router) {
   });
   router.get("/public/doctors/available-doctors", async (req, res, next) => {
     try {
-      await autoDisableInstantOutsideSchedule().catch(() => null);
       const { page, perPage, offset } = pageArgs(req, 15);
       const filters = ["(" + (await whereActive("doctors", "d")) + ")"];
       const params = [];
@@ -939,7 +936,7 @@ export function publicRoutes(router) {
       const total = await countWhere("doctors d JOIN users u ON u.id = d.user_id", where, params);
       const rotationSlot = Math.floor(Date.now() / (10 * 60 * 1000));
       const rows = await q(
-        `SELECT d.*, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar
+        `SELECT d.*, u.name AS user_name, u.avatar AS user_avatar
          FROM doctors d JOIN users u ON u.id = d.user_id
          ${where}
          ORDER BY CRC32(CONCAT(d.id, ':', ?)), d.id
@@ -974,9 +971,9 @@ export function publicRoutes(router) {
         [doctor.id, today],
       ).catch(() => []);
       res.json({
-        recurring_availability: await presentRows("doctor_availabilities", recurring),
-        availability_periods: await presentRows("doctor_availability_periods", periods),
-        slots_for_date: await presentRows("appointment_slots", slots),
+        recurring_availability: (await presentRows("doctor_availabilities", recurring)).map(publicSlot),
+        availability_periods: (await presentRows("doctor_availability_periods", periods)).map(publicSlot),
+        slots_for_date: (await presentRows("appointment_slots", slots)).map(publicSlot),
       });
     } catch (error) {
       next(error);
@@ -1034,7 +1031,8 @@ export function publicRoutes(router) {
         from,
         to,
       });
-      res.json({ doctor: doctorCard, ...upcoming });
+      const slots = Object.fromEntries(Object.entries(upcoming.slots || {}).map(([day, list]) => [day, list.map(publicSlot)]));
+      res.json({ doctor: doctorCard, ...upcoming, slots });
     } catch (error) {
       next(error);
     }
@@ -1043,7 +1041,7 @@ export function publicRoutes(router) {
   router.get("/public/doctors/:slug", async (req, res, next) => {
     try {
       const rows = await q(
-        `SELECT d.*, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar
+        `SELECT d.*, u.name AS user_name, u.avatar AS user_avatar
          FROM doctors d JOIN users u ON u.id = d.user_id
          WHERE d.slug = ? LIMIT 1`,
         [req.params.slug],
@@ -1051,7 +1049,8 @@ export function publicRoutes(router) {
       if (!rows.length) return res.status(404).json({ message: "Doctor not found." });
       if (!doctorIsApproved(rows[0].status)) return res.status(404).json({ message: "Doctor not found." });
       const [doctor] = await attachDoctorRelations(await presentRows("doctors", rows));
-      res.json({ data: doctor, ...doctor });
+      const safe = publicDoctor(doctor);
+      res.json({ data: safe, ...safe });
     } catch (error) {
       next(error);
     }
@@ -1094,27 +1093,17 @@ export function publicRoutes(router) {
       const total = await countWhere("hospitals h", where, params);
       const rows = await presentRows("hospitals", await q(`SELECT h.* FROM hospitals h ${where} ORDER BY h.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
       const data = await Promise.all(rows.map(async (hospital) => {
-        const departments = await q("SELECT id, name_en, icon FROM hospital_departments WHERE hospital_id = ?", [hospital.id]).catch(() => []);
-        const insurances = await q(
-          `SELECT i.id, i.name, i.code, i.logo FROM hospital_insurances hi JOIN insurances i ON i.id = hi.insurance_id WHERE hi.hospital_id = ?`,
-          [hospital.id],
-        ).catch(() => []);
-        const hours = await q("SELECT * FROM hospital_working_hours WHERE hospital_id = ?", [hospital.id]).catch(() => []);
+        const departments = await q("SELECT id, name_en FROM hospital_departments WHERE hospital_id = ?", [hospital.id]).catch(() => []);
+        const hours = await q("SELECT day, day_of_week, open_time, close_time, is_closed FROM hospital_working_hours WHERE hospital_id = ?", [hospital.id]).catch(() => []);
         const doctorsCount = await one("SELECT COUNT(*) AS total FROM hospital_doctors WHERE hospital_id = ?", [hospital.id]).catch(() => ({ total: 0 }));
-        return {
+        return publicHospital({
           ...hospital,
           name_en: hospital.name_en || hospital.name,
           doctors_count: Number(doctorsCount?.total ?? 0),
           departments_count: departments.length,
           departments,
-          insurances,
-          working_hours: hours.map((hour) => ({
-            day: hour.day || hour.day_of_week,
-            open_time: hour.open_time,
-            close_time: hour.close_time,
-            is_closed: Boolean(hour.is_closed),
-          })),
-        };
+          working_hours: hours,
+        });
       }));
       res.json(paginateList({ data, total, page, perPage, path: pathOf(req) }));
     } catch (error) {
@@ -1126,7 +1115,7 @@ export function publicRoutes(router) {
     try {
       const row = await one("SELECT * FROM hospitals WHERE slug = ? OR id = ? LIMIT 1", [req.params.slug, req.params.slug]);
       if (!row || !publiclyListed(row.status)) return res.status(404).json({ message: "Hospital not found." });
-      res.json({ data: await presentRow("hospitals", row) });
+      res.json({ data: publicHospital(await presentRow("hospitals", row)) });
     } catch (error) {
       next(error);
     }
@@ -1149,11 +1138,9 @@ export function publicRoutes(router) {
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("pharmacies p", where, params);
       const rows = await presentRows("pharmacies", await q(`SELECT p.* FROM pharmacies p ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
-      const data = await Promise.all(rows.map(async (pharmacy) => ({
+      const data = await Promise.all(rows.map(async (pharmacy) => publicPharmacy({
         ...pharmacy,
         working_hours: await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [pharmacy.id]).catch(() => []),
-        social_links: null,
-        distance_km: null,
       })));
       const last = Math.max(1, Math.ceil(total / perPage) || 1);
       res.json({
@@ -1170,8 +1157,10 @@ export function publicRoutes(router) {
     try {
       const row = await one("SELECT * FROM pharmacies WHERE slug = ? LIMIT 1", [req.params.slug]);
       if (!row || !publiclyListed(row.status)) return res.status(404).json({ message: "Pharmacy not found." });
-      const pharmacy = await presentRow("pharmacies", row);
-      pharmacy.working_hours = await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [pharmacy.id]).catch(() => []);
+      const pharmacy = publicPharmacy({
+        ...(await presentRow("pharmacies", row)),
+        working_hours: await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [row.id]).catch(() => []),
+      });
       res.json({ status: "success", data: pharmacy });
     } catch (error) {
       next(error);
@@ -1277,12 +1266,10 @@ export function publicRoutes(router) {
           total_medicines: Number(medicines?.total ?? 0),
           active_medicines: Number(active?.total ?? 0),
         },
-        pharmacies: rows.map((row) => ({
+        pharmacies: rows.map((row) => publicPharmacy({
           id: row.id,
           name: row.name_en || row.name || row.slug || "Pharmacy",
           slug: row.slug || String(row.id),
-          total_medicines: 0,
-          active_medicines: 0,
         })),
       });
     } catch (error) {

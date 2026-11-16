@@ -384,7 +384,7 @@ function ToggleButton({
 
 function DoctorAvatar({ doctor }: { doctor: ApiDoctor }) {
   const [imgError, setImgError] = useState(false);
-  const initials = doctor.user.name
+  const initials = (doctor.name || doctor.user?.name || "")
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -402,7 +402,7 @@ function DoctorAvatar({ doctor }: { doctor: ApiDoctor }) {
   return (
     <img
       src={doctor.image}
-      alt={doctor.user.name}
+      alt={(doctor.name || doctor.user?.name || "")}
       className="w-full h-full object-cover rounded-[inherit]"
       onError={() => setImgError(true)}
     />
@@ -469,7 +469,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-foreground leading-tight tracking-tight">
-                {doctor.user.name}
+                {(doctor.name || doctor.user?.name || "")}
               </span>
               {doctor.instant_consultation && a.canConnect && (
                 <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
