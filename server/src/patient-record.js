@@ -8,14 +8,14 @@ import { validateIncomingPhone } from "./phone.js";
 import { doctorHasCareLink } from "./visit-rules.js";
 
 const MEDICAL_TABLES = [
+  "patient_medical_records",
   "patient_medical_infos",
   "patient_medical_info",
   "medical_infos",
   "medical_records",
-  "patient_medical_records",
 ];
 
-const FILE_TABLES = ["patient_files", "medical_files"];
+const FILE_TABLES = ["patient_medical_files", "patient_files", "medical_files"];
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 function saveFile(file, prefix) {
@@ -120,7 +120,7 @@ async function saveIntakeMedical(patient, body) {
   const { table, row } = await medicalRow(patient);
   if (!table) return;
   const payload = {};
-  for (const key of ["blood_type", "chronic_conditions", "known_allergies", "current_medications"]) {
+  for (const key of ["blood_type", "chronic_conditions", "known_allergies", "current_medications", "surgical_history", "disabilities", "family_history"]) {
     if (body[key] !== undefined && body[key] !== null && body[key] !== "" && await hasColumn(table, key)) {
       payload[key] = body[key];
     }
@@ -424,25 +424,9 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
     try {
       const patient = await openChart(res, req.user, req.params.patientId);
       if (!patient) return;
-      let table = await firstTable(FILE_TABLES);
+      const table = await firstTable(FILE_TABLES);
       if (!table) {
-        await q(`
-          CREATE TABLE IF NOT EXISTS patient_files (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            patient_id BIGINT UNSIGNED NOT NULL,
-            visit_type VARCHAR(40) NULL,
-            source_id BIGINT UNSIGNED NULL,
-            file_type VARCHAR(40) NULL,
-            title VARCHAR(255) NULL,
-            file_path VARCHAR(500) NULL,
-            notes TEXT NULL,
-            uploaded_by BIGINT UNSIGNED NULL,
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY patient_files_patient (patient_id)
-          )
-        `).catch(() => {});
-        table = "patient_files";
+        return res.status(422).json({ message: "Medical files are not installed yet. Apply server/sql/2026-11-11-dashboard-data.sql." });
       }
       const file = req.files?.[0];
       const saved = saveFile(file, `patient_${patient.id}`);

@@ -24,8 +24,10 @@ import {
   Ban,
   Building2,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { PrescriptionWizard } from "@/components/PrescriptionWizard";
-import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
+import { apiFetch } from "@/lib/api";
+import { type HospitalRxCard, type RxStatus } from "@/lib/prescription-types";
 import { useGetHospitalProfile } from "@/hooks/hospital/use-hospital-profile";
 import { cn } from "@/lib/utils";
 import { DateField } from "@/components/ui/date-field";
@@ -73,97 +75,29 @@ const STATUS_DOT: Partial<Record<RxStatus, string>> = {
   cancelled: "bg-red-500",
 };
 
-// ─── Dummy data ────────────────────────────────────────────────────────────────
-
-const DUMMY_PRESCRIPTIONS = [
-  {
-    id: "rx-001",
-    patientName: "Amina Uwase",
-    doctorName: "Dr. Jean-Paul Habimana",
-    date: "2025-05-07",
-    status: "sent-to-patient" as RxStatus,
+function hospitalRxCard(row: Record<string, unknown>): HospitalRxCard {
+  const medications = Array.isArray(row.medications) ? row.medications : [];
+  const status = String(row.status || "draft") as RxStatus;
+  return {
+    id: (row.id as string | number) ?? "",
+    patientName: String(row.patient_name || row.patientName || "Patient"),
+    doctorName: String(row.doctor_name || row.doctorName || ""),
+    date: String(row.created_at || row.date || "").slice(0, 10),
+    status,
     issuer: "hospital",
-    issuerOrg: "Health facility",
-    channels: ["app", "sms"] as ("app" | "email" | "sms")[],
-    pharmacyName: null,
-    medications: [
-      { name: "Metformin", dosage: "500mg", frequency: "Twice daily" },
-      { name: "Lisinopril", dosage: "10mg", frequency: "Once daily" },
-    ],
-  },
-  {
-    id: "rx-002",
-    patientName: "Eric Nshimiyimana",
-    doctorName: "Dr. Marie Claire Ingabire",
-    date: "2025-05-06",
-    status: "sent-to-pharmacy" as RxStatus,
-    issuer: "hospital",
-    issuerOrg: "Health facility",
-    channels: ["email"] as ("app" | "email" | "sms")[],
-    pharmacyName: "Kigali Central Pharmacy",
-    medications: [
-      { name: "Amoxicillin", dosage: "250mg", frequency: "Three times daily" },
-    ],
-  },
-  {
-    id: "rx-003",
-    patientName: "Claudine Mukamana",
-    doctorName: "Dr. Samuel Nkurunziza",
-    date: "2025-05-05",
-    status: "filled" as RxStatus,
-    issuer: "hospital",
-    issuerOrg: "Health facility",
-    channels: ["app", "email"] as ("app" | "email" | "sms")[],
-    pharmacyName: "Nyarugenge Pharmacy",
-    medications: [
-      { name: "Atorvastatin", dosage: "20mg", frequency: "Once daily at night" },
-      { name: "Aspirin", dosage: "75mg", frequency: "Once daily" },
-    ],
-  },
-  {
-    id: "rx-004",
-    patientName: "Patrick Bizimana",
-    doctorName: "Dr. Diane Umubyeyi",
-    date: "2025-05-04",
-    status: "draft" as RxStatus,
-    issuer: "hospital",
-    issuerOrg: "Health facility",
-    channels: [] as ("app" | "email" | "sms")[],
-    pharmacyName: null,
-    medications: [
-      { name: "Omeprazole", dosage: "20mg", frequency: "Before meals" },
-    ],
-  },
-  {
-    id: "rx-005",
-    patientName: "Solange Iradukunda",
-    doctorName: "Dr. Jean-Paul Habimana",
-    date: "2025-05-03",
-    status: "cancelled" as RxStatus,
-    issuer: "hospital",
-    issuerOrg: "Health facility",
-    channels: ["sms"] as ("app" | "email" | "sms")[],
-    pharmacyName: null,
-    medications: [
-      { name: "Ciprofloxacin", dosage: "500mg", frequency: "Twice daily for 7 days" },
-    ],
-  },
-  {
-    id: "rx-006",
-    patientName: "Jean de Dieu Ndayishimiye",
-    doctorName: "Dr. Marie Claire Ingabire",
-    date: "2025-05-02",
-    status: "sent-to-pharmacy" as RxStatus,
-    issuer: "hospital",
-    issuerOrg: "Health facility",
-    channels: ["app"] as ("app" | "email" | "sms")[],
-    pharmacyName: "Remera Health Pharmacy",
-    medications: [
-      { name: "Salbutamol Inhaler", dosage: "100mcg", frequency: "As needed" },
-      { name: "Beclometasone", dosage: "200mcg", frequency: "Twice daily" },
-    ],
-  },
-];
+    issuerOrg: String(row.issuer_org || row.hospital_name || "Health facility"),
+    channels: [],
+    pharmacyName: row.pharmacy_name ? String(row.pharmacy_name) : null,
+    medications: medications.map((item) => {
+      const med = (item ?? {}) as Record<string, unknown>;
+      return {
+        name: String(med.name || med.medicine_name || "Medicine"),
+        dosage: String(med.dosage || ""),
+        frequency: String(med.frequency || ""),
+      };
+    }),
+  };
+}
 
 // ─── Sidebar atoms ─────────────────────────────────────────────────────────────
 
@@ -220,7 +154,7 @@ function PrescriptionCard({
   statusLabel,
   channelLabel,
 }: {
-  p: (typeof DUMMY_PRESCRIPTIONS)[number];
+  p: HospitalRxCard;
   statusLabel: Record<RxStatus, string>;
   channelLabel: Record<"app" | "email" | "sms", string>;
 }) {
@@ -294,7 +228,7 @@ function PrescriptionListRow({
   statusLabel,
   channelLabel,
 }: {
-  p: (typeof DUMMY_PRESCRIPTIONS)[number];
+  p: HospitalRxCard;
   statusLabel: Record<RxStatus, string>;
   channelLabel: Record<"app" | "email" | "sms", string>;
 }) {
@@ -373,8 +307,11 @@ const HospitalPrescriptions = () => {
     hospitalProfile?.hospital?.name_fr ||
     "Health facility";
 
-  const stored = usePrescriptions().filter((p) => p.issuer === "hospital");
-  const allPrescriptions = stored;
+  const stored = useQuery({
+    queryKey: ["hospital", "prescriptions"],
+    queryFn: () => apiFetch<{ data?: Record<string, unknown>[] }>("/hospital/prescriptions"),
+  });
+  const allPrescriptions = (stored.data?.data ?? []).map(hospitalRxCard);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -489,7 +426,7 @@ const HospitalPrescriptions = () => {
       label: t("pages.hospital.status"),
       value: filters.status,
       options: STATUS_FILTER_OPTIONS,
-      onChange: (v: string) => set("status", v as any)
+      onChange: (v: string) => set("status", v as FilterState["status"])
     },
     {
       type: "select" as const,
@@ -497,7 +434,7 @@ const HospitalPrescriptions = () => {
       label: t("pages.hospital.rx_delivery_channel"),
       value: filters.channelFilter,
       options: CHANNEL_OPTIONS,
-      onChange: (v: string) => set("channelFilter", v as any)
+      onChange: (v: string) => set("channelFilter", v as FilterState["channelFilter"])
     },
     {
       type: "select" as const,
@@ -505,7 +442,7 @@ const HospitalPrescriptions = () => {
       label: t("pages.hospital.sort_by"),
       value: filters.sort,
       options: SORT_OPTIONS,
-      onChange: (v: string) => set("sort", v as any)
+      onChange: (v: string) => set("sort", v as FilterState["sort"])
     }
   ], [filters.status, filters.channelFilter, filters.sort, set, t, STATUS_FILTER_OPTIONS, CHANNEL_OPTIONS, SORT_OPTIONS]);
 
@@ -700,7 +637,7 @@ const HospitalPrescriptions = () => {
                     {paged.map((p) => (
                       <PrescriptionListRow
                         key={p.id}
-                        p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                        p={p}
                         statusLabel={statusLabel}
                         channelLabel={channelLabel}
                       />
@@ -711,7 +648,7 @@ const HospitalPrescriptions = () => {
                     {paged.map((p) => (
                       <PrescriptionCard
                         key={p.id}
-                        p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                        p={p}
                         statusLabel={statusLabel}
                         channelLabel={channelLabel}
                       />

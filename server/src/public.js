@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { countWhere, hasColumn, insert, paginateList, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { countWhere, hasColumn, insert, knownWrite, paginateList, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { ensureRole } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
@@ -275,6 +275,27 @@ async function doctorBusyInstant(doctorId, exceptId = null) {
   return one(sql, params).catch(() => null);
 }
 
+async function creditDoctorWallet(doctorId, amount) {
+  const credit = Number(amount);
+  if (!doctorId || !(credit > 0) || !(await tableExists("doctor_wallets"))) return;
+  const wallet = await one("SELECT * FROM doctor_wallets WHERE doctor_id = ? LIMIT 1", [doctorId]).catch(() => null);
+  if (!wallet) {
+    const created = await knownWrite("doctor_wallets", {
+      doctor_id: doctorId,
+      balance: credit,
+      total_earned: credit,
+      currency: "RWF",
+    });
+    if (created.payload.doctor_id) await insert("doctor_wallets", created.payload);
+    return;
+  }
+  const patch = await knownWrite("doctor_wallets", {
+    balance: Number(wallet.balance || 0) + credit,
+    total_earned: Number(wallet.total_earned || 0) + credit,
+  });
+  if (Object.keys(patch.payload).length) await update("doctor_wallets", wallet.id, patch.payload);
+}
+
 async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
   if (!payment?.id) return payment;
   if (remote && !verifiedPaidAmount(payment, remote)) return payment;
@@ -289,12 +310,14 @@ async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
 
   const payableId = payment.payable_id;
   const payableType = String(payment.payable_type || "");
+  let paidDoctorId = null;
   if (payableId && payableType.includes("instant")) {
     const table = (await tableExists("instant_consultation_requests"))
       ? "instant_consultation_requests"
       : "instant_consultations";
     const row = await one(`SELECT id, status, doctor_id, room_name, daily_room_name FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
     if (row) {
+      paidDoctorId = row.doctor_id || null;
       const open = ["pending", "queued", "waiting", "payment_pending", ""].includes(String(row.status || ""));
       // Pre-create the consultation room name so the patient can get a token
       // immediately after payment without waiting for the doctor to click Accept.
@@ -310,8 +333,9 @@ async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
     }
   }
   if (payableId && payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
-    const appointment = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
+    const appointment = await one("SELECT * FROM appointments WHERE id = ?", [payableId]).catch(() => null);
     if (appointment) {
+      paidDoctorId = appointment.doctor_id || paidDoctorId;
       const visitPatch = settledAppointmentPatch(appointment);
       if (Object.keys(visitPatch).length) await update("appointments", appointment.id, visitPatch);
     }
@@ -320,6 +344,9 @@ async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
     await markFitnessCertificatePaid(payableId, payment.amount).catch(() => null);
   }
   const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
+  if (String(payment.status) !== "paid") {
+    await creditDoctorWallet(paidDoctorId, payment.amount).catch(() => null);
+  }
   if (notify && String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
   return saved;
 }

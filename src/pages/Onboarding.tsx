@@ -1,6 +1,7 @@
 import { useState, ReactNode } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,8 +35,8 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { data: user, isLoading } = useMe();
 
-  const [form, setForm] = useState<Record<string, any>>({});
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+  const [form, setForm] = useState<OnboardingForm>({});
+  const set = (k: string, v: OnboardingValue) => setForm((f) => ({ ...f, [k]: v }));
 
   if (isLoading) return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -54,7 +55,7 @@ const Onboarding = () => {
     }
     toast.success(t("auth.onboarding.title") + " ✓");
     const role = user.active_role ?? user.role;
-    navigate(role === "patient" ? "/patient/profile" : dashboardPath(role));
+    navigate(dashboardPath(role));
   };
   const skip = () => {
     const role = user.active_role ?? user.role;
@@ -120,7 +121,15 @@ const Onboarding = () => {
   );
 };
 
-const PatientFields = ({ t, form, set }: any) => (
+type OnboardingValue = string | boolean | number;
+type OnboardingForm = Record<string, OnboardingValue>;
+type OnboardingFieldsProps = {
+  t: TFunction;
+  form: OnboardingForm;
+  set: (key: string, value: OnboardingValue) => void;
+};
+
+const PatientFields = ({ t, form, set }: OnboardingFieldsProps) => (
   <>
     <div className="grid sm:grid-cols-2 gap-4">
       <Field label={t("auth.onboarding.patient.dob")}>
@@ -194,7 +203,7 @@ const PatientFields = ({ t, form, set }: any) => (
   </>
 );
 
-const DoctorFields = ({ t, form, set }: any) => (
+const DoctorFields = ({ t, form, set }: OnboardingFieldsProps) => (
   <>
     <div className="grid sm:grid-cols-2 gap-4">
       <Field label={t("auth.onboarding.doctor.speciality")}>
@@ -269,7 +278,7 @@ const DoctorFields = ({ t, form, set }: any) => (
   </>
 );
 
-const HospitalFields = ({ t, form, set }: any) => (
+const HospitalFields = ({ t, form, set }: OnboardingFieldsProps) => (
   <>
     <div className="grid sm:grid-cols-3 gap-4">
       <Field label={t("auth.onboarding.hospital.name_en")}>
@@ -360,7 +369,7 @@ const HospitalFields = ({ t, form, set }: any) => (
   </>
 );
 
-const PharmacyFields = ({ t, form, set }: any) => (
+const PharmacyFields = ({ t, form, set }: OnboardingFieldsProps) => (
   <>
     <div className="grid sm:grid-cols-2 gap-4">
       <Field label={t("auth.onboarding.pharmacy.name_en")}>

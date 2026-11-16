@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import { hasColumn, insert, one, pageArgs, paginateList, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, knownWrite, one, pageArgs, paginateList, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
@@ -410,6 +410,24 @@ async function ownedExtra(scope, userId, table) {
   return extra;
 }
 
+export async function listHospitalPrescriptions(req) {
+  if (!(await tableExists("prescriptions"))) return { data: [] };
+  const hospitalId = await loadOwnedId(req.user.id, "hospitals");
+  let rows = [];
+  if (hospitalId && await hasColumn("prescriptions", "hospital_id")) {
+    rows = await q("SELECT * FROM prescriptions WHERE hospital_id = ? ORDER BY id DESC LIMIT 100", [hospitalId]).catch(() => []);
+  } else if (hospitalId && await tableExists("hospital_doctors") && await hasColumn("prescriptions", "doctor_id")) {
+    rows = await q(
+      `SELECT p.* FROM prescriptions p
+       INNER JOIN hospital_doctors hd ON hd.doctor_id = p.doctor_id
+       WHERE hd.hospital_id = ?
+       ORDER BY p.id DESC LIMIT 100`,
+      [hospitalId],
+    ).catch(() => []);
+  }
+  return { data: await presentRows("prescriptions", rows) };
+}
+
 async function fillGap(req, res, parts) {
   if (!parts.length || parts[0] === "public") return false;
   if (await handleCareReferrals(req, res, parts)) return true;
@@ -426,6 +444,11 @@ async function fillGap(req, res, parts) {
       return true;
     }
     return false;
+  }
+
+  if (req.method === "GET" && parts[0] === "hospital" && parts[1] === "prescriptions" && !parts[2]) {
+    res.json(await listHospitalPrescriptions(req));
+    return true;
   }
 
   if (req.method === "GET" && parts[0] === "settings" && !parts[1]) {
@@ -752,7 +775,26 @@ async function fillGap(req, res, parts) {
   }
 
   if (action === "notes" && id) {
-    if (await hasColumn(table, "notes")) await update(table, id, { notes: req.body?.notes ?? req.body?.note ?? "" });
+    const text = req.body?.notes ?? req.body?.note ?? "";
+    if (await hasColumn(table, "notes")) await update(table, id, { notes: text });
+    else if (table === "appointments" && await tableExists("appointment_notes")) {
+      const known = await knownWrite("appointment_notes", {
+        appointment_id: Number(id),
+        doctor_id: current?.doctor_id || null,
+        notes: text,
+      });
+      if (known.payload.notes != null) await insert("appointment_notes", known.payload);
+    } else if (["instant_consultation_requests", "instant_consultations"].includes(table) && await tableExists("instant_consultation_notes")) {
+      const known = await knownWrite("instant_consultation_notes", {
+        instant_consultation_id: Number(id),
+        doctor_id: current?.doctor_id || null,
+        notes: text,
+      });
+      if (known.payload.notes != null) await insert("instant_consultation_notes", known.payload);
+    } else {
+      res.status(422).json({ message: "Notes cannot be saved until the notes table is installed. Apply server/sql/2026-11-11-dashboard-data.sql." });
+      return true;
+    }
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
     res.json({ message: "Notes saved.", data: row, ...(row ?? {}) });
     return true;

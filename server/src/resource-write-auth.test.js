@@ -1208,6 +1208,10 @@ describe("resource write authorization", () => {
     expect(missing.status).toBe(404);
     expect(writes).toEqual([]);
     expect(db.invoiceCalls).toBe(0);
+    const clock = kigaliClock();
+    const slot = `${String(Math.floor(clock.minutes / 60)).padStart(2, "0")}:${String(clock.minutes % 60).padStart(2, "0")}`;
+    own.appointment_date = clock.date;
+    own.appointment_time = slot;
     const joined = await request(users.patient, "POST", "/patient/appointments/5/join");
     expect(joined.status).toBe(200);
     expect(joined.body.token).toBeTruthy();
@@ -1233,10 +1237,13 @@ describe("resource write authorization", () => {
 
   it("keeps an unpaid visit out of the generic join routes and the dashboard count", async () => {
     const room = { daily_guest_token: "room-token", daily_room_name: "visit-room", room_url: "/consultation/visit-room" };
+    const clock = kigaliClock();
+    const slot = `${String(Math.floor(clock.minutes / 60)).padStart(2, "0")}:${String(clock.minutes % 60).padStart(2, "0")}`;
+    const today = { appointment_date: clock.date, appointment_time: slot };
     db.appointments.push(
       { id: 21, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "pending", consultation_fee: 5000, ...room },
-      { id: 22, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, ...room },
-      { id: 23, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "pending", payment_status: "unpaid", consultation_fee: 0, ...room },
+      { id: 22, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "confirmed", payment_status: "paid", consultation_fee: 5000, ...today, ...room },
+      { id: 23, doctor_id: 31, patient_id: 77, user_id: null, hospital_id: 4, status: "pending", payment_status: "unpaid", consultation_fee: 0, ...today, ...room },
     );
     db.instants.push(
       { id: 21, doctor_id: 31, patient_id: 55, user_id: null, status: "pending", payment_status: "pending", consultation_fee: 5000, ...room },
@@ -1253,7 +1260,7 @@ describe("resource write authorization", () => {
       expect(result.body.message).toMatch(/pay/i);
       expect(JSON.stringify(result.body)).not.toMatch(/room-token|visit-room/);
     }
-    expect(unpaidAppointment.body.message).toBe("Pay for this visit and wait for the doctor to confirm it before joining.");
+    expect(unpaidAppointment.body.message).toBe("Complete payment for this visit before joining.");
     expect(unpaidInstant.body.message).toBe("This consultation is not paid yet. The patient must complete payment before you can join.");
 
     const paidAppointment = await request(users.patient, "POST", "/patient/my-visits/22/join");
@@ -1324,7 +1331,7 @@ describe("resource write authorization", () => {
     expect(instantPaid.status).toBe(200);
     expect(JSON.stringify(instantPaid.body)).toMatch(/ready-token|ready-room/);
     expect(french.status).toBe(422);
-    expect(french.body.message).toBe("Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.");
+    expect(french.body.message).toBe("Terminez le paiement de cette visite avant de la rejoindre.");
     for (const result of [outside, acceptedOutside, inProgressOutside, closed, french]) {
       expect(JSON.stringify(result.body)).not.toMatch(/ready-token|ready-room|room-token|visit-room/);
     }

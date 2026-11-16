@@ -20,7 +20,7 @@ const PAID = new Set(["paid", "completed", "success", "successful"]);
 const LEGACY_PAID_STATUSES = ["confirmed", "accepted", "in_progress", "completed", "done"];
 const FEE_COLUMNS = ["consultation_fee", "patient_pays", "amount_due"];
 
-export const UNPAID_APPOINTMENT_JOIN_MESSAGE = "Pay for this visit and wait for the doctor to confirm it before joining.";
+export const UNPAID_APPOINTMENT_JOIN_MESSAGE = "Complete payment for this visit before joining.";
 export const UNPAID_INSTANT_JOIN_MESSAGE = "This consultation is not paid yet. The patient must complete payment before you can join.";
 
 export function unpaidJoinMessage(table) {

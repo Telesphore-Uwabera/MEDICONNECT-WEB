@@ -51,7 +51,7 @@ export function visitAwaitsPayment(row) {
 export function appointmentJoinWindow(appointment, now = new Date()) {
   const date = String(appointment?.appointment_date || "").slice(0, 10);
   const start = clockTime(appointment?.appointment_time);
-  if (!date || !start) return { ok: true, reason: null };
+  if (!date || !start) return { ok: false, reason: "no-schedule" };
   const kigali = kigaliClock(now);
   if (date !== kigali.date) return { ok: false, reason: "not-today" };
   const [hour, minute] = start.split(":").map(Number);
@@ -72,10 +72,12 @@ const JOIN_BLOCK_COPY = {
     "too-early": "This consultation has not started yet. Join a few minutes before your slot.",
     "too-late": "This consultation slot has passed. Contact the doctor to reschedule.",
     "not-today": "Consultations can only be joined on the booked day.",
+    "no-schedule": "This visit has no booked time, so it cannot be joined.",
     closed: "This visit is no longer open.",
   },
   fr: {
-    "unpaid-appointment": "Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.",
+    "unpaid-appointment": "Terminez le paiement de cette visite avant de la rejoindre.",
+    "no-schedule": "Cette visite n'a pas d'heure réservée, elle ne peut pas être rejointe.",
     "unpaid-instant": "Cette consultation n'est pas encore payée. Le patient doit terminer le paiement avant que vous puissiez la rejoindre.",
     "too-early": "Cette consultation n'a pas encore commencé. Rejoignez-la quelques minutes avant le créneau.",
     "too-late": "Ce créneau de consultation est passé. Contactez le médecin pour le reporter.",
@@ -83,7 +85,8 @@ const JOIN_BLOCK_COPY = {
     closed: "Cette visite n'est plus ouverte.",
   },
   rw: {
-    "unpaid-appointment": "Ishyura iyi konsultasiyo hanyuma utegereze ko muganga ayemeza mbere yo kuyinjiramo.",
+    "unpaid-appointment": "Rangiza kwishyura iyi konsultasiyo mbere yo kuyinjiramo.",
+    "no-schedule": "Iyi konsultasiyo nta gihe yateganyijwe, ntishobora kwinjirwamo.",
     "unpaid-instant": "Iyi konsultasiyo ntirishyurwa. Umurwayi agomba kurangiza kwishyura mbere yo kuyinjiramo.",
     "too-early": "Iyi konsultasiyo ntiratangira. Injira iminota mike mbere y'isaha yateganyijwe.",
     "too-late": "Igihe cy'iyi konsultasiyo cyararangiye. Vugana na muganga kugira ngo musubiremo igihe.",

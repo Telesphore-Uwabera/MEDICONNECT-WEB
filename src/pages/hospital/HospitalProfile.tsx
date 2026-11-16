@@ -54,7 +54,9 @@ import {
   ImageOff,
   Loader2,
 } from "lucide-react";
-import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
+import { type HospitalRxCard, type RxStatus } from "@/lib/prescription-types";
 import { cn } from "@/lib/utils";
 import {
   prepareRichTextForSave,
@@ -1521,7 +1523,7 @@ function HospitalProfileView({
 }: {
   hospital: HospitalProfileResponse["hospital"];
   galleryImages: GalleryImageDisplay[];
-  rxList: ReturnType<typeof usePrescriptions>;
+  rxList: HospitalRxCard[];
   onNewRx: () => void;
   onEditStep: (stepIndex: number) => void;
 }) {
@@ -1938,11 +1940,28 @@ const HospitalProfile = () => {
 
   const isForm = mode === "create" || mode === "edit";
 
-  const rxList = usePrescriptions().filter(
-    (p) =>
-      p.issuer === "hospital" &&
-      p.issuerOrg === (serverHospital?.name_en ?? HOSPITAL_CONST),
-  );
+  const rxQuery = useQuery({
+    queryKey: ["hospital", "prescriptions"],
+    queryFn: () => apiFetch<{ data?: Record<string, unknown>[] }>("/hospital/prescriptions"),
+  });
+  const rxList: HospitalRxCard[] = (rxQuery.data?.data ?? []).map((row) => ({
+    id: (row.id as string | number) ?? "",
+    patientName: String(row.patient_name || row.patientName || "Patient"),
+    doctorName: String(row.doctor_name || row.doctorName || ""),
+    date: String(row.created_at || "").slice(0, 10),
+    status: String(row.status || "active") as RxStatus,
+    issuer: "hospital",
+    issuerOrg: serverHospital?.name_en ?? "",
+    channels: [],
+    pharmacyName: row.pharmacy_name ? String(row.pharmacy_name) : null,
+    medications: Array.isArray(row.medications)
+      ? row.medications.map((item) => {
+          const med = (item ?? {}) as Record<string, unknown>;
+          return { name: String(med.name || "Medicine"), dosage: String(med.dosage || ""), frequency: String(med.frequency || "") };
+        })
+      : [],
+    createdAt: String(row.created_at || ""),
+  }));
 
   // ── Gallery display adapter ────────────────────────────────────────────────
   const galleryDisplayImages: GalleryImageDisplay[] = remoteImages.map(

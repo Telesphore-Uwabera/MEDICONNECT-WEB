@@ -2,6 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
+import { partitionWrite, unknownFieldError } from "./write-fields.js";
 
 dotenv.config({
   path: path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".env"),
@@ -140,15 +141,31 @@ export function paginateList({ data, total, page, perPage, path }) {
   };
 }
 
+function columnNameSet(cols) {
+  return cols instanceof Map ? new Set(cols.keys()) : new Set(cols);
+}
+
+function encodeValue(info, value) {
+  if (value != null && (info?.DATA_TYPE === "json" || typeof value === "object") && !(value instanceof Date)) {
+    return JSON.stringify(value);
+  }
+  if (info?.DATA_TYPE === "tinyint" && typeof value === "boolean") return value ? 1 : 0;
+  return value;
+}
+
+/** Keep only real columns. Used when a form may name a field the deployment has not added yet. */
+export async function knownWrite(table, data) {
+  const cols = await columns(table);
+  return partitionWrite(data, columnNameSet(cols));
+}
+
 export async function insert(table, data) {
   const cols = await columns(table);
+  const split = partitionWrite(data, columnNameSet(cols));
+  if (split.unknown.length) throw unknownFieldError(table, split.unknown);
   const payload = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (!cols.has(key) || key === "id") continue;
-    const info = cols.get(key);
-    payload[key] = value != null && (info.DATA_TYPE === "json" || typeof value === "object") && !(value instanceof Date)
-      ? JSON.stringify(value)
-      : value;
+  for (const [key, value] of Object.entries(split.payload)) {
+    payload[key] = encodeValue(cols.get(key), value);
   }
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
   if (cols.has("created_at") && payload.created_at == null) payload.created_at = now;
@@ -162,14 +179,11 @@ export async function insert(table, data) {
 
 export async function update(table, id, data) {
   const cols = await columns(table);
+  const split = partitionWrite(data, columnNameSet(cols));
+  if (split.unknown.length) throw unknownFieldError(table, split.unknown);
   const payload = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (!cols.has(key) || key === "id") continue;
-    const info = cols.get(key);
-    payload[key] = value != null && typeof value === "object" && !(value instanceof Date)
-      ? JSON.stringify(value)
-      : value;
-    if (info?.DATA_TYPE === "tinyint" && typeof value === "boolean") payload[key] = value ? 1 : 0;
+  for (const [key, value] of Object.entries(split.payload)) {
+    payload[key] = encodeValue(cols.get(key), value);
   }
   if (cols.has("updated_at")) payload.updated_at = new Date().toISOString().slice(0, 19).replace("T", " ");
   const keys = Object.keys(payload);

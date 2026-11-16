@@ -26,7 +26,7 @@ import { formatDateOnly } from "@/lib/date";
   type LucideIcon,
 } from "lucide-react";
 import { PrescriptionWizard } from "@/components/PrescriptionWizard";
-import { type DeliveryChannel } from "@/lib/prescription-store";
+import { type DeliveryChannel } from "@/lib/prescription-types";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
@@ -486,7 +486,7 @@ const DoctorPrescriptions = () => {
           label: localStatusLabel[s] ?? s,
         })),
       ],
-      onChange: (v: string) => set("status", v as any),
+      onChange: (v: string) => set("status", v as FilterState["status"]),
     },
     {
       type: "select" as const,
@@ -498,7 +498,7 @@ const DoctorPrescriptions = () => {
         { value: "signed", label: t("pages.doctor.rx_signed") },
         { value: "unsigned", label: t("pages.doctor.rx_unsigned") },
       ],
-      onChange: (v: string) => set("is_signed", v as any),
+      onChange: (v: string) => set("is_signed", v as FilterState["is_signed"]),
     },
     {
       type: "select" as const,
@@ -510,7 +510,7 @@ const DoctorPrescriptions = () => {
         { value: "valid_only", label: t("pages.doctor.rx_valid_only") },
         { value: "expired_only", label: t("pages.doctor.rx_expired_only") },
       ],
-      onChange: (v: string) => set("validity", v as any),
+      onChange: (v: string) => set("validity", v as FilterState["validity"]),
     },
     {
       type: "custom" as const,
@@ -639,9 +639,9 @@ const DoctorPrescriptions = () => {
                     { value: "status|asc", label: t("pages.doctor.rx_status_az") },
                   ]}
                   onChange={(val) => {
-                    const [by, order] = val.split("|");
-                    set("sort_by", by as any);
-                    set("sort_order", order as any);
+                    const [by, order] = val.split("|") as [SortBy, SortOrder];
+                    set("sort_by", by);
+                    set("sort_order", order);
                   }}
                   compact
                   className="hidden sm:block w-[140px]"

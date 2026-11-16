@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import { forgetColumns, hasColumn, insert, one, pool, presentRow, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, knownWrite, one, presentRow, q, tableExists, update } from "./db.js";
 import { normalizeStoredPhone } from "./phone.js";
 
 /** Polymorphic type already stored in MySQL token/notification rows. */
@@ -57,16 +57,8 @@ export function isPatientProfileComplete(patient) {
   return REQUIRED_PATIENT_FIELDS.every((field) => profileValueFilled(patient[field], field));
 }
 
-async function ensurePatientProfileStampColumn() {
-  if (!(await tableExists("patients"))) return;
-  if (await hasColumn("patients", "profile_completed_at")) return;
-  await pool.query("ALTER TABLE patients ADD COLUMN profile_completed_at TIMESTAMP NULL").catch(() => {});
-  forgetColumns("patients");
-}
-
 export async function stampPatientProfileCompletion(patient, user) {
   if (!patient?.id) return isPatientProfileComplete(patient, user);
-  await ensurePatientProfileStampColumn();
   const complete = isPatientProfileComplete(patient, user);
   if (complete && (await hasColumn("patients", "profile_completed_at")) && !patient.profile_completed_at) {
     await update("patients", patient.id, { profile_completed_at: new Date() });
@@ -82,7 +74,20 @@ export async function toUser(row, activeRole) {
   const active = activeRole || row.active_role || (canBeAdmin && names.includes("admin") ? "admin" : switchable[0]) || names[0] || "patient";
   let profileComplete = true;
   if (active === "patient" && (await tableExists("patients"))) {
-    const patient = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [row.id]).catch(() => null);
+    let patient = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [row.id]).catch(() => null);
+    if (!patient) {
+      const known = await knownWrite("patients", {
+        user_id: row.id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+        status: "active",
+      }).catch(() => ({ payload: {} }));
+      if (known.payload?.user_id) {
+        await insert("patients", known.payload).catch(() => null);
+        patient = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [row.id]).catch(() => null);
+      }
+    }
     profileComplete = await stampPatientProfileCompletion(patient, row);
   }
   return {
