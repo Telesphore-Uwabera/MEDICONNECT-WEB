@@ -18,6 +18,7 @@ import { validateIncomingPhone } from "./phone.js";
 import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } from "./guest-account.js";
 import { normalizeLang } from "./user-text.js";
 import { withNamedLock } from "./named-lock.js";
+import { runningCommit } from "./runtime-commit.js";
 
 function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
@@ -1629,6 +1630,7 @@ export function publicRoutes(router) {
       // POST /deploy refuses to run without this, so a deployment can confirm
       // here that pushes to main will still reach it.
       deploy_webhook_configured: Boolean(String(process.env.DEPLOY_SECRET || "").trim()),
+      commit: runningCommit(),
     });
   });
 
@@ -2073,6 +2075,7 @@ export function publicRoutes(router) {
       service: "mediconnect-node",
       database: process.env.DB_DATABASE || "mediconnect",
       users: Number(row?.users ?? 0),
+      commit: runningCommit(),
     });
   });
 }

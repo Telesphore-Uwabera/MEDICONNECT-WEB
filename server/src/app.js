@@ -2,6 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { execFile } from "child_process";
+import { runningCommit } from "./runtime-commit.js";
 import multer from "multer";
 import { listHospitalPrescriptions, registerActions } from "./actions.js";
 import {
@@ -4099,7 +4100,10 @@ export function appRoutes(router) {
 
   // ── Self-deploy webhook ───────────────────────────────────────────────────
   // GitHub Actions POSTs here on every push to main.
-  // Runs deploy.sh which git-pulls latest server/src/* and restarts the service.
+  // Runs deploy.sh, which reclones main when the shallow checkout cannot be
+  // fetched and does not copy or restart unless that update succeeds.
+  // The 202 only means the script was started. The workflow then polls
+  // /api/v1/health until commit equals the pushed sha.
   router.post("/deploy", (req, res) => {
     // A default written into a public repository is not a secret: anyone reading
     // the source could restart production at will. GitHub Actions supplies
@@ -4118,12 +4122,27 @@ export function appRoutes(router) {
     const expected = crypto.createHmac("sha256", "deploy-guard").update(secret).digest();
     if (!crypto.timingSafeEqual(given, expected)) return res.status(401).json({ message: "Unauthorized" });
 
-    res.status(202).json({ message: "Deploy started" });
+    const requestedSha = String(req.body?.sha || "").trim().toLowerCase();
+    const expectedSha = /^[0-9a-f]{40}$/.test(requestedSha) ? requestedSha : "";
+    res.status(202).json({
+      message: "Deploy started",
+      requested_sha: expectedSha || null,
+      running_commit: runningCommit(),
+    });
 
-    // Run the deploy script asynchronously — don't block the response
-    execFile("bash", ["/opt/mediconnect-node/deploy.sh"], { timeout: 120000 }, (err, stdout, stderr) => {
+    // Run the deploy script asynchronously — don't block the response.
+    // The expected sha is passed through so a clone that is not that commit
+    // stops before the tree is copied.
+    execFile("bash", ["/opt/mediconnect-node/deploy.sh"], {
+      timeout: 120000,
+      env: {
+        ...process.env,
+        ...(expectedSha ? { MEDICONNECT_EXPECTED_SHA: expectedSha } : {}),
+      },
+    }, (err, stdout, stderr) => {
+      const published = String(stdout || "").trim().split(/\s+/).pop() || "";
       if (err) console.error("[deploy] FAILED:", err.message, stderr?.slice(0, 300));
-      else console.log("[deploy] SUCCESS:", stdout?.slice(-200));
+      else console.log("[deploy] published", published || "(no sha)", stdout?.slice(-200));
     });
   });
 
