@@ -295,7 +295,7 @@ export function HeroHeader({
           setFacilitySearchOpen((open) => !open);
         }}
         className={cn(
-          "flex h-8 items-center gap-1.5 rounded-[6px] px-2 text-xs font-medium transition-smooth",
+          "flex h-11 min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-[6px] px-2 text-xs font-medium transition-smooth",
           facilitySearchOpen
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -307,7 +307,7 @@ export function HeroHeader({
       {facilitySearchOpen && (
         <form
           onSubmit={submitFacilitySearch}
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(320px,80vw)] rounded-xl border border-border bg-popover p-2 shadow-xl"
+          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(320px,calc(100vw-1.5rem))] rounded-xl border border-border bg-popover p-2 shadow-xl"
         >
           <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
             {t("nav.search_hint")}
@@ -421,7 +421,7 @@ export function HeroHeader({
 
         {/* Logo */}
         <div className="flex min-w-0 shrink items-center">
-          <Link to="/#home" className="flex min-w-0 items-center">
+          <Link to="/#home" className="flex min-h-11 min-w-0 items-center">
             <img src={logo} alt={appName} className="h-8 w-auto max-w-[140px] object-contain object-left sm:h-9 sm:max-w-[160px] xl:h-10 xl:max-w-[180px]" />
           </Link>
         </div>
@@ -433,7 +433,7 @@ export function HeroHeader({
               l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
             const key = l.kind === "anchor" ? l.href : l.to;
             const className = cn(
-              "relative rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
+              "relative inline-flex min-h-11 items-center rounded-[6px] px-2 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
               active
                 ? "text-foreground bg-accent"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -464,7 +464,7 @@ export function HeroHeader({
                 type="button"
                 aria-expanded={quickAccessOpen}
                 className={cn(
-                  "relative flex items-center gap-1 rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
+                  "relative inline-flex min-h-11 items-center gap-1 rounded-[6px] px-2 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
                   quickAccessOpen
                     ? "text-foreground bg-accent"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -530,7 +530,7 @@ export function HeroHeader({
               l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
             const key = l.kind === "anchor" ? l.href : l.to;
             const className = cn(
-              "relative rounded-[6px] px-1.5 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
+              "relative inline-flex min-h-11 items-center rounded-[6px] px-2 py-1.5 transition-smooth cursor-pointer whitespace-nowrap 2xl:px-2.5",
               active
                 ? "text-foreground bg-accent"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -573,7 +573,7 @@ export function HeroHeader({
 
         {/* Desktop right actions */}
         <div className="hidden shrink-0 items-center gap-0.5 xl:flex 2xl:gap-2">
-          <ThemeToggle className="h-8 w-8" />
+          <ThemeToggle className="h-11 w-11" />
           <div className="2xl:hidden">
             <LanguageSwitcher compact />
           </div>
@@ -584,7 +584,7 @@ export function HeroHeader({
           {user ? (
             <div className="flex items-center gap-0.5 2xl:gap-2">
               <Link to={dashboardPath(user.active_role ?? user.role)}>
-                <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs">
+                <Button variant="ghost" size="sm" className="h-11 gap-1.5 px-2 text-xs">
                   <LayoutDashboard className="h-3.5 w-3.5" />
                   <span className="hidden 2xl:inline">{t("common.dashboard", "Dashboard")}</span>
                 </Button>
@@ -616,7 +616,7 @@ export function HeroHeader({
                 onClick={handleLogout}
                 disabled={logout.isPending}
                 title={t("common.signOut", "Sign out")}
-                className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-destructive"
+                className="h-11 gap-1.5 px-2 text-xs text-muted-foreground hover:text-destructive"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 <span className="hidden 2xl:inline">{t("common.signOut", "Sign out")}</span>
@@ -625,12 +625,12 @@ export function HeroHeader({
           ) : (
             <>
               <Link to="/auth">
-                <Button variant="ghost" size="sm" className="h-8 px-2 text-xs 2xl:px-3">
+                <Button variant="ghost" size="sm" className="h-11 px-3 text-xs">
                   {t("common.signIn")}
                 </Button>
               </Link>
               <Link to="/auth?mode=signup">
-                <Button size="sm" className="h-8 bg-gradient-primary px-2 text-xs hover:opacity-90 2xl:px-3">
+                <Button size="sm" className="h-11 bg-gradient-primary px-3 text-xs hover:opacity-90">
                   {t("common.SignUp")}
                 </Button>
               </Link>
@@ -641,26 +641,26 @@ export function HeroHeader({
         {/* Mobile/tablet: auth actions + hamburger */}
         <div className="flex shrink-0 items-center gap-1 xl:hidden">
           {facilitySearch(mobileSearchRef)}
-          <ThemeToggle />
+          <ThemeToggle className="h-11 w-11" />
           <div className="hidden sm:flex items-center gap-1">
             <LanguageSwitcher compact />
           </div>
 
           {user ? (
-            <Link to={dashboardPath(user.active_role ?? user.role)} className="hidden min-[380px]:block">
-              <Button variant="ghost" size="sm" className="h-9 px-2 text-xs">
+            <Link to={dashboardPath(user.active_role ?? user.role)} className="hidden sm:block">
+              <Button variant="ghost" size="sm" className="h-11 px-3 text-xs">
                 {t("common.dashboard", "Dashboard")}
               </Button>
             </Link>
           ) : (
-            <div className="flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-1">
               <Link to="/auth">
-                <Button variant="ghost" size="sm" className="h-9 px-2 text-xs">
+                <Button variant="ghost" size="sm" className="h-11 px-3 text-xs">
                   {t("common.signIn")}
                 </Button>
               </Link>
               <Link to="/auth?mode=signup">
-                <Button size="sm" className="h-9 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90 sm:px-3">
+                <Button size="sm" className="h-11 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
                   {t("common.Register")}
                 </Button>
               </Link>
@@ -671,7 +671,7 @@ export function HeroHeader({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             aria-expanded={mobileMenuOpen}
-            className="ml-1 h-9 w-9 shrink-0 rounded-[6px] flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
+            className="ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] text-foreground hover:bg-accent transition-smooth"
           >
             {mobileMenuOpen ? (
               <X className="h-5 w-5" />
@@ -710,7 +710,7 @@ export function HeroHeader({
                     l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
                   const key = l.kind === "anchor" ? l.href : l.to;
                   const className = cn(
-                    "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
+                    "flex min-h-11 items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
                     active
                       ? "bg-accent text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -753,7 +753,7 @@ export function HeroHeader({
                   <button
                     type="button"
                     onClick={() => setMobileQuickAccessOpen((prev) => !prev)}
-                    className="flex w-full items-center justify-between px-3 py-3 rounded-[6px] text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-smooth text-left"
+                    className="flex min-h-11 w-full items-center justify-between px-3 py-3 rounded-[6px] text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-smooth text-left"
                   >
                     <div className="flex items-center gap-3">
                       <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-primary/40" />
@@ -779,7 +779,7 @@ export function HeroHeader({
                               setMobileMenuOpen(false);
                               setMobileQuickAccessOpen(false);
                             }}
-                            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-md hover:bg-muted/70 transition-colors text-left"
+                            className="flex min-h-11 items-center justify-between gap-3 px-3 py-2.5 rounded-md hover:bg-muted/70 transition-colors text-left"
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <span
@@ -807,7 +807,7 @@ export function HeroHeader({
                     l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
                   const key = l.kind === "anchor" ? l.href : l.to;
                   const className = cn(
-                    "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
+                    "flex min-h-11 items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
                     active
                       ? "bg-accent text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary",

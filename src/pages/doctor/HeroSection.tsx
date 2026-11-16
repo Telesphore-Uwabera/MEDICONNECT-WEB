@@ -14,7 +14,8 @@ import { UnifiedModal } from "@/components/DoctorCard";
 import { BookingDialog } from "@/components/BookingDialog";
 import type { Doctor as CallDoctor } from "@/context/CallStore";
 
-const HERO_PHOTO = "/images/Jul18202601_47_20JM.png";
+const HERO_PHOTO = "/images/hero/consult-1280.webp";
+const HERO_SRCSET = "/images/hero/consult-640.webp 640w, /images/hero/consult-960.webp 960w, /images/hero/consult-1280.webp 1280w, /images/hero/consult-1920.webp 1920w";
 const HERO_DOCTOR_ROTATE_MS = 5000; // 5 seconds per doctor
 
 const FEATURES = [
@@ -108,7 +109,24 @@ export default function HeroSection() {
     : null;
 
   const getPhotoSrc = (d: ApiDoctor | null) =>
-    resolveMediaUrl(d?.image || d?.user?.avatar) || HERO_PHOTO;
+    resolveMediaUrl(d?.image || d?.user?.avatar) || "";
+
+  const heroPhoto = (src: string, alt: string, eager: boolean) => {
+    const remote = Boolean(src);
+    return (
+      <img
+        src={remote ? src : HERO_PHOTO}
+        srcSet={remote ? undefined : HERO_SRCSET}
+        sizes={remote ? undefined : "(max-width: 768px) 100vw, 420px"}
+        alt={alt}
+        width={1280}
+        height={1920}
+        decoding="async"
+        loading={eager ? "eager" : "lazy"}
+        className="absolute inset-0 h-full w-full object-cover object-top"
+      />
+    );
+  };
 
   const { data: activeSchedule } = useQuery({
     queryKey: ["doctor-availability", activeDoctor?.slug],
@@ -139,7 +157,7 @@ export default function HeroSection() {
 
       {/* Mobile backdrop */}
       <div className="absolute inset-0 top-0 pointer-events-none md:hidden" aria-hidden="true">
-        <img src={HERO_PHOTO} alt="" className="h-full w-full object-cover object-center opacity-45" loading="eager" />
+        <img src={HERO_PHOTO} srcSet={HERO_SRCSET} sizes="100vw" alt="" width={1280} height={1920} className="h-full w-full object-cover object-center opacity-45" loading="eager" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
       </div>
 
@@ -190,16 +208,13 @@ export default function HeroSection() {
           >
             {/* Animated background blobs */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-              <div className="absolute -top-8 -right-8 h-64 w-64 rounded-full bg-primary/10"
-                   style={{ animation: "hero-blob1 7s ease-in-out infinite" }} />
-              <div className="absolute -bottom-4 -left-4 h-44 w-44 rounded-full bg-primary/8"
-                   style={{ animation: "hero-blob2 9s ease-in-out infinite" }} />
+              <div className="hero-blob absolute -top-8 -right-8 h-64 w-64 rounded-full bg-primary/10" />
+              <div className="hero-blob hero-blob-slow absolute -bottom-4 -left-4 h-44 w-44 rounded-full bg-primary/8" />
             </div>
 
             {/* Portrait card — floats gently */}
             <div
-              className="group relative z-10 w-full cursor-pointer"
-              style={{ animation: "hero-float 5s ease-in-out infinite" }}
+              className="hero-float group relative z-10 w-full max-w-full cursor-pointer"
               onClick={handleHeroCta}
             >
               {/* Card frame — 3:4 portrait, no circle */}
@@ -211,34 +226,31 @@ export default function HeroSection() {
 
                 {/* Previous image — fades OUT as new one comes in */}
                 {prevDoctor && (
-                  <img
+                  <span
                     key={`prev-${prevDoctor.id}`}
-                    src={getPhotoSrc(prevDoctor)}
-                    alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 h-full w-full object-cover object-top"
+                    className="absolute inset-0"
                     style={{
                       opacity: isTransitioning ? 0 : 1,
                       transition: "opacity 1.4s cubic-bezier(0.4,0,0.2,1)",
                       zIndex: 1,
                     }}
-                    loading="eager"
-                  />
+                  >
+                    {heroPhoto(getPhotoSrc(prevDoctor), "", true)}
+                  </span>
                 )}
 
-                {/* Active image — fades IN */}
-                <img
+                <span
                   key={`active-${activeDoctor?.id ?? "static"}`}
-                  src={getPhotoSrc(activeDoctor)}
-                  alt={activeDoctor?.user?.name ?? ""}
-                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
                   style={{
                     opacity: isTransitioning ? 0 : 1,
                     transition: "opacity 1.4s cubic-bezier(0.4,0,0.2,1), transform 700ms ease",
                     zIndex: 2,
                   }}
-                  loading="eager"
-                />
+                >
+                  {heroPhoto(getPhotoSrc(activeDoctor), activeDoctor?.user?.name ?? t("pages.landing.hero_image_alt"), true)}
+                </span>
 
                 {/* Bottom gradient */}
                 <div
@@ -351,10 +363,15 @@ export default function HeroSection() {
             <style>{`
               @keyframes hero-feature-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
               .hero-feature { animation: hero-feature-in 520ms cubic-bezier(0.22,1,0.36,1) both; }
-              @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-              @keyframes hero-blob1 { 0%,100%{transform:scale(1) translate(0,0)} 33%{transform:scale(1.08) translate(6px,-8px)} 66%{transform:scale(0.96) translate(-4px,6px)} }
-              @keyframes hero-blob2 { 0%,100%{transform:scale(1) translate(0,0)} 40%{transform:scale(1.1) translate(-6px,8px)} 70%{transform:scale(0.94) translate(4px,-4px)} }
+              @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+              .hero-float { animation: hero-float 6s ease-in-out infinite; }
+              @keyframes hero-blob1 { 0%,100%{transform:scale(1) translate(0,0)} 50%{transform:scale(1.06) translate(4px,-6px)} }
+              .hero-blob { animation: hero-blob1 8s ease-in-out infinite; }
+              .hero-blob-slow { animation-duration: 10s; }
               @keyframes hero-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,0.5)} 50%{box-shadow:0 0 0 5px rgba(52,211,153,0)} }
+              @media (prefers-reduced-motion: reduce) {
+                .hero-feature, .hero-float, .hero-blob { animation: none; }
+              }
             `}</style>
           </div>
         </section>
