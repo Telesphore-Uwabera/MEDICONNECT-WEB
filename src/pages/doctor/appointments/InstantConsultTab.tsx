@@ -222,7 +222,10 @@ export function InstantConsultTab() {
     startCall(liveTarget.roomName, attachPatientToCallToken(liveTarget.token, match, liveSession));
   };
 
-  const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
+  const queue = useMemo<InstantConsultQueueItem[]>(
+    () => [...(queueData?.queue ?? []), ...(queueData?.history ?? [])],
+    [queueData?.queue, queueData?.history],
+  );
   const stats = queueData?.stats;
 
   const isPaid = (item: InstantConsultQueueItem) => {

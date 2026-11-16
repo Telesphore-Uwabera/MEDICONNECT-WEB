@@ -118,7 +118,8 @@ function sqliteRows(sql, params) {
       pharmacy_id INTEGER, hospital_id INTEGER,
       status TEXT, notes TEXT, daily_guest_token TEXT,
       payment_status TEXT, consultation_fee REAL, patient_pays REAL, amount_due REAL,
-      daily_room_name TEXT, room_url TEXT
+      daily_room_name TEXT, room_url TEXT,
+      guest_name TEXT, guest_phone TEXT, guest_email TEXT
     );
     CREATE TABLE prescriptions (
       id INTEGER, doctor_id INTEGER, prescriber_id INTEGER, patient_id INTEGER,
@@ -142,9 +143,10 @@ function sqliteRows(sql, params) {
     );
   }
   for (const row of db.instants) {
-    insert("INSERT INTO instant_consultation_requests (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, payment_status, consultation_fee, patient_pays, amount_due, daily_room_name, room_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
+    insert("INSERT INTO instant_consultation_requests (id, doctor_id, patient_id, user_id, pharmacy_id, hospital_id, status, notes, daily_guest_token, payment_status, consultation_fee, patient_pays, amount_due, daily_room_name, room_url, guest_name, guest_phone, guest_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(
       row.id, row.doctor_id, row.patient_id, row.user_id, row.pharmacy_id ?? null, row.hospital_id ?? null, row.status, row.notes || null, row.daily_guest_token || null,
       row.payment_status ?? null, row.consultation_fee ?? null, row.patient_pays ?? null, row.amount_due ?? null, row.daily_room_name || null, row.room_url || null,
+      row.guest_name || null, row.guest_phone || null, row.guest_email || null,
     );
   }
   for (const row of db.prescriptions) {
@@ -209,6 +211,7 @@ vi.mock("./db.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
+    knownWrite: async (_table, data) => ({ payload: { ...(data || {}) }, unknown: [] }),
     tableExists: async (name) => [
       "appointments", "prescriptions", "prescription_requests", "patients", "doctors", "pharmacies",
       "patient_medical_infos", "team_members", "instant_consultation_requests",

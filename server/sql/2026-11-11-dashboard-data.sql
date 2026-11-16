@@ -2,7 +2,7 @@
 -- Run it once on the server after review. Every step is safe to run again.
 --
 -- patient_id is not one meaning:
---   appointments.patient_id stores users.id
+--   appointments.patient_id and payments.patient_id store users.id
 --   instant_consultation_requests.patient_id, referrals.patient_id,
 --   and patient_medical_info.patient_id store patients.id
 -- This script does not rewrite those ids.
@@ -189,6 +189,7 @@ SET i.payment_status = 'paid'
 WHERE i.payment_status IS NULL
   AND LOWER(p.status) IN ('paid', 'completed', 'success', 'successful');
 
+-- appointments.patient_id is users.id, so this backfill keeps payments.patient_id as users.id.
 UPDATE payments p
 JOIN appointments a ON a.id = COALESCE(p.appointment_id, CASE WHEN p.payable_type LIKE '%appointment%' THEN p.payable_id END)
 SET p.patient_id = a.patient_id
@@ -209,10 +210,21 @@ SET payable_type = 'appointment'
 WHERE payable_type LIKE '%Appointment%';
 
 -- 4. A patient-role account with no patients row cannot pass the profile gate.
-INSERT INTO patients (user_id, name, email, phone, status, created_at, updated_at)
-SELECT u.id, u.name, u.email, u.phone, 'active', NOW(), NOW()
-FROM users u
-JOIN model_has_roles m ON m.model_id = u.id
-JOIN roles r ON r.id = m.role_id AND r.name = 'patient'
-LEFT JOIN patients p ON p.user_id = u.id
-WHERE p.id IS NULL;
+-- Runs only when user_id, name, email, phone and status already exist.
+SET @patient_cols = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'patients'
+    AND COLUMN_NAME IN ('user_id', 'name', 'email', 'phone', 'status')
+);
+SET @sql = IF(
+  @patient_cols = 5,
+  'INSERT INTO patients (user_id, name, email, phone, status)
+   SELECT u.id, u.name, u.email, u.phone, ''active''
+   FROM users u
+   JOIN model_has_roles m ON m.model_id = u.id AND m.model_type = ''App\\\\Models\\\\User''
+   JOIN roles r ON r.id = m.role_id AND r.name = ''patient''
+   LEFT JOIN patients p ON p.user_id = u.id
+   WHERE p.id IS NULL',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

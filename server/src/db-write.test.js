@@ -34,11 +34,11 @@ describe("db writes", () => {
     forgetColumns("patients");
   });
 
-  it("rejects an unknown field instead of saving a success", async () => {
-    await expect(insert("patients", { user_id: 3, name: "Amina", slug: "amina" })).rejects.toMatchObject({
-      status: 422,
-      fields: ["slug"],
-    });
+  it("skips an unknown field and still writes the columns that exist", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(insert("patients", { user_id: 3, name: "Amina", slug: "amina" })).resolves.toBe(7);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("slug"));
+    warn.mockRestore();
   });
 
   it("updates a known column", async () => {

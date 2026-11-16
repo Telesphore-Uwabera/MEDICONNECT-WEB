@@ -2,7 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
-import { partitionWrite, unknownFieldError } from "./write-fields.js";
+import { partitionWrite } from "./write-fields.js";
 
 dotenv.config({
   path: path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".env"),
@@ -159,10 +159,15 @@ export async function knownWrite(table, data) {
   return partitionWrite(data, columnNameSet(cols));
 }
 
+function warnUnknown(table, fields) {
+  if (!fields?.length) return;
+  console.warn(`[db] ${table} skipped unknown fields: ${fields.join(", ")}`);
+}
+
 export async function insert(table, data) {
   const cols = await columns(table);
   const split = partitionWrite(data, columnNameSet(cols));
-  if (split.unknown.length) throw unknownFieldError(table, split.unknown);
+  if (split.unknown.length) warnUnknown(table, split.unknown);
   const payload = {};
   for (const [key, value] of Object.entries(split.payload)) {
     payload[key] = encodeValue(cols.get(key), value);
@@ -180,7 +185,7 @@ export async function insert(table, data) {
 export async function update(table, id, data) {
   const cols = await columns(table);
   const split = partitionWrite(data, columnNameSet(cols));
-  if (split.unknown.length) throw unknownFieldError(table, split.unknown);
+  if (split.unknown.length) warnUnknown(table, split.unknown);
   const payload = {};
   for (const [key, value] of Object.entries(split.payload)) {
     payload[key] = encodeValue(cols.get(key), value);

@@ -1,4 +1,5 @@
 import { hasColumn, one, q, tableExists } from "./db.js";
+import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { loadOwnedId } from "./auth.js";
 
 function ranges(query) {
@@ -323,7 +324,7 @@ export async function pharmacyDashboard(req) {
     };
     const rxDate = await hasColumn(rxTable, "created_at") ? "created_at" : null;
     const todayRx = rxDate
-      ? tally(await grouped(rxTable, `pharmacy_id = ? AND DATE(\`${rxDate}\`) = CURDATE()`, [pharmacyId]))
+      ? tally(await grouped(rxTable, `pharmacy_id = ? AND ${kigaliDaySql(rxDate)} = ${kigaliTodaySql()}`, [pharmacyId]))
       : rx;
     base.today.prescriptions = {
       total: todayRx.total,

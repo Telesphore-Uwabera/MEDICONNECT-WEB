@@ -458,6 +458,7 @@ export interface InstantConsultStats {
 
 export interface InstantConsultQueueResponse {
     queue: InstantConsultQueueItem[];
+    history?: InstantConsultQueueItem[];
     stats: InstantConsultStats;
 }
 

@@ -11,6 +11,7 @@ import {
   presentRows,
   q,
   tableExists,
+  knownWrite,
   update,
 } from "./db.js";
 import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
@@ -688,7 +689,8 @@ async function updateDedicated(req, res, next, scope, spec) {
     if (!row) return res.status(404).json({ message: "Record not found." });
     const body = visitBodyGuard(scope, table, stripClientOwners(req.body, { keep: scope === "admin" }));
     delete body[spec.idName];
-    await update(table, row.id, body);
+    const known = await knownWrite(table, body);
+    if (Object.keys(known.payload).length) await update(table, row.id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
     stored = await afterResourceSaved(table, stored, req);
     const tagged = await presentDedicated(table, stored, spec);

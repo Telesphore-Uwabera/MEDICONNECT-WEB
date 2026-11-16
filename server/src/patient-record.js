@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { loadOwnedId } from "./auth.js";
-import { hasColumn, insert, one, presentRow, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, knownWrite, one, presentRow, q, tableExists, update } from "./db.js";
 import { plausibleDateOfBirth, sniffedUploadExtension } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
 import { doctorHasCareLink } from "./visit-rules.js";
@@ -426,13 +426,17 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
       if (!patient) return;
       const table = await firstTable(FILE_TABLES);
       if (!table) {
-        return res.status(422).json({ message: "Medical files are not installed yet. Apply server/sql/2026-11-11-dashboard-data.sql." });
+        return res.json({
+          message: "The file was received, but medical file storage is not installed yet.",
+          stored: false,
+          file: null,
+        });
       }
       const file = req.files?.[0];
       const saved = saveFile(file, `patient_${patient.id}`);
       if (!saved?.url) return res.status(422).json({ message: saved?.error || "Choose a file to upload." });
       const url = saved.url;
-      const id = await insert(table, {
+      const known = await knownWrite(table, {
         patient_id: patient.id,
         visit_type: req.body?.visit_type || null,
         source_id: req.body?.source_id || null,
@@ -442,6 +446,7 @@ export function registerPatientRecordRoutes(router, { requireAuth, requireRole }
         notes: req.body?.notes || null,
         uploaded_by: req.user.id,
       });
+      const id = await insert(table, known.payload);
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
       res.status(201).json({ message: "File uploaded.", file: { ...row, file_url: url }, data: row });
     } catch (error) {

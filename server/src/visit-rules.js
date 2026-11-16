@@ -634,9 +634,12 @@ export async function resolveCreateBody(scope, table, body, user) {
       if (await hasColumn(table, "doctor_id")) actor.doctor_id = doctorId;
       if (await hasColumn(table, "prescriber_id")) actor.prescriber_id = doctorId;
       if (CLINICAL_TABLES.has(table)) {
-        const linked = await patientFromClinicalVisit(source, doctorId, user);
+        const linked = await patientFromClinicalVisit(source, doctorId, user, { allowGuest: table === "consultation_summaries" });
         if (!linked.ok) return linked;
-        actor.patient_id = linked.patientId;
+        if (linked.patientId && await hasColumn(table, "patient_id")) actor.patient_id = linked.patientId;
+        if (linked.guest?.name && await hasColumn(table, "guest_name")) actor.guest_name = linked.guest.name;
+        if (linked.guest?.phone && await hasColumn(table, "guest_phone")) actor.guest_phone = linked.guest.phone;
+        if (linked.guest?.email && await hasColumn(table, "guest_email")) actor.guest_email = linked.guest.email;
       } else if (await hasColumn(table, "patient_id")) {
         const patient = await resolveTargetPatient(source.patient_id, { accountPointer: ACCOUNT_PATIENT_TABLES.has(table) });
         if (!patient.ok) return patient;
@@ -765,8 +768,12 @@ async function instantProfile(instantId, doctorId) {
   if (await tableExists("instant_consultation_requests")) instantTable = "instant_consultation_requests";
   else if (await tableExists("instant_consultations")) instantTable = "instant_consultations";
   if (!instantTable) return { ok: false, status: 403, message: "You do not have access to this record." };
-  const names = ["id", "doctor_id", "patient_id"];
+  const names = ["id", "doctor_id"];
+  if (await hasColumn(instantTable, "patient_id")) names.push("patient_id");
   if (await hasColumn(instantTable, "user_id")) names.push("user_id");
+  for (const column of ["guest_name", "guest_phone", "guest_email"]) {
+    if (await hasColumn(instantTable, column)) names.push(column);
+  }
   const visit = await one(
     `SELECT ${names.map((name) => `\`${name}\``).join(", ")} FROM \`${instantTable}\` WHERE id = ? LIMIT 1`,
     [instantId],
@@ -774,6 +781,11 @@ async function instantProfile(instantId, doctorId) {
   if (!visit || Number(visit.doctor_id) !== Number(doctorId)) {
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
+  const guest = {
+    name: visit.guest_name || null,
+    phone: visit.guest_phone || null,
+    email: visit.guest_email || null,
+  };
   const pointed = Number(visit.patient_id) || null;
   const account = Number(visit.user_id) || null;
   if (pointed) {
@@ -782,15 +794,15 @@ async function instantProfile(instantId, doctorId) {
     if (account && Number(profile.user_id) !== account) {
       return { ok: false, status: 403, message: "You do not have access to this record." };
     }
-    return { ok: true, patientId: Number(profile.id) };
+    return { ok: true, patientId: Number(profile.id), guest };
   }
-  if (!account) return { ok: false, status: 403, message: "You do not have access to this record." };
+  if (!account) return { ok: true, patientId: null, guest, unbound: true };
   const profiles = await q("SELECT id, user_id FROM patients WHERE user_id = ?", [account]);
   if (profiles.length !== 1) return { ok: false, status: 403, message: "You do not have access to this record." };
   return { ok: true, patientId: Number(profiles[0].id) };
 }
 
-async function patientFromClinicalVisit(body, doctorId, user) {
+async function patientFromClinicalVisit(body, doctorId, user, { allowGuest = false } = {}) {
   const appointmentId = Number(body?.appointment_id) || null;
   const instantId = Number(body?.instant_consultation_id) || null;
   const rawPatient = Number(body?.patient_id) || null;
@@ -802,6 +814,10 @@ async function patientFromClinicalVisit(body, doctorId, user) {
   const fromInstant = instantId ? await instantProfile(instantId, doctorId) : null;
   if (fromInstant && !fromInstant.ok) return fromInstant;
   if (fromAppointment && fromInstant && fromAppointment.patientId !== fromInstant.patientId) {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
+  }
+  if (fromInstant?.unbound) {
+    if (allowGuest && !rawPatient) return { ok: true, patientId: null, guest: fromInstant.guest || null };
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
   const visitProfile = fromAppointment?.patientId || fromInstant?.patientId || null;

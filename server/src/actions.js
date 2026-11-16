@@ -585,12 +585,16 @@ async function fillGap(req, res, parts) {
       return true;
     }
     if (parts[1] === "profile") {
-      const body = { ...(req.body ?? {}) };
-      delete body.password;
-      if (body.email && !clientMayClaimEmail(body.email)) {
+      const allowed = ["name", "phone", "country_code", "gender", "preferred_language", "avatar", "date_of_birth"];
+      const body = {};
+      for (const key of allowed) {
+        if (req.body?.[key] != null && req.body[key] !== "") body[key] = req.body[key];
+      }
+      if (req.body?.email && !clientMayClaimEmail(req.body.email)) {
         return res.status(422).json({ message: "Choose a different email address." }) || true;
       }
-      await update("users", req.user.id, body);
+      const known = await knownWrite("users", body);
+      if (Object.keys(known.payload).length) await update("users", req.user.id, known.payload);
       res.json({ message: "Profile updated." });
       return true;
     }
@@ -608,17 +612,18 @@ async function fillGap(req, res, parts) {
       delete body.user;
       delete body.id;
       if (body.full_name && !body.name) body.name = body.full_name;
+      const known = await knownWrite(table, {
+        user_id: req.user.id,
+        name: body.name || userRow?.name,
+        email: userRow?.email,
+        phone: body.phone || userRow?.phone,
+        status: id ? undefined : "pending",
+        ...body,
+      });
       if (!id) {
-        id = await insert(table, {
-          user_id: req.user.id,
-          name: body.name || userRow?.name,
-          email: userRow?.email,
-          phone: body.phone || userRow?.phone,
-          status: "pending",
-          ...body,
-        });
-      } else {
-        await update(table, id, body);
+        id = await insert(table, known.payload);
+      } else if (Object.keys(known.payload).length) {
+        await update(table, id, known.payload);
       }
       const userPatch = {};
       if (body.phone) userPatch.phone = body.phone;
@@ -701,7 +706,10 @@ async function fillGap(req, res, parts) {
     }
     if (id && ["POST", "PUT", "PATCH"].includes(req.method)) {
       const body = profileFormBody(req.body ?? {}, { doctor: parts[0] === "doctor" });
-      if (Object.keys(body).length) await update(table, id, body);
+      if (Object.keys(body).length) {
+        const known = await knownWrite(table, body);
+        if (Object.keys(known.payload).length) await update(table, id, known.payload);
+      }
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
       if (parts[0] === "patient") {
         const userRow = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
@@ -791,9 +799,6 @@ async function fillGap(req, res, parts) {
         notes: text,
       });
       if (known.payload.notes != null) await insert("instant_consultation_notes", known.payload);
-    } else {
-      res.status(422).json({ message: "Notes cannot be saved until the notes table is installed. Apply server/sql/2026-11-11-dashboard-data.sql." });
-      return true;
     }
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
     res.json({ message: "Notes saved.", data: row, ...(row ?? {}) });
@@ -801,7 +806,8 @@ async function fillGap(req, res, parts) {
   }
 
   if (action === "reschedule" && id) {
-    await update(table, id, req.body ?? {});
+    const known = await knownWrite(table, req.body ?? {});
+    if (Object.keys(known.payload).length) await update(table, id, known.payload);
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
     if (table === "appointments" || VISIT_TABLES.has(table)) {
       notifyAppointmentRescheduled(row ?? current).catch(() => null);
@@ -909,7 +915,8 @@ async function fillGap(req, res, parts) {
       res.status(prepared.status).json({ message: prepared.message });
       return true;
     }
-    const newId = await insert(table, prepared.body);
+    const known = await knownWrite(table, prepared.body);
+    const newId = await insert(table, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);
@@ -930,7 +937,8 @@ async function fillGap(req, res, parts) {
       ? await fillConsultationSummaryBody(req.body ?? {})
       : (req.body ?? {});
     const body = stripClientOwners(raw, { keep: parts[0] === "admin" });
-    await update(table, id, visitBodyGuard(parts[0], table, body));
+    const known = await knownWrite(table, visitBodyGuard(parts[0], table, body));
+    if (Object.keys(known.payload).length) await update(table, id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);

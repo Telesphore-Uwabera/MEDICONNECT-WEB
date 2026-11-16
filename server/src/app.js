@@ -1356,7 +1356,8 @@ export function appRoutes(router) {
   router.post("/doctor/availability", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
-      const id = await insert("doctor_availabilities", { ...req.body, doctor_id: doctorId });
+      const known = await knownWrite("doctor_availabilities", { ...req.body, doctor_id: doctorId });
+      const id = await insert("doctor_availabilities", known.payload);
       res.status(201).json({ message: "Availability saved.", data: await presentRow("doctor_availabilities", await one("SELECT * FROM doctor_availabilities WHERE id = ?", [id])) });
     } catch (error) {
       next(error);
@@ -1412,7 +1413,8 @@ export function appRoutes(router) {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
       const period = await one("SELECT * FROM doctor_availability_periods WHERE id = ? AND doctor_id = ?", [req.params.id, doctorId ?? 0]);
       if (!period) return res.status(404).json({ message: "Schedule period not found." });
-      await update("doctor_availability_periods", period.id, req.body);
+      const known = await knownWrite("doctor_availability_periods", req.body ?? {});
+      if (Object.keys(known.payload).length) await update("doctor_availability_periods", period.id, known.payload);
       const nextPeriod = await presentRow("doctor_availability_periods", await one("SELECT * FROM doctor_availability_periods WHERE id = ?", [period.id]));
       res.json({ message: "Schedule updated.", period: nextPeriod, available_dates: eachDate(nextPeriod.from_date, nextPeriod.to_date) });
     } catch (error) {
@@ -3402,7 +3404,8 @@ export function appRoutes(router) {
         if (urlPath === "qualifications" && !String(body.title || "").trim()) {
           return res.status(422).json({ message: "Certification title is required." });
         }
-        const id = await insert(table, { ...body, doctor_id: doctorId });
+        const known = await knownWrite(table, { ...body, doctor_id: doctorId });
+        const id = await insert(table, known.payload);
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
         res.status(201).json({ message: "Saved.", [singular]: row, data: row });
       } catch (error) {
@@ -3424,7 +3427,8 @@ export function appRoutes(router) {
         if (urlPath === "qualifications" && !String(body.title || "").trim()) {
           return res.status(422).json({ message: "Certification title is required." });
         }
-        await update(table, existing.id, body);
+        const known = await knownWrite(table, body);
+        if (Object.keys(known.payload).length) await update(table, existing.id, known.payload);
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [existing.id]));
         res.json({ message: "Updated.", [singular]: row, data: row });
       } catch (error) {
@@ -3673,7 +3677,8 @@ export function appRoutes(router) {
       if (!table) return next();
       const prepared = await resolveCreateBody(req.params.scope, table, req.body, req.user);
       if (!prepared.ok) return res.status(prepared.status).json({ message: prepared.message });
-      const id = await insert(table, prepared.body);
+      const known = await knownWrite(table, prepared.body);
+      const id = await insert(table, known.payload);
       let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
       stored = await afterResourceSaved(table, stored, req);
       res.status(201).json({ message: "Saved.", data: await presentRow(table, stored) });
@@ -4130,7 +4135,8 @@ async function updateResource(req, res, next) {
       table,
       stripClientOwners(req.body, { keep: req.params.scope === "admin" }),
     );
-    await update(table, req.params.id, body);
+    const known = await knownWrite(table, body);
+    if (Object.keys(known.payload).length) await update(table, req.params.id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);
