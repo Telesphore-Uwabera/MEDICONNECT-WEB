@@ -4,7 +4,11 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useUpdatePassword } from "@/hooks/admin/use-admin-settings";
 
-/** Shown after a guest signs in with the temporary password. */
+/**
+ * Shown after a guest signs in with the temporary password.
+ * The account is still flagged password_must_change, so the server accepts
+ * this save without current_password. A normal settings change still sends it.
+ */
 export function ForcePasswordChange({ onDone }: { onDone: () => void }) {
   const { t } = useTranslation();
   const update = useUpdatePassword();

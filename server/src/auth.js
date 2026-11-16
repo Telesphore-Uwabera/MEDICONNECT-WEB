@@ -67,6 +67,25 @@ export async function stampPatientProfileCompletion(patient, user) {
   return complete;
 }
 
+/** Create the patients row for this account when it is missing.
+ *  Live patients has user_id plus profile fields, not name, email, phone, or status.
+ *  knownWrite keeps only columns that exist, so a user_id-only insert still lands. */
+export async function ensurePatientRow(user) {
+  if (!user?.id || !(await tableExists("patients")) || !(await hasColumn("patients", "user_id"))) return null;
+  const existing = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [user.id]).catch(() => null);
+  if (existing) return existing;
+  const known = await knownWrite("patients", {
+    user_id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    status: "active",
+  }).catch(() => ({ payload: {} }));
+  if (!known.payload?.user_id) return null;
+  await insert("patients", known.payload).catch(() => null);
+  return one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [user.id]).catch(() => null);
+}
+
 export async function toUser(row, activeRole) {
   const names = await roleNames(row.id);
   const switchable = names.filter((name) => ["patient", "doctor", "hospital", "pharmacy"].includes(name));
@@ -74,20 +93,7 @@ export async function toUser(row, activeRole) {
   const active = activeRole || row.active_role || (canBeAdmin && names.includes("admin") ? "admin" : switchable[0]) || names[0] || "patient";
   let profileComplete = true;
   if (active === "patient" && (await tableExists("patients"))) {
-    let patient = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [row.id]).catch(() => null);
-    if (!patient) {
-      const known = await knownWrite("patients", {
-        user_id: row.id,
-        name: row.name,
-        email: row.email,
-        phone: row.phone,
-        status: "active",
-      }).catch(() => ({ payload: {} }));
-      if (known.payload?.user_id) {
-        await insert("patients", known.payload).catch(() => null);
-        patient = await one("SELECT * FROM patients WHERE user_id = ? ORDER BY id DESC LIMIT 1", [row.id]).catch(() => null);
-      }
-    }
+    const patient = await ensurePatientRow(row);
     profileComplete = await stampPatientProfileCompletion(patient, row);
   }
   return {

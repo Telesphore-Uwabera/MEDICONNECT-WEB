@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { hasColumn, insert, knownWrite, one, pageArgs, paginateList, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
-import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
+import { ensurePatientRow, hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
+import { reviewPasswordChange } from "./guest-password.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { sniffedUploadExtension } from "./input-checks.js";
@@ -53,6 +54,17 @@ const FILE_COLUMNS = {
 
 function segments(req) {
   return req.path.split("/").filter(Boolean);
+}
+
+/** Drop every other login token after a password change. The current request keeps its token. */
+async function revokeOtherTokens(req, userId) {
+  const currentId = req.auth?.token?.id;
+  if (!currentId || !userId) return;
+  if (!(await tableExists("personal_access_tokens"))) return;
+  await pool.query(
+    "DELETE FROM personal_access_tokens WHERE tokenable_id = ? AND id <> ?",
+    [userId, currentId],
+  ).catch(() => null);
 }
 
 function requestLang(req) {
@@ -575,12 +587,23 @@ async function fillGap(req, res, parts) {
 
   if (parts[0] === "settings") {
     if (req.method === "GET" && !parts[1]) return false;
-    if (parts[1] === "password" && req.body?.password) {
-      await update("users", req.user.id, {
+    if (parts[1] === "password" && !parts[2] && ["PUT", "POST", "PATCH"].includes(req.method)) {
+      const account = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+      if (!account) {
+        res.status(401).json({ message: "Unauthenticated." });
+        return true;
+      }
+      const decision = await reviewPasswordChange(account, req.body ?? {}, req.user.preferred_language);
+      if (!decision.ok) {
+        res.status(decision.status).json({ message: decision.message });
+        return true;
+      }
+      await update("users", account.id, {
         password: await hashPassword(req.body.password),
         password_must_change: 0,
         temp_password_used_at: new Date(),
       });
+      await revokeOtherTokens(req, account.id);
       res.json({ message: "Password updated." });
       return true;
     }
@@ -608,6 +631,10 @@ async function fillGap(req, res, parts) {
     const table = "patients";
     const userRow = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
     let id = await loadOwnedId(req.user.id, table);
+    if (!id) {
+      const created = await ensurePatientRow(userRow || { id: req.user.id });
+      id = created?.id || null;
+    }
     if (["POST", "PUT", "PATCH"].includes(req.method)) {
       const body = profileFormBody(req.body ?? {});
       delete body.user;

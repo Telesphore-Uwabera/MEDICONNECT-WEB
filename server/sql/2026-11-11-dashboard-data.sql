@@ -164,7 +164,11 @@ CREATE TABLE IF NOT EXISTS patient_medical_files (
   KEY patient_medical_files_patient (patient_id)
 );
 
--- 3. Backfill payment facts. payable_type values are shortened so dashboards can match them.
+-- 3. Backfill payment facts.
+-- Live payments has payable_id + payable_type, not appointment_id.
+-- Each UPDATE is prepared only when the columns it names exist, so a re-run
+-- after a partial failure does not stop the rest of the script.
+-- WHERE clauses only touch rows that are still empty, so a second run is a no-op.
 SET @sql = (
   SELECT IF(
     EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'patient_id'),
@@ -183,34 +187,69 @@ SET @sql = (
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-UPDATE instant_consultation_requests i
-JOIN payments p ON p.payable_id = i.id AND p.payable_type LIKE '%instant%'
-SET i.payment_status = 'paid'
-WHERE i.payment_status IS NULL
-  AND LOWER(p.status) IN ('paid', 'completed', 'success', 'successful');
+-- Shorten the polymorphic type first. The joins below also match the old class name.
+SET @sql = (
+  SELECT IF(
+    EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payable_type'),
+    'UPDATE payments SET payable_type = ''instant_consultation'' WHERE payable_type LIKE ''%InstantConsultation%''',
+    'SELECT 1'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- appointments.patient_id is users.id, so this backfill keeps payments.patient_id as users.id.
-UPDATE payments p
-JOIN appointments a ON a.id = COALESCE(p.appointment_id, CASE WHEN p.payable_type LIKE '%appointment%' THEN p.payable_id END)
-SET p.patient_id = a.patient_id
-WHERE p.patient_id IS NULL
-  AND a.patient_id IS NOT NULL;
+SET @sql = (
+  SELECT IF(
+    EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payable_type'),
+    'UPDATE payments SET payable_type = ''appointment'' WHERE payable_type LIKE ''%Appointment%''',
+    'SELECT 1'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-UPDATE payments
-SET paid_at = COALESCE(paid_at, updated_at, created_at)
-WHERE paid_at IS NULL
-  AND LOWER(status) IN ('paid', 'completed', 'success', 'successful');
+SET @sql = (
+  SELECT IF(
+    EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'instant_consultation_requests' AND COLUMN_NAME = 'payment_status')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payable_id')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payable_type'),
+    'UPDATE instant_consultation_requests i JOIN payments p ON p.payable_id = i.id AND (p.payable_type = ''instant_consultation'' OR p.payable_type LIKE ''%instant%'') SET i.payment_status = ''paid'' WHERE i.payment_status IS NULL AND LOWER(p.status) IN (''paid'', ''completed'', ''success'', ''successful'')',
+    'SELECT 1'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-UPDATE payments
-SET payable_type = 'instant_consultation'
-WHERE payable_type LIKE '%InstantConsultation%';
+-- appointments.patient_id is users.id, so this keeps payments.patient_id as users.id.
+-- Join only through payable_id when the payable is an appointment.
+SET @sql = (
+  SELECT IF(
+    EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'patient_id')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payable_id')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'payable_type')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'appointments' AND COLUMN_NAME = 'patient_id'),
+    'UPDATE payments p JOIN appointments a ON a.id = p.payable_id AND (p.payable_type = ''appointment'' OR p.payable_type LIKE ''%Appointment%'') SET p.patient_id = a.patient_id WHERE p.patient_id IS NULL AND a.patient_id IS NOT NULL',
+    'SELECT 1'
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-UPDATE payments
-SET payable_type = 'appointment'
-WHERE payable_type LIKE '%Appointment%';
+SET @sql = (
+  SELECT IF(
+    EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'paid_at')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'created_at')
+    AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'updated_at'),
+    'UPDATE payments SET paid_at = COALESCE(paid_at, updated_at, created_at) WHERE paid_at IS NULL AND LOWER(status) IN (''paid'', ''completed'', ''success'', ''successful'')',
+    IF(
+      EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'paid_at')
+      AND EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payments' AND COLUMN_NAME = 'created_at'),
+      'UPDATE payments SET paid_at = COALESCE(paid_at, created_at) WHERE paid_at IS NULL AND LOWER(status) IN (''paid'', ''completed'', ''success'', ''successful'')',
+      'SELECT 1'
+    )
+  )
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- 4. A patient-role account with no patients row cannot pass the profile gate.
--- Runs only when user_id, name, email, phone and status already exist.
+-- 4. Optional copy of name, email, phone and status onto patients.
+-- Production patients has user_id plus profile fields only, so this INSERT is skipped there.
+-- The user_id-only backfill is 2026-11-16-patients-user-id-backfill.sql. The app does not run either file.
 SET @patient_cols = (
   SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'patients'
