@@ -1,4 +1,4 @@
-import { hasColumn, one, pool, q, tableExists } from "./db.js";
+import { columns, hasColumn, one, pool, q, tableExists } from "./db.js";
 import { hashPassword, loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
 import { instantOwnedWhere, isPaidStatus, ownsInstant, UNPAID_APPOINTMENT_JOIN_MESSAGE, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
@@ -636,6 +636,15 @@ export async function resolveCreateBody(scope, table, body, user) {
       if (CLINICAL_TABLES.has(table)) {
         const linked = await patientFromClinicalVisit(source, doctorId, user, { allowGuest: table === "consultation_summaries" });
         if (!linked.ok) return linked;
+        if (!linked.patientId && table === "consultation_summaries") {
+          const cols = await columns(table);
+          const patientCol = cols.get("patient_id");
+          const nullable = !patientCol || String(patientCol.IS_NULLABLE || "").toUpperCase() === "YES";
+          const hasGuest = ["guest_name", "guest_phone", "guest_email"].some((name) => cols.has(name));
+          if (!nullable || !hasGuest) {
+            return { ok: false, status: 409, message: "Guest summaries are not available yet." };
+          }
+        }
         if (linked.patientId && await hasColumn(table, "patient_id")) actor.patient_id = linked.patientId;
         if (linked.guest?.name && await hasColumn(table, "guest_name")) actor.guest_name = linked.guest.name;
         if (linked.guest?.phone && await hasColumn(table, "guest_phone")) actor.guest_phone = linked.guest.phone;

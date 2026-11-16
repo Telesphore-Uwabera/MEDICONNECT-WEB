@@ -590,8 +590,10 @@ async function fillGap(req, res, parts) {
       for (const key of allowed) {
         if (req.body?.[key] != null && req.body[key] !== "") body[key] = req.body[key];
       }
-      if (req.body?.email && !clientMayClaimEmail(req.body.email)) {
-        return res.status(422).json({ message: "Choose a different email address." }) || true;
+      const requestedEmail = String(req.body?.email || "").trim().toLowerCase();
+      const currentEmail = String(req.user?.email || "").trim().toLowerCase();
+      if (requestedEmail && requestedEmail !== currentEmail) {
+        return res.status(422).json({ message: "Email cannot be changed from this form." }) || true;
       }
       const known = await knownWrite("users", body);
       if (Object.keys(known.payload).length) await update("users", req.user.id, known.payload);
@@ -607,19 +609,21 @@ async function fillGap(req, res, parts) {
     const userRow = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
     let id = await loadOwnedId(req.user.id, table);
     if (["POST", "PUT", "PATCH"].includes(req.method)) {
-      const body = { ...(req.body ?? {}) };
-      delete body.password;
+      const body = profileFormBody(req.body ?? {});
       delete body.user;
-      delete body.id;
+      delete body.user_id;
+      delete body.status;
+      delete body.profile_completed_at;
       if (body.full_name && !body.name) body.name = body.full_name;
-      const known = await knownWrite(table, {
+      const draft = {
+        ...body,
         user_id: req.user.id,
         name: body.name || userRow?.name,
         email: userRow?.email,
         phone: body.phone || userRow?.phone,
-        status: id ? undefined : "pending",
-        ...body,
-      });
+      };
+      if (!id) draft.status = "pending";
+      const known = await knownWrite(table, draft);
       if (!id) {
         id = await insert(table, known.payload);
       } else if (Object.keys(known.payload).length) {
@@ -784,24 +788,40 @@ async function fillGap(req, res, parts) {
 
   if (action === "notes" && id) {
     const text = req.body?.notes ?? req.body?.note ?? "";
-    if (await hasColumn(table, "notes")) await update(table, id, { notes: text });
-    else if (table === "appointments" && await tableExists("appointment_notes")) {
+    let notesSaved = false;
+    if (await hasColumn(table, "notes")) {
+      await update(table, id, { notes: text });
+      notesSaved = true;
+    } else if (table === "appointments" && await tableExists("appointment_notes")) {
       const known = await knownWrite("appointment_notes", {
         appointment_id: Number(id),
         doctor_id: current?.doctor_id || null,
         notes: text,
       });
-      if (known.payload.notes != null) await insert("appointment_notes", known.payload);
+      if (known.payload.notes != null) {
+        await insert("appointment_notes", known.payload);
+        notesSaved = true;
+      }
     } else if (["instant_consultation_requests", "instant_consultations"].includes(table) && await tableExists("instant_consultation_notes")) {
       const known = await knownWrite("instant_consultation_notes", {
         instant_consultation_id: Number(id),
         doctor_id: current?.doctor_id || null,
         notes: text,
       });
-      if (known.payload.notes != null) await insert("instant_consultation_notes", known.payload);
+      if (known.payload.notes != null) {
+        await insert("instant_consultation_notes", known.payload);
+        notesSaved = true;
+      }
     }
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
-    res.json({ message: "Notes saved.", data: row, ...(row ?? {}) });
+    const data = { ...(row ?? {}) };
+    if (notesSaved) data.notes = text;
+    res.json({
+      message: notesSaved ? "Notes saved." : "The consultation notes were not saved.",
+      notes_saved: notesSaved,
+      data,
+      ...data,
+    });
     return true;
   }
 

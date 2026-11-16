@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = {
   columns: ["id", "name", "user_id"],
+  queries: [],
 };
 
 vi.mock("mysql2/promise", () => ({
@@ -9,6 +10,7 @@ vi.mock("mysql2/promise", () => ({
     createPool: () => ({
       query: async (sql) => {
         const text = String(sql);
+        state.queries.push(text);
         if (text.includes("information_schema")) {
           return [state.columns.map((name) => ({
             COLUMN_NAME: name,
@@ -31,6 +33,7 @@ const { forgetColumns, insert, update } = await import("./db.js");
 describe("db writes", () => {
   beforeEach(() => {
     state.columns = ["id", "name", "user_id", "created_at", "updated_at"];
+    state.queries = [];
     forgetColumns("patients");
   });
 
@@ -43,5 +46,16 @@ describe("db writes", () => {
 
   it("updates a known column", async () => {
     await expect(update("patients", 3, { name: "Amina" })).resolves.toBeUndefined();
+  });
+
+  it("never writes a client id on insert or update", async () => {
+    await insert("patients", { id: 999, name: "Amina" });
+    await update("patients", 3, { id: 999, name: "Amina" });
+    const insertSql = state.queries.find((text) => text.startsWith("INSERT"));
+    const updateSql = state.queries.find((text) => text.startsWith("UPDATE"));
+    expect(insertSql).toMatch(/`name`/);
+    expect(insertSql).not.toMatch(/`id`/);
+    expect(updateSql.split("WHERE")[0]).toMatch(/`name`/);
+    expect(updateSql.split("WHERE")[0]).not.toMatch(/`id`/);
   });
 });

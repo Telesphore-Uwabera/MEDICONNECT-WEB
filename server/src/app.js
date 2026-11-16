@@ -963,12 +963,13 @@ export function appRoutes(router) {
       const period = String(req.query.period || "all");
       const periodStart = req.query.start_date ? String(req.query.start_date).slice(0, 10) : "";
       const periodEnd = req.query.end_date ? String(req.query.end_date).slice(0, 10) : "";
-      const dateExpr = "(COALESCE(appointment_date, DATE(created_at)))";
+      const dateExpr = "DATE(DATE_ADD(COALESCE(appointment_date, created_at), INTERVAL 2 HOUR))";
+      const kigaliNow = kigaliTodaySql();
       const appointmentOwned = await patientOwnedWhere("appointments", req.user);
       const apptOwner = appointmentOwned.sql;
       const ownerParams = appointmentOwned.params;
       const periodFilter = period === "today" || period === "day"
-        ? { sql: `AND ${dateExpr} = CURDATE()`, params: [] }
+        ? { sql: `AND ${dateExpr} = ${kigaliNow}`, params: [] }
         : period === "week"
           ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] }
           : period === "year"
@@ -980,10 +981,10 @@ export function appRoutes(router) {
                 : { sql: "", params: [] };
       const groups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} ${periodFilter.sql} GROUP BY status`, [...ownerParams, ...periodFilter.params]).catch(() => []);
       const { byStatus, total } = tally(groups);
-      const todayGroups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND ${dateExpr} = CURDATE() GROUP BY status`, ownerParams).catch(() => []);
+      const todayGroups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND ${dateExpr} = ${kigaliNow} GROUP BY status`, ownerParams).catch(() => []);
       const todayTally = tally(todayGroups);
       const upcoming = Number((await one(
-        `SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND (${dateExpr} >= CURDATE() OR LOWER(status) IN ('in_progress','confirmed','accepted','pending')) AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')`,
+        `SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND (${dateExpr} >= ${kigaliNow} OR LOWER(status) IN ('in_progress','confirmed','accepted','pending')) AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')`,
         ownerParams,
       ).catch(() => ({ total: 0 })))?.total ?? 0);
       const instantTableName = (await tableExists("instant_consultation_requests"))
@@ -1627,7 +1628,7 @@ export function appRoutes(router) {
   function periodWhere(column, period, start, end) {
     const date = `DATE(\`${column}\`)`;
     if (period === "custom" && start && end) return { sql: `${date} BETWEEN ? AND ?`, params: [String(start).slice(0, 10), String(end).slice(0, 10)] };
-    if (period === "today" || period === "day") return { sql: `${date} = CURDATE()`, params: [] };
+    if (period === "today" || period === "day") return { sql: `${kigaliDaySql(column)} = ${kigaliTodaySql()}`, params: [] };
     if (period === "week") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] };
     if (period === "year") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] };
     return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] };
@@ -1794,7 +1795,7 @@ export function appRoutes(router) {
       const owned = `doctor_id = ? AND ${alive}`;
       const window = dateColumn ? periodWhere(dateColumn, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
       const previous = dateColumn ? previousWhere(dateColumn, period) : { sql: "1=0", params: [] };
-      const todaySql = dateColumn ? `DATE(\`${dateColumn}\`) = CURDATE()` : "1=0";
+      const todaySql = dateColumn ? `${kigaliDaySql(dateColumn)} = ${kigaliTodaySql()}` : "1=0";
       const statuses = await q(
         `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} GROUP BY status`,
         [doctorId, ...window.params],
@@ -1807,7 +1808,7 @@ export function appRoutes(router) {
       let today = tallyStatuses(todayRows);
       if (today.total === 0 && dateColumn && dateColumn !== "created_at" && await hasColumn("appointments", "created_at")) {
         todayRows = await q(
-          `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND DATE(created_at) = CURDATE() GROUP BY status`,
+          `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND ${kigaliDaySql("created_at")} = ${kigaliTodaySql()} GROUP BY status`,
           [doctorId],
         ).catch(() => []);
         today = tallyStatuses(todayRows);
@@ -1934,11 +1935,11 @@ export function appRoutes(router) {
       const instantCreated = instantTable && (await firstColumn(instantTable, ["created_at", "updated_at"]));
       const instantCompletedAt = instantTable && (await firstColumn(instantTable, ["completed_at", "ended_at", "updated_at", "created_at"]));
       if (instantTable && instantCreated) {
-        today.pending += await instantStatus(`status IN ('pending','queued','waiting') AND DATE(\`${instantCreated}\`) = CURDATE()`);
-        today.confirmed += await instantStatus(`status IN ('confirmed','accepted','in_progress') AND DATE(\`${instantCreated}\`) = CURDATE()`);
+        today.pending += await instantStatus(`status IN ('pending','queued','waiting') AND ${kigaliDaySql(instantCreated)} = ${kigaliTodaySql()}`);
+        today.confirmed += await instantStatus(`status IN ('confirmed','accepted','in_progress') AND ${kigaliDaySql(instantCreated)} = ${kigaliTodaySql()}`);
       }
       if (instantTable && instantCompletedAt) {
-        today.completed += await instantStatus(`status IN ('completed','done') AND DATE(\`${instantCompletedAt}\`) = CURDATE()`);
+        today.completed += await instantStatus(`status IN ('completed','done') AND ${kigaliDaySql(instantCompletedAt)} = ${kigaliTodaySql()}`);
       }
       today.total = today.pending + today.confirmed + today.completed + today.cancelled;
       const paidWaiting = await instantStatus(instantQueueSql);
@@ -2275,9 +2276,10 @@ export function appRoutes(router) {
       const durations = sourceRows
         .map((row) => durationMinutes(row.started_at || row.accepted_at, row.completed_at || row.ended_at))
         .filter((value) => value != null);
+      const history = queue.filter((item) => finishedStatus.includes(String(item.status || "").toLowerCase()));
       res.json({
-        queue: queue.filter((item) => !finishedStatus.includes(String(item.status || "").toLowerCase())),
-        history: queue.filter((item) => finishedStatus.includes(String(item.status || "").toLowerCase())),
+        queue,
+        history,
         stats: {
           in_queue: liveQueue.length,
           seen_today: seenToday,
@@ -2852,7 +2854,7 @@ export function appRoutes(router) {
       const appointmentsPending = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status = 'pending'${appointmentDates.sql}`, appointmentDates.params);
       const appointmentDay = await dateColumn("appointments");
       const appointmentsToday = appointmentDay
-        ? await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND DATE(\`${appointmentDay}\`) = CURDATE()`)
+        ? await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND ${kigaliDaySql(appointmentDay)} = ${kigaliTodaySql()}`)
         : 0;
       const amountColumn = (await hasColumn("payments", "amount")) ? "amount" : (await hasColumn("payments", "total_amount")) ? "total_amount" : null;
       const paid = "status IN ('paid','completed','success','successful')";

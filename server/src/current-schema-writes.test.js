@@ -20,7 +20,7 @@ const columnNames = {
   doctor_wallets: ["id", "doctor_id", "balance", "total_earned", "currency", "created_at", "updated_at"],
   instant_consultation_requests: ["id", "doctor_id", "user_id", "guest_name", "guest_email", "guest_phone", "guest_token", "description", "status", "room_name", "daily_room_name", "created_at", "updated_at", "accepted_at", "completed_at"],
   payments: ["id", "status", "amount", "payable_type", "payable_id", "invoice_number", "appointment_id", "payment_method", "provider_reference", "patient_id", "created_at", "updated_at", "expires_at"],
-  consultation_summaries: ["id", "doctor_id", "instant_consultation_id", "appointment_id", "patient_id", "summary", "guest_name", "guest_phone", "guest_email", "created_at", "updated_at"],
+  consultation_summaries: ["id", "doctor_id", "instant_consultation_id", "appointment_id", "patient_id", "summary", "created_at", "updated_at"],
 };
 
 const tables = Object.fromEntries(Object.keys(columnNames).map((name) => [name, []]));
@@ -84,7 +84,11 @@ vi.mock("./db.js", () => ({
     query,
     getConnection: async () => ({ query, release() {} }),
   },
-  columns: async (table) => new Map((columnNames[table] || []).map((name) => [name, { DATA_TYPE: "varchar", COLUMN_TYPE: "varchar(255)", IS_NULLABLE: "YES" }])),
+  columns: async (table) => new Map((columnNames[table] || []).map((name) => [name, {
+    DATA_TYPE: "varchar",
+    COLUMN_TYPE: "varchar(255)",
+    IS_NULLABLE: table === "consultation_summaries" && name === "patient_id" ? "NO" : "YES",
+  }])),
   forgetColumns: () => {},
   hasColumn: async (table, name) => (columnNames[table] || []).includes(name),
   tableExists: async (table) => Boolean(columnNames[table]),
@@ -292,15 +296,47 @@ describe("live writes on the current schema", () => {
       body: { notes: "Guest was seen for a headache." },
     });
     expect(notes.status, JSON.stringify(notes.body)).not.toBe(422);
-    expect(notes.body.message).toMatch(/Notes saved/i);
+    expect(notes.body.notes_saved).toBe(false);
+    expect(notes.body.message).toBe("The consultation notes were not saved.");
+
+    columnNames.instant_consultation_notes = ["id", "instant_consultation_id", "doctor_id", "notes", "created_at", "updated_at"];
+    tables.instant_consultation_notes = [];
+    const savedNotes = await request("POST", `/doctor/instant-consultations/${visit.id}/notes`, {
+      token: doctor.body.token,
+      body: { notes: "Guest was seen for a headache." },
+    });
+    expect(savedNotes.status, JSON.stringify(savedNotes.body)).toBe(200);
+    expect(savedNotes.body.notes_saved).toBe(true);
+    expect(savedNotes.body.notes).toBe("Guest was seen for a headache.");
+    expect(savedNotes.body.data.notes).toBe("Guest was seen for a headache.");
+    delete columnNames.instant_consultation_notes;
 
     const summary = await request("POST", "/doctor/consultation-summaries", {
       token: doctor.body.token,
       body: { instant_consultation_id: 2, summary: "Guest consult, no account yet." },
     });
-    expect(summary.status, JSON.stringify(summary.body)).not.toBe(422);
-    const summaryRow = tables.consultation_summaries.at(-1);
-    expect(summaryRow.guest_name).toBe("Late Guest");
-    expect(summaryRow.patient_id == null || summaryRow.patient_id === "").toBe(true);
+    expect(summary.status, JSON.stringify(summary.body)).toBe(409);
+    expect(summary.body.message).toBe("Guest summaries are not available yet.");
+    expect(tables.consultation_summaries).toHaveLength(0);
+
+    tables.instant_consultation_requests[0].status = "completed";
+    const queue = await request("GET", "/doctor/instant-consultations/queue", { token: doctor.body.token });
+    expect(queue.status, JSON.stringify(queue.body)).toBe(200);
+    const finishedInQueue = (queue.body.queue || []).filter((row) => row.id === visit.id);
+    const finishedInHistory = (queue.body.history || []).filter((row) => row.id === visit.id);
+    expect(finishedInQueue.length).toBeGreaterThan(0);
+    expect(finishedInHistory.length).toBeGreaterThan(0);
+
+    const before = tables.patients.find((row) => row.user_id === signedIn.body.user.id);
+    expect(before.status).toBe("active");
+    const patched = await request("PUT", "/patient/profile", {
+      token: signedIn.body.token,
+      body: { name: "Amina Uwase", user_id: 999, status: "suspended", city: "Huye" },
+    });
+    expect(patched.status, JSON.stringify(patched.body)).toBe(200);
+    const after = tables.patients.find((row) => row.user_id === signedIn.body.user.id);
+    expect(after.status).toBe("active");
+    expect(after.user_id).toBe(signedIn.body.user.id);
+    expect(after.city).toBe("Huye");
   });
 });

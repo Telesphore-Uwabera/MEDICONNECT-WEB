@@ -170,6 +170,7 @@ export async function insert(table, data) {
   if (split.unknown.length) warnUnknown(table, split.unknown);
   const payload = {};
   for (const [key, value] of Object.entries(split.payload)) {
+    if (key === "id" || value === undefined) continue;
     payload[key] = encodeValue(cols.get(key), value);
   }
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
@@ -188,6 +189,7 @@ export async function update(table, id, data) {
   if (split.unknown.length) warnUnknown(table, split.unknown);
   const payload = {};
   for (const [key, value] of Object.entries(split.payload)) {
+    if (key === "id" || value === undefined) continue;
     payload[key] = encodeValue(cols.get(key), value);
   }
   if (cols.has("updated_at")) payload.updated_at = new Date().toISOString().slice(0, 19).replace("T", " ");

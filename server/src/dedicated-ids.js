@@ -16,6 +16,7 @@ import {
 } from "./db.js";
 import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
+import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
 
@@ -464,7 +465,7 @@ async function extraFilters(req, table, spec) {
       filters.push("DATE(`appointment_date`) = ?");
       params.push(String(req.query.date).slice(0, 10));
     } else if (String(req.query.today) === "1" || req.query.today === "true") {
-      filters.push("DATE(`appointment_date`) = CURDATE()");
+      filters.push(`${kigaliDaySql("appointment_date")} = ${kigaliTodaySql()}`);
     } else if (String(req.query.upcoming) === "1" || req.query.upcoming === "true") {
       filters.push("DATE(`appointment_date`) >= CURDATE()");
       if (await hasColumn(table, "status")) {
