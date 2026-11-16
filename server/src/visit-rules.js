@@ -1,4 +1,4 @@
-import { hasColumn, one, pool, q, tableExists } from "./db.js";
+import { columns, hasColumn, one, pool, q, tableExists } from "./db.js";
 import { hashPassword, loadOwnedId } from "./auth.js";
 import { kigaliClock } from "./doctor-schedule.js";
 import { instantOwnedWhere, isPaidStatus, ownsInstant, UNPAID_APPOINTMENT_JOIN_MESSAGE, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
@@ -51,7 +51,7 @@ export function visitAwaitsPayment(row) {
 export function appointmentJoinWindow(appointment, now = new Date()) {
   const date = String(appointment?.appointment_date || "").slice(0, 10);
   const start = clockTime(appointment?.appointment_time);
-  if (!date || !start) return { ok: true, reason: null };
+  if (!date || !start) return { ok: false, reason: "no-schedule" };
   const kigali = kigaliClock(now);
   if (date !== kigali.date) return { ok: false, reason: "not-today" };
   const [hour, minute] = start.split(":").map(Number);
@@ -72,10 +72,12 @@ const JOIN_BLOCK_COPY = {
     "too-early": "This consultation has not started yet. Join a few minutes before your slot.",
     "too-late": "This consultation slot has passed. Contact the doctor to reschedule.",
     "not-today": "Consultations can only be joined on the booked day.",
+    "no-schedule": "This visit has no booked time, so it cannot be joined.",
     closed: "This visit is no longer open.",
   },
   fr: {
-    "unpaid-appointment": "Payez cette visite et attendez que le médecin la confirme avant de la rejoindre.",
+    "unpaid-appointment": "Terminez le paiement de cette visite avant de la rejoindre.",
+    "no-schedule": "Cette visite n'a pas d'heure réservée, elle ne peut pas être rejointe.",
     "unpaid-instant": "Cette consultation n'est pas encore payée. Le patient doit terminer le paiement avant que vous puissiez la rejoindre.",
     "too-early": "Cette consultation n'a pas encore commencé. Rejoignez-la quelques minutes avant le créneau.",
     "too-late": "Ce créneau de consultation est passé. Contactez le médecin pour le reporter.",
@@ -83,7 +85,8 @@ const JOIN_BLOCK_COPY = {
     closed: "Cette visite n'est plus ouverte.",
   },
   rw: {
-    "unpaid-appointment": "Ishyura iyi konsultasiyo hanyuma utegereze ko muganga ayemeza mbere yo kuyinjiramo.",
+    "unpaid-appointment": "Rangiza kwishyura iyi konsultasiyo mbere yo kuyinjiramo.",
+    "no-schedule": "Iyi konsultasiyo nta gihe yateganyijwe, ntishobora kwinjirwamo.",
     "unpaid-instant": "Iyi konsultasiyo ntirishyurwa. Umurwayi agomba kurangiza kwishyura mbere yo kuyinjiramo.",
     "too-early": "Iyi konsultasiyo ntiratangira. Injira iminota mike mbere y'isaha yateganyijwe.",
     "too-late": "Igihe cy'iyi konsultasiyo cyararangiye. Vugana na muganga kugira ngo musubiremo igihe.",
@@ -631,9 +634,21 @@ export async function resolveCreateBody(scope, table, body, user) {
       if (await hasColumn(table, "doctor_id")) actor.doctor_id = doctorId;
       if (await hasColumn(table, "prescriber_id")) actor.prescriber_id = doctorId;
       if (CLINICAL_TABLES.has(table)) {
-        const linked = await patientFromClinicalVisit(source, doctorId, user);
+        const linked = await patientFromClinicalVisit(source, doctorId, user, { allowGuest: table === "consultation_summaries" });
         if (!linked.ok) return linked;
-        actor.patient_id = linked.patientId;
+        if (!linked.patientId && table === "consultation_summaries") {
+          const cols = await columns(table);
+          const patientCol = cols.get("patient_id");
+          const nullable = !patientCol || String(patientCol.IS_NULLABLE || "").toUpperCase() === "YES";
+          const hasGuest = ["guest_name", "guest_phone", "guest_email"].some((name) => cols.has(name));
+          if (!nullable || !hasGuest) {
+            return { ok: false, status: 409, message: "Guest summaries are not available yet." };
+          }
+        }
+        if (linked.patientId && await hasColumn(table, "patient_id")) actor.patient_id = linked.patientId;
+        if (linked.guest?.name && await hasColumn(table, "guest_name")) actor.guest_name = linked.guest.name;
+        if (linked.guest?.phone && await hasColumn(table, "guest_phone")) actor.guest_phone = linked.guest.phone;
+        if (linked.guest?.email && await hasColumn(table, "guest_email")) actor.guest_email = linked.guest.email;
       } else if (await hasColumn(table, "patient_id")) {
         const patient = await resolveTargetPatient(source.patient_id, { accountPointer: ACCOUNT_PATIENT_TABLES.has(table) });
         if (!patient.ok) return patient;
@@ -762,8 +777,12 @@ async function instantProfile(instantId, doctorId) {
   if (await tableExists("instant_consultation_requests")) instantTable = "instant_consultation_requests";
   else if (await tableExists("instant_consultations")) instantTable = "instant_consultations";
   if (!instantTable) return { ok: false, status: 403, message: "You do not have access to this record." };
-  const names = ["id", "doctor_id", "patient_id"];
+  const names = ["id", "doctor_id"];
+  if (await hasColumn(instantTable, "patient_id")) names.push("patient_id");
   if (await hasColumn(instantTable, "user_id")) names.push("user_id");
+  for (const column of ["guest_name", "guest_phone", "guest_email"]) {
+    if (await hasColumn(instantTable, column)) names.push(column);
+  }
   const visit = await one(
     `SELECT ${names.map((name) => `\`${name}\``).join(", ")} FROM \`${instantTable}\` WHERE id = ? LIMIT 1`,
     [instantId],
@@ -771,6 +790,11 @@ async function instantProfile(instantId, doctorId) {
   if (!visit || Number(visit.doctor_id) !== Number(doctorId)) {
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
+  const guest = {
+    name: visit.guest_name || null,
+    phone: visit.guest_phone || null,
+    email: visit.guest_email || null,
+  };
   const pointed = Number(visit.patient_id) || null;
   const account = Number(visit.user_id) || null;
   if (pointed) {
@@ -779,15 +803,15 @@ async function instantProfile(instantId, doctorId) {
     if (account && Number(profile.user_id) !== account) {
       return { ok: false, status: 403, message: "You do not have access to this record." };
     }
-    return { ok: true, patientId: Number(profile.id) };
+    return { ok: true, patientId: Number(profile.id), guest };
   }
-  if (!account) return { ok: false, status: 403, message: "You do not have access to this record." };
+  if (!account) return { ok: true, patientId: null, guest, unbound: true };
   const profiles = await q("SELECT id, user_id FROM patients WHERE user_id = ?", [account]);
   if (profiles.length !== 1) return { ok: false, status: 403, message: "You do not have access to this record." };
   return { ok: true, patientId: Number(profiles[0].id) };
 }
 
-async function patientFromClinicalVisit(body, doctorId, user) {
+async function patientFromClinicalVisit(body, doctorId, user, { allowGuest = false } = {}) {
   const appointmentId = Number(body?.appointment_id) || null;
   const instantId = Number(body?.instant_consultation_id) || null;
   const rawPatient = Number(body?.patient_id) || null;
@@ -799,6 +823,10 @@ async function patientFromClinicalVisit(body, doctorId, user) {
   const fromInstant = instantId ? await instantProfile(instantId, doctorId) : null;
   if (fromInstant && !fromInstant.ok) return fromInstant;
   if (fromAppointment && fromInstant && fromAppointment.patientId !== fromInstant.patientId) {
+    return { ok: false, status: 403, message: "You do not have access to this record." };
+  }
+  if (fromInstant?.unbound) {
+    if (allowGuest && !rawPatient) return { ok: true, patientId: null, guest: fromInstant.guest || null };
     return { ok: false, status: 403, message: "You do not have access to this record." };
   }
   const visitProfile = fromAppointment?.patientId || fromInstant?.patientId || null;

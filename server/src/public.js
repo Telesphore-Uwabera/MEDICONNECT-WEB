@@ -1,5 +1,6 @@
 import crypto from "crypto";
-import { countWhere, hasColumn, insert, paginateList, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { countWhere, hasColumn, insert, knownWrite, paginateList, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { readSettingsGroup } from "./system-settings.js";
 import { ensureRole } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
@@ -275,7 +276,68 @@ async function doctorBusyInstant(doctorId, exceptId = null) {
   return one(sql, params).catch(() => null);
 }
 
-async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
+async function doctorNetAmount(gross) {
+  const amount = Number(gross);
+  if (!(amount > 0)) return 0;
+  const group = await readSettingsGroup("payment").catch(() => null);
+  const settings = group?.settings || {};
+  const raw = settings.commission_percent?.value
+    ?? settings.doctor_commission_percent?.value
+    ?? settings.platform_fee_percent?.value;
+  const percent = Number(raw);
+  if (!Number.isFinite(percent) || percent <= 0 || percent >= 100) return amount;
+  return Math.round((amount * (100 - percent)) * 100) / 100;
+}
+
+async function creditDoctorWallet(doctorId, amount) {
+  const credit = await doctorNetAmount(amount);
+  if (!doctorId || !(credit > 0) || !(await tableExists("doctor_wallets"))) return;
+  const wallet = await one("SELECT * FROM doctor_wallets WHERE doctor_id = ? LIMIT 1", [doctorId]).catch(() => null);
+  if (!wallet) {
+    const created = await knownWrite("doctor_wallets", {
+      doctor_id: doctorId,
+      balance: credit,
+      total_earned: credit,
+      currency: "RWF",
+    });
+    if (created.payload.doctor_id) await insert("doctor_wallets", created.payload);
+    return;
+  }
+  const sets = [];
+  const params = [];
+  if (await hasColumn("doctor_wallets", "balance")) {
+    sets.push("balance = COALESCE(balance, 0) + ?");
+    params.push(credit);
+  }
+  if (await hasColumn("doctor_wallets", "total_earned")) {
+    sets.push("total_earned = COALESCE(total_earned, 0) + ?");
+    params.push(credit);
+  }
+  if (!sets.length) return;
+  await pool.query(`UPDATE doctor_wallets SET ${sets.join(", ")} WHERE id = ?`, [...params, wallet.id]);
+}
+
+const PAID_PAYMENT_STATUSES = ["paid", "completed", "success", "successful"];
+
+async function claimPaidPayment(payment, patch) {
+  const known = await knownWrite("payments", patch);
+  const keys = Object.keys(known.payload);
+  if (!keys.length || !payment?.id) return false;
+  const [result] = await pool.query(
+    `UPDATE payments SET ${keys.map((key) => `\`${key}\` = ?`).join(", ")}
+     WHERE id = ? AND LOWER(COALESCE(status, '')) NOT IN (${PAID_PAYMENT_STATUSES.map(() => "?").join(",")})`,
+    [...keys.map((key) => known.payload[key]), payment.id, ...PAID_PAYMENT_STATUSES],
+  );
+  return Number(result?.affectedRows || 0) === 1;
+}
+
+async function writeKnown(table, id, data) {
+  const known = await knownWrite(table, data);
+  if (!Object.keys(known.payload).length) return;
+  await update(table, id, known.payload);
+}
+
+export async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
   if (!payment?.id) return payment;
   if (remote && !verifiedPaidAmount(payment, remote)) return payment;
   const patch = { status: "paid" };
@@ -285,42 +347,46 @@ async function confirmPaidInvoice(payment, remote, { notify = true } = {}) {
   }
   if (remote?.paymentMethod) patch.payment_method = remote.paymentMethod;
   if (remote?.paymentReference) patch.provider_reference = remote.paymentReference;
-  if (String(payment.status) !== "paid") await update("payments", payment.id, patch);
+  const alreadyPaid = PAID_PAYMENT_STATUSES.includes(String(payment.status || "").toLowerCase());
+  const claimed = alreadyPaid ? false : await claimPaidPayment(payment, patch);
 
   const payableId = payment.payable_id;
   const payableType = String(payment.payable_type || "");
+  let paidDoctorId = null;
   if (payableId && payableType.includes("instant")) {
     const table = (await tableExists("instant_consultation_requests"))
       ? "instant_consultation_requests"
       : "instant_consultations";
-    const row = await one(`SELECT id, status, doctor_id, room_name, daily_room_name FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
+    const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
     if (row) {
+      paidDoctorId = row.doctor_id || null;
       const open = ["pending", "queued", "waiting", "payment_pending", ""].includes(String(row.status || ""));
-      // Pre-create the consultation room name so the patient can get a token
-      // immediately after payment without waiting for the doctor to click Accept.
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
-      const patch = {
+      const visitPatch = {
         payment_status: "paid",
         ...(open ? { status: "confirmed" } : {}),
       };
-      // Store the room name if not already set so the patient token works
-      if (!row.room_name && await hasColumn(table, "room_name")) patch.room_name = roomName;
-      if (!row.daily_room_name && await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
-      await update(table, row.id, patch);
+      if (!row.room_name && await hasColumn(table, "room_name")) visitPatch.room_name = roomName;
+      if (!row.daily_room_name && await hasColumn(table, "daily_room_name")) visitPatch.daily_room_name = roomName;
+      await writeKnown(table, row.id, visitPatch);
     }
   }
   if (payableId && payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
-    const appointment = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
+    const appointment = await one("SELECT * FROM appointments WHERE id = ?", [payableId]).catch(() => null);
     if (appointment) {
+      paidDoctorId = appointment.doctor_id || paidDoctorId;
       const visitPatch = settledAppointmentPatch(appointment);
-      if (Object.keys(visitPatch).length) await update("appointments", appointment.id, visitPatch);
+      if (Object.keys(visitPatch).length) await writeKnown("appointments", appointment.id, visitPatch);
     }
   }
   if (payableId && payableType.toLowerCase().includes("fitness")) {
     await markFitnessCertificatePaid(payableId, payment.amount).catch(() => null);
   }
   const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
-  if (notify && String(payment.status) !== "paid") notifyPaidVisit(saved).catch(() => null);
+  if (claimed) {
+    await creditDoctorWallet(paidDoctorId, payment.amount).catch(() => null);
+    if (notify) notifyPaidVisit(saved).catch(() => null);
+  }
   return saved;
 }
 
@@ -384,7 +450,7 @@ async function payableAlreadyPaid(payableId) {
   return Boolean(paid);
 }
 
-async function expireLinkedVisit(payment) {
+export async function expireLinkedVisit(payment) {
   const payableId = payment?.payable_id || payment?.appointment_id;
   const payableType = String(payment?.payable_type || (payment?.appointment_id ? "appointment" : "")).toLowerCase();
   if (!payableId || await payableAlreadyPaid(payableId)) return;
@@ -403,7 +469,7 @@ async function expireLinkedVisit(payment) {
     const expiredStatus = await ensureEnumValue(table, "status", "payment_expired").catch(() => false)
       ? "payment_expired"
       : "expired";
-    await update(table, row.id, { status: expiredStatus, payment_status: "expired" });
+    await writeKnown(table, row.id, { status: expiredStatus, payment_status: "expired" });
     return;
   }
   if (payableType.includes("appointment") && await tableExists("appointments")) {
@@ -413,10 +479,10 @@ async function expireLinkedVisit(payment) {
     if (!row || String(row.payment_status || "").toLowerCase() === "paid") return;
     const status = String(row.status || "").toLowerCase();
     if (CLOSED_VISIT.has(status) || ["confirmed"].includes(status)) {
-      await update("appointments", row.id, { payment_status: "expired" });
+      await writeKnown("appointments", row.id, { payment_status: "expired" });
       return;
     }
-    await update("appointments", row.id, { status: "expired", payment_status: "expired" });
+    await writeKnown("appointments", row.id, { status: "expired", payment_status: "expired" });
     // The unpaid hold is over — give the minute back to the doctor's calendar.
     await releaseSlot(row);
   }
@@ -512,7 +578,7 @@ async function payerRecord(payment) {
   return null;
 }
 
-async function attachPayerAccount(payment) {
+export async function attachPayerAccount(payment) {
   const found = await payerRecord(payment);
   if (!found) return { created: false, email: null, plain: null };
   const { table, row } = found;
@@ -566,24 +632,26 @@ async function attachPayerAccount(payment) {
   }
 
   if (user && await tableExists("patients") && !(await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null))) {
-    await insert("patients", {
+    const known = await knownWrite("patients", {
       user_id: user.id,
       name: user.name,
-      name_en: user.name,
       email: user.email,
       phone: user.phone,
-      slug: `${String(user.name || "patient").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "patient"}-${crypto.randomBytes(3).toString("hex")}`,
       status: "active",
-    }).catch((error) => console.error("Could not create patient profile:", error?.message || error));
+    });
+    if (known.payload.user_id) {
+      await insert("patients", known.payload).catch((error) => console.error("Could not create patient profile:", error?.message || error));
+    }
   }
 
   const patient = user ? await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [user.id]).catch(() => null) : null;
   const link = {};
   if (user && await hasColumn(table, "user_id")) link.user_id = user.id;
   if (patient?.id && await hasColumn(table, "patient_id")) link.patient_id = patient.id;
-  if (Object.keys(link).length) await update(table, row.id, link);
-  if (patient?.id && payment?.id && await hasColumn("payments", "patient_id") && !payment.patient_id) {
-    await update("payments", payment.id, { patient_id: patient.id });
+  if (Object.keys(link).length) await writeKnown(table, row.id, link);
+  // payments.patient_id stores users.id, the same id appointments.patient_id stores.
+  if (user?.id && payment?.id && await hasColumn("payments", "patient_id") && !payment.patient_id) {
+    await writeKnown("payments", payment.id, { patient_id: user.id });
   }
   return { created: created || Boolean(plain), email, plain };
 }
@@ -1477,20 +1545,22 @@ export function publicRoutes(router) {
         patientId = patient?.id ?? null;
       }
       const guestToken = crypto.randomBytes(24).toString("hex");
-      const id = await insert(table, {
-        ...body,
-        ...(doctorId ? { doctor_id: doctorId } : {}),
-        ...(patientId ? { patient_id: patientId } : {}),
-        ...(req.user?.id ? { user_id: req.user.id } : {}),
-        guest_name: body.name || body.guest_name || req.user?.name,
+      const known = await knownWrite(table, {
+        doctor_id: doctorId || null,
+        patient_id: patientId || null,
+        user_id: req.user?.id || null,
+        guest_name: body.name || body.guest_name || req.user?.name || null,
         guest_email: email || null,
         guest_phone: phone || null,
         guest_token: guestToken,
+        description: body.description || body.symptoms || body.reason || null,
+        country_code: body.country_code || null,
         status: Number(amount) > 0 ? "pending" : "confirmed",
         payment_status: Number(amount) > 0 ? "pending" : "paid",
         amount,
         currency: "RWF",
       });
+      const id = await insert(table, known.payload);
       const request = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
       const place = placeInQueue(request, await queuePeers(table, doctorId));
       const doctorBusy = Boolean(await doctorBusyInstant(doctorId, id));
@@ -1592,7 +1662,7 @@ export function publicRoutes(router) {
             };
             if (!row.room_name && await hasColumn(table, "room_name")) patch.room_name = roomName;
             if (!row.daily_room_name && await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
-            await update(table, row.id, patch).catch(() => null);
+            await writeKnown(table, row.id, patch);
           }
         } else if (payment.invoice_number && !isLocalInvoiceNumber(payment.invoice_number)) {
           const remote = await iremboInvoiceStatus(payment.invoice_number).catch(() => null);
@@ -1610,7 +1680,7 @@ export function publicRoutes(router) {
         const unpaid = !row.payment_status || UNPAID_PAYMENT.includes(String(row.payment_status).toLowerCase());
         if (waiting && unpaid && age != null && age > 30 * 60) {
           await ensureEnumValue(table, "status", "expired").catch(() => null);
-          await update(table, row.id, { status: "expired", payment_status: "expired" }).catch(() => null);
+          await writeKnown(table, row.id, { status: "expired", payment_status: "expired" });
         }
       }
       const fresh = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]).catch(() => row) || row;

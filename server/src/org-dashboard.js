@@ -1,4 +1,5 @@
 import { hasColumn, one, q, tableExists } from "./db.js";
+import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { loadOwnedId } from "./auth.js";
 
 function ranges(query) {
@@ -168,13 +169,24 @@ export async function pharmacyDashboard(req) {
       order_count: count,
       avg_order_value: count > 0 ? Math.round(revenue / count) : 0,
       breakdown: {
-        delivery: Number(delivery?.delivery_count || 0) && orders.total ? Math.round(revenue * (Number(delivery.delivery_count) / orders.total)) : 0,
+        delivery: 0,
         pickup: 0,
         internal: revenue,
         external: 0,
       },
     };
-    base.revenue.breakdown.pickup = Math.max(0, revenue - base.revenue.breakdown.delivery);
+    const split = await one(
+      `SELECT
+         COALESCE(SUM(CASE WHEN delivery_type = 'delivery' THEN total_amount ELSE 0 END), 0) AS delivery,
+         COALESCE(SUM(CASE WHEN delivery_type IS NULL OR delivery_type <> 'delivery' THEN total_amount ELSE 0 END), 0) AS pickup
+       FROM pharmacy_orders
+       WHERE pharmacy_id = ? AND status IN ('completed','dispensed','paid','delivered') AND ${current.sql}`,
+      [pharmacyId, ...current.params],
+    ).catch(() => null);
+    if (split) {
+      base.revenue.breakdown.delivery = Number(split.delivery || 0);
+      base.revenue.breakdown.pickup = Number(split.pickup || 0);
+    }
     if (orderDate) {
       base.orders_chart = (await q(
         `SELECT DATE(\`${orderDate}\`) AS label,
@@ -219,6 +231,14 @@ export async function pharmacyDashboard(req) {
 
   if (await tableExists("pharmacy_medicines") && await hasColumn("pharmacy_medicines", "pharmacy_id")) {
     const medicines = await q("SELECT * FROM pharmacy_medicines WHERE pharmacy_id = ? LIMIT 500", [pharmacyId]).catch(() => []);
+    const stockByMedicine = new Map();
+    if (await tableExists("pharmacy_stocks")) {
+      const stocks = await q(
+        "SELECT medicine_id, quantity, low_stock_threshold, expiry_date FROM pharmacy_stocks WHERE pharmacy_id = ? OR pharmacy_id IS NULL",
+        [pharmacyId],
+      ).catch(() => []);
+      for (const stock of stocks) stockByMedicine.set(Number(stock.medicine_id), stock);
+    }
     const now = Date.now();
     const low = [];
     const out = [];
@@ -227,20 +247,22 @@ export async function pharmacyDashboard(req) {
     let active = 0;
     let prescriptionRequired = 0;
     for (const medicine of medicines) {
-      const quantity = Number(medicine.quantity ?? medicine.stock ?? 0);
-      const threshold = Number(medicine.low_stock_threshold ?? 5);
+      const stock = stockByMedicine.get(Number(medicine.id));
+      const quantity = Number(stock?.quantity ?? medicine.quantity ?? medicine.stock ?? 0);
+      const threshold = Number(stock?.low_stock_threshold ?? medicine.low_stock_threshold ?? 5);
       const inactive = medicine.is_active === 0 || medicine.is_active === false || medicine.status === "inactive";
       if (!inactive) active += 1;
-      if (medicine.prescription_required) prescriptionRequired += 1;
+      if (medicine.requires_prescription || medicine.prescription_required) prescriptionRequired += 1;
       units += quantity;
       const item = { medicine_id: medicine.id, medicine_name: medicine.name || "Medicine", unit: medicine.unit || "" };
       if (quantity <= 0) out.push(item);
       else if (quantity <= threshold) low.push({ ...item, quantity, threshold });
-      if (medicine.expiry_date) {
-        const expiry = new Date(medicine.expiry_date);
+      const expiryValue = stock?.expiry_date || medicine.expiry_date;
+      if (expiryValue) {
+        const expiry = new Date(expiryValue);
         const days = Math.ceil((expiry.getTime() - now) / 86400000);
         if (!Number.isNaN(days) && days >= 0 && days <= 30) {
-          expiring.push({ ...item, quantity, expiry_date: String(medicine.expiry_date).slice(0, 10), days_left: days });
+          expiring.push({ ...item, quantity, expiry_date: String(expiryValue).slice(0, 10), days_left: days });
         }
       }
     }
@@ -300,11 +322,15 @@ export async function pharmacyDashboard(req) {
         submitted: String(row.created_at || "").slice(0, 16).replace("T", " "),
       })),
     };
+    const rxDate = await hasColumn(rxTable, "created_at") ? "created_at" : null;
+    const todayRx = rxDate
+      ? tally(await grouped(rxTable, `pharmacy_id = ? AND ${kigaliDaySql(rxDate)} = ${kigaliTodaySql()}`, [pharmacyId]))
+      : rx;
     base.today.prescriptions = {
-      total: rx.total,
-      pending: base.prescriptions.pending,
-      approved: base.prescriptions.approved,
-      rejected: base.prescriptions.rejected,
+      total: todayRx.total,
+      pending: pick(todayRx.by, ["pending"]),
+      approved: pick(todayRx.by, ["approved"]),
+      rejected: pick(todayRx.by, ["rejected"]),
     };
     base.period_stats.prescriptions = {
       total: rx.total,
@@ -313,6 +339,22 @@ export async function pharmacyDashboard(req) {
       fulfilled: base.prescriptions.fulfilled,
       pending: base.prescriptions.pending + base.prescriptions.reviewing,
     };
+  } else if (await tableExists("prescription_pharmacies") && await tableExists("prescriptions")) {
+    const rows = await q(
+      `SELECT p.status, COUNT(*) AS total
+       FROM prescriptions p
+       INNER JOIN prescription_pharmacies pp ON pp.prescription_id = p.id
+       WHERE pp.pharmacy_id = ?
+       GROUP BY p.status`,
+      [pharmacyId],
+    ).catch(() => []);
+    const linked = tally(rows);
+    base.prescriptions.total = linked.total;
+    base.prescriptions.pending = pick(linked.by, ["pending"]);
+    base.prescriptions.approved = pick(linked.by, ["approved"]);
+    base.prescriptions.rejected = pick(linked.by, ["rejected"]);
+    base.prescriptions.fulfilled = pick(linked.by, ["fulfilled", "completed", "dispensed"]);
+    base.today.prescriptions = { ...base.prescriptions, reviewing: undefined };
   }
 
   if (await tableExists("pharmacy_stock_requests") && await hasColumn("pharmacy_stock_requests", "pharmacy_id")) {
@@ -404,7 +446,8 @@ export async function hospitalDashboard(req) {
     empty.bookings_chart = (await q(
       `SELECT DATE(\`${dateColumn}\`) AS label, COUNT(*) AS total,
               SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
-              SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending
+              SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+              COALESCE(SUM(${moneyColumn ? `\`${moneyColumn}\`` : "0"}), 0) AS revenue
        FROM service_bookings WHERE hospital_id = ? AND ${current.sql}
        GROUP BY DATE(\`${dateColumn}\`) ORDER BY label`,
       [hospitalId, ...current.params],
@@ -413,7 +456,7 @@ export async function hospitalDashboard(req) {
       total: Number(row.total || 0),
       completed: Number(row.completed || 0),
       pending: Number(row.pending || 0),
-      revenue: 0,
+      revenue: Number(row.revenue || 0),
     }));
   }
 
@@ -600,9 +643,32 @@ export async function hospitalDashboard(req) {
         service_id: row.id,
         service_name: row.name_en || row.name || "Service",
         booking_count: 0,
-        revenue: Number(row.price || 0),
+        revenue: 0,
       })),
     };
+    if (await tableExists("service_bookings") && await hasColumn("service_bookings", "service_id")) {
+      const money = (await hasColumn("service_bookings", "patient_pays"))
+        ? "patient_pays"
+        : ((await hasColumn("service_bookings", "amount")) ? "amount" : null);
+      const stats = await q(
+        `SELECT service_id, COUNT(*) AS booking_count, COALESCE(SUM(${money ? `\`${money}\`` : "0"}), 0) AS revenue
+         FROM service_bookings WHERE hospital_id = ? GROUP BY service_id`,
+        [hospitalId],
+      ).catch(() => []);
+      const byId = new Map(stats.map((row) => [Number(row.service_id), row]));
+      empty.services.top_services = services
+        .map((row) => {
+          const stat = byId.get(Number(row.id));
+          return {
+            service_id: row.id,
+            service_name: row.name_en || row.name || "Service",
+            booking_count: Number(stat?.booking_count || 0),
+            revenue: Number(stat?.revenue || 0),
+          };
+        })
+        .sort((a, b) => b.booking_count - a.booking_count || b.revenue - a.revenue)
+        .slice(0, 5);
+    }
   }
   empty.doctors = {
     total: doctorIds.length,
@@ -615,6 +681,14 @@ export async function hospitalDashboard(req) {
       return list;
     }, []).slice(0, 5),
   };
+  if (empty.revenue && await tableExists("service_bookings") && await hasColumn("service_bookings", "insurance_covered")) {
+    const covered = Number((await one(
+      "SELECT COALESCE(SUM(insurance_covered), 0) AS total FROM service_bookings WHERE hospital_id = ?",
+      [hospitalId],
+    ).catch(() => ({ total: 0 })))?.total || 0);
+    empty.revenue.insurance_covered = covered;
+    empty.revenue.patient_paid = Math.max(0, Number(empty.revenue.gross || 0) - covered);
+  }
   empty.care_links = {
     patient_bookings: empty.period_stats.service_bookings.total,
     doctor_visits: empty.period_stats.appointments.total,

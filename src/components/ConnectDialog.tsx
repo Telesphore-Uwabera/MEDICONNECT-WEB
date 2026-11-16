@@ -1610,7 +1610,7 @@ export const ConnectDialogContent = ({
                     </div>
                   </>
                 )}
-                {isGeneral && (
+                {(
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">{t("consult.connect.symptoms_label")}</Label>
                     <textarea
@@ -1891,7 +1891,7 @@ export const ConnectDialogContent = ({
                 </>
               ) : (
                 <>
-                  {isGeneral && (
+                  {(
                     <div className="space-y-1.5 mb-2">
                       <Label className="text-sm font-medium">{t("consult.connect.symptoms_label")}</Label>
                       <textarea

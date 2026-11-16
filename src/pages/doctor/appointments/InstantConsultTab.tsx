@@ -222,14 +222,21 @@ export function InstantConsultTab() {
     startCall(liveTarget.roomName, attachPatientToCallToken(liveTarget.token, match, liveSession));
   };
 
-  const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
+  const queue = useMemo<InstantConsultQueueItem[]>(() => {
+    const seen = new Set<number>();
+    return [...(queueData?.queue ?? []), ...(queueData?.history ?? [])].filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [queueData?.queue, queueData?.history]);
   const stats = queueData?.stats;
 
   const isPaid = (item: InstantConsultQueueItem) => {
     const pay = String(item.payment_status || "").toLowerCase();
     if (["paid", "completed", "success", "successful"].includes(pay)) return true;
     if (pay) return false;
-    return item.status === "confirmed" || item.status === "accepted" || item.status === "in_progress";
+    return ["confirmed", "accepted", "in_progress", "completed", "done"].includes(item.status);
   };
   const unpaidStatuses = ["pending", "queued", "waiting", "payment_pending"];
   const UNPAID_LIMIT_SEC = 15 * 60;
@@ -244,7 +251,9 @@ export function InstantConsultTab() {
 
   const newestFirst = (items: InstantConsultQueueItem[]) =>
     [...items].sort((a, b) => b.id - a.id);
-  const visibleQueue = queue.filter((i) => isPaid(i) && i.status !== "declined" && i.status !== "withdrawn");
+  const visibleQueue = queue.filter((i) =>
+    i.status !== "declined" && i.status !== "withdrawn" && (isPaid(i) || isUnpaidOpen(i) || ["completed", "expired", "payment_expired"].includes(i.status)),
+  );
   const finishedStatuses = ["completed", "expired", "payment_expired"];
   const finished = newestFirst(visibleQueue.filter((i) => finishedStatuses.includes(i.status)));
   const activeItems = newestFirst(visibleQueue.filter((i) => !finishedStatuses.includes(i.status)));
@@ -792,7 +801,7 @@ export function InstantConsultTab() {
 
         <StatTile
           icon={<UserCheck className="h-5 w-5 text-[hsl(var(--success))]" />}
-          label={t("consult.bookings.seen_today")}
+          label={t("consult.bookings.seen_today", { defaultValue: "Completed today" })}
           value={stats ? String(stats.seen_today) : "—"}
           iconWrapCls="bg-[hsl(var(--success)/0.1)]"
           onClick={() => setQueueTab("completed")}
@@ -812,8 +821,8 @@ export function InstantConsultTab() {
         />
         <StatTile
           icon={<CheckCircle2 className="h-5 w-5 text-[hsl(var(--warning))]" />}
-          label={t("consult.bookings.resolved")}
-          value={stats ? String(stats.resolved) : "—"}
+          label={t("consult.bookings.resolved", { defaultValue: "Resolved (all time)" })}
+          value={stats ? String(stats.resolved_all_time ?? stats.resolved) : "—"}
           iconWrapCls="bg-[hsl(var(--warning)/0.1)]"
           onClick={() => setQueueTab("completed")}
         />

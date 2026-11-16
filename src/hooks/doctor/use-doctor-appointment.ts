@@ -449,6 +449,8 @@ export interface InstantConsultStats {
     seen_today: number;
     avg_duration: string | null;
     resolved: number;
+    resolved_today?: number;
+    resolved_all_time?: number;
     is_online: boolean;
     doctor_busy?: boolean;
     active_instant_id?: number | null;
@@ -456,6 +458,7 @@ export interface InstantConsultStats {
 
 export interface InstantConsultQueueResponse {
     queue: InstantConsultQueueItem[];
+    history?: InstantConsultQueueItem[];
     stats: InstantConsultStats;
 }
 

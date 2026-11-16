@@ -113,8 +113,9 @@ export function InlineVitalsChart() {
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <Activity className="h-3 w-3 text-white/30" />
-          <span className="text-[9px] text-white/40 font-medium uppercase tracking-wide">Live vitals</span>
+          <span className="text-[9px] text-white/40 font-medium uppercase tracking-wide">Sample vitals</span>
         </div>
+        <span className="text-[8px] text-white/30">Demo chart</span>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <span className="w-3 h-px bg-red-400 inline-block" />

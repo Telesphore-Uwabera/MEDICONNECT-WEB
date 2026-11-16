@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { execFile } from "child_process";
 import multer from "multer";
-import { registerActions } from "./actions.js";
+import { listHospitalPrescriptions, registerActions } from "./actions.js";
 import {
   assertScheduleAllowed,
   doctorIsApproved,
@@ -54,6 +54,7 @@ import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
+import { average, displayedPaymentStatus, durationMinutes, kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -65,6 +66,7 @@ import {
   forgetColumns,
   hasColumn,
   insert,
+  knownWrite,
   paginateList,
   one,
   pageArgs,
@@ -140,10 +142,12 @@ async function createProfile(user, role, body = {}) {
     email: user.email,
     phone: user.phone,
     slug: slugify(user.name || user.email),
-    status: "pending",
+    status: role === "patient" ? "active" : "pending",
   };
   try {
-    await insert(table, payload);
+    const known = await knownWrite(table, payload);
+    if (!known.payload.user_id) return;
+    await insert(table, known.payload);
   } catch (error) {
     console.error(`Could not create ${role} profile`, error.message);
     return;
@@ -959,12 +963,13 @@ export function appRoutes(router) {
       const period = String(req.query.period || "all");
       const periodStart = req.query.start_date ? String(req.query.start_date).slice(0, 10) : "";
       const periodEnd = req.query.end_date ? String(req.query.end_date).slice(0, 10) : "";
-      const dateExpr = "(COALESCE(appointment_date, DATE(created_at)))";
+      const dateExpr = "DATE(DATE_ADD(COALESCE(appointment_date, created_at), INTERVAL 2 HOUR))";
+      const kigaliNow = kigaliTodaySql();
       const appointmentOwned = await patientOwnedWhere("appointments", req.user);
       const apptOwner = appointmentOwned.sql;
       const ownerParams = appointmentOwned.params;
       const periodFilter = period === "today" || period === "day"
-        ? { sql: `AND ${dateExpr} = CURDATE()`, params: [] }
+        ? { sql: `AND ${dateExpr} = ${kigaliNow}`, params: [] }
         : period === "week"
           ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] }
           : period === "year"
@@ -976,10 +981,10 @@ export function appRoutes(router) {
                 : { sql: "", params: [] };
       const groups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} ${periodFilter.sql} GROUP BY status`, [...ownerParams, ...periodFilter.params]).catch(() => []);
       const { byStatus, total } = tally(groups);
-      const todayGroups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND ${dateExpr} = CURDATE() GROUP BY status`, ownerParams).catch(() => []);
+      const todayGroups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND ${dateExpr} = ${kigaliNow} GROUP BY status`, ownerParams).catch(() => []);
       const todayTally = tally(todayGroups);
       const upcoming = Number((await one(
-        `SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND (${dateExpr} >= CURDATE() OR LOWER(status) IN ('in_progress','confirmed','accepted','pending')) AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')`,
+        `SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND (${dateExpr} >= ${kigaliNow} OR LOWER(status) IN ('in_progress','confirmed','accepted','pending')) AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')`,
         ownerParams,
       ).catch(() => ({ total: 0 })))?.total ?? 0);
       const instantTableName = (await tableExists("instant_consultation_requests"))
@@ -1008,7 +1013,7 @@ export function appRoutes(router) {
       dashboard.period_stats.cancelled = pick({ byStatus, total }, ["cancelled", "canceled"]);
       dashboard.period_stats.pending = pick({ byStatus, total }, ["pending", "queued", "waiting", "in_progress"]);
       dashboard.period_stats.online_count = await hasColumn("appointments", "type")
-        ? Number((await one(`SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND type = 'online'`, ownerParams).catch(() => ({ total: 0 })))?.total ?? 0)
+        ? Number((await one(`SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND type = 'online' ${periodFilter.sql}`, [...ownerParams, ...periodFilter.params]).catch(() => ({ total: 0 })))?.total ?? 0)
         : 0;
       dashboard.period_stats.in_person_count = Math.max(0, total - dashboard.period_stats.online_count);
       dashboard.period_stats.instant_total = instant.total;
@@ -1113,6 +1118,34 @@ export function appRoutes(router) {
         dashboard.spending.breakdown.appointments.total = spent;
         dashboard.spending.breakdown.appointments.count = count;
         dashboard.spending.breakdown.appointments.avg_per_appointment = count > 0 ? Math.round(spent / count) : 0;
+        if (payOwned && await hasColumn("payments", "payable_type")) {
+          const groups = await q(
+            `SELECT payable_type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count
+             FROM payments WHERE ${payOwned.sql} AND LOWER(status) IN ('paid','completed','success','successful')
+             GROUP BY payable_type`,
+            payOwned.params,
+          ).catch(() => []);
+          const bucket = (name) => {
+            const match = groups.filter((row) => String(row.payable_type || "").toLowerCase().includes(name));
+            const total = match.reduce((sum, row) => sum + Number(row.total || 0), 0);
+            const n = match.reduce((sum, row) => sum + Number(row.count || 0), 0);
+            return { total, count: n };
+          };
+          const instantSpend = bucket("instant");
+          const pharmacySpend = bucket("pharmacy");
+          const serviceSpend = bucket("service");
+          if (instantSpend.count || pharmacySpend.count || serviceSpend.count) {
+            dashboard.spending.breakdown.instant = instantSpend;
+            dashboard.spending.breakdown.pharmacy = pharmacySpend;
+            dashboard.spending.breakdown.services = serviceSpend;
+            const appointmentSpend = bucket("appointment");
+            if (appointmentSpend.count) dashboard.spending.breakdown.appointments = {
+              ...dashboard.spending.breakdown.appointments,
+              ...appointmentSpend,
+              avg_per_appointment: appointmentSpend.count > 0 ? Math.round(appointmentSpend.total / appointmentSpend.count) : 0,
+            };
+          }
+        }
       }
       const certOwned = await ownerWhere("fitness_certificates");
       if (certOwned) {
@@ -1324,7 +1357,8 @@ export function appRoutes(router) {
   router.post("/doctor/availability", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
-      const id = await insert("doctor_availabilities", { ...req.body, doctor_id: doctorId });
+      const known = await knownWrite("doctor_availabilities", { ...req.body, doctor_id: doctorId });
+      const id = await insert("doctor_availabilities", known.payload);
       res.status(201).json({ message: "Availability saved.", data: await presentRow("doctor_availabilities", await one("SELECT * FROM doctor_availabilities WHERE id = ?", [id])) });
     } catch (error) {
       next(error);
@@ -1380,7 +1414,8 @@ export function appRoutes(router) {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
       const period = await one("SELECT * FROM doctor_availability_periods WHERE id = ? AND doctor_id = ?", [req.params.id, doctorId ?? 0]);
       if (!period) return res.status(404).json({ message: "Schedule period not found." });
-      await update("doctor_availability_periods", period.id, req.body);
+      const known = await knownWrite("doctor_availability_periods", req.body ?? {});
+      if (Object.keys(known.payload).length) await update("doctor_availability_periods", period.id, known.payload);
       const nextPeriod = await presentRow("doctor_availability_periods", await one("SELECT * FROM doctor_availability_periods WHERE id = ?", [period.id]));
       res.json({ message: "Schedule updated.", period: nextPeriod, available_dates: eachDate(nextPeriod.from_date, nextPeriod.to_date) });
     } catch (error) {
@@ -1593,7 +1628,7 @@ export function appRoutes(router) {
   function periodWhere(column, period, start, end) {
     const date = `DATE(\`${column}\`)`;
     if (period === "custom" && start && end) return { sql: `${date} BETWEEN ? AND ?`, params: [String(start).slice(0, 10), String(end).slice(0, 10)] };
-    if (period === "today" || period === "day") return { sql: `${date} = CURDATE()`, params: [] };
+    if (period === "today" || period === "day") return { sql: `${kigaliDaySql(column)} = ${kigaliTodaySql()}`, params: [] };
     if (period === "week") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] };
     if (period === "year") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] };
     return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] };
@@ -1760,7 +1795,7 @@ export function appRoutes(router) {
       const owned = `doctor_id = ? AND ${alive}`;
       const window = dateColumn ? periodWhere(dateColumn, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
       const previous = dateColumn ? previousWhere(dateColumn, period) : { sql: "1=0", params: [] };
-      const todaySql = dateColumn ? `DATE(\`${dateColumn}\`) = CURDATE()` : "1=0";
+      const todaySql = dateColumn ? `${kigaliDaySql(dateColumn)} = ${kigaliTodaySql()}` : "1=0";
       const statuses = await q(
         `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} GROUP BY status`,
         [doctorId, ...window.params],
@@ -1773,7 +1808,7 @@ export function appRoutes(router) {
       let today = tallyStatuses(todayRows);
       if (today.total === 0 && dateColumn && dateColumn !== "created_at" && await hasColumn("appointments", "created_at")) {
         todayRows = await q(
-          `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND DATE(created_at) = CURDATE() GROUP BY status`,
+          `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND ${kigaliDaySql("created_at")} = ${kigaliTodaySql()} GROUP BY status`,
           [doctorId],
         ).catch(() => []);
         today = tallyStatuses(todayRows);
@@ -1881,7 +1916,7 @@ export function appRoutes(router) {
       const instantTable = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
       // Must match the ownership clause used by /doctor/instant-consultations/queue,
       // otherwise the dashboard stat and the queue tab can never agree.
-      const instantOwned = instantTable && (await hasColumn(instantTable, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=0";
+      const instantOwned = instantTable && (await hasColumn(instantTable, "doctor_id")) ? "doctor_id = ?" : "1=0";
       const instantParams = instantOwned === "1=0" ? [] : [doctorId];
       const instantStatus = async (extra, extraParams = []) => instantTable
         ? count(`SELECT COUNT(*) AS total FROM \`${instantTable}\` WHERE ${instantOwned} AND ${extra}`, [...instantParams, ...extraParams])
@@ -1900,15 +1935,49 @@ export function appRoutes(router) {
       const instantCreated = instantTable && (await firstColumn(instantTable, ["created_at", "updated_at"]));
       const instantCompletedAt = instantTable && (await firstColumn(instantTable, ["completed_at", "ended_at", "updated_at", "created_at"]));
       if (instantTable && instantCreated) {
-        today.pending += await instantStatus(`status IN ('pending','queued','waiting') AND DATE(\`${instantCreated}\`) = CURDATE()`);
-        today.confirmed += await instantStatus(`status IN ('confirmed','accepted','in_progress') AND DATE(\`${instantCreated}\`) = CURDATE()`);
+        today.pending += await instantStatus(`status IN ('pending','queued','waiting') AND ${kigaliDaySql(instantCreated)} = ${kigaliTodaySql()}`);
+        today.confirmed += await instantStatus(`status IN ('confirmed','accepted','in_progress') AND ${kigaliDaySql(instantCreated)} = ${kigaliTodaySql()}`);
       }
       if (instantTable && instantCompletedAt) {
-        today.completed += await instantStatus(`status IN ('completed','done') AND DATE(\`${instantCompletedAt}\`) = CURDATE()`);
+        today.completed += await instantStatus(`status IN ('completed','done') AND ${kigaliDaySql(instantCompletedAt)} = ${kigaliTodaySql()}`);
       }
       today.total = today.pending + today.confirmed + today.completed + today.cancelled;
       const paidWaiting = await instantStatus(instantQueueSql);
       today.waiting = paidWaiting;
+      let instantPatients = 0;
+      let instantAvg = 0;
+      let instantPaidTotal = 0;
+      if (instantTable) {
+        const idCol = await firstColumn(instantTable, ["patient_id", "user_id"]);
+        if (idCol) {
+          instantPatients = await count(
+            `SELECT COUNT(DISTINCT \`${idCol}\`) AS total FROM \`${instantTable}\` WHERE ${instantOwned}`,
+            instantParams,
+          );
+        }
+        const startCol = await firstColumn(instantTable, ["started_at", "accepted_at"]);
+        const endCol = await firstColumn(instantTable, ["completed_at", "ended_at"]);
+        if (startCol && endCol) {
+          const raw = Number((await one(
+            `SELECT AVG(TIMESTAMPDIFF(MINUTE, \`${startCol}\`, \`${endCol}\`)) AS total
+             FROM \`${instantTable}\` WHERE ${instantOwned} AND \`${startCol}\` IS NOT NULL AND \`${endCol}\` IS NOT NULL`,
+            instantParams,
+          ).catch(() => ({ total: 0 })))?.total);
+          instantAvg = Number.isFinite(raw) ? Math.round(raw) : 0;
+        }
+      }
+      if (instantTable && await tableExists("payments") && await hasColumn("payments", "payable_id")) {
+        const payDate = await firstColumn("payments", ["paid_at", "created_at"]);
+        const payWindow = payDate ? periodWhere(payDate, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
+        const paySql = payDate ? payWindow.sql.replaceAll(`\`${payDate}\``, `p.\`${payDate}\``) : "1=1";
+        instantPaidTotal = Number((await one(
+          `SELECT COALESCE(SUM(p.amount), 0) AS total
+           FROM payments p INNER JOIN \`${instantTable}\` i ON i.id = p.payable_id
+           WHERE i.doctor_id = ? AND LOWER(p.status) IN ('paid','completed','success','successful')
+             AND p.payable_type LIKE '%instant%' AND ${paySql}`,
+          [doctorId, ...payWindow.params],
+        ).catch(() => ({ total: 0 })))?.total || 0);
+      }
 
       res.json({
         filters_applied: {
@@ -1921,7 +1990,7 @@ export function appRoutes(router) {
         },
         today: { ...today, instant_queue: paidWaiting },
         period_stats: {
-          unique_patients: uniquePatients,
+          unique_patients: uniquePatients + instantPatients,
           total_appointments: periodStats.total,
           completed: periodStats.completed,
           cancelled: periodStats.cancelled,
@@ -1943,7 +2012,7 @@ export function appRoutes(router) {
           breakdown: {
             online: { total: onlineRevenue, count: onlineCount },
             in_person: { total: inPersonRevenue, count: inPersonCount },
-            instant: { total: instantRevenue, count: instantCount },
+            instant: { total: instantRevenue + instantPaidTotal, count: instantCount },
           },
         },
         patient_flow: flow.map((row) => ({
@@ -1962,7 +2031,7 @@ export function appRoutes(router) {
           pending: await instantStatus("status IN ('pending','queued','waiting')"),
           current_queue: paidWaiting,
           paid_waiting: paidWaiting,
-          avg_duration_min: 0,
+          avg_duration_min: instantAvg,
         },
         prescriptions: {
           total: await prescriptionCount(),
@@ -2035,8 +2104,8 @@ export function appRoutes(router) {
         `SELECT * FROM appointments WHERE ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
         [doctorId, perPage, offset],
       ).catch(() => []);
-      let totalEarned = Number(summary?.total_earned ?? 0);
-      if (!(totalEarned > 0)) totalEarned = await doctorPaidEarnings(doctorId);
+      const paidEarnings = await doctorPaidEarnings(doctorId);
+      const totalEarned = paidEarnings > 0 ? paidEarnings : Number(summary?.total_earned ?? 0);
       res.json({
         summary: {
           total_appointments: total,
@@ -2122,8 +2191,10 @@ export function appRoutes(router) {
       const { doctorId, doctor } = await currentDoctor(req);
       const table = await instantTable();
       let queue = [];
+      let sourceRows = [];
       let seenToday = 0;
       let resolved = 0;
+      let resolvedToday = 0;
       let active = null;
       if (table) {
         const owner = (await hasColumn(table, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=1";
@@ -2137,23 +2208,29 @@ export function appRoutes(router) {
         const paidFirst = await hasColumn(table, "payment_status")
           ? "CASE WHEN LOWER(payment_status) = 'paid' THEN 0 ELSE 1 END ASC,"
           : "";
-        const rows = await q(
-          `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed','accepted','in_progress','completed','expired','payment_expired')
+        const openRows = await q(
+          `SELECT * FROM \`${table}\` WHERE ${owner} AND LOWER(status) IN ('pending','queued','waiting','payment_pending','confirmed','accepted','in_progress')
            ORDER BY
              ${paidFirst}
-             CASE status
+             CASE LOWER(status)
                WHEN 'in_progress' THEN 0
                WHEN 'accepted'    THEN 1
                WHEN 'confirmed'   THEN 2
-               WHEN 'pending'     THEN 3
-               WHEN 'queued'      THEN 3
-               WHEN 'waiting'     THEN 3
-               ELSE 4
+               ELSE 3
              END ASC,
              id DESC
-           LIMIT 50`,
+           LIMIT 100`,
           params,
         ).catch(() => []);
+        const finishedColumn = await firstColumn(table, ["completed_at", "ended_at", "updated_at", "created_at"]);
+        const historyRows = await q(
+          `SELECT * FROM \`${table}\` WHERE ${owner} AND LOWER(status) IN ('completed','done','expired','payment_expired','declined','cancelled','canceled')
+           ORDER BY ${finishedColumn ? `\`${finishedColumn}\`` : "id"} DESC, id DESC
+           LIMIT 100`,
+          params,
+        ).catch(() => []);
+        const rows = [...openRows, ...historyRows];
+        sourceRows = rows;
         active = await doctorActiveInstant(doctorId);
         const named = rows.filter((row) => Number(row.doctor_id) === Number(doctorId));
         queue = rows.map((row) => {
@@ -2166,7 +2243,7 @@ export function appRoutes(router) {
           guest_phone: row.guest_phone || row.phone || "",
           description: row.description || row.reason || null,
           status: row.status || "pending",
-          payment_status: row.payment_status || (row.status === "confirmed" ? "paid" : null),
+          payment_status: displayedPaymentStatus(row),
           queue_position: Number(row.doctor_id) === Number(doctorId) ? place.queue_position : null,
           age_seconds: waitingSeconds,
           waiting_seconds: waitingSeconds,
@@ -2180,23 +2257,36 @@ export function appRoutes(router) {
           user_id: row.user_id || null,
         };
         });
+        const namedOwner = owner.includes("?") ? "doctor_id = ?" : "1=1";
+        const namedParams = owner.includes("?") ? [doctorId] : [];
+        const doneColumn = await firstColumn(table, ["completed_at", "ended_at", "created_at"]);
+        const todayExpr = doneColumn ? `${kigaliDaySql(doneColumn)} = ${kigaliTodaySql()}` : "1=0";
         seenToday = Number((await one(
-          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${owner.includes("?") ? "doctor_id = ?" : "1=1"} AND status IN ('completed','done','in_progress') AND DATE(created_at) = CURDATE()`,
-          owner.includes("?") ? [doctorId] : [],
+          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${namedOwner} AND LOWER(status) IN ('completed','done') AND ${todayExpr}`,
+          namedParams,
         ).catch(() => ({ total: 0 })))?.total ?? 0);
+        resolvedToday = seenToday;
         resolved = Number((await one(
-          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${owner.includes("?") ? "doctor_id = ?" : "1=1"} AND status IN ('completed','done')`,
-          owner.includes("?") ? [doctorId] : [],
+          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${namedOwner} AND LOWER(status) IN ('completed','done')`,
+          namedParams,
         ).catch(() => ({ total: 0 })))?.total ?? 0);
       }
+      const finishedStatus = ["completed", "done", "expired", "payment_expired", "declined", "cancelled", "canceled"];
       const liveQueue = queue.filter((item) => countsInInstantQueue(item, doctorId));
+      const durations = sourceRows
+        .map((row) => durationMinutes(row.started_at || row.accepted_at, row.completed_at || row.ended_at))
+        .filter((value) => value != null);
+      const history = queue.filter((item) => finishedStatus.includes(String(item.status || "").toLowerCase()));
       res.json({
         queue,
+        history,
         stats: {
           in_queue: liveQueue.length,
           seen_today: seenToday,
-          avg_duration: null,
+          avg_duration: average(durations),
           resolved,
+          resolved_today: resolvedToday,
+          resolved_all_time: resolved,
           is_online: Boolean(Number(doctor?.instant_consultation ?? 0)),
           doctor_busy: Boolean(active),
           active_instant_id: active?.id ?? null,
@@ -2265,7 +2355,22 @@ export function appRoutes(router) {
       if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
         return res.status(403).json({ message: "This request belongs to another doctor." });
       }
-      await update(table, row.id, { status: "declined" });
+      const declinePatch = { status: "declined" };
+      if (await hasColumn(table, "declined_at")) declinePatch.declined_at = new Date();
+      if (await hasColumn(table, "decline_reason")) declinePatch.decline_reason = req.body?.reason || req.body?.decline_reason || null;
+      await update(table, row.id, declinePatch);
+      if (isPaidStatus(row) && await tableExists("refunds")) {
+        const refund = await knownWrite("refunds", {
+          patient_id: row.patient_id || row.user_id || null,
+          doctor_id: doctorId,
+          amount: row.amount || row.consultation_fee || row.patient_pays || 0,
+          reason: declinePatch.decline_reason || "Instant consultation declined after payment",
+          status: "pending",
+          payable_type: "instant_consultation",
+          payable_id: row.id,
+        });
+        if (Object.keys(refund.payload).length) await insert("refunds", refund.payload).catch(() => null);
+      }
       res.json({ message: "Request declined." });
     } catch (error) {
       next(error);
@@ -2297,6 +2402,7 @@ export function appRoutes(router) {
       const doctorToken = instantDoctorToken(row, roomName);
       const patch = { status: "in_progress" };
       if (await hasColumn(table, "doctor_id")) patch.doctor_id = doctorId;
+      if (await hasColumn(table, "started_at") && !row.started_at) patch.started_at = new Date();
       if (await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
       if (await hasColumn(table, "daily_room_url")) patch.daily_room_url = roomUrl;
       if (await hasColumn(table, "daily_doctor_token")) patch.daily_doctor_token = doctorToken;
@@ -2333,7 +2439,13 @@ export function appRoutes(router) {
         return res.status(422).json({ message: "This patient has not paid yet, so this consultation cannot be completed." });
       }
       const patch = { status: "completed" };
-      if (await hasColumn(table, "completed_at")) patch.completed_at = new Date();
+      const ended = new Date();
+      if (await hasColumn(table, "completed_at")) patch.completed_at = ended;
+      if (await hasColumn(table, "ended_at")) patch.ended_at = ended;
+      if (await hasColumn(table, "duration_seconds")) {
+        const minutes = durationMinutes(row.started_at || row.accepted_at, ended);
+        if (minutes != null) patch.duration_seconds = minutes * 60;
+      }
       await update(table, row.id, patch);
       const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
       notifyVisitCompleted(updated || row, "instant consultation").catch(() => null);
@@ -2451,7 +2563,9 @@ export function appRoutes(router) {
         name: "Doctor",
       });
       if (await hasColumn("appointments", "status") && !["in_progress", "completed", "done"].includes(String(appointment.status || "").toLowerCase())) {
-        await update("appointments", appointment.id, { status: "in_progress" });
+        const started = { status: "in_progress" };
+        if (await hasColumn("appointments", "started_at") && !appointment.started_at) started.started_at = new Date();
+        await update("appointments", appointment.id, started);
       }
       res.json({
         message: "Session ready.",
@@ -2703,7 +2817,7 @@ export function appRoutes(router) {
         );
       };
       const dateColumn = async (table) => {
-        for (const column of ["appointment_date", "scheduled_at", "date", "paid_at", "created_at"]) {
+        for (const column of ["appointment_date", "scheduled_at", "date", "created_at", "paid_at"]) {
           if (await hasColumn(table, column)) return column;
         }
         return null;
@@ -2722,8 +2836,17 @@ export function appRoutes(router) {
       const appointmentDates = await dateClause("appointments");
       const paymentDates = await dateClause("payments");
       const appointmentAlive = await alive("appointments");
-      const patients = await roleCount("patients");
+      const patientsByRole = await tableExists("model_has_roles") && await tableExists("roles")
+        ? await count("SELECT COUNT(DISTINCT m.model_id) AS total FROM model_has_roles m JOIN roles r ON r.id = m.role_id WHERE r.name = 'patient'")
+        : 0;
+      const patients = patientsByRole || await roleCount("patients");
       const doctors = await roleCount("doctors");
+      const doctorsPending = await tableExists("doctors") && await hasColumn("doctors", "status")
+        ? await count("SELECT COUNT(*) AS total FROM doctors WHERE LOWER(COALESCE(status,'')) IN ('pending','submitted','in_review')")
+        : 0;
+      const doctorsActive = await tableExists("doctors") && await hasColumn("doctors", "status")
+        ? await count("SELECT COUNT(*) AS total FROM doctors WHERE LOWER(COALESCE(status,'')) IN ('approved','active')")
+        : doctors;
       const pharmacies = await roleCount("pharmacies");
       const hospitals = await roleCount("hospitals");
       const users = await count(`SELECT COUNT(*) AS total FROM users WHERE ${await alive("users")}${userFilter}`, userParams);
@@ -2731,7 +2854,7 @@ export function appRoutes(router) {
       const appointmentsPending = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status = 'pending'${appointmentDates.sql}`, appointmentDates.params);
       const appointmentDay = await dateColumn("appointments");
       const appointmentsToday = appointmentDay
-        ? await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND DATE(\`${appointmentDay}\`) = CURDATE()`)
+        ? await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND ${kigaliDaySql(appointmentDay)} = ${kigaliTodaySql()}`)
         : 0;
       const amountColumn = (await hasColumn("payments", "amount")) ? "amount" : (await hasColumn("payments", "total_amount")) ? "total_amount" : null;
       const paid = "status IN ('paid','completed','success','successful')";
@@ -2739,9 +2862,11 @@ export function appRoutes(router) {
       const revenue = amountColumn
         ? await sum(`SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM payments WHERE ${paymentAlive} AND ${paid}${paymentDates.sql}`, paymentDates.params)
         : 0;
-      const paymentDay = await dateColumn("payments");
-      const revenueToday = amountColumn && paymentDay
-        ? await sum(`SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM payments WHERE ${paymentAlive} AND ${paid} AND DATE(\`${paymentDay}\`) = CURDATE()`)
+      const paymentClock = (await hasColumn("payments", "paid_at")) && (await hasColumn("payments", "created_at"))
+        ? "DATE(DATE_ADD(COALESCE(paid_at, created_at), INTERVAL 2 HOUR))"
+        : kigaliDaySql("created_at");
+      const revenueToday = amountColumn
+        ? await sum(`SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM payments WHERE ${paymentAlive} AND ${paid} AND ${paymentClock} = ${kigaliTodaySql()}`)
         : 0;
       const pendingPayments = await count(`SELECT COUNT(*) AS total FROM payments WHERE ${paymentAlive} AND status = 'pending'`);
       const certificateAlive = await alive("fitness_certificates");
@@ -2754,12 +2879,23 @@ export function appRoutes(router) {
            WHERE ${paymentAlive} AND ${paid} AND payable_type LIKE '%fitness%'`,
         )
         : 0;
-      const activeConsultations = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('in_progress','active','ongoing')`);
+      const activeConsultations = await tableExists("instant_consultation_requests")
+        ? await count("SELECT COUNT(*) AS total FROM instant_consultation_requests WHERE LOWER(status) IN ('confirmed','accepted','in_progress')")
+        : await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('in_progress','active','ongoing')`);
 
       res.json({
         status: true,
         data: {
-          users: { patients, doctors, pharmacies, hospitals, total: users },
+          users: {
+            patients,
+            doctors: doctorsActive,
+            doctors_pending: doctorsPending,
+            doctors_total: doctors,
+            pharmacies,
+            hospitals,
+            total: users,
+          },
+          instant_consultations: { active: activeConsultations },
           appointments: { today: appointmentsToday, pending: appointmentsPending, total: appointmentsTotal },
           payments: {
             total_revenue: String(revenue),
@@ -3270,7 +3406,8 @@ export function appRoutes(router) {
         if (urlPath === "qualifications" && !String(body.title || "").trim()) {
           return res.status(422).json({ message: "Certification title is required." });
         }
-        const id = await insert(table, { ...body, doctor_id: doctorId });
+        const known = await knownWrite(table, { ...body, doctor_id: doctorId });
+        const id = await insert(table, known.payload);
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
         res.status(201).json({ message: "Saved.", [singular]: row, data: row });
       } catch (error) {
@@ -3292,7 +3429,8 @@ export function appRoutes(router) {
         if (urlPath === "qualifications" && !String(body.title || "").trim()) {
           return res.status(422).json({ message: "Certification title is required." });
         }
-        await update(table, existing.id, body);
+        const known = await knownWrite(table, body);
+        if (Object.keys(known.payload).length) await update(table, existing.id, known.payload);
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [existing.id]));
         res.json({ message: "Updated.", [singular]: row, data: row });
       } catch (error) {
@@ -3404,6 +3542,14 @@ export function appRoutes(router) {
     }
   });
 
+  router.get("/hospital/prescriptions", requireAuth, requireRole("hospital"), async (req, res, next) => {
+    try {
+      res.json(await listHospitalPrescriptions(req));
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
       if (isDedicatedResource(req.params.resource)) return next();
@@ -3486,21 +3632,38 @@ export function appRoutes(router) {
           body.date_of_birth = birth.value;
         }
       }
-      if (Object.keys(body).length) await update(table, id, body);
+      let omitted = [];
+      if (Object.keys(body).length) {
+        const known = await knownWrite(table, body);
+        omitted = known.unknown;
+        if (Object.keys(known.payload).length) await update(table, id, known.payload);
+      }
       if (req.params.scope === "patient") {
         const userPatch = {};
         if (body.phone) userPatch.phone = body.phone;
         if (body.gender) userPatch.gender = body.gender;
         if (body.name) userPatch.name = body.name;
         if (body.country_code) userPatch.country_code = body.country_code;
-        if (Object.keys(userPatch).length) await update("users", req.user.id, userPatch);
+        if (Object.keys(userPatch).length) {
+          const knownUser = await knownWrite("users", userPatch);
+          if (Object.keys(knownUser.payload).length) await update("users", req.user.id, knownUser.payload);
+        }
       }
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+      let sessionUser = null;
       if (req.params.scope === "patient") {
         const freshUser = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
         await stampPatientProfileCompletion(row, freshUser);
+        sessionUser = freshUser ? await toUser(freshUser, "patient") : null;
       }
-      res.json({ message: "Profile saved.", data: row, [req.params.scope]: row, ...(row ?? {}) });
+      res.json({
+        message: "Profile saved.",
+        data: row,
+        [req.params.scope]: row,
+        ...(row ?? {}),
+        ...(sessionUser ? { user: sessionUser } : {}),
+        ...(omitted.length ? { omitted_fields: omitted } : {}),
+      });
     } catch (error) {
       next(error);
     }
@@ -3516,7 +3679,8 @@ export function appRoutes(router) {
       if (!table) return next();
       const prepared = await resolveCreateBody(req.params.scope, table, req.body, req.user);
       if (!prepared.ok) return res.status(prepared.status).json({ message: prepared.message });
-      const id = await insert(table, prepared.body);
+      const known = await knownWrite(table, prepared.body);
+      const id = await insert(table, known.payload);
       let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
       stored = await afterResourceSaved(table, stored, req);
       res.status(201).json({ message: "Saved.", data: await presentRow(table, stored) });
@@ -3973,7 +4137,8 @@ async function updateResource(req, res, next) {
       table,
       stripClientOwners(req.body, { keep: req.params.scope === "admin" }),
     );
-    await update(table, req.params.id, body);
+    const known = await knownWrite(table, body);
+    if (Object.keys(known.payload).length) await update(table, req.params.id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await presentRow(table, stored);

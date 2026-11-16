@@ -22,6 +22,12 @@ interface ProfileResponse {
 interface UpsertProfileResponse {
   message: string;
   patient: PatientProfile;
+  user?: {
+    id: number;
+    profile_complete?: boolean;
+    active_role?: string;
+    role?: string;
+  };
 }
 
 interface AvatarResponse {
@@ -90,10 +96,14 @@ export function useUpsertProfile() {
       apiFetch<UpsertProfileResponse>(BASE, {
         method: "POST",
         body: payload,
-      }).then((r) => r.patient),
-    onSuccess: () => {
+      }),
+    onSuccess: (response) => {
+      queryClient.setQueryData(["patient-profile"], response.patient);
+      if (response.user) {
+        queryClient.setQueryData(["auth", "me", "in"], { user: response.user });
+      }
       queryClient.invalidateQueries({ queryKey: ["patient-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },
   });
 }

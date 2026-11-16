@@ -17,6 +17,7 @@ vi.mock("./db.js", async (importOriginal) => {
   return {
     ...actual,
     pool: { query: async () => [[]] },
+    knownWrite: async (_table, data) => ({ payload: { ...(data || {}) }, unknown: [] }),
     tableExists: async (name) => db.profileTables && ["patients", "hospitals", "doctors", "pharmacies", "users"].includes(name),
     hasColumn: async () => true,
     presentRow: async (_table, row) => row,

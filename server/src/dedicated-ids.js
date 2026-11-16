@@ -11,10 +11,12 @@ import {
   presentRows,
   q,
   tableExists,
+  knownWrite,
   update,
 } from "./db.js";
 import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
+import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
 
@@ -463,7 +465,7 @@ async function extraFilters(req, table, spec) {
       filters.push("DATE(`appointment_date`) = ?");
       params.push(String(req.query.date).slice(0, 10));
     } else if (String(req.query.today) === "1" || req.query.today === "true") {
-      filters.push("DATE(`appointment_date`) = CURDATE()");
+      filters.push(`${kigaliDaySql("appointment_date")} = ${kigaliTodaySql()}`);
     } else if (String(req.query.upcoming) === "1" || req.query.upcoming === "true") {
       filters.push("DATE(`appointment_date`) >= CURDATE()");
       if (await hasColumn(table, "status")) {
@@ -688,7 +690,8 @@ async function updateDedicated(req, res, next, scope, spec) {
     if (!row) return res.status(404).json({ message: "Record not found." });
     const body = visitBodyGuard(scope, table, stripClientOwners(req.body, { keep: scope === "admin" }));
     delete body[spec.idName];
-    await update(table, row.id, body);
+    const known = await knownWrite(table, body);
+    if (Object.keys(known.payload).length) await update(table, row.id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
     stored = await afterResourceSaved(table, stored, req);
     const tagged = await presentDedicated(table, stored, spec);
