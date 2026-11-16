@@ -66,7 +66,7 @@ fi
 
 # The API lives at /opt/mediconnect-node/src. Copy only that source tree into a
 # staging directory and swap it into place. A failed copy leaves the live src.
-# Leave the frontend src, package.json, .env, and uploaded files where they are.
+# Leave the frontend src, .env, and uploaded files where they are.
 mkdir -p "$DEST"
 STAGE="$DEST/src.next"
 rm -rf "$STAGE"
@@ -86,24 +86,34 @@ else
 fi
 printf '%s\n' "$SHA" > "$DEST/COMMIT"
 
-# npm install only when the API lockfile changed since the last install.
-if [ "${MEDICONNECT_SKIP_INSTALL:-}" != "1" ] && [ -f "$DEST/package.json" ]; then
-  LOCK=""
-  if [ -f "$CLONE/server/package-lock.json" ]; then
-    LOCK="$CLONE/server/package-lock.json"
-  elif [ -f "$CLONE/package-lock.json" ]; then
-    LOCK="$CLONE/package-lock.json"
-  fi
-  if [ -n "$LOCK" ]; then
-    LOCK_SHA=$(sha256sum "$LOCK" | awk '{print $1}')
-    STAMP="$DEST/.package-lock.sha"
+# Copy the API package files, then install only when that lock hash changed.
+# A missing previous hash skips install so the first deploy does not rebuild
+# node_modules inside the webhook timeout.
+if [ "${MEDICONNECT_SKIP_INSTALL:-}" != "1" ]; then
+  PKG="$CLONE/server/package.json"
+  LOCK="$CLONE/server/package-lock.json"
+  if [ -f "$PKG" ] && [ -f "$LOCK" ]; then
+    NEW_LOCK=$(sha256sum "$LOCK" | awk '{print $1}')
     PREVIOUS=""
-    if [ -f "$STAMP" ]; then
-      PREVIOUS=$(tr -d '[:space:]' < "$STAMP")
+    if [ -f "$DEST/package-lock.json" ]; then
+      PREVIOUS=$(sha256sum "$DEST/package-lock.json" | awk '{print $1}')
+    elif [ -f "$DEST/.package-lock.sha" ]; then
+      PREVIOUS=$(tr -d '[:space:]' < "$DEST/.package-lock.sha")
     fi
-    if [ "$LOCK_SHA" != "$PREVIOUS" ]; then
-      npm install --omit=dev --prefix "$DEST"
-      printf '%s\n' "$LOCK_SHA" > "$STAMP"
+    BACKUP=$(mktemp -d)
+    if [ -f "$DEST/package.json" ]; then cp -a "$DEST/package.json" "$BACKUP/package.json"; fi
+    if [ -f "$DEST/package-lock.json" ]; then cp -a "$DEST/package-lock.json" "$BACKUP/package-lock.json"; fi
+    if cp -a "$PKG" "$DEST/package.json" && cp -a "$LOCK" "$DEST/package-lock.json"; then
+      rm -rf "$BACKUP"
+      printf '%s\n' "$NEW_LOCK" > "$DEST/.package-lock.sha"
+      if [ -n "$PREVIOUS" ] && [ "$NEW_LOCK" != "$PREVIOUS" ]; then
+        npm install --omit=dev --prefix "$DEST"
+      fi
+    else
+      echo "Could not copy server package files. Skipping npm install." >&2
+      if [ -f "$BACKUP/package.json" ]; then cp -a "$BACKUP/package.json" "$DEST/package.json"; fi
+      if [ -f "$BACKUP/package-lock.json" ]; then cp -a "$BACKUP/package-lock.json" "$DEST/package-lock.json"; fi
+      rm -rf "$BACKUP"
     fi
   fi
 fi

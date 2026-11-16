@@ -151,6 +151,7 @@ exec /bin/cp "$@"
     git(root, ["clone", origin, seed]);
     fs.mkdirSync(path.join(seed, "server/src"), { recursive: true });
     fs.writeFileSync(path.join(seed, "server/src/marker.js"), "app\n");
+    fs.writeFileSync(path.join(seed, "server/package.json"), "{\"name\":\"api\"}\n");
     fs.writeFileSync(path.join(seed, "server/package-lock.json"), "{\"lock\":1}\n");
     git(seed, ["add", "server"]);
     git(seed, ["commit", "-m", "locked"]);
@@ -180,7 +181,46 @@ exec /bin/cp "$@"
     git(seed, ["push", "origin", "HEAD:main"]);
     run(env);
     expect(fs.readFileSync(log, "utf8")).toContain("install --omit=dev --prefix");
+    expect(fs.readFileSync(path.join(dest, "package-lock.json"), "utf8")).toBe("{\"lock\":2}\n");
     expect(fs.readFileSync(path.join(dest, ".package-lock.sha"), "utf8").trim()).not.toBe(lockHash);
+  });
+
+  it("copies server package files and skips install when there is no previous lock", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "mediconnect-deploy-first-"));
+    const origin = path.join(root, "origin.git");
+    const seed = path.join(root, "seed");
+    const clone = path.join(root, "clone");
+    const dest = path.join(root, "dest");
+    const log = path.join(root, "npm.log");
+    git(root, ["init", "--bare", origin]);
+    git(root, ["clone", origin, seed]);
+    fs.mkdirSync(path.join(seed, "server/src"), { recursive: true });
+    fs.writeFileSync(path.join(seed, "server/src/marker.js"), "app\n");
+    fs.writeFileSync(path.join(seed, "server/package.json"), "{\"name\":\"server-api\"}\n");
+    fs.writeFileSync(path.join(seed, "server/package-lock.json"), "{\"lock\":1}\n");
+    git(seed, ["add", "server"]);
+    git(seed, ["commit", "-m", "locked"]);
+    git(seed, ["push", "origin", "HEAD:main"]);
+    git(root, ["clone", "--depth=1", "--branch", "main", origin, clone]);
+    fs.mkdirSync(dest, { recursive: true });
+    fs.writeFileSync(path.join(dest, "package.json"), "{\"name\":\"already-installed\"}\n");
+    const bin = path.join(root, "bin");
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(bin, "npm"), `#!/bin/sh\necho "$@" >> "${log}"\n`);
+    fs.chmodSync(path.join(bin, "npm"), 0o755);
+
+    run({
+      PATH: `${bin}:${process.env.PATH}`,
+      MEDICONNECT_CLONE: clone,
+      MEDICONNECT_DEST: dest,
+      MEDICONNECT_REPO: origin,
+      MEDICONNECT_SKIP_RESTART: "1",
+    });
+
+    expect(fs.existsSync(log)).toBe(false);
+    expect(fs.readFileSync(path.join(dest, "package.json"), "utf8")).toBe("{\"name\":\"server-api\"}\n");
+    expect(fs.readFileSync(path.join(dest, "package-lock.json"), "utf8")).toBe("{\"lock\":1}\n");
+    expect(fs.readFileSync(path.join(dest, ".package-lock.sha"), "utf8").trim()).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it("does not copy or restart when the update cannot be cloned", () => {
