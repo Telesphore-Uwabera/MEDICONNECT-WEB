@@ -56,7 +56,7 @@ describe("private doctor documents", () => {
   it("classifies a website upload by the stored field, not the file name", () => {
     expect(fileNameOf("https://mediconnect.rw/api/v1/media/doctor_documents_171000.webp")).toBe("doctor_documents_171000.webp");
     expect(fileNameOf("/storage/phone_icon.webp")).toBe("phone_icon.webp");
-    expect(fileNameOf("../../secret.webp")).toBe("secret.webp");
+    expect(fileNameOf("../../secret.webp")).toBe("");
     expect(fileNameOf("bad name.webp")).toBe("");
     expect(decideDocumentAccess({ field: "national_id_document", isAdmin: false, isOwner: false, hasClinicalLink: true })).toBe("forbid");
     expect(decideDocumentAccess({ field: "medical_license_document", isAdmin: false, isOwner: true, hasClinicalLink: false })).toBe("allow");

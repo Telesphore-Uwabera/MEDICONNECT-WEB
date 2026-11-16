@@ -20,12 +20,34 @@ export const PRIVATE_DOC_FIELDS = [...IDENTITY_FIELDS, ...SIGNATURE_FIELDS];
 const SIGNED_TTL_MS = 10 * 60 * 1000;
 
 export function fileNameOf(urlPath) {
-  const raw = String(urlPath || "").split("?")[0].split("#")[0];
-  let text = raw;
-  try { text = decodeURIComponent(raw); } catch { text = raw; }
-  const name = text.split("/").filter(Boolean).pop() || "";
+  const relative = storedRelativePath(urlPath);
+  const name = relative.split("/").filter(Boolean).pop() || "";
   if (!/^[A-Za-z0-9._-]+$/.test(name)) return "";
   return name;
+}
+
+/** Path under a storage root. Keeps subfolders and rejects anything that climbs out. */
+export function storedRelativePath(urlPath) {
+  let text = String(urlPath || "").split("?")[0].split("#")[0];
+  try { text = decodeURIComponent(text); } catch { /* keep the raw path */ }
+  text = text.replace(/\\/g, "/").replace(/^https?:\/\/[^/]+/i, "");
+  const markers = ["/minio/", "/storage/", "/doctors-webp/", "/webp/", "/media/"];
+  let cut = -1;
+  let markerLength = 0;
+  const lower = text.toLowerCase();
+  for (const marker of markers) {
+    const at = lower.lastIndexOf(marker);
+    if (at > cut) {
+      cut = at;
+      markerLength = marker.length;
+    }
+  }
+  if (cut >= 0) text = text.slice(cut + markerLength);
+  text = text.replace(/^\/+/, "");
+  const parts = text.split("/").filter(Boolean);
+  if (!parts.length || parts.some((part) => part === "." || part === "..")) return "";
+  if (!parts.every((part) => /^[A-Za-z0-9._-]+$/.test(part))) return "";
+  return parts.join("/");
 }
 
 export function documentSecret() {
@@ -77,11 +99,16 @@ export async function findDoctorByStoredFile(filename) {
      WHERE ${fields.map((field) => `\`${field}\` LIKE ? ESCAPE '\\\\'`).join(" OR ")}
      LIMIT 20`,
     fields.map(() => likeExact(name)),
-  ).catch(() => []);
+  );
   for (const row of rows) {
     for (const field of fields) {
       if (fileNameOf(row[field]) === name) {
-        return { doctorId: row.id, userId: row.user_id, field, filename: name };
+        return {
+          doctorId: row.id,
+          userId: row.user_id,
+          field,
+          filename: storedRelativePath(row[field]) || name,
+        };
       }
     }
   }
@@ -91,21 +118,26 @@ export async function findDoctorByStoredFile(filename) {
 function uploadRoots() {
   const uploadDir = process.env.UPLOAD_DIR || path.resolve("storage");
   return [
+    process.env.MINIO_DIR,
     path.join(uploadDir, "doctors-webp"),
     path.join(uploadDir, "webp"),
     uploadDir,
-  ];
+  ].filter(Boolean);
 }
 
 export function readStoredUpload(filename) {
-  const name = fileNameOf(filename);
-  if (!name) return null;
+  const relative = storedRelativePath(filename);
+  const baseName = fileNameOf(filename);
+  const candidates = [...new Set([relative, baseName].filter(Boolean))];
+  if (!candidates.length) return null;
   for (const root of uploadRoots()) {
-    const full = path.resolve(root, name);
-    const base = path.resolve(root);
-    if (full !== base && !full.startsWith(`${base}${path.sep}`)) continue;
-    if (!fs.existsSync(full) || !fs.statSync(full).isFile()) continue;
-    return fs.readFileSync(full);
+    for (const name of candidates) {
+      const full = path.resolve(root, name);
+      const base = path.resolve(root);
+      if (full !== base && !full.startsWith(`${base}${path.sep}`)) continue;
+      if (!fs.existsSync(full) || !fs.statSync(full).isFile()) continue;
+      return fs.readFileSync(full);
+    }
   }
   return null;
 }
@@ -120,23 +152,63 @@ async function linkedRow(table, column, value, doctorId) {
   return Boolean(row);
 }
 
+async function linkedAny(table, column, values, doctorId) {
+  for (const value of values) {
+    if (await linkedRow(table, column, value, doctorId)) return true;
+  }
+  return false;
+}
+
+/** A pharmacy sees a signature when a prescription request ties that pharmacy to the doctor. */
+async function pharmacyHasDoctor(pharmacyId, doctorId) {
+  if (!pharmacyId || !(await tableExists("pharmacy_prescription_requests"))) return false;
+  if (!(await hasColumn("pharmacy_prescription_requests", "pharmacy_id"))) return false;
+  if (await hasColumn("pharmacy_prescription_requests", "doctor_id")) {
+    const direct = await one(
+      "SELECT id FROM pharmacy_prescription_requests WHERE pharmacy_id = ? AND doctor_id = ? LIMIT 1",
+      [pharmacyId, doctorId],
+    ).catch(() => null);
+    if (direct) return true;
+  }
+  if (
+    await tableExists("prescriptions")
+    && await hasColumn("pharmacy_prescription_requests", "prescription_id")
+    && await hasColumn("prescriptions", "doctor_id")
+  ) {
+    const joined = await one(
+      `SELECT r.id
+       FROM pharmacy_prescription_requests r
+       JOIN prescriptions p ON p.id = r.prescription_id
+       WHERE r.pharmacy_id = ? AND p.doctor_id = ?
+       LIMIT 1`,
+      [pharmacyId, doctorId],
+    ).catch(() => null);
+    if (joined) return true;
+  }
+  return false;
+}
+
 export async function hasClinicalLink(user, doctorId) {
   if (!user?.id || !doctorId) return false;
   const patientId = await loadOwnedId(user.id, "patients").catch(() => null);
   const pharmacyId = await loadOwnedId(user.id, "pharmacies").catch(() => null);
   const hospitalId = await loadOwnedId(user.id, "hospitals").catch(() => null);
+  // appointments.patient_id is the user account id. Older rows and the other
+  // clinical tables may store the patient profile id instead. user_id is not
+  // on every live appointments table, so linkedRow skips a missing column.
+  const eitherId = [...new Set([user.id, patientId].filter((id) => Number(id) > 0))];
   const checks = [
+    linkedAny("appointments", "patient_id", eitherId, doctorId),
     linkedRow("appointments", "user_id", user.id, doctorId),
-    linkedRow("appointments", "patient_id", patientId, doctorId),
+    linkedAny("instant_consultation_requests", "patient_id", eitherId, doctorId),
     linkedRow("instant_consultation_requests", "user_id", user.id, doctorId),
-    linkedRow("instant_consultation_requests", "patient_id", patientId, doctorId),
+    linkedAny("instant_consultations", "patient_id", eitherId, doctorId),
     linkedRow("instant_consultations", "user_id", user.id, doctorId),
-    linkedRow("instant_consultations", "patient_id", patientId, doctorId),
-    linkedRow("prescriptions", "patient_id", patientId, doctorId),
+    linkedAny("prescriptions", "patient_id", eitherId, doctorId),
     linkedRow("prescriptions", "user_id", user.id, doctorId),
-    linkedRow("prescriptions", "pharmacy_id", pharmacyId, doctorId),
-    linkedRow("consultation_summaries", "patient_id", patientId, doctorId),
+    linkedAny("consultation_summaries", "patient_id", eitherId, doctorId),
     linkedRow("consultation_summaries", "user_id", user.id, doctorId),
+    pharmacyHasDoctor(pharmacyId, doctorId),
     linkedRow("appointments", "hospital_id", hospitalId, doctorId),
   ];
   const found = await Promise.all(checks);
@@ -189,14 +261,16 @@ export function privateFileGuard(lookup) {
         if (match) return res.status(403).json({ message: "This document is not public." });
         return next();
       })
-      .catch(() => next());
+      .catch(() => {
+        if (!res.headersSent) res.status(503).json({ message: "Document storage is unavailable." });
+      });
   };
 }
 
 async function storedField(doctorId, field) {
   if (!PRIVATE_DOC_FIELDS.includes(field)) return null;
   const row = await one(`SELECT id, user_id, \`${field}\` AS stored FROM doctors WHERE id = ?`, [doctorId]).catch(() => null);
-  const filename = fileNameOf(row?.stored);
+  const filename = storedRelativePath(row?.stored) || fileNameOf(row?.stored);
   if (!row || !filename) return null;
   return { doctorId: row.id, userId: row.user_id, field, filename };
 }
