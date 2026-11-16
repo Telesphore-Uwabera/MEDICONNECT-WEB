@@ -15,6 +15,7 @@ import {
 } from "./doctor-review.js";
 import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
+import { disableInstantOnLogout } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { registerCareOrderRoutes } from "./care-orders.js";
 import { registerCareReferralRoutes } from "./care-referrals.js";
@@ -631,11 +632,9 @@ export function appRoutes(router) {
 
   router.post("/auth/logout", requireAuth, async (req, res, next) => {
     try {
-      const doctorId = await loadOwnedId(req.user.id, "doctors");
-      if (doctorId && await hasColumn("doctors", "instant_consultation")) {
-        await update("doctors", doctorId, { instant_consultation: 0 });
-      }
-      await pool.query("DELETE FROM personal_access_tokens WHERE id = ?", [req.auth.token.id]);
+      await disableInstantOnLogout(req.user.id);
+      const tokenId = req.auth?.token?.id;
+      if (tokenId) await pool.query("DELETE FROM personal_access_tokens WHERE id = ?", [tokenId]);
       res.json({ message: "Signed out." });
     } catch (error) {
       next(error);
