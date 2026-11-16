@@ -18,6 +18,7 @@ import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyG
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
+import { attachMedicineStock, lowStockFilter } from "./medicine-stock.js";
 
 function hideCallSecrets(scope, table, rows) {
   return presentWithoutCallSecrets(scope, table, rows);
@@ -510,6 +511,17 @@ async function extraFilters(req, table, spec) {
   if (req.query.is_emergency === "false" && (await hasColumn(table, "is_emergency"))) {
     filters.push("`is_emergency` = 0");
   }
+  if (
+    ["medicines", "pharmacy-inventory-medicines"].includes(spec.resource)
+    && ["1", "true", "yes"].includes(String(req.query.low_stock || "").toLowerCase())
+  ) {
+    const pharmacyId = await viewingPharmacyId(req.user);
+    const clause = await lowStockFilter(table, pharmacyId);
+    if (clause.sql) {
+      filters.push(clause.sql);
+      params.push(...clause.params);
+    }
+  }
   return { filters, params };
 }
 
@@ -566,12 +578,28 @@ async function attachAccountUsers(table, rows) {
   });
 }
 
-async function presentDedicated(table, row, spec, scope) {
+async function viewingPharmacyId(user) {
+  const role = user?.active_role || user?.role;
+  if (role !== "pharmacy" || !user?.id) return null;
+  return Number(await loadOwnedId(user.id, "pharmacies")) || 0;
+}
+
+async function withMedicineStock(table, rows, pharmacyId) {
+  if (!["medicines", "pharmacy_medicines"].includes(table)) return rows;
+  return attachMedicineStock(rows, pharmacyId);
+}
+
+async function presentDedicated(table, row, spec, scope, user) {
   let presented = await presentRow(table, row);
   if (table === "appointments") presented = await decorateAppointments(presented);
   if (table === "team_members") presented = withTeamPhoto(presented);
   if (NAMED_TABLES.has(table)) [presented] = await verifierNames([presented]);
   [presented] = await attachAccountUsers(table, [presented]);
+  presented = await withMedicineStock(
+    table,
+    presented,
+    ["medicines", "pharmacy_medicines"].includes(table) ? await viewingPharmacyId(user) : null,
+  );
   presented = hideCallSecrets(scope, table, presented);
   return withPk(presented, spec.idName);
 }
@@ -607,6 +635,11 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
           if (NAMED_TABLES.has(table)) data = await verifierNames(Array.isArray(data) ? data : []);
           data = await attachAccountUsers(table, Array.isArray(data) ? data : []);
+          data = await withMedicineStock(
+            table,
+            Array.isArray(data) ? data : [],
+            ["medicines", "pharmacy_medicines"].includes(table) ? await viewingPharmacyId(req.user) : null,
+          );
           data = hideCallSecrets(scope, table, Array.isArray(data) ? data : []);
           data = (Array.isArray(data) ? data : []).map((row) => withPk(row, spec.idName));
           const pagePayload = paginateList({
@@ -629,7 +662,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           const { table, row } = await loadOwnedRow(scope, spec, req.user, recordId);
           if (!table) return next();
           if (!row) return res.status(404).json({ message: "Record not found." });
-          const tagged = await presentDedicated(table, row, spec, scope);
+          const tagged = await presentDedicated(table, row, spec, scope, req.user);
           res.json({ data: tagged, [spec.idName.replace(/_id$/, "")]: tagged, ...tagged });
         } catch (error) {
           next(error);
@@ -668,7 +701,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
             if (!row) return res.status(404).json({ message: "Record not found." });
             if (action === "fulfill" && ["pharmacy_prescription_requests", "prescription_requests"].includes(table)) {
               const fulfilled = await applyPharmacyFulfillment(table, row, req.body || {});
-              const tagged = await presentDedicated(table, fulfilled, spec);
+              const tagged = await presentDedicated(table, fulfilled, spec, scope, req.user);
               return res.json({ message: "Updated.", data: tagged, booking: tagged, order: tagged, ...tagged });
             }
             const patch = { status: nextStatus };
@@ -677,7 +710,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
             }
             if (req.body?.notes && (await hasColumn(table, "notes"))) patch.notes = req.body.notes;
             await update(table, row.id, patch);
-            const tagged = await presentDedicated(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]), spec);
+            const tagged = await presentDedicated(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]), spec, scope, req.user);
             res.json({ message: "Updated.", data: tagged, booking: tagged, order: tagged, ...tagged });
           } catch (error) {
             next(error);
@@ -701,7 +734,7 @@ async function updateDedicated(req, res, next, scope, spec) {
     if (Object.keys(known.payload).length) await update(table, row.id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
     stored = await afterResourceSaved(table, stored, req);
-    const tagged = await presentDedicated(table, stored, spec);
+    const tagged = await presentDedicated(table, stored, spec, scope, req.user);
     res.json({ message: "Updated.", data: tagged, ...tagged });
   } catch (error) {
     next(error);
