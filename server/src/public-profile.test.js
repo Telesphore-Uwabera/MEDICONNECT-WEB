@@ -6,6 +6,7 @@ import {
   publicDoctor,
   publicHospital,
   publicPharmacy,
+  stripCallSecrets,
 } from "./public-profile.js";
 
 const PRIVATE = [
@@ -78,6 +79,21 @@ describe("public profile allow-list", () => {
     expect(doctor.hospitals).toEqual([{ name: "Kigali Care", city: "Kigali" }]);
     expect(hospital.city).toBe("Kigali");
     expect(pharmacy.name).toBe("City Pharmacy");
+  });
+
+  it("removes call and guest tokens from list rows", () => {
+    const row = stripCallSecrets({
+      id: 4,
+      status: "confirmed",
+      guest_token: "guest-access",
+      daily_guest_token: "video-guest",
+      daily_doctor_token: "video-doctor",
+      room_url: "/consultation/room-1",
+      data: { guest_token: "nested-guest", daily_guest_token: "nested-video" },
+    });
+    expect(JSON.stringify(row)).not.toMatch(/guest-access|video-guest|video-doctor|nested-guest|nested-video/);
+    expect(row.room_url).toBe("/consultation/room-1");
+    expect(row.data.guest_token).toBeUndefined();
   });
 
   it("treats licence, national id, and signature files as private", () => {

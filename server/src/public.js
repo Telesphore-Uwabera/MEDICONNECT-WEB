@@ -10,7 +10,7 @@ import { publicRealtimeConfig } from "./realtime-config.js";
 import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
-import { publicDoctor, publicHospital, publicPharmacy, publicSlot } from "./public-profile.js";
+import { publicDoctor, publicHospital, publicPharmacy, publicSlot, stripCallSecrets } from "./public-profile.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { insuranceCatalogWhere, loadInstantViewer, releaseSlot, settledAppointmentPatch } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue, verifiedPaidAmount } from "./instant-visit.js";
@@ -1463,7 +1463,7 @@ export function publicRoutes(router) {
       status: row.status || "pending",
       can_pay: canPayInstant(row),
       can_join: canJoinInstant(row),
-      data: row,
+      data: stripCallSecrets(row),
     };
   }
 

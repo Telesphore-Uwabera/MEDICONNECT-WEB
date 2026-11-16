@@ -132,6 +132,27 @@ export function publicSlot(row) {
   };
 }
 
+const CALL_SECRET_KEYS = [
+  "guest_token",
+  "daily_guest_token",
+  "daily_doctor_token",
+  "daily_token",
+  "call_token",
+  "room_token",
+];
+
+/** Drop video and guest access tokens from a list or detail payload. */
+export function stripCallSecrets(value) {
+  if (Array.isArray(value)) return value.map(stripCallSecrets);
+  if (!value || typeof value !== "object") return value;
+  const out = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (CALL_SECRET_KEYS.includes(key)) continue;
+    out[key] = key === "data" ? stripCallSecrets(item) : item;
+  }
+  return out;
+}
+
 const PRIVATE_NAMES = [
   "email", "user_email", "phone", "user_phone", "password", "medical_license",
   "medical_license_document", "licence_number", "license_number", "degree_document",
