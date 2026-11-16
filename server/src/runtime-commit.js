@@ -1,6 +1,9 @@
 import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SHA = /^[0-9a-f]{40}$/i;
 
@@ -35,18 +38,29 @@ export function resolveRunningCommit(env = process.env, roots = []) {
   if (fromEnv) return fromEnv;
   for (const root of roots) {
     if (!root) continue;
-    const fromGit = gitHead(root);
-    if (fromGit) return fromGit;
     for (const name of ["COMMIT", ".commit"]) {
       const fromFile = readFileSha(path.join(root, name));
       if (fromFile) return fromFile;
     }
   }
+  for (const root of roots) {
+    if (!root) continue;
+    const fromGit = gitHead(root);
+    if (fromGit) return fromGit;
+  }
   return "";
 }
 
-const roots = [process.cwd(), path.resolve(process.cwd(), "..")];
-const startedAs = resolveRunningCommit(process.env, roots) || null;
+/** Install root (parent of this file), the working directory, and its parent. */
+export function commitSearchRoots(fromDir = __dirname) {
+  return [
+    path.resolve(fromDir, ".."),
+    process.cwd(),
+    path.resolve(process.cwd(), ".."),
+  ];
+}
+
+const startedAs = resolveRunningCommit(process.env, commitSearchRoots()) || null;
 
 export function runningCommit() {
   return startedAs;

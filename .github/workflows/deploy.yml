@@ -26,7 +26,7 @@ jobs:
               -d "{\"sha\":\"${EXPECTED_SHA}\"}" \
               --max-time 60 \
               --retry 2 \
-              --retry-delay 5)
+              --retry-delay 5 || true)
             echo "Attempt $i — HTTP status: $RESPONSE"
             cat /tmp/deploy_resp.txt || true
             if [ "$RESPONSE" = "202" ]; then

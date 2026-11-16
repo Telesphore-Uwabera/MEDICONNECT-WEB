@@ -59,19 +59,21 @@ if [ -n "${MEDICONNECT_EXPECTED_SHA:-}" ] && [ "$SHA" != "$MEDICONNECT_EXPECTED_
   exit 1
 fi
 
+if [ ! -d "$CLONE/server/src" ]; then
+  echo "Clone has no server/src. Not copying or restarting." >&2
+  exit 1
+fi
+
+# The API lives at /opt/mediconnect-node/src. Copy only that source tree.
+# Leave the frontend src, package.json, .env, and uploaded files where they are.
 mkdir -p "$DEST"
-tar -C "$CLONE" \
-  --exclude .env \
-  --exclude server/.env \
-  --exclude node_modules \
-  --exclude server/node_modules \
-  --exclude storage \
-  --exclude server/storage \
-  -cf - . | tar -C "$DEST" -xf -
+rm -rf "$DEST/src"
+mkdir -p "$DEST/src"
+cp -a "$CLONE/server/src/." "$DEST/src/"
 printf '%s\n' "$SHA" > "$DEST/COMMIT"
 
-if [ "${MEDICONNECT_SKIP_INSTALL:-}" != "1" ] && [ -f "$DEST/server/package.json" ]; then
-  npm install --omit=dev --prefix "$DEST/server"
+if [ "${MEDICONNECT_SKIP_INSTALL:-}" != "1" ] && [ -f "$DEST/package.json" ]; then
+  npm install --omit=dev --prefix "$DEST"
 fi
 
 if [ "${MEDICONNECT_SKIP_RESTART:-}" = "1" ]; then
