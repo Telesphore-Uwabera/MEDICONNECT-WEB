@@ -18,6 +18,7 @@ import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
 import { disableInstantOnLogout } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
+import { nameVisitRows } from "./visit-rows.js";
 import { registerCareOrderRoutes } from "./care-orders.js";
 import { registerCareReferralRoutes } from "./care-referrals.js";
 import { registerClinicalEpisodeRoutes } from "./clinical-episodes.js";
@@ -237,6 +238,7 @@ async function listTable(req, table, scope) {
   const total = await countWhere(table, where, params);
   let data = await presentRows(table, await q(`SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
   if (table === "appointments") data = await decorateAppointments(data);
+  data = await nameVisitRows(table, data);
   if (["doctors", "hospitals", "pharmacies", "patients", "users"].includes(table)) {
     data = await verifierNames(data);
   }
@@ -3606,6 +3608,7 @@ export function appRoutes(router) {
       }
       let row = await presentRow(table, raw);
       if (table === "appointments") row = await decorateAppointments(row);
+      row = await nameVisitRows(table, row);
       if (!row) return res.status(404).json({ message: "Record not found." });
       if (["doctors", "hospitals", "pharmacies", "patients", "users"].includes(table)) {
         [row] = await verifierNames([row]);
