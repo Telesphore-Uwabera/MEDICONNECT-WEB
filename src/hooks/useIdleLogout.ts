@@ -32,7 +32,11 @@ export function useIdleLogout() {
     const token = getAuthToken();
     if (!token) return; // already logged out
 
-    apiFetch("/auth/logout", { method: "POST" }).catch(() => null);
+    const logout = apiFetch("/auth/logout", { method: "POST", keepalive: true }).catch(() => null);
+    await Promise.race([
+      logout,
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ]);
 
     clearAuthToken();
     qc.clear();
