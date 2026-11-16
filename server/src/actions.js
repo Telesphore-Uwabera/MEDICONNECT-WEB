@@ -3,6 +3,7 @@ import path from "path";
 import multer from "multer";
 import { hasColumn, insert, knownWrite, one, pageArgs, paginateList, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { hashPassword, loadOwnedId, roleNames, stampPatientProfileCompletion } from "./auth.js";
+import { reviewPasswordChange } from "./guest-password.js";
 import { recordVerifier } from "./verification.js";
 import { hospitalDashboard, pharmacyDashboard } from "./org-dashboard.js";
 import { sniffedUploadExtension } from "./input-checks.js";
@@ -575,8 +576,18 @@ async function fillGap(req, res, parts) {
 
   if (parts[0] === "settings") {
     if (req.method === "GET" && !parts[1]) return false;
-    if (parts[1] === "password" && req.body?.password) {
-      await update("users", req.user.id, {
+    if (parts[1] === "password" && ["PUT", "POST", "PATCH"].includes(req.method)) {
+      const account = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+      if (!account) {
+        res.status(401).json({ message: "Unauthenticated." });
+        return true;
+      }
+      const decision = await reviewPasswordChange(account, req.body ?? {}, req.user.preferred_language);
+      if (!decision.ok) {
+        res.status(decision.status).json({ message: decision.message });
+        return true;
+      }
+      await update("users", account.id, {
         password: await hashPassword(req.body.password),
         password_must_change: 0,
         temp_password_used_at: new Date(),

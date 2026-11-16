@@ -40,6 +40,60 @@ export function mayReissue(user, now = Date.now()) {
   return guestPasswordState(user, now) === "pending";
 }
 
+/** The settings screens and the first-login form both use this length. */
+export const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * A normal account must prove the current password before choosing a new one.
+ * A guest whose account is still flagged password_must_change has just signed
+ * in with the temporary password. The first-login form does not ask for it
+ * again, so current_password may be omitted. The new password still cannot be
+ * that temporary password, and it still has to meet the length rule.
+ */
+export async function reviewPasswordChange(user, body, lang = "en") {
+  const next = String(body?.password || "");
+  const confirmation = body?.password_confirmation;
+  const current = String(body?.current_password || "");
+  const copy = {
+    missing: pick(lang, {
+      en: "Enter your current password.",
+      fr: "Saisissez votre mot de passe actuel.",
+      rw: "Andika ijambo ry'ibanga ukoresha ubu.",
+    }),
+    wrong: pick(lang, {
+      en: "That current password is not correct.",
+      fr: "Ce mot de passe actuel n'est pas correct.",
+      rw: "Iryo jambo ry'ibanga rya none ntabwo ari ryo.",
+    }),
+    short: pick(lang, {
+      en: "Use at least 8 characters.",
+      fr: "Utilisez au moins 8 caractères.",
+      rw: "Koresha byibuze inyuguti 8.",
+    }),
+    same: pick(lang, {
+      en: "Choose a password that is different from your current one.",
+      fr: "Choisissez un mot de passe différent de celui que vous utilisez.",
+      rw: "Hitamo ijambo ry'ibanga ritandukanye n'iryo ukoresha ubu.",
+    }),
+    mismatch: pick(lang, {
+      en: "Password confirmation does not match.",
+      fr: "La confirmation du mot de passe ne correspond pas.",
+      rw: "Kwemeza ijambo ry'ibanga ntibihuye.",
+    }),
+  };
+  if (next.length < MIN_PASSWORD_LENGTH) return { ok: false, status: 422, message: copy.short };
+  if (confirmation != null && confirmation !== next) return { ok: false, status: 422, message: copy.mismatch };
+  const mustChange = flagOn(user?.password_must_change);
+  if (!mustChange) {
+    if (!current) return { ok: false, status: 422, message: copy.missing };
+    if (!(await verifyPassword(current, user?.password))) return { ok: false, status: 422, message: copy.wrong };
+  }
+  if ((current && current === next) || await verifyPassword(next, user?.password)) {
+    return { ok: false, status: 422, message: copy.same };
+  }
+  return { ok: true, mustChange };
+}
+
 export function loginDecision(user, passwordOk, now = Date.now()) {
   if (!passwordOk) return { ok: false, status: 401, message: "Incorrect password." };
   const state = guestPasswordState(user, now);

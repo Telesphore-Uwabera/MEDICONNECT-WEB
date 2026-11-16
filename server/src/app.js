@@ -54,7 +54,7 @@ import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
-import { average, displayedPaymentStatus, durationMinutes, kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
+import { average, displayedPaymentStatus, durationMinutes, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -971,13 +971,13 @@ export function appRoutes(router) {
       const periodFilter = period === "today" || period === "day"
         ? { sql: `AND ${dateExpr} = ${kigaliNow}`, params: [] }
         : period === "week"
-          ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] }
+          ? { sql: `AND ${dateExpr} >= DATE_SUB(${kigaliNow}, INTERVAL 6 DAY)`, params: [] }
           : period === "year"
-            ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] }
+            ? { sql: `AND ${dateExpr} >= DATE_SUB(${kigaliNow}, INTERVAL 364 DAY)`, params: [] }
             : period === "custom" && periodStart && periodEnd
               ? { sql: `AND ${dateExpr} BETWEEN ? AND ?`, params: [periodStart, periodEnd] }
               : period === "month"
-                ? { sql: `AND ${dateExpr} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] }
+                ? { sql: `AND ${dateExpr} >= DATE_SUB(${kigaliNow}, INTERVAL 29 DAY)`, params: [] }
                 : { sql: "", params: [] };
       const groups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} ${periodFilter.sql} GROUP BY status`, [...ownerParams, ...periodFilter.params]).catch(() => []);
       const { byStatus, total } = tally(groups);
@@ -1626,20 +1626,14 @@ export function appRoutes(router) {
   }
 
   function periodWhere(column, period, start, end) {
-    const date = `DATE(\`${column}\`)`;
-    if (period === "custom" && start && end) return { sql: `${date} BETWEEN ? AND ?`, params: [String(start).slice(0, 10), String(end).slice(0, 10)] };
-    if (period === "today" || period === "day") return { sql: `${kigaliDaySql(column)} = ${kigaliTodaySql()}`, params: [] };
-    if (period === "week") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] };
-    if (period === "year") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] };
-    return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] };
+    if (period === "custom" && start && end) {
+      return { sql: `${kigaliDaySql(column)} BETWEEN ? AND ?`, params: [String(start).slice(0, 10), String(end).slice(0, 10)] };
+    }
+    return { sql: kigaliPeriodSql(column, period), params: [] };
   }
 
   function previousWhere(column, period) {
-    const date = `DATE(\`${column}\`)`;
-    if (period === "today" || period === "day") return { sql: `${date} = DATE_SUB(CURDATE(), INTERVAL 1 DAY)`, params: [] };
-    if (period === "week") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) AND ${date} < DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] };
-    if (period === "year") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 728 DAY) AND ${date} < DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] };
-    return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 59 DAY) AND ${date} < DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] };
+    return { sql: kigaliPreviousSql(column, period), params: [] };
   }
 
   async function firstColumn(table, names) {
@@ -2196,6 +2190,7 @@ export function appRoutes(router) {
       let resolved = 0;
       let resolvedToday = 0;
       let active = null;
+      let historyTotal = 0;
       if (table) {
         const owner = (await hasColumn(table, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=1";
         const params = owner.includes("?") ? [doctorId] : [];
@@ -2223,11 +2218,18 @@ export function appRoutes(router) {
           params,
         ).catch(() => []);
         const finishedColumn = await firstColumn(table, ["completed_at", "ended_at", "updated_at", "created_at"]);
-        const historyRows = await q(
-          `SELECT * FROM \`${table}\` WHERE ${owner} AND LOWER(status) IN ('completed','done','expired','payment_expired','declined','cancelled','canceled')
-           ORDER BY ${finishedColumn ? `\`${finishedColumn}\`` : "id"} DESC, id DESC
-           LIMIT 100`,
+        const historyPage = historyPageArgs(req.query);
+        const historyOrder = finishedColumn ? `\`${finishedColumn}\`` : "id";
+        const historyWhere = `${owner} AND LOWER(status) IN ('completed','done','expired','payment_expired','declined','cancelled','canceled')`;
+        historyTotal = Number((await one(
+          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${historyWhere}`,
           params,
+        ).catch(() => ({ total: 0 })))?.total ?? 0);
+        const historyRows = await q(
+          `SELECT * FROM \`${table}\` WHERE ${historyWhere}
+           ORDER BY ${historyOrder} DESC, id DESC
+           LIMIT ? OFFSET ?`,
+          [...params, historyPage.limit, historyPage.offset],
         ).catch(() => []);
         const rows = [...openRows, ...historyRows];
         sourceRows = rows;
@@ -2277,9 +2279,13 @@ export function appRoutes(router) {
         .map((row) => durationMinutes(row.started_at || row.accepted_at, row.completed_at || row.ended_at))
         .filter((value) => value != null);
       const history = queue.filter((item) => finishedStatus.includes(String(item.status || "").toLowerCase()));
+      const historyPage = historyPageArgs(req.query);
       res.json({
         queue,
         history,
+        history_page: historyPage.page,
+        history_per_page: historyPage.limit,
+        history_total: historyTotal,
         stats: {
           in_queue: liveQueue.length,
           seen_today: seenToday,

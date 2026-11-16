@@ -6,6 +6,8 @@ function ranges(query) {
   const period = String(query?.period || "all");
   const start = String(query?.start_date || "").slice(0, 10);
   const end = String(query?.end_date || "").slice(0, 10);
+  const day = "DATE(DATE_ADD({col}, INTERVAL 2 HOUR))";
+  const today = kigaliTodaySql();
   if (period === "all") {
     return {
       current: { sql: "1=1", params: [] },
@@ -14,31 +16,31 @@ function ranges(query) {
   }
   if (period === "today" || period === "day") {
     return {
-      current: { sql: "DATE({col}) = CURDATE()", params: [] },
-      previous: { sql: "DATE({col}) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)", params: [] },
+      current: { sql: `${day} = ${today}`, params: [] },
+      previous: { sql: `${day} = DATE_SUB(${today}, INTERVAL 1 DAY)`, params: [] },
     };
   }
   if (period === "week") {
     return {
-      current: { sql: "{col} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)", params: [] },
-      previous: { sql: "{col} >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) AND {col} < DATE_SUB(CURDATE(), INTERVAL 6 DAY)", params: [] },
+      current: { sql: `${day} >= DATE_SUB(${today}, INTERVAL 6 DAY)`, params: [] },
+      previous: { sql: `${day} >= DATE_SUB(${today}, INTERVAL 13 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 6 DAY)`, params: [] },
     };
   }
   if (period === "year") {
     return {
-      current: { sql: "{col} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)", params: [] },
-      previous: { sql: "{col} >= DATE_SUB(CURDATE(), INTERVAL 729 DAY) AND {col} < DATE_SUB(CURDATE(), INTERVAL 364 DAY)", params: [] },
+      current: { sql: `${day} >= DATE_SUB(${today}, INTERVAL 364 DAY)`, params: [] },
+      previous: { sql: `${day} >= DATE_SUB(${today}, INTERVAL 729 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 364 DAY)`, params: [] },
     };
   }
   if (period === "custom" && start && end) {
     return {
-      current: { sql: "DATE({col}) BETWEEN ? AND ?", params: [start, end] },
+      current: { sql: `${day} BETWEEN ? AND ?`, params: [start, end] },
       previous: { sql: "1=0", params: [] },
     };
   }
   return {
-    current: { sql: "{col} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)", params: [] },
-    previous: { sql: "{col} >= DATE_SUB(CURDATE(), INTERVAL 59 DAY) AND {col} < DATE_SUB(CURDATE(), INTERVAL 29 DAY)", params: [] },
+    current: { sql: `${day} >= DATE_SUB(${today}, INTERVAL 29 DAY)`, params: [] },
+    previous: { sql: `${day} >= DATE_SUB(${today}, INTERVAL 59 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 29 DAY)`, params: [] },
   };
 }
 

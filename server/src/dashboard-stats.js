@@ -7,6 +7,32 @@ export function kigaliTodaySql() {
   return "DATE(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 2 HOUR))";
 }
 
+/** A dashboard window measured on the Kigali day, not the database server's day. */
+export function kigaliPeriodSql(column, period) {
+  const day = kigaliDaySql(column);
+  const today = kigaliTodaySql();
+  if (period === "today" || period === "day") return `${day} = ${today}`;
+  if (period === "week") return `${day} >= DATE_SUB(${today}, INTERVAL 6 DAY)`;
+  if (period === "year") return `${day} >= DATE_SUB(${today}, INTERVAL 364 DAY)`;
+  return `${day} >= DATE_SUB(${today}, INTERVAL 29 DAY)`;
+}
+
+export function kigaliPreviousSql(column, period) {
+  const day = kigaliDaySql(column);
+  const today = kigaliTodaySql();
+  if (period === "today" || period === "day") return `${day} = DATE_SUB(${today}, INTERVAL 1 DAY)`;
+  if (period === "week") return `${day} >= DATE_SUB(${today}, INTERVAL 13 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 6 DAY)`;
+  if (period === "year") return `${day} >= DATE_SUB(${today}, INTERVAL 729 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 364 DAY)`;
+  return `${day} >= DATE_SUB(${today}, INTERVAL 59 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 29 DAY)`;
+}
+
+/** History list paging. history_page wins over page, and the default page is the latest 100. */
+export function historyPageArgs(query = {}) {
+  const page = Math.max(1, Number(query.history_page ?? query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(query.history_per_page ?? query.limit) || 100));
+  return { page, limit, offset: (page - 1) * limit };
+}
+
 export function durationMinutes(start, end) {
   const from = start ? new Date(start).getTime() : NaN;
   const to = end ? new Date(end).getTime() : NaN;
