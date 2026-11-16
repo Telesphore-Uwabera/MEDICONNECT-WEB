@@ -56,7 +56,7 @@ import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
-import { average, displayedPaymentStatus, durationMinutes, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { average, displayedPaymentStatus, durationMinutes, earnedAverage, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -1695,6 +1695,36 @@ export function appRoutes(router) {
     return earned;
   }
 
+  async function doctorPaidVisitCounts(doctorId) {
+    const paid = "LOWER(COALESCE(p.status,'')) IN ('paid','completed','success','successful')";
+    let appointments = 0;
+    let instants = 0;
+    if (await tableExists("payments") && await tableExists("appointments") && doctorId) {
+      const row = await one(
+        `SELECT COUNT(DISTINCT a.id) AS total
+         FROM payments p
+         INNER JOIN appointments a ON a.id = COALESCE(p.appointment_id, CASE WHEN p.payable_type LIKE '%appointment%' THEN p.payable_id END)
+         WHERE a.doctor_id = ? AND ${paid}`,
+        [doctorId],
+      ).catch(() => null);
+      appointments = Number(row?.total ?? 0);
+    }
+    const instantTable = (await tableExists("instant_consultation_requests"))
+      ? "instant_consultation_requests"
+      : ((await tableExists("instant_consultations")) ? "instant_consultations" : null);
+    if (instantTable && doctorId && await hasColumn(instantTable, "doctor_id") && await tableExists("payments")) {
+      const row = await one(
+        `SELECT COUNT(DISTINCT i.id) AS total
+         FROM payments p
+         INNER JOIN \`${instantTable}\` i ON i.id = p.payable_id
+         WHERE i.doctor_id = ? AND p.payable_type LIKE '%instant%' AND ${paid}`,
+        [doctorId],
+      ).catch(() => null);
+      instants = Number(row?.total ?? 0);
+    }
+    return { appointments, instants };
+  }
+
   async function doctorWithdrawnTotal(doctorId, userId) {
     const table = (await tableExists("doctor_withdrawals"))
       ? "doctor_withdrawals"
@@ -1824,6 +1854,7 @@ export function appRoutes(router) {
       };
       const completedSql = "status IN ('completed','done','complete','paid')";
       let revenueTotal = await sumAmount(`${window.sql} AND ${completedSql}`, window.params);
+      let instantPaidCount = 0;
       const previousTotal = await sumAmount(`${previous.sql} AND ${completedSql}`, previous.params);
       const revenueCount = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} AND ${completedSql}`, [doctorId, ...window.params]);
       const onlineRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND \`${typeColumn}\` NOT LIKE '%person%' AND \`${typeColumn}\` NOT LIKE '%instant%'`, window.params) : revenueTotal;
@@ -1841,13 +1872,16 @@ export function appRoutes(router) {
       }
       if (await tableExists("instant_consultation_requests") && await tableExists("payments") && await hasColumn("payments", "payable_id")) {
         const instantPaid = await one(
-          `SELECT COALESCE(SUM(p.amount), 0) AS total
+          `SELECT COALESCE(SUM(p.amount), 0) AS total, COUNT(DISTINCT i.id) AS visits
            FROM payments p
            INNER JOIN instant_consultation_requests i ON i.id = p.payable_id
            WHERE i.doctor_id = ? AND p.status IN ('paid','completed','success','successful') AND p.payable_type LIKE '%instant%'`,
           [doctorId],
         ).catch(() => null);
-        if (instantPaid) revenueTotal += Number(instantPaid.total ?? 0);
+        if (instantPaid) {
+          revenueTotal += Number(instantPaid.total ?? 0);
+          instantPaidCount = Number(instantPaid.visits ?? 0);
+        }
       }
       const change = previousTotal > 0 ? Math.round(((revenueTotal - previousTotal) / previousTotal) * 1000) / 10 : null;
       const labelExpr = !dateColumn
@@ -2003,7 +2037,7 @@ export function appRoutes(router) {
           previous_period_total: previousTotal,
           change_percent: change,
           appointment_count: revenueCount,
-          avg_per_appointment: revenueCount > 0 ? Math.round(revenueTotal / revenueCount) : 0,
+          avg_per_appointment: earnedAverage(revenueTotal, revenueCount, instantPaidCount),
           breakdown: {
             online: { total: onlineRevenue, count: onlineCount },
             in_person: { total: inPersonRevenue, count: inPersonCount },
@@ -2101,11 +2135,13 @@ export function appRoutes(router) {
       ).catch(() => []);
       const paidEarnings = await doctorPaidEarnings(doctorId);
       const totalEarned = paidEarnings > 0 ? paidEarnings : Number(summary?.total_earned ?? 0);
+      const paidVisits = await doctorPaidVisitCounts(doctorId);
+      const paidAppointments = paidVisits.appointments > 0 || paidVisits.instants > 0 ? paidVisits.appointments : total;
       res.json({
         summary: {
           total_appointments: total,
           total_earned: totalEarned,
-          average_per_appointment: total > 0 ? Math.round(Number(summary.total_earned) / total) : 0,
+          average_per_appointment: earnedAverage(totalEarned, paidAppointments, paidVisits.instants),
           last_appointment_at: summary?.last_appointment_at ?? null,
         },
         breakdown: paginateList({

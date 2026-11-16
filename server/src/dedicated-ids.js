@@ -17,6 +17,7 @@ import {
 import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
+import { attachMedicineStock, lowStockFilter } from "./medicine-stock.js";
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
 
@@ -505,6 +506,13 @@ async function extraFilters(req, table, spec) {
   if (req.query.is_emergency === "false" && (await hasColumn(table, "is_emergency"))) {
     filters.push("`is_emergency` = 0");
   }
+  if (
+    ["medicines", "pharmacy-inventory-medicines"].includes(spec.resource)
+    && ["1", "true", "yes"].includes(String(req.query.low_stock || "").toLowerCase())
+  ) {
+    const clause = await lowStockFilter(table);
+    if (clause) filters.push(clause);
+  }
   return { filters, params };
 }
 
@@ -567,6 +575,7 @@ async function presentDedicated(table, row, spec) {
   if (table === "team_members") presented = withTeamPhoto(presented);
   if (NAMED_TABLES.has(table)) [presented] = await verifierNames([presented]);
   [presented] = await attachAccountUsers(table, [presented]);
+  if (["medicines", "pharmacy_medicines"].includes(table)) presented = await attachMedicineStock(presented);
   return withPk(presented, spec.idName);
 }
 
@@ -601,6 +610,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
           if (NAMED_TABLES.has(table)) data = await verifierNames(Array.isArray(data) ? data : []);
           data = await attachAccountUsers(table, Array.isArray(data) ? data : []);
+          if (["medicines", "pharmacy_medicines"].includes(table)) data = await attachMedicineStock(data);
           data = (Array.isArray(data) ? data : []).map((row) => withPk(row, spec.idName));
           const pagePayload = paginateList({
             data,
