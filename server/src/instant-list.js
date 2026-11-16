@@ -1,4 +1,5 @@
 import { hasColumn, one, pageArgs, paginateList, q, tableExists } from "./db.js";
+import { decorateVisitRows } from "./visit-rows.js";
 import { consultationAmount } from "./public.js";
 import { loadInstantViewer } from "./visit-rules.js";
 import {
@@ -125,8 +126,13 @@ async function shapeOwnedInstant(table, row) {
   const amount = await consultationAmount({ doctor_id: row.doctor_id, amount: row.amount });
   const canJoin = canJoinInstant(row);
   const paymentStatus = row.payment_status || (row.status === "confirmed" ? "paid" : null);
-  return {
+  return decorateVisitRows({
     id: row.id,
+    patient_id: row.patient_id || null,
+    hospital_id: row.hospital_id || null,
+    pharmacy_id: row.pharmacy_id || null,
+    service_id: row.service_id || null,
+    guest_name: row.guest_name || null,
     status: row.status || "pending",
     payment_status: paymentStatus,
     doctor_id: row.doctor_id || null,
@@ -141,7 +147,7 @@ async function shapeOwnedInstant(table, row) {
     room_url: canJoin
       ? (row.daily_room_url || row.room_url || `/consultation/${row.daily_room_name || row.room_name || `instant-${row.id}`}`)
       : null,
-  };
+  });
 }
 
 export async function listOwnedInstantConsultations(user, query = {}) {
