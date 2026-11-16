@@ -79,9 +79,22 @@ async function attachDoctorRelations(doctors) {
     ...doctor,
     name: doctor.name || doctor.user_name,
     user_avatar: doctor.user_avatar,
-    hospitals: hospitals.filter((row) => row.doctor_id === doctor.id).map(({ name, city }) => ({ name, city })),
-    specializations: specs.filter((row) => row.doctor_id === doctor.id).map(({ name }) => name),
+    hospitals: hospitals.filter((row) => row.doctor_id === doctor.id).map(({ id, name, city }) => ({ id, name, city })),
+    specializations: specs.filter((row) => row.doctor_id === doctor.id).map(({ id, name }) => ({ id, name })),
   }));
+}
+
+async function facilityInsurances(linkTable, idColumn, id) {
+  if (!id || !(await tableExists(linkTable)) || !(await tableExists("insurances"))) return [];
+  if (!(await hasColumn(linkTable, idColumn)) || !(await hasColumn(linkTable, "insurance_id"))) return [];
+  return q(
+    `SELECT i.id, i.name, i.code, i.logo
+     FROM \`${linkTable}\` link_row
+     JOIN insurances i ON i.id = link_row.insurance_id
+     WHERE link_row.\`${idColumn}\` = ?
+     ORDER BY i.name`,
+    [id],
+  ).catch(() => []);
 }
 
 function kigaliDay(isoDate) {
@@ -1093,15 +1106,17 @@ export function publicRoutes(router) {
       const total = await countWhere("hospitals h", where, params);
       const rows = await presentRows("hospitals", await q(`SELECT h.* FROM hospitals h ${where} ORDER BY h.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
       const data = await Promise.all(rows.map(async (hospital) => {
-        const departments = await q("SELECT id, name_en FROM hospital_departments WHERE hospital_id = ?", [hospital.id]).catch(() => []);
+        const departments = await q("SELECT * FROM hospital_departments WHERE hospital_id = ?", [hospital.id]).catch(() => []);
         const hours = await q("SELECT day, day_of_week, open_time, close_time, is_closed FROM hospital_working_hours WHERE hospital_id = ?", [hospital.id]).catch(() => []);
         const doctorsCount = await one("SELECT COUNT(*) AS total FROM hospital_doctors WHERE hospital_id = ?", [hospital.id]).catch(() => ({ total: 0 }));
+        const insurances = await facilityInsurances("hospital_insurances", "hospital_id", hospital.id);
         return publicHospital({
           ...hospital,
           name_en: hospital.name_en || hospital.name,
           doctors_count: Number(doctorsCount?.total ?? 0),
           departments_count: departments.length,
           departments,
+          ...(insurances.length ? { insurances } : {}),
           working_hours: hours,
         });
       }));
@@ -1115,7 +1130,16 @@ export function publicRoutes(router) {
     try {
       const row = await one("SELECT * FROM hospitals WHERE slug = ? OR id = ? LIMIT 1", [req.params.slug, req.params.slug]);
       if (!row || !publiclyListed(row.status)) return res.status(404).json({ message: "Hospital not found." });
-      res.json({ data: publicHospital(await presentRow("hospitals", row)) });
+      const hospital = await presentRow("hospitals", row);
+      const departments = await q("SELECT * FROM hospital_departments WHERE hospital_id = ?", [row.id]).catch(() => []);
+      const insurances = await facilityInsurances("hospital_insurances", "hospital_id", row.id);
+      res.json({
+        data: publicHospital({
+          ...hospital,
+          departments,
+          ...(insurances.length ? { insurances } : {}),
+        }),
+      });
     } catch (error) {
       next(error);
     }
@@ -1138,10 +1162,14 @@ export function publicRoutes(router) {
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("pharmacies p", where, params);
       const rows = await presentRows("pharmacies", await q(`SELECT p.* FROM pharmacies p ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
-      const data = await Promise.all(rows.map(async (pharmacy) => publicPharmacy({
-        ...pharmacy,
-        working_hours: await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [pharmacy.id]).catch(() => []),
-      })));
+      const data = await Promise.all(rows.map(async (pharmacy) => {
+        const linked = await facilityInsurances("pharmacy_insurances", "pharmacy_id", pharmacy.id);
+        return publicPharmacy({
+          ...pharmacy,
+          working_hours: await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [pharmacy.id]).catch(() => []),
+          ...(linked.length ? { insurances: linked } : {}),
+        });
+      }));
       const last = Math.max(1, Math.ceil(total / perPage) || 1);
       res.json({
         status: "success",
@@ -1157,9 +1185,12 @@ export function publicRoutes(router) {
     try {
       const row = await one("SELECT * FROM pharmacies WHERE slug = ? LIMIT 1", [req.params.slug]);
       if (!row || !publiclyListed(row.status)) return res.status(404).json({ message: "Pharmacy not found." });
+      const presented = await presentRow("pharmacies", row);
+      const linked = await facilityInsurances("pharmacy_insurances", "pharmacy_id", row.id);
       const pharmacy = publicPharmacy({
-        ...(await presentRow("pharmacies", row)),
+        ...presented,
         working_hours: await q("SELECT * FROM pharmacy_working_hours WHERE pharmacy_id = ?", [row.id]).catch(() => []),
+        ...(linked.length ? { insurances: linked } : {}),
       });
       res.json({ status: "success", data: pharmacy });
     } catch (error) {

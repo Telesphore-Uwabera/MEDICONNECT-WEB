@@ -11,6 +11,7 @@ import {
 import { parseIdentityFromHtml, stripIdentityFromAttachments } from "@/lib/call-note-form";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { richDocumentCss, richDocumentHtml } from "@/lib/document-rich-text";
+import { withEmbeddedSignature } from "@/lib/private-document";
 
 export type DocumentBrandSettings = unknown;
 
@@ -35,7 +36,11 @@ function esc(v: unknown): string {
 }
 
 function get<T = unknown>(obj: unknown, path: string): T | undefined {
-  return path.split(".").reduce<any>((o, k) => (o == null ? o : o[k]), obj) as T | undefined;
+  const value = path.split(".").reduce<unknown>((current, key) => {
+    if (current == null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, obj);
+  return value as T | undefined;
 }
 
 function fmtDate(iso?: string): string {
@@ -79,9 +84,14 @@ function doctorSignatureUrl(s: ConsultationSummary): string {
   );
 }
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" ? value as Record<string, unknown> : undefined;
+}
+
 function getGeneral(settings?: DocumentBrandSettings): Record<string, unknown> {
-  const payload = (settings ?? {}) as any;
-  return payload?.general ?? payload?.settings?.general ?? payload?.settings ?? payload ?? {};
+  const payload = asRecord(settings) ?? {};
+  const nested = asRecord(payload.settings);
+  return asRecord(payload.general) ?? asRecord(nested?.general) ?? nested ?? payload;
 }
 
 function localized(value: unknown): string {
@@ -307,13 +317,15 @@ export function writeSummaryToWindow(
   settings?: DocumentBrandSettings,
 ): boolean {
   if (!win) return false;
-  win.document.open();
-  win.document.write(buildSummaryHtml(summary, settings));
-  win.document.close();
-  if (autoPrint) {
-    // Give the layout a tick before invoking print.
-    win.setTimeout(() => win.print(), 350);
-  }
+  void withEmbeddedSignature(summary).then((ready) => {
+    win.document.open();
+    win.document.write(buildSummaryHtml(ready, settings));
+    win.document.close();
+    if (autoPrint) {
+      // Give the layout a tick before invoking print.
+      win.setTimeout(() => win.print(), 350);
+    }
+  });
   return true;
 }
 

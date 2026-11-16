@@ -27,6 +27,7 @@ import { SpecialitiesStep } from "./SpecialitiesStep";
 import { EducationStep } from "./Educationstep";
 import { ExperienceStep, experienceCanSave } from "./Experiencestep";
 import { checkSocialLinks } from "@/lib/social-link";
+import { PrivateDocumentLink } from "@/components/private-document";
 import { QualificationsStep } from "./Qualificationsstep";
 import { SocialLinksStep } from "./Sociallinksstep";
 import { FileUploadBox } from "./Fileuploadbox";
@@ -572,14 +573,12 @@ export function DoctorProfileForm({
             {documents.existing?.medical_license_document_url ? (
               <div className="rounded-[6px] border border-border bg-muted/30 px-4 py-3">
                 <p className="text-[12px] font-semibold text-foreground">{t("doctorProfile.license_scan")}</p>
-                <a
+                <PrivateDocumentLink
                   href={documents.existing.medical_license_document_url}
-                  target="_blank"
-                  rel="noreferrer"
                   className="mt-1 inline-block text-[12px] text-primary underline"
                 >
                   {t("doctorProfile.view_license", { defaultValue: "View uploaded license" })}
-                </a>
+                </PrivateDocumentLink>
                 <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                   {t("doctorProfile.license_renewal_admin", {
                     defaultValue: "A renewed license is uploaded by an admin, so the document cannot be replaced from this profile.",

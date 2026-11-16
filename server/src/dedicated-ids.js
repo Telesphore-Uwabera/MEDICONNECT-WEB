@@ -17,13 +17,10 @@ import {
 import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
-import { stripCallSecrets } from "./public-profile.js";
-
-const INSTANT_TABLES = new Set(["instant_consultation_requests", "instant_consultations"]);
+import { presentWithoutCallSecrets } from "./public-profile.js";
 
 function hideCallSecrets(scope, table, rows) {
-  if (scope === "admin" || !INSTANT_TABLES.has(table)) return rows;
-  return stripCallSecrets(rows);
+  return presentWithoutCallSecrets(scope, table, rows);
 }
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };

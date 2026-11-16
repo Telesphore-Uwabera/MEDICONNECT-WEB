@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PrivateDocumentImage, PrivateDocumentLink } from "@/components/private-document";
 import { doctorIsApproved, doctorProfileReady } from "@/lib/doctor-profile-ready";
 import i18n from "@/lib/i18n";
 
@@ -214,8 +215,8 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
             ? `${BASE_URL}/${doc.documents.national_id_document.path}`
             : null,
         signature_url:
-          resolveStorageUrl((doc as any).signature_url) ??
-          resolveStorageUrl((doc as any).signature) ??
+          resolveStorageUrl((doc as { signature_url?: string | null }).signature_url) ??
+          resolveStorageUrl((doc as { signature?: string | null }).signature) ??
           resolveStorageUrl(doc.documents?.signature?.url) ??
           resolveStorageUrl(doc.documents?.signature?.path) ??
           null,
@@ -794,7 +795,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
             key="existing-signature"
             className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
           >
-            <img
+            <PrivateDocumentImage
               src={url}
               alt={t("doctorProfile.signature", "Signature")}
               className="h-10 w-24 rounded-[4px] object-contain shrink-0 border border-border bg-background"
@@ -830,11 +831,9 @@ const ViewDocuments = React.memo(function ViewDocuments({
           </div>
         ) : (
           
-          <a
+          <PrivateDocumentLink
             key={`existing-${label}`}
             href={url}
-            target="_blank"
-            rel="noopener noreferrer"
             className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
           >
             <FileText className="h-4 w-4 text-primary shrink-0" />
@@ -846,7 +845,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
                 {t("doctorProfile.view_uploaded_file")}
               </p>
             </div>
-          </a>
+          </PrivateDocumentLink>
         ),
       )}
     </div>
