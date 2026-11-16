@@ -4,7 +4,7 @@ import os from "os";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "url";
-import { commitSearchRoots, normalizeCommit, resolveRunningCommit } from "./runtime-commit.js";
+import { commitSearchRoots, installRoot, normalizeCommit, resolveRunningCommit } from "./runtime-commit.js";
 
 function git(cwd, args) {
   execFileSync("git", args, {
@@ -43,6 +43,25 @@ describe("running commit", () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
     expect(commitSearchRoots()).toContain(path.resolve(here, ".."));
     expect(commitSearchRoots()).toContain(process.cwd());
+    expect(commitSearchRoots()[0]).toBe(installRoot());
+  });
+
+  it("reads the sha from the install root beside src, ahead of another checkout", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "mediconnect-install-"));
+    const other = fs.mkdtempSync(path.join(os.tmpdir(), "mediconnect-other-"));
+    git(other, ["init"]);
+    fs.writeFileSync(path.join(other, "README"), "other\n");
+    git(other, ["add", "README"]);
+    git(other, ["commit", "-m", "other"]);
+    fs.mkdirSync(path.join(root, "src"));
+    const filed = "d".repeat(40);
+    fs.writeFileSync(path.join(root, "COMMIT"), `${filed}\n`);
+    expect(resolveRunningCommit({}, [root, other])).toBe(filed);
+    const previousDest = process.env.MEDICONNECT_DEST;
+    delete process.env.MEDICONNECT_DEST;
+    expect(installRoot()).toBe(path.resolve("/opt/mediconnect-node"));
+    if (previousDest == null) delete process.env.MEDICONNECT_DEST;
+    else process.env.MEDICONNECT_DEST = previousDest;
   });
 });
 

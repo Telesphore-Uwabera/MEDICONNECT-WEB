@@ -51,9 +51,19 @@ export function resolveRunningCommit(env = process.env, roots = []) {
   return "";
 }
 
-/** Install root (parent of this file), the working directory, and its parent. */
+/** Where the installed deploy.sh writes COMMIT. The source tree sits in src/ beside it. */
+export function installRoot() {
+  return path.resolve(process.env.MEDICONNECT_DEST || "/opt/mediconnect-node");
+}
+
+/**
+ * The installed script writes /opt/mediconnect-node/COMMIT and copies code to
+ * /opt/mediconnect-node/src. Check that directory first, then the parent of
+ * this file, the working directory, and its parent.
+ */
 export function commitSearchRoots(fromDir = __dirname) {
   return [
+    installRoot(),
     path.resolve(fromDir, ".."),
     process.cwd(),
     path.resolve(process.cwd(), ".."),
