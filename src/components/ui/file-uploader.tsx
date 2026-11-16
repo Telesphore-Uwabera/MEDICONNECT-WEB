@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ImageCropDialog } from "./image-crop-dialog";
 import { autoCropLargeImageToCard } from "@/lib/image-cropper";
+import { PrivateDocumentLink } from "@/components/private-document";
 
 type FileValue = File | File[] | null | undefined;
 
@@ -342,15 +343,12 @@ export const FileUploader = React.memo(function FileUploader({
               <CheckCircle2 className="h-5 w-5" />
             </span>
             <p className="text-xs font-semibold text-foreground">{label}</p>
-            <a
+            <PrivateDocumentLink
               href={existingUrl}
-              target="_blank"
-              rel="noreferrer"
               className="text-[11px] font-semibold text-primary hover:underline"
-              onClick={(event) => event.stopPropagation()}
             >
               {existingLabel ?? t("common.fileUploader.viewCurrent", { defaultValue: "View current file" })}
-            </a>
+            </PrivateDocumentLink>
             <p className="text-[10px] text-muted-foreground">
               {t("common.fileUploader.dropToReplace", { defaultValue: "Drop a new file here to replace it." })}
             </p>

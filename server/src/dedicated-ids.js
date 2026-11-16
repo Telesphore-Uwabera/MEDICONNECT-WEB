@@ -17,6 +17,11 @@ import {
 import { insuranceCatalogWhere, patientOwnedWhere, stripClientOwners, visitBodyGuard } from "./visit-rules.js";
 import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
+import { presentWithoutCallSecrets } from "./public-profile.js";
+
+function hideCallSecrets(scope, table, rows) {
+  return presentWithoutCallSecrets(scope, table, rows);
+}
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
 
@@ -561,12 +566,13 @@ async function attachAccountUsers(table, rows) {
   });
 }
 
-async function presentDedicated(table, row, spec) {
+async function presentDedicated(table, row, spec, scope) {
   let presented = await presentRow(table, row);
   if (table === "appointments") presented = await decorateAppointments(presented);
   if (table === "team_members") presented = withTeamPhoto(presented);
   if (NAMED_TABLES.has(table)) [presented] = await verifierNames([presented]);
   [presented] = await attachAccountUsers(table, [presented]);
+  presented = hideCallSecrets(scope, table, presented);
   return withPk(presented, spec.idName);
 }
 
@@ -601,6 +607,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
           if (NAMED_TABLES.has(table)) data = await verifierNames(Array.isArray(data) ? data : []);
           data = await attachAccountUsers(table, Array.isArray(data) ? data : []);
+          data = hideCallSecrets(scope, table, Array.isArray(data) ? data : []);
           data = (Array.isArray(data) ? data : []).map((row) => withPk(row, spec.idName));
           const pagePayload = paginateList({
             data,
@@ -622,7 +629,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
           const { table, row } = await loadOwnedRow(scope, spec, req.user, recordId);
           if (!table) return next();
           if (!row) return res.status(404).json({ message: "Record not found." });
-          const tagged = await presentDedicated(table, row, spec);
+          const tagged = await presentDedicated(table, row, spec, scope);
           res.json({ data: tagged, [spec.idName.replace(/_id$/, "")]: tagged, ...tagged });
         } catch (error) {
           next(error);

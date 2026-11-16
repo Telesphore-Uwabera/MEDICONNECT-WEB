@@ -20,6 +20,7 @@ import { withLiveIce } from "./call-token.js";
 import { readAuditLogs, readPublicSettings, readSettingsGroup, writeSettingsGroup } from "./system-settings.js";
 import { normalizeStoredPhone } from "./phone.js";
 import { clientMayClaimEmail } from "./guest-account.js";
+import { presentWithoutCallSecrets } from "./public-profile.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -1065,7 +1066,7 @@ export function registerActions(router, RESOURCES) {
           return res.status(403).json({ message: "You do not have access to this record." });
         }
         const row = await presentRow(table, currentRow);
-        return res.json({ data: row, ...row });
+        return res.json(presentWithoutCallSecrets(parts[0], table, { data: row, ...row }));
       }
       if (!action) {
         if (await fillGap(req, res, parts)) return;

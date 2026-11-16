@@ -81,7 +81,8 @@ function DoctorAvatar({
   size?: "sm" | "lg";
 }) {
   const [imgError, setImgError] = useState(false);
-  const initials = doctor.user.name
+  const displayName = doctor.name || doctor.user?.name || "";
+  const initials = displayName
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -92,7 +93,7 @@ function DoctorAvatar({
       ? "h-full w-full text-2xl sm:text-3xl"
       : "h-full w-full text-sm";
 
-  const rawImage = doctor.image || doctor.user?.avatar;
+  const rawImage = doctor.image || doctor.photo || doctor.avatar || doctor.user?.avatar;
   const imageSrc = resolveMediaUrl(rawImage);
 
   if (!imageSrc || imgError) {
@@ -110,7 +111,7 @@ function DoctorAvatar({
   return (
     <img
       src={imageSrc}
-      alt={doctor.user.name}
+      alt={displayName}
       className="h-full w-full object-cover object-top md:object-center rounded-[inherit] transition-transform duration-500 group-hover/img:scale-105"
       onError={() => setImgError(true)}
     />
@@ -464,7 +465,7 @@ export function UnifiedModal({
               )}
               <span className="text-sm font-semibold text-foreground/70 truncate">
                 {mode === "details"
-                  ? doctor.user.name
+                  ? (doctor.name || doctor.user?.name || "")
                   : t("pages.cards.instant_consultation")}
               </span>
             </div>
@@ -517,7 +518,7 @@ export function UnifiedModal({
 
                     <div className="mt-3 flex items-center justify-center gap-1.5 flex-wrap">
                       <h2 className="text-base font-semibold text-foreground leading-tight">
-                        {doctor.user.name}
+                        {(doctor.name || doctor.user?.name || "")}
                       </h2>
                       {doctor.verified_at && (
                         <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
@@ -774,9 +775,9 @@ export const DoctorCard = ({
   const callDoctor: Doctor = {
     id: doctor.id,
     user: {
-      id: doctor.user.id,
-      name: doctor.user.name,
-      avatar: doctor.user.avatar,
+      id: doctor.user?.id ?? doctor.id,
+      name: (doctor.name || doctor.user?.name || ""),
+      avatar: doctor.avatar || doctor.image || doctor.user?.avatar || null,
     },
     specialization: doctorSpecialityLabel(doctor),
   };
@@ -858,7 +859,7 @@ export const DoctorCard = ({
           </button>
           <div className="mb-3 min-w-0">
             <h3 className="text-base font-bold leading-tight break-words text-foreground sm:truncate">
-              {doctor.user.name}
+              {(doctor.name || doctor.user?.name || "")}
             </h3>
             <p className="mt-0.5 flex min-w-0 items-start gap-1 text-xs font-medium text-primary sm:items-center sm:truncate">
               <BriefcaseMedical className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:mt-0" />
