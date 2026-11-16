@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { average, displayedPaymentStatus, durationMinutes, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { average, displayedPaymentStatus, durationMinutes, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliTodayMatchSql, kigaliTodaySql } from "./dashboard-stats.js";
 
 describe("dashboard stat helpers", () => {
   it("shifts a timestamp onto the Kigali day without running MySQL", () => {
@@ -25,5 +25,12 @@ describe("dashboard stat helpers", () => {
     expect(historyPageArgs({ page: "2", limit: "10" })).toEqual({ page: 2, limit: 10, offset: 10 });
     expect(historyPageArgs({ history_page: "3", page: "1", history_per_page: "5" })).toEqual({ page: 3, limit: 5, offset: 10 });
     expect(historyPageArgs({})).toEqual({ page: 1, limit: 100, offset: 0 });
+  });
+
+  it("builds the history paging object the installed app reads", () => {
+    expect(historyMeta(2, 10, 25)).toEqual({ current_page: 2, last_page: 3, per_page: 10, total: 25 });
+    expect(historyMeta(1, 100, 0)).toEqual({ current_page: 1, last_page: 1, per_page: 100, total: 0 });
+    expect(kigaliTodayMatchSql()).toContain("INTERVAL 2 HOUR");
+    expect(kigaliTodayMatchSql()).not.toContain("CURDATE()");
   });
 });

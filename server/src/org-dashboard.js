@@ -1,5 +1,5 @@
 import { hasColumn, one, q, tableExists } from "./db.js";
-import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
+import { kigaliDaySql, kigaliTodayMatchSql, kigaliTodaySql } from "./dashboard-stats.js";
 import { loadOwnedId } from "./auth.js";
 
 function ranges(query) {
@@ -117,7 +117,7 @@ export async function pharmacyDashboard(req) {
   if (await tableExists("pharmacy_orders") && await hasColumn("pharmacy_orders", "pharmacy_id")) {
     const current = orderDate ? dated(window.current, orderDate) : { sql: "1=1", params: [] };
     const previous = orderDate ? dated(window.previous, orderDate) : { sql: "1=0", params: [] };
-    const today = orderDate ? dated({ sql: "DATE({col}) = CURDATE()", params: [] }, orderDate) : current;
+    const today = orderDate ? dated({ sql: kigaliTodayMatchSql(), params: [] }, orderDate) : current;
     const orders = tally(await grouped("pharmacy_orders", `pharmacy_id = ? AND ${current.sql}`, [pharmacyId, ...current.params]));
     const todayOrders = tally(await grouped("pharmacy_orders", `pharmacy_id = ? AND ${today.sql}`, [pharmacyId, ...today.params]));
     const done = ["completed", "dispensed", "paid", "delivered"];
@@ -422,7 +422,7 @@ export async function hospitalDashboard(req) {
   if (await tableExists("service_bookings") && await hasColumn("service_bookings", "hospital_id")) {
     const dateColumn = (await hasColumn("service_bookings", "preferred_date")) ? "preferred_date" : "created_at";
     const current = dated(window.current, dateColumn);
-    const today = dated({ sql: "DATE({col}) = CURDATE()", params: [] }, dateColumn);
+    const today = dated({ sql: kigaliTodayMatchSql(), params: [] }, dateColumn);
     bookings = tally(await grouped("service_bookings", `hospital_id = ? AND ${current.sql}`, [hospitalId, ...current.params]));
     todayBookings = tally(await grouped("service_bookings", `hospital_id = ? AND ${today.sql}`, [hospitalId, ...today.params]));
     const moneyColumn = (await hasColumn("service_bookings", "patient_pays"))
@@ -477,7 +477,7 @@ export async function hospitalDashboard(req) {
   if (apptScope && await tableExists("appointments")) {
     const dateColumn = (await hasColumn("appointments", "appointment_date")) ? "appointment_date" : "created_at";
     const current = dated(window.current, dateColumn);
-    const today = dated({ sql: "DATE({col}) = CURDATE()", params: [] }, dateColumn);
+    const today = dated({ sql: kigaliTodayMatchSql(), params: [] }, dateColumn);
     appointments = tally(await grouped("appointments", `${apptScope.sql} AND ${current.sql}`, [...apptScope.params, ...current.params]));
     todayAppointments = tally(await grouped("appointments", `${apptScope.sql} AND ${today.sql}`, [...apptScope.params, ...today.params]));
     if (await hasColumn("appointments", "patient_id")) {

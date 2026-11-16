@@ -33,6 +33,24 @@ export function historyPageArgs(query = {}) {
   return { page, limit, offset: (page - 1) * limit };
 }
 
+/** Paging object the installed app reads from history_meta, history_pagination, or meta. */
+export function historyMeta(page, perPage, total) {
+  const current = Math.max(1, Number(page) || 1);
+  const size = Math.max(1, Number(perPage) || 1);
+  const count = Math.max(0, Number(total) || 0);
+  return {
+    current_page: current,
+    last_page: Math.max(1, Math.ceil(count / size) || 1),
+    per_page: size,
+    total: count,
+  };
+}
+
+/** "Today" filter: the stored timestamp's Kigali day equals today's Kigali day. `{col}` is filled in by the caller. */
+export function kigaliTodayMatchSql() {
+  return `DATE(DATE_ADD({col}, INTERVAL 2 HOUR)) = ${kigaliTodaySql()}`;
+}
+
 export function durationMinutes(start, end) {
   const from = start ? new Date(start).getTime() : NaN;
   const to = end ? new Date(end).getTime() : NaN;

@@ -2,6 +2,8 @@ import express from "express";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const writes = [];
+const tokenDeletes = [];
+let tokensTable = false;
 const account = {
   id: 7,
   password: "",
@@ -13,9 +15,15 @@ vi.mock("./db.js", async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    tableExists: async () => false,
+    tableExists: async (name) => tokensTable && name === "personal_access_tokens",
     hasColumn: async () => false,
     q: async () => [],
+    pool: {
+      query: async (sql, params) => {
+        tokenDeletes.push({ sql: String(sql), params });
+        return [{ affectedRows: 1 }];
+      },
+    },
     one: async () => account,
     insert: async () => 1,
     update: async (_table, _id, data) => {
@@ -30,12 +38,13 @@ vi.mock("./db.js", async (importOriginal) => {
 const { hashPassword } = await import("./auth.js");
 const { appRoutes } = await import("./app.js");
 
-function request(body, lang = "en") {
+function request(body, lang = "en", { tokenId = null, path = "/settings/password" } = {}) {
   const app = express();
   app.use(express.json());
   const router = express.Router();
   router.use((req, _res, next) => {
     req.user = { id: account.id, preferred_language: lang, role: "patient", active_role: "patient" };
+    if (tokenId) req.auth = { token: { id: tokenId } };
     next();
   });
   appRoutes(router);
@@ -47,7 +56,7 @@ function request(body, lang = "en") {
     const server = app.listen(0, "127.0.0.1", async () => {
       try {
         const { port } = server.address();
-        const response = await fetch(`http://127.0.0.1:${port}/api/v1/settings/password`, {
+        const response = await fetch(`http://127.0.0.1:${port}/api/v1${path}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
@@ -63,6 +72,8 @@ function request(body, lang = "en") {
 describe("settings password change", () => {
   beforeEach(async () => {
     writes.length = 0;
+    tokenDeletes.length = 0;
+    tokensTable = false;
     account.password = await hashPassword("current-secret");
     account.password_must_change = 0;
   });
@@ -130,5 +141,29 @@ describe("settings password change", () => {
     expect(reused.status).toBe(422);
     expect(reused.body.message).toMatch(/different/i);
     expect(writes).toEqual([]);
+  });
+
+  it("revokes other tokens and ignores a longer password path", async () => {
+    tokensTable = true;
+    const saved = await request({
+      current_password: "current-secret",
+      password: "replacement-1",
+      password_confirmation: "replacement-1",
+    }, "en", { tokenId: 42 });
+    expect(saved.status).toBe(200);
+    expect(tokenDeletes).toEqual([{
+      sql: "DELETE FROM personal_access_tokens WHERE tokenable_id = ? AND id <> ?",
+      params: [account.id, 42],
+    }]);
+    tokenDeletes.length = 0;
+    writes.length = 0;
+    const untouched = await request({
+      current_password: "replacement-1",
+      password: "another-secret",
+      password_confirmation: "another-secret",
+    }, "en", { tokenId: 42, path: "/settings/password/extra" });
+    expect(untouched.body.message).not.toBe("Password updated.");
+    expect(writes).toEqual([]);
+    expect(tokenDeletes).toEqual([]);
   });
 });

@@ -54,7 +54,7 @@ import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
-import { average, displayedPaymentStatus, durationMinutes, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { average, displayedPaymentStatus, durationMinutes, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -80,6 +80,7 @@ import {
 // ensureDoctorSearchFields is not present in all db.js versions — define a safe no-op
 const ensureDoctorSearchFields = async () => {};
 import {
+  ensurePatientRow,
   ensureRole,
   findUserByLogin,
   hashPassword,
@@ -1850,10 +1851,10 @@ export function appRoutes(router) {
       }
       const change = previousTotal > 0 ? Math.round(((revenueTotal - previousTotal) / previousTotal) * 1000) / 10 : null;
       const labelExpr = !dateColumn
-        ? "CURDATE()"
+        ? kigaliTodaySql()
         : chartGroup === "month"
-          ? `DATE_FORMAT(\`${dateColumn}\`, '%Y-%m-01')`
-          : `DATE(\`${dateColumn}\`)`;
+          ? `DATE_FORMAT(DATE_ADD(\`${dateColumn}\`, INTERVAL 2 HOUR), '%Y-%m-01')`
+          : kigaliDaySql(dateColumn);
       const flow = dateColumn ? await q(
         `SELECT ${labelExpr} AS label, COUNT(*) AS patients, SUM(CASE WHEN status IN ('completed','done','complete') THEN 1 ELSE 0 END) AS completed
          FROM appointments WHERE ${owned} AND ${window.sql} GROUP BY label ORDER BY label`,
@@ -2280,12 +2281,16 @@ export function appRoutes(router) {
         .filter((value) => value != null);
       const history = queue.filter((item) => finishedStatus.includes(String(item.status || "").toLowerCase()));
       const historyPage = historyPageArgs(req.query);
+      const paging = historyMeta(historyPage.page, historyPage.limit, historyTotal);
       res.json({
         queue,
         history,
-        history_page: historyPage.page,
-        history_per_page: historyPage.limit,
-        history_total: historyTotal,
+        history_page: paging.current_page,
+        history_per_page: paging.per_page,
+        history_total: paging.total,
+        history_meta: paging,
+        history_pagination: paging,
+        meta: paging,
         stats: {
           in_queue: liveQueue.length,
           seen_today: seenToday,
@@ -3578,6 +3583,7 @@ export function appRoutes(router) {
       if (req.params.resource === "profile") {
         const table = PROFILE_TABLE[req.params.scope];
         if (!table) return next();
+        if (req.params.scope === "patient") await ensurePatientRow(req.user);
         const row = await one(`SELECT * FROM \`${table}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [req.user.id]);
         return res.json({ data: await presentRow(table, row), ...(await presentRow(table, row)) });
       }
@@ -3621,6 +3627,10 @@ export function appRoutes(router) {
       if (!id) {
         await createProfile(req.user, req.params.scope);
         id = await loadOwnedId(req.user.id, table);
+      }
+      if (!id && req.params.scope === "patient") {
+        const created = await ensurePatientRow(req.user);
+        id = created?.id || null;
       }
       if (!id) return res.status(404).json({ message: "Profile not found." });
       const body = profileFormBody(req.body ?? {}, { doctor: req.params.scope === "doctor" });
