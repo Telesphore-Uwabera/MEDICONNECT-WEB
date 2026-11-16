@@ -51,7 +51,7 @@ async function install(page: Page, role: string) {
         data: [{
           id: 77,
           status: "confirmed",
-          appointment_date: "2026-11-12",
+          appointment_date: "2099-11-12",
           appointment_time: "15:00:00",
           can_join: true,
           doctor: { user: { name: "Aline Mukamana" } },

@@ -4,7 +4,7 @@ function json(route: Route, body: unknown) {
   return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
 }
 
-test("the doctor instant queue shows a paid request and hides an unpaid one", async ({ page }) => {
+test("the doctor instant queue shows a paid request and an unpaid one waiting for payment", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("auth_token", "doctor-token");
     localStorage.setItem("lang", "en");
@@ -49,5 +49,6 @@ test("the doctor instant queue shows a paid request and hides an unpaid one", as
 
   await page.goto("/doctor/appointments?tab=instant");
   await expect(page.getByText("Paid Amina").first()).toBeVisible();
-  await expect(page.getByText("Unpaid Keza")).toHaveCount(0);
+  await expect(page.getByText("Unpaid Keza").first()).toBeVisible();
+  await expect(page.getByText("Awaiting payment").first()).toBeVisible();
 });
