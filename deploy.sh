@@ -64,16 +64,48 @@ if [ ! -d "$CLONE/server/src" ]; then
   exit 1
 fi
 
-# The API lives at /opt/mediconnect-node/src. Copy only that source tree.
+# The API lives at /opt/mediconnect-node/src. Copy only that source tree into a
+# staging directory and swap it into place. A failed copy leaves the live src.
 # Leave the frontend src, package.json, .env, and uploaded files where they are.
 mkdir -p "$DEST"
-rm -rf "$DEST/src"
-mkdir -p "$DEST/src"
-cp -a "$CLONE/server/src/." "$DEST/src/"
+STAGE="$DEST/src.next"
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+cp -a "$CLONE/server/src/." "$STAGE/"
+if [ -d "$DEST/src" ]; then
+  rm -rf "$DEST/src.previous"
+  mv "$DEST/src" "$DEST/src.previous"
+  if ! mv "$STAGE" "$DEST/src"; then
+    mv "$DEST/src.previous" "$DEST/src"
+    echo "Could not swap in the new source. The previous src is still in place." >&2
+    exit 1
+  fi
+  rm -rf "$DEST/src.previous"
+else
+  mv "$STAGE" "$DEST/src"
+fi
 printf '%s\n' "$SHA" > "$DEST/COMMIT"
 
+# npm install only when the API lockfile changed since the last install.
 if [ "${MEDICONNECT_SKIP_INSTALL:-}" != "1" ] && [ -f "$DEST/package.json" ]; then
-  npm install --omit=dev --prefix "$DEST"
+  LOCK=""
+  if [ -f "$CLONE/server/package-lock.json" ]; then
+    LOCK="$CLONE/server/package-lock.json"
+  elif [ -f "$CLONE/package-lock.json" ]; then
+    LOCK="$CLONE/package-lock.json"
+  fi
+  if [ -n "$LOCK" ]; then
+    LOCK_SHA=$(sha256sum "$LOCK" | awk '{print $1}')
+    STAMP="$DEST/.package-lock.sha"
+    PREVIOUS=""
+    if [ -f "$STAMP" ]; then
+      PREVIOUS=$(tr -d '[:space:]' < "$STAMP")
+    fi
+    if [ "$LOCK_SHA" != "$PREVIOUS" ]; then
+      npm install --omit=dev --prefix "$DEST"
+      printf '%s\n' "$LOCK_SHA" > "$STAMP"
+    fi
+  fi
 fi
 
 if [ "${MEDICONNECT_SKIP_RESTART:-}" = "1" ]; then

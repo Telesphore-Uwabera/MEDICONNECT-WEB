@@ -96,6 +96,91 @@ describe("deploy.sh", () => {
     expect(fs.readFileSync(path.join(dest, "src/marker.js"), "utf8")).toBe("second\n");
     expect(fs.readFileSync(path.join(dest, "package.json"), "utf8")).toBe("{\"name\":\"already-installed\"}\n");
     expect(fs.existsSync(path.join(dest, "src/App.tsx"))).toBe(false);
+    expect(fs.existsSync(path.join(dest, "src.next"))).toBe(false);
+  });
+
+  it("keeps the live source when the staged copy fails", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "mediconnect-deploy-swap-"));
+    const origin = path.join(root, "origin.git");
+    const seed = path.join(root, "seed");
+    const clone = path.join(root, "clone");
+    const dest = path.join(root, "dest");
+    git(root, ["init", "--bare", origin]);
+    git(root, ["clone", origin, seed]);
+    fs.mkdirSync(path.join(seed, "server/src"), { recursive: true });
+    fs.writeFileSync(path.join(seed, "server/src/marker.js"), "incoming\n");
+    git(seed, ["add", "server"]);
+    git(seed, ["commit", "-m", "incoming"]);
+    git(seed, ["push", "origin", "HEAD:main"]);
+    git(root, ["clone", "--depth=1", "--branch", "main", origin, clone]);
+    fs.mkdirSync(path.join(dest, "src"), { recursive: true });
+    fs.writeFileSync(path.join(dest, "src/marker.js"), "live\n");
+    fs.writeFileSync(path.join(dest, "COMMIT"), "old\n");
+    const bin = path.join(root, "bin");
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(bin, "cp"), `#!/bin/sh
+for arg in "$@"; do
+  case "$arg" in
+    *src.next*) echo "copy failed" >&2; exit 1 ;;
+  esac
+done
+exec /bin/cp "$@"
+`);
+    fs.chmodSync(path.join(bin, "cp"), 0o755);
+
+    expect(() => run({
+      PATH: `${bin}:${process.env.PATH}`,
+      MEDICONNECT_CLONE: clone,
+      MEDICONNECT_DEST: dest,
+      MEDICONNECT_REPO: origin,
+      MEDICONNECT_SKIP_INSTALL: "1",
+      MEDICONNECT_SKIP_RESTART: "1",
+    })).toThrow();
+    expect(fs.readFileSync(path.join(dest, "src/marker.js"), "utf8")).toBe("live\n");
+    expect(fs.readFileSync(path.join(dest, "COMMIT"), "utf8")).toBe("old\n");
+  });
+
+  it("runs npm install only when the server lockfile changes", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "mediconnect-deploy-npm-"));
+    const origin = path.join(root, "origin.git");
+    const seed = path.join(root, "seed");
+    const clone = path.join(root, "clone");
+    const dest = path.join(root, "dest");
+    const log = path.join(root, "npm.log");
+    git(root, ["init", "--bare", origin]);
+    git(root, ["clone", origin, seed]);
+    fs.mkdirSync(path.join(seed, "server/src"), { recursive: true });
+    fs.writeFileSync(path.join(seed, "server/src/marker.js"), "app\n");
+    fs.writeFileSync(path.join(seed, "server/package-lock.json"), "{\"lock\":1}\n");
+    git(seed, ["add", "server"]);
+    git(seed, ["commit", "-m", "locked"]);
+    git(seed, ["push", "origin", "HEAD:main"]);
+    git(root, ["clone", "--depth=1", "--branch", "main", origin, clone]);
+    fs.mkdirSync(dest, { recursive: true });
+    fs.writeFileSync(path.join(dest, "package.json"), "{\"name\":\"api\"}\n");
+    const lockHash = execFileSync("sha256sum", [path.join(clone, "server/package-lock.json")], { encoding: "utf8" }).split(" ")[0];
+    fs.writeFileSync(path.join(dest, ".package-lock.sha"), `${lockHash}\n`);
+    const bin = path.join(root, "bin");
+    fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(bin, "npm"), `#!/bin/sh\necho "$@" >> "${log}"\n`);
+    fs.chmodSync(path.join(bin, "npm"), 0o755);
+    const env = {
+      PATH: `${bin}:${process.env.PATH}`,
+      MEDICONNECT_CLONE: clone,
+      MEDICONNECT_DEST: dest,
+      MEDICONNECT_REPO: origin,
+      MEDICONNECT_SKIP_RESTART: "1",
+    };
+
+    run(env);
+    expect(fs.existsSync(log)).toBe(false);
+
+    fs.writeFileSync(path.join(seed, "server/package-lock.json"), "{\"lock\":2}\n");
+    git(seed, ["commit", "-am", "lock changed"]);
+    git(seed, ["push", "origin", "HEAD:main"]);
+    run(env);
+    expect(fs.readFileSync(log, "utf8")).toContain("install --omit=dev --prefix");
+    expect(fs.readFileSync(path.join(dest, ".package-lock.sha"), "utf8").trim()).not.toBe(lockHash);
   });
 
   it("does not copy or restart when the update cannot be cloned", () => {
