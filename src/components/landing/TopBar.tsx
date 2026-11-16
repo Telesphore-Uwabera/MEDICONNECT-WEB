@@ -45,9 +45,9 @@ const TopBar = ({ settings }: TopBarProps) => {
 
   return (
     <div className="bg-[#3a8fa3] dark:bg-[#1e5f70] text-white text-xs">
-      <div className="container flex min-w-0 max-w-full items-center justify-between gap-2 overflow-hidden py-3">
+      <div className="container flex min-w-0 max-w-full flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1">
         {/* Socials */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           {SOCIALS.map((s) => (
             <a
               key={s.label}
@@ -55,7 +55,7 @@ const TopBar = ({ settings }: TopBarProps) => {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={s.label}
-              className="text-white/80 hover:text-white transition-colors"
+              className="inline-flex h-11 w-11 items-center justify-center text-white/80 transition-colors hover:text-white"
             >
               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d={s.path} />
@@ -68,7 +68,7 @@ const TopBar = ({ settings }: TopBarProps) => {
         <div className="flex items-center gap-3">
           <a
             href={`mailto:${email}`}
-            className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-1 text-white/90 transition-colors hover:text-white"
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -87,7 +87,7 @@ const TopBar = ({ settings }: TopBarProps) => {
 
           <a
             href={`tel:${phone.replace(/\s+/g, "")}`}
-            className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-1 text-white/90 transition-colors hover:text-white"
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -105,7 +105,7 @@ const TopBar = ({ settings }: TopBarProps) => {
 
           <Link
             to="/help"
-            className="text-white/90 hover:text-white font-medium transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center px-2 font-medium text-white/90 transition-colors hover:text-white"
           >
             {t("nav.topnav.help")}
           </Link>

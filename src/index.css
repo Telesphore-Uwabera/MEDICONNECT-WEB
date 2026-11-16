@@ -325,6 +325,8 @@ body {
   .landing-page-in,
   .marquee-track,
   .hero-feature,
+  .hero-float,
+  .hero-blob,
   .whatsapp-pop,
   .whatsapp-ring {
     animation: none;
