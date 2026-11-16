@@ -136,3 +136,16 @@ export async function autoDisableInstantOutsideSchedule() {
   // Instant consultation is a doctor-controlled flag. It must not turn off
   // because the clock moved outside generated appointment slots.
 }
+
+/** Last explicit logout turns the doctor's instant flag off. Login and password change do not. */
+export async function disableInstantOnLogout(userId) {
+  try {
+    const { loadOwnedId } = await import("./auth.js");
+    const { hasColumn, update } = await import("./db.js");
+    const doctorId = await loadOwnedId(userId, "doctors");
+    if (!doctorId || !(await hasColumn("doctors", "instant_consultation"))) return;
+    await update("doctors", doctorId, { instant_consultation: 0 });
+  } catch (error) {
+    console.error("[logout] could not turn off instant consultations", error?.message || error);
+  }
+}
