@@ -1,5 +1,6 @@
 import { loadOwnedId } from "./auth.js";
 import { decorateAppointments } from "./appointments.js";
+import { nameVisitRows } from "./visit-rows.js";
 import { verifierNames } from "./verification.js";
 import {
   countWhere,
@@ -564,6 +565,7 @@ async function attachAccountUsers(table, rows) {
 async function presentDedicated(table, row, spec) {
   let presented = await presentRow(table, row);
   if (table === "appointments") presented = await decorateAppointments(presented);
+  presented = await nameVisitRows(table, presented);
   if (table === "team_members") presented = withTeamPhoto(presented);
   if (NAMED_TABLES.has(table)) [presented] = await verifierNames([presented]);
   [presented] = await attachAccountUsers(table, [presented]);
@@ -598,6 +600,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
             ),
           );
           if (table === "appointments") data = await decorateAppointments(data);
+          data = await nameVisitRows(table, data);
           if (table === "team_members") data = (Array.isArray(data) ? data : []).map(withTeamPhoto);
           if (NAMED_TABLES.has(table)) data = await verifierNames(Array.isArray(data) ? data : []);
           data = await attachAccountUsers(table, Array.isArray(data) ? data : []);

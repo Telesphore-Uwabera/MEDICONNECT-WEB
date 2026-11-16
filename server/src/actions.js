@@ -20,6 +20,7 @@ import { withLiveIce } from "./call-token.js";
 import { readAuditLogs, readPublicSettings, readSettingsGroup, writeSettingsGroup } from "./system-settings.js";
 import { normalizeStoredPhone } from "./phone.js";
 import { clientMayClaimEmail } from "./guest-account.js";
+import { nameVisitRows } from "./visit-rows.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -988,13 +989,13 @@ async function fillGap(req, res, parts) {
     if (Object.keys(known.payload).length) await update(table, id, known.payload);
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     stored = await afterResourceSaved(table, stored, req);
-    const row = await presentRow(table, stored);
+    const row = await nameVisitRows(table, await presentRow(table, stored));
     res.json({ message: "Updated.", data: row, ...(row ?? {}) });
     return true;
   }
 
   if (id && req.method === "GET") {
-    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    const row = await nameVisitRows(table, await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id])));
     if (!row) {
       res.status(404).json({ message: "Record not found." });
       return true;
@@ -1064,7 +1065,7 @@ export function registerActions(router, RESOURCES) {
         if (!(await mayReadRow(parts[0], table, currentRow, req.user))) {
           return res.status(403).json({ message: "You do not have access to this record." });
         }
-        const row = await presentRow(table, currentRow);
+        const row = await nameVisitRows(table, await presentRow(table, currentRow));
         return res.json({ data: row, ...row });
       }
       if (!action) {
