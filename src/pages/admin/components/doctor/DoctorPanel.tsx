@@ -102,6 +102,7 @@ import {
 } from "./Types";
 import { ConsultationIcon } from "./Constants";
 import { DateField } from "@/components/ui/date-field";
+import { PrivateDocumentImage, PrivateDocumentLink } from "@/components/private-document";
 
 // ─── Base URL ─────────────────────────────────────────────────────────────────
 
@@ -1087,15 +1088,13 @@ function DocumentTile({
   if (!url) return null;
 
   return (
-    <a
+    <PrivateDocumentLink
       href={url}
-      target="_blank"
-      rel="noopener noreferrer"
       className="group flex flex-col overflow-hidden rounded-[6px] border border-border/40 bg-card/60 hover:border-primary/30 hover:bg-accent/10 transition-all duration-150"
     >
       <div className="flex h-32 items-center justify-center bg-accent/10 border-b border-border/40 overflow-hidden">
         {!imageFailed ? (
-          <img
+          <PrivateDocumentImage
             src={url}
             alt={label}
             className="h-full w-full object-contain"
@@ -1111,7 +1110,7 @@ function DocumentTile({
         </span>
         <ExternalLink className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/60 transition-colors shrink-0" />
       </div>
-    </a>
+    </PrivateDocumentLink>
   );
 }
 

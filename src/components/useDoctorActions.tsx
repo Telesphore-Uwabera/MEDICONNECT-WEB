@@ -34,7 +34,11 @@ export function useDoctorActions(doctorProp: ApiDoctor) {
 
   const callDoctor: Doctor = {
     id: doctor.id,
-    user: { id: doctor.user.id, name: doctor.user.name, avatar: doctor.user.avatar },
+    user: {
+      id: doctor.user?.id ?? doctor.id,
+      name: doctor.name || doctor.user?.name || "",
+      avatar: doctor.avatar || doctor.image || doctor.user?.avatar || null,
+    },
     specialization: doctor.specialization,
   };
 

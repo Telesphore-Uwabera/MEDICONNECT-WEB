@@ -690,10 +690,12 @@ describe("resource write authorization", () => {
     expect(JSON.stringify(contradicted.body)).not.toContain("contradictory-instant-token");
     expect(JSON.stringify(foreign.body)).not.toContain("foreign-instant-token");
     expect(own.status).toBe(200);
-    expect(JSON.stringify(own.body)).toContain("own-instant-token");
+    expect(own.body.id).toBe(9);
+    expect(JSON.stringify(own.body)).not.toContain("own-instant-token");
     const patientList = await request(users.patient, "GET", "/patient/instant_consultation_requests");
     const packed = JSON.stringify(patientList.body);
-    expect(packed).toContain("own-instant-token");
+    expect(packed).toContain('"id":9');
+    expect(packed).not.toContain("own-instant-token");
     expect(packed).not.toContain("foreign-instant-token");
     expect(packed).not.toContain("contradictory-instant-token");
   });

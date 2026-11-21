@@ -1,4 +1,5 @@
 import { formatDateOnly } from "@/lib/date";
+import { withEmbeddedSignature } from "@/lib/private-document";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { richDocumentCss, richDocumentHtml } from "@/lib/document-rich-text";
 // Frontend medical-prescription document. The backend PDF isn't publicly
@@ -36,7 +37,11 @@ function fmtDate(iso?: string | null): string {
 }
 
 function get<T = unknown>(obj: unknown, path: string): T | undefined {
-  return path.split(".").reduce<any>((o, k) => (o == null ? o : o[k]), obj) as T | undefined;
+  const value = path.split(".").reduce<unknown>((current, key) => {
+    if (current == null || typeof current !== "object") return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, obj);
+  return value as T | undefined;
 }
 
 function signatureUrl(obj: unknown): string {
@@ -73,9 +78,14 @@ export interface PrescriptionLike {
   }>;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" ? value as Record<string, unknown> : undefined;
+}
+
 function getGeneral(settings?: DocumentBrandSettings): Record<string, unknown> {
-  const payload = (settings ?? {}) as any;
-  return payload?.general ?? payload?.settings?.general ?? payload?.settings ?? payload ?? {};
+  const payload = asRecord(settings) ?? {};
+  const nested = asRecord(payload.settings);
+  return asRecord(payload.general) ?? asRecord(nested?.general) ?? nested ?? payload;
 }
 
 function localized(value: unknown): string {
@@ -318,9 +328,11 @@ export function openPrescriptionDocument(
 ): void {
   const win = window.open("", "_blank");
   if (!win) return;
-  win.document.open();
-  win.document.write(buildPrescriptionHtml(prescription, settings));
-  win.document.close();
-  if (autoPrint) win.setTimeout(() => win.print(), 350);
+  void withEmbeddedSignature(prescription).then((ready) => {
+    win.document.open();
+    win.document.write(buildPrescriptionHtml(ready, settings));
+    win.document.close();
+    if (autoPrint) win.setTimeout(() => win.print(), 350);
+  });
 }
 

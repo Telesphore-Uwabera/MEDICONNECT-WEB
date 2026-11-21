@@ -253,6 +253,14 @@ export function profileFormBody(body, { doctor = false } = {}) {
   if (doctor) {
     delete safe.license_expires_at;
     delete safe.license_expiry_reminded_for;
+    for (const field of [
+      "medical_license_document",
+      "degree_document",
+      "national_id_document",
+      "cv_document",
+      "signature",
+      "signature_image",
+    ]) delete safe[field];
   }
   return safe;
 }

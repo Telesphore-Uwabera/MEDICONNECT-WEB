@@ -7,6 +7,7 @@ import { X, Loader2, Save, Upload, Check, AlertCircle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { DateField } from "@/components/ui/date-field";
+import { PrivateDocumentLink } from "@/components/private-document";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import {
   type ManagedRole,
@@ -155,9 +156,9 @@ function FileField({
           />
         </div>
         {currentUrl && (
-          <a href={currentUrl} target="_blank" rel="noreferrer" className="text-[10px] text-primary hover:underline shrink-0">
+          <PrivateDocumentLink href={currentUrl} className="text-[10px] text-primary hover:underline shrink-0">
             View
-          </a>
+          </PrivateDocumentLink>
         )}
       </div>
     </label>

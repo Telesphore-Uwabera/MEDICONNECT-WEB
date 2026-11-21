@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { type Prescription, type PrescriptionApiStatus } from "@/hooks/patient/use-patient-prescriptions";
 import { type Pharmacy } from "@/hooks/patient/use-patient-search-pharmacy";
+import { pharmacyMatchesSearch } from "@/lib/pharmacy-search";
 import {
   BASE_URL,
   STATUS_STYLES,
@@ -686,12 +687,7 @@ export function PharmacySelectionModal({
   const filteredPharmacies = useMemo(() => {
     if (!searchTerm.trim()) return pharmacies;
     const term = searchTerm.toLowerCase();
-    return pharmacies.filter(
-      (ph) =>
-        ph.name.toLowerCase().includes(term) ||
-        ph.city.toLowerCase().includes(term) ||
-        ph.address.toLowerCase().includes(term),
-    );
+    return pharmacies.filter((pharmacy) => pharmacyMatchesSearch(pharmacy, term));
   }, [pharmacies, searchTerm]);
 
   useEffect(() => {

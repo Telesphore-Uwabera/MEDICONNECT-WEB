@@ -26,6 +26,8 @@ import { registerPatientRecordRoutes } from "./patient-record.js";
 import { registerTelemedicineConsentRoutes } from "./telemedicine-consent.js";
 import { registerClinicalDocumentRoutes } from "./clinical-documents.js";
 import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicated-ids.js";
+import { registerPrivateDocumentRoutes } from "./private-documents.js";
+import { presentWithoutCallSecrets } from "./public-profile.js";
 import { selectedBrowseSpecialities } from "./browse-specialities.js";
 import {
   appointmentCollision,
@@ -240,7 +242,7 @@ async function listTable(req, table, scope) {
   }
   if (table === "team_members") data = data.map(withTeamPhoto);
   const path = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
-  return paginateList({ data, total, page, perPage, path });
+  return presentWithoutCallSecrets(scope, table, paginateList({ data, total, page, perPage, path }));
 }
 
 async function doctorOnlineFee(doctorId) {
@@ -477,6 +479,7 @@ const licenseUpload = multer({ storage: multer.memoryStorage(), limits: { fileSi
 
 const DOCTOR_PROFILE_PREFIXES = [
   "/doctor/profile",
+  "/doctor/documents",
   "/doctor/education",
   "/doctor/experience",
   "/doctor/qualifications",
@@ -515,6 +518,7 @@ export function appRoutes(router) {
       next(error);
     }
   });
+  registerPrivateDocumentRoutes(router, { requireAuth });
   attachAppointmentRoutes(router, { requireAuth, requireRole });
   attachChatRoutes(router, { requireAuth });
   registerCareOrderRoutes(router, { requireAuth, requireRole });
@@ -3610,7 +3614,7 @@ export function appRoutes(router) {
         const member = withTeamPhoto(row);
         return res.json({ member, data: member, ...member });
       }
-      res.json({ data: row, ...row });
+      res.json(presentWithoutCallSecrets(req.params.scope, table, { data: row, ...row }));
     } catch (error) {
       next(error);
     }

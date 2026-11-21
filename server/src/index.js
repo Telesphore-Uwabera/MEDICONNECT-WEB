@@ -10,6 +10,7 @@ const ensureDoctorSearchFields = async () => {};
 import { publicRoutes } from "./public.js";
 import { relayDiagnostics } from "./call-token.js";
 import { auth } from "./auth.js";
+import { findDoctorByStoredFile, privateFileGuard } from "./private-documents.js";
 import { startRealtime } from "./realtime.js";
 import { remindExpiringLicenses } from "./doctor-review.js";
 import { remindUpcomingVisits, autoDisableInstantOutsideSchedule } from "./visit-notify.js";
@@ -62,7 +63,8 @@ app.use((req, res, next) => {
   if (publicHost(req) !== "db.mediconnect.rw") return next();
   proxyRequest(req, res, { hostname: "127.0.0.1", port: 80, host: "db.mediconnect.rw" });
 });
-app.use("/minio", express.static(process.env.MINIO_DIR || "/var/www/mediconnect-minio"));
+const hidePrivateDoctorFiles = privateFileGuard(findDoctorByStoredFile);
+app.use("/minio", hidePrivateDoctorFiles, express.static(process.env.MINIO_DIR || "/var/www/mediconnect-minio"));
 app.use(cors());
 // Keep the untouched bytes for the payment webhook's HMAC check.
 app.use(express.json({
@@ -70,9 +72,9 @@ app.use(express.json({
   verify: (req, _res, buf) => { req.rawBody = buf; },
 }));
 const uploadDir = process.env.UPLOAD_DIR || path.join(root, "storage");
-app.use("/storage", express.static(uploadDir));
-app.use("/api/v1/media", express.static(path.join(uploadDir, "doctors-webp")));
-app.use("/api/v1/media", express.static(path.join(uploadDir, "webp")));
+app.use("/storage", hidePrivateDoctorFiles, express.static(uploadDir));
+app.use("/api/v1/media", hidePrivateDoctorFiles, express.static(path.join(uploadDir, "doctors-webp")));
+app.use("/api/v1/media", hidePrivateDoctorFiles, express.static(path.join(uploadDir, "webp")));
 
 const api = express.Router();
 api.use(auth);
