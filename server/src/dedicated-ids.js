@@ -22,8 +22,8 @@ import { presentWithoutCallSecrets } from "./public-profile.js";
 import { attachMedicineStock, lowStockFilter } from "./medicine-stock.js";
 import { publicPagePath } from "./public-url.js";
 
-function hideCallSecrets(scope, table, rows) {
-  return presentWithoutCallSecrets(scope, table, rows);
+function hideCallSecrets(scope, table, rows, user) {
+  return presentWithoutCallSecrets(scope, table, rows, user);
 }
 
 const PROFILE = { doctor: "doctors", patient: "patients", hospital: "hospitals", pharmacy: "pharmacies" };
@@ -603,7 +603,7 @@ async function presentDedicated(table, row, spec, scope, user) {
     presented,
     ["medicines", "pharmacy_medicines"].includes(table) ? await viewingPharmacyId(user) : null,
   );
-  presented = hideCallSecrets(scope, table, presented);
+  presented = hideCallSecrets(scope, table, presented, user);
   return withPk(presented, spec.idName);
 }
 
@@ -644,7 +644,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
             Array.isArray(data) ? data : [],
             ["medicines", "pharmacy_medicines"].includes(table) ? await viewingPharmacyId(req.user) : null,
           );
-          data = hideCallSecrets(scope, table, Array.isArray(data) ? data : []);
+          data = hideCallSecrets(scope, table, Array.isArray(data) ? data : [], req.user);
           data = (Array.isArray(data) ? data : []).map((row) => withPk(row, spec.idName));
           const pagePayload = paginateList({
             data,

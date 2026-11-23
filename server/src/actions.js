@@ -799,6 +799,10 @@ async function fillGap(req, res, parts) {
   }
 
   if (action === "join" && id) {
+    if (["admin", "moderator", "finance", "help_desk"].includes(parts[0])) {
+      res.status(403).json({ message: "Only the people on this call can join it." });
+      return true;
+    }
     const row = await presentRow(table, current);
     if (!row) {
       res.status(404).json({ message: "Record not found." });
@@ -921,7 +925,7 @@ async function fillGap(req, res, parts) {
       await recordVerifier(table, id, req.user?.id).catch(() => null);
     }
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
-    res.json({ message: "Updated.", data: row, ...(row ?? {}) });
+    res.json(presentWithoutCallSecrets(parts[0], table, { message: "Updated.", data: row, ...(row ?? {}) }, req.user));
     return true;
   }
 
@@ -992,7 +996,7 @@ async function fillGap(req, res, parts) {
     let stored = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]);
     stored = await afterResourceSaved(table, stored, req);
     const row = await nameVisitRows(table, await presentRow(table, stored));
-    res.json(presentWithoutCallSecrets(parts[0], table, { message: "Updated.", data: row, ...(row ?? {}) }));
+    res.json(presentWithoutCallSecrets(parts[0], table, { message: "Updated.", data: row, ...(row ?? {}) }, req.user));
     return true;
   }
 
@@ -1002,7 +1006,7 @@ async function fillGap(req, res, parts) {
       res.status(404).json({ message: "Record not found." });
       return true;
     }
-    res.json(presentWithoutCallSecrets(parts[0], table, { data: row, ...row }));
+    res.json(presentWithoutCallSecrets(parts[0], table, { data: row, ...row }, req.user));
     return true;
   }
 
@@ -1068,7 +1072,7 @@ export function registerActions(router, RESOURCES) {
           return res.status(403).json({ message: "You do not have access to this record." });
         }
         const row = await nameVisitRows(table, await presentRow(table, currentRow));
-        return res.json(presentWithoutCallSecrets(parts[0], table, { data: row, ...row }));
+        return res.json(presentWithoutCallSecrets(parts[0], table, { data: row, ...row }, req.user));
       }
       if (!action) {
         if (await fillGap(req, res, parts)) return;
@@ -1098,7 +1102,7 @@ export function registerActions(router, RESOURCES) {
           return res.json({ message: "Updated.", order, data: order });
         }
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
-        return res.json({ message: "Updated.", data: row, ...(row ?? {}) });
+        return res.json(presentWithoutCallSecrets(parts[0], table, { message: "Updated.", data: row, ...(row ?? {}) }, req.user));
       }
 
       if (req.method === "GET") {
@@ -1113,8 +1117,15 @@ export function registerActions(router, RESOURCES) {
             message: currentRow ? "You do not have access to this record." : "Record not found.",
           });
         }
-        if (action === "join" && rejectBlockedJoin(res, table, currentRow, req)) return;
-        return res.json({ data: await presentRow(table, currentRow), items: [] });
+        if (action === "join") {
+          if (["admin", "moderator", "finance", "help_desk"].includes(parts[0])) {
+            return res.status(403).json({ message: "Only the people on this call can join it." });
+          }
+          if (rejectBlockedJoin(res, table, currentRow, req)) return;
+          return res.json({ data: await presentRow(table, currentRow), items: [] });
+        }
+        const row = await nameVisitRows(table, await presentRow(table, currentRow));
+        return res.json(presentWithoutCallSecrets(parts[0], table, { data: row, items: [] }, req.user));
       }
       if (await fillGap(req, res, parts)) return;
       return next();

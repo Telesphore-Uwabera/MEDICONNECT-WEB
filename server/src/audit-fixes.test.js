@@ -1,0 +1,92 @@
+import { describe, expect, it } from "vitest";
+import { chartWithSpend, confirmedTodayCount, paidStatusSql } from "./dashboard-stats.js";
+import {
+  containsLike,
+  countsAsPaidRevenue,
+  distanceKm,
+  escapeLike,
+  hospitalAppointmentFilter,
+  languageFilterValues,
+  likeContains,
+  publicMedicine,
+  sortByDistance,
+} from "./search-text.js";
+
+describe("audit search rules", () => {
+  it("treats Kinyarwanda spellings as one language", () => {
+    const expected = ["rw", "kin", "kiny", "kinyarwanda", "ikinyarwanda"];
+    for (const input of ["rw", "kin", "Kinyarwanda", "Ikinyarwanda", "KINY"]) {
+      expect(languageFilterValues(input)).toEqual(expected);
+    }
+    expect(languageFilterValues("en")).toEqual(["en", "english"]);
+    expect(languageFilterValues("")).toEqual([]);
+  });
+
+  it("escapes LIKE wildcards", () => {
+    expect(escapeLike("100%_done")).toBe("100\\%\\_done");
+    expect(likeContains("a%b")).toBe("%a\\%b%");
+    expect(containsLike("m.name")).toBe("m.name LIKE ? ESCAPE '\\\\'");
+  });
+
+  it("sorts pharmacies by distance and leaves unknown coordinates last", () => {
+    const rows = [
+      { id: 1, name: "Far", latitude: -1.94, longitude: 30.1 },
+      { id: 2, name: "Near", latitude: -1.95, longitude: 30.06 },
+      { id: 3, name: "Unknown", latitude: null, longitude: null },
+    ];
+    const sorted = sortByDistance(rows, -1.944, 30.061);
+    expect(sorted.map((row) => row.name)).toEqual(["Near", "Far", "Unknown"]);
+    expect(sorted[0].distance_km).toBeLessThan(sorted[1].distance_km);
+    expect(sorted[2].distance_km).toBeNull();
+    expect(distanceKm(0, 0, 0, 0)).toBe(0);
+  });
+
+  it("publishes medicine fields from an approved pharmacy and hides cost data", () => {
+    const listed = publicMedicine({
+      id: 8,
+      name: "Amoxicillin",
+      price: 1500,
+      quantity: 4,
+      requires_prescription: 1,
+      cost_price: 400,
+      supplier: "Secret Supplier",
+      batch_number: "B-1",
+      pharmacy_id: 3,
+      pharmacy_name: "City Pharmacy",
+      pharmacy_slug: "city",
+      pharmacy_city: "Kigali",
+    });
+    expect(listed).toMatchObject({
+      id: 8,
+      name: "Amoxicillin",
+      price: 1500,
+      in_stock: true,
+      requires_prescription: true,
+      pharmacy: { id: 3, name: "City Pharmacy", slug: "city", city: "Kigali" },
+    });
+    expect(JSON.stringify(listed)).not.toMatch(/Secret Supplier|cost_price|B-1/);
+  });
+});
+
+describe("audit dashboard rules", () => {
+  it("counts revenue from payment status, not delivery", () => {
+    expect(countsAsPaidRevenue({ status: "delivered", payment_status: "pending" })).toBe(false);
+    expect(countsAsPaidRevenue({ status: "accepted", payment_status: "paid" })).toBe(true);
+    expect(countsAsPaidRevenue({ status: "delivered" })).toBe(false);
+    expect(countsAsPaidRevenue({ status: "paid" })).toBe(true);
+    expect(paidStatusSql("payment_status")).not.toMatch(/delivered|dispensed/);
+  });
+
+  it("limits a hospital to its own appointments", () => {
+    expect(hospitalAppointmentFilter(12)).toEqual({ sql: "hospital_id = ?", params: [12] });
+    expect(hospitalAppointmentFilter(12).sql).not.toMatch(/doctor_id/);
+  });
+
+  it("counts confirmed today from today's statuses and charts real payments", () => {
+    expect(confirmedTodayCount({ confirmed: 2, accepted: 1, pending: 9 })).toBe(3);
+    expect(chartWithSpend(
+      [{ label: "2026-11-23", appointments: 1, spent: 0 }],
+      { "2026-11-23": 4500 },
+    )).toEqual([{ label: "2026-11-23", appointments: 1, spent: 4500 }]);
+  });
+});

@@ -251,10 +251,56 @@ const CALL_SECRET_TABLES = new Set([
   "appointments",
 ]);
 
-/** List and detail reads hide call tokens. The join route is the one place that returns them. */
-export function presentWithoutCallSecrets(scope, table, payload) {
-  if (scope === "admin" || !CALL_SECRET_TABLES.has(table)) return payload;
-  return stripCallSecrets(payload);
+const DOCTOR_PRIVATE_FIELDS = new Set([
+  "medical_license",
+  "medical_license_document",
+  "licence_number",
+  "license_number",
+  "degree_document",
+  "national_id",
+  "national_id_document",
+  "signature",
+  "signature_image",
+  "cv_document",
+  "registration_number",
+  "license_expires_at",
+  "license_expiry_reminded_for",
+  "password",
+]);
+
+/** Private doctor records stay with that doctor and with an admin. Other staff roles do not receive them. */
+export function viewerSeesDoctorPrivate(user, row) {
+  const role = user?.active_role || user?.role;
+  if (role === "admin") return true;
+  if (role !== "doctor" || !row || typeof row !== "object" || Array.isArray(row)) return false;
+  return Number(row.user_id) > 0 && Number(row.user_id) === Number(user.id);
+}
+
+function presentDoctorRows(value, user) {
+  if (Array.isArray(value)) return value.map((item) => presentDoctorRows(item, user));
+  if (!value || typeof value !== "object") return value;
+  if (viewerSeesDoctorPrivate(user, value)) return value;
+  const out = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (DOCTOR_PRIVATE_FIELDS.has(key)) continue;
+    out[key] = (key === "data" || key === "documents" || key === "doctor" || key === "doctors")
+      ? presentDoctorRows(item, user)
+      : item;
+  }
+  return out;
+}
+
+/**
+ * List and detail reads hide call tokens from every role, including admin,
+ * moderator, finance, and help desk. A join route for a participant is the
+ * place that returns a token. Doctor private fields stay with that doctor
+ * and with the admin role.
+ */
+export function presentWithoutCallSecrets(scope, table, payload, user) {
+  void scope;
+  const hidden = CALL_SECRET_TABLES.has(table) ? stripCallSecrets(payload) : payload;
+  if (table !== "doctors") return hidden;
+  return presentDoctorRows(hidden, user);
 }
 
 const PRIVATE_NAMES = [

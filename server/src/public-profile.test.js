@@ -171,12 +171,38 @@ describe("public profile allow-list", () => {
     expect(row.data.guest_token).toBeUndefined();
   });
 
-  it("strips tokens from instant and appointment reads, and leaves admin lists intact", () => {
-    const row = { id: 2, daily_guest_token: "stay-for-admin", guest_token: "guest" };
+  it("strips tokens from staff lists as well as patient reads", () => {
+    const row = { id: 2, daily_guest_token: "staff-token", guest_token: "guest" };
     expect(presentWithoutCallSecrets("patient", "appointments", row).daily_guest_token).toBeUndefined();
     expect(presentWithoutCallSecrets("patient", "instant_consultation_requests", row).guest_token).toBeUndefined();
-    expect(presentWithoutCallSecrets("admin", "appointments", row).daily_guest_token).toBe("stay-for-admin");
+    expect(presentWithoutCallSecrets("admin", "appointments", row).daily_guest_token).toBeUndefined();
+    expect(presentWithoutCallSecrets("admin", "appointments", row).guest_token).toBeUndefined();
+    expect(presentWithoutCallSecrets("moderator", "instant_consultations", row).guest_token).toBeUndefined();
     expect(presentWithoutCallSecrets("doctor", "doctors", row).guest_token).toBe("guest");
+  });
+
+  it("keeps doctor private fields for that doctor and an admin only", () => {
+    const row = {
+      id: 4,
+      user_id: 9,
+      name: "Amina",
+      medical_license: "LIC-1",
+      national_id_document: "id.webp",
+      documents: { degree_document: "degree.webp", city: "Kigali" },
+    };
+    expect(presentWithoutCallSecrets("admin", "doctors", row, { id: 1, active_role: "admin" }).medical_license).toBe("LIC-1");
+    expect(presentWithoutCallSecrets("doctor", "doctors", row, { id: 9, active_role: "doctor" }).national_id_document).toBe("id.webp");
+    for (const role of ["moderator", "finance", "help_desk"]) {
+      const hidden = presentWithoutCallSecrets("admin", "doctors", { data: row, ...row }, { id: 3, active_role: role });
+      expect(hidden.medical_license).toBeUndefined();
+      expect(hidden.national_id_document).toBeUndefined();
+      expect(hidden.documents.degree_document).toBeUndefined();
+      expect(hidden.name).toBe("Amina");
+      expect(hidden.data.name).toBe("Amina");
+    }
+    const otherDoctor = presentWithoutCallSecrets("doctor", "doctors", row, { id: 8, active_role: "doctor" });
+    expect(otherDoctor.medical_license).toBeUndefined();
+    expect(otherDoctor.name).toBe("Amina");
   });
 
   it("blocks a stored private file and still serves a portrait", async () => {
