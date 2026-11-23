@@ -1,5 +1,6 @@
 import { hasColumn, one, q, tableExists } from "./db.js";
-import { kigaliDaySql, kigaliTodayMatchSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { kigaliDaySql, kigaliTodayMatchSql, kigaliTodaySql, paidStatusSql } from "./dashboard-stats.js";
+import { hospitalAppointmentFilter } from "./search-text.js";
 import { loadOwnedId } from "./auth.js";
 
 function ranges(query) {
@@ -92,19 +93,14 @@ async function hospitalDoctorIds(hospitalId) {
   return [...ids].filter((id) => id > 0);
 }
 
-async function appointmentScope(hospitalId, doctorIds) {
-  const parts = [];
-  const params = [];
-  if (await hasColumn("appointments", "hospital_id")) {
-    parts.push("hospital_id = ?");
-    params.push(hospitalId);
-  }
-  if (doctorIds.length) {
-    parts.push(`doctor_id IN (${doctorIds.map(() => "?").join(",")})`);
-    params.push(...doctorIds);
-  }
-  if (!parts.length) return null;
-  return { sql: `(${parts.join(" OR ")})`, params };
+async function appointmentScope(hospitalId) {
+  if (!(await hasColumn("appointments", "hospital_id"))) return null;
+  return hospitalAppointmentFilter(hospitalId);
+}
+
+async function paidMoneySql(table) {
+  if (await hasColumn(table, "payment_status")) return paidStatusSql("payment_status");
+  return "LOWER(COALESCE(`status`,'')) IN ('paid','success','successful')";
 }
 
 export async function pharmacyDashboard(req) {
@@ -149,16 +145,17 @@ export async function pharmacyDashboard(req) {
       external_orders: 0,
       unique_customers: Number(delivery?.customers || 0),
     };
+    const paidSql = await paidMoneySql("pharmacy_orders");
     const money = await one(
       `SELECT COALESCE(SUM(total_amount), 0) AS total, COUNT(*) AS total_count
        FROM pharmacy_orders
-       WHERE pharmacy_id = ? AND status IN ('completed','dispensed','paid','delivered') AND ${current.sql}`,
+       WHERE pharmacy_id = ? AND ${paidSql} AND ${current.sql}`,
       [pharmacyId, ...current.params],
     ).catch(() => ({ total: 0, total_count: 0 }));
     const previousMoney = await one(
       `SELECT COALESCE(SUM(total_amount), 0) AS total
        FROM pharmacy_orders
-       WHERE pharmacy_id = ? AND status IN ('completed','dispensed','paid','delivered') AND ${previous.sql}`,
+       WHERE pharmacy_id = ? AND ${paidSql} AND ${previous.sql}`,
       [pharmacyId, ...previous.params],
     ).catch(() => ({ total: 0 }));
     const revenue = Number(money?.total || 0);
@@ -182,7 +179,7 @@ export async function pharmacyDashboard(req) {
          COALESCE(SUM(CASE WHEN delivery_type = 'delivery' THEN total_amount ELSE 0 END), 0) AS delivery,
          COALESCE(SUM(CASE WHEN delivery_type IS NULL OR delivery_type <> 'delivery' THEN total_amount ELSE 0 END), 0) AS pickup
        FROM pharmacy_orders
-       WHERE pharmacy_id = ? AND status IN ('completed','dispensed','paid','delivered') AND ${current.sql}`,
+       WHERE pharmacy_id = ? AND ${paidSql} AND ${current.sql}`,
       [pharmacyId, ...current.params],
     ).catch(() => null);
     if (split) {
@@ -196,7 +193,7 @@ export async function pharmacyDashboard(req) {
                 SUM(CASE WHEN status IN ('completed','dispensed','paid','delivered') THEN 1 ELSE 0 END) AS completed,
                 SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected,
                 SUM(CASE WHEN status IN ('cancelled','canceled') THEN 1 ELSE 0 END) AS cancelled,
-                COALESCE(SUM(CASE WHEN status IN ('completed','dispensed','paid','delivered') THEN total_amount ELSE 0 END), 0) AS revenue
+                COALESCE(SUM(CASE WHEN ${paidSql} THEN total_amount ELSE 0 END), 0) AS revenue
          FROM pharmacy_orders
          WHERE pharmacy_id = ? AND ${current.sql}
          GROUP BY DATE(\`${orderDate}\`)
@@ -415,7 +412,7 @@ export async function hospitalDashboard(req) {
   if (!hospitalId) return empty;
 
   const doctorIds = await hospitalDoctorIds(hospitalId);
-  const apptScope = await appointmentScope(hospitalId, doctorIds);
+  const apptScope = await appointmentScope(hospitalId);
 
   let bookings = { by: {}, total: 0 };
   let todayBookings = { by: {}, total: 0 };
@@ -428,15 +425,17 @@ export async function hospitalDashboard(req) {
     const moneyColumn = (await hasColumn("service_bookings", "patient_pays"))
       ? "patient_pays"
       : ((await hasColumn("service_bookings", "price")) ? "price" : null);
-    const gross = moneyColumn
-      ? Number((await one(
+    const paidSql = await paidMoneySql("service_bookings");
+    const paidRow = moneyColumn
+      ? await one(
         `SELECT COALESCE(SUM(\`${moneyColumn}\`), 0) AS total, COUNT(*) AS total_count
          FROM service_bookings
-         WHERE hospital_id = ? AND status IN ('accepted','completed','confirmed') AND ${current.sql}`,
+         WHERE hospital_id = ? AND ${paidSql} AND ${current.sql}`,
         [hospitalId, ...current.params],
-      ).catch(() => ({ total: 0, total_count: 0 })))?.total || 0)
-      : 0;
-    const count = pick(bookings.by, ["accepted", "completed", "confirmed"]) || bookings.total;
+      ).catch(() => ({ total: 0, total_count: 0 }))
+      : { total: 0, total_count: 0 };
+    const gross = Number(paidRow?.total || 0);
+    const count = Number(paidRow?.total_count || 0);
     empty.revenue = {
       gross,
       insurance_covered: 0,
@@ -449,7 +448,7 @@ export async function hospitalDashboard(req) {
       `SELECT DATE(\`${dateColumn}\`) AS label, COUNT(*) AS total,
               SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
               SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-              COALESCE(SUM(${moneyColumn ? `\`${moneyColumn}\`` : "0"}), 0) AS revenue
+              COALESCE(SUM(CASE WHEN ${paidSql} THEN ${moneyColumn ? `\`${moneyColumn}\`` : "0"} ELSE 0 END), 0) AS revenue
        FROM service_bookings WHERE hospital_id = ? AND ${current.sql}
        GROUP BY DATE(\`${dateColumn}\`) ORDER BY label`,
       [hospitalId, ...current.params],
@@ -572,10 +571,6 @@ export async function hospitalDashboard(req) {
       clauses.push("referred_hospital_id = ?");
       params.push(hospitalId);
     }
-    if (doctorIds.length && await hasColumn("referrals", "referred_to_doctor_id")) {
-      clauses.push(`referred_to_doctor_id IN (${doctorIds.map(() => "?").join(",")})`);
-      params.push(...doctorIds);
-    }
     if (clauses.length) {
       referrals = Number((await one(
         `SELECT COUNT(*) AS total FROM referrals WHERE ${clauses.join(" OR ")}`,
@@ -585,10 +580,10 @@ export async function hospitalDashboard(req) {
   }
 
   let prescriptions = 0;
-  if (doctorIds.length && await tableExists("prescriptions") && await hasColumn("prescriptions", "doctor_id")) {
+  if (await tableExists("prescriptions") && await hasColumn("prescriptions", "hospital_id")) {
     prescriptions = Number((await one(
-      `SELECT COUNT(*) AS total FROM prescriptions WHERE doctor_id IN (${doctorIds.map(() => "?").join(",")})`,
-      doctorIds,
+      "SELECT COUNT(*) AS total FROM prescriptions WHERE hospital_id = ?",
+      [hospitalId],
     ).catch(() => ({ total: 0 })))?.total || 0);
   }
 
@@ -653,7 +648,7 @@ export async function hospitalDashboard(req) {
         ? "patient_pays"
         : ((await hasColumn("service_bookings", "amount")) ? "amount" : null);
       const stats = await q(
-        `SELECT service_id, COUNT(*) AS booking_count, COALESCE(SUM(${money ? `\`${money}\`` : "0"}), 0) AS revenue
+        `SELECT service_id, COUNT(*) AS booking_count, COALESCE(SUM(CASE WHEN ${await paidMoneySql("service_bookings")} THEN ${money ? `\`${money}\`` : "0"} ELSE 0 END), 0) AS revenue
          FROM service_bookings WHERE hospital_id = ? GROUP BY service_id`,
         [hospitalId],
       ).catch(() => []);
@@ -684,9 +679,14 @@ export async function hospitalDashboard(req) {
     }, []).slice(0, 5),
   };
   if (empty.revenue && await tableExists("service_bookings") && await hasColumn("service_bookings", "insurance_covered")) {
+    const dateColumn = (await hasColumn("service_bookings", "preferred_date")) ? "preferred_date" : "created_at";
+    const current = dated(window.current, dateColumn);
+    const paidSql = await paidMoneySql("service_bookings");
     const covered = Number((await one(
-      "SELECT COALESCE(SUM(insurance_covered), 0) AS total FROM service_bookings WHERE hospital_id = ?",
-      [hospitalId],
+      `SELECT COALESCE(SUM(insurance_covered), 0) AS total
+       FROM service_bookings
+       WHERE hospital_id = ? AND ${paidSql} AND ${current.sql}`,
+      [hospitalId, ...current.params],
     ).catch(() => ({ total: 0 })))?.total || 0);
     empty.revenue.insurance_covered = covered;
     empty.revenue.patient_paid = Math.max(0, Number(empty.revenue.gross || 0) - covered);

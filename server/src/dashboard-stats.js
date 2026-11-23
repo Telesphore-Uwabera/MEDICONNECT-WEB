@@ -91,3 +91,24 @@ export function changePercent(current, previous) {
   if (!(previous > 0)) return null;
   return Math.round(((current - previous) / previous) * 1000) / 10;
 }
+
+const PAID_STATUSES = ["paid", "completed", "success", "successful"];
+
+/** SQL for a verified payment. Delivery and acceptance are not payment. */
+export function paidStatusSql(column = "payment_status") {
+  const list = PAID_STATUSES.map((status) => `'${status}'`).join(",");
+  return `LOWER(COALESCE(\`${column}\`,'')) IN (${list})`;
+}
+
+/** Confirmed today is today's confirmed and accepted visits, not every future booking. */
+export function confirmedTodayCount(byStatus = {}) {
+  return ["confirmed", "accepted", "approved"].reduce((sum, name) => sum + Number(byStatus?.[name] || 0), 0);
+}
+
+/** Fill a spending chart from paid amounts keyed by day. */
+export function chartWithSpend(points, spentByLabel = {}) {
+  return (points || []).map((point) => {
+    const label = String(point?.label || "").slice(0, 10);
+    return { ...point, label, spent: Number(spentByLabel[label] || 0) };
+  });
+}

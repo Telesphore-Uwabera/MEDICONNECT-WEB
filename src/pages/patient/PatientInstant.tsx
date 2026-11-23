@@ -154,8 +154,7 @@ function getSpeciality(appt: ApiAppointment) {
 }
 
 function isActionable(appt: ApiAppointment & { can_join?: boolean }) {
-  if (typeof appt.can_join === "boolean") return appt.can_join;
-  return canJoinAppointment(appt);
+  return canJoinAppointment({ ...appt, instant: true });
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -534,7 +533,7 @@ const PatientInstant = () => {
   );
   const markInstantJoined = useCallback((id: number) => {
     joinedInstantRef.current.add(id);
-    try { sessionStorage.setItem("patient_joined_instants", JSON.stringify([...joinedInstantRef.current])); } catch {}
+    try { sessionStorage.setItem("patient_joined_instants", JSON.stringify([...joinedInstantRef.current])); } catch { /* storage unavailable */ }
   }, []);
 
   const handleJoin = useCallback(
@@ -544,8 +543,8 @@ const PatientInstant = () => {
         toast.info(t("pages.patient.appt_ended", { defaultValue: "This consultation has ended. Check your prescriptions for any notes from the doctor." }));
         return;
       }
-      if (!canJoinAppointment(appt)) {
-        toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 10 minutes before the appointment time." }));
+      if (!canJoinAppointment({ ...appt, instant: true })) {
+        toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "This consultation is not paid yet." }));
         return;
       }
       setConsentAppt(appt);
@@ -573,9 +572,10 @@ const PatientInstant = () => {
           setConsentAppt(null);
           joinMutation.mutate(appt, {
             onSuccess: () => markInstantJoined(appt.id),
-            onError: (err: any) => {
-              console.error("[Quick] join failed:", err?.status, err?.data);
-              toast.error(err?.message || t("consult.booking.join_failed"));
+            onError: (err: unknown) => {
+              const error = err as { status?: number; data?: unknown; message?: string };
+              console.error("[Quick] join failed:", error.status, error.data);
+              toast.error(error.message || t("consult.booking.join_failed"));
             },
           });
         },
@@ -663,7 +663,7 @@ const PatientInstant = () => {
         { value: "completed", label: "Completed" },
         { value: "cancelled", label: "Cancelled" },
       ],
-      onChange: (v: string) => set("status", v as any)
+      onChange: (v: string) => set("status", v as FilterState["status"])
     },
     {
       type: "custom" as const,

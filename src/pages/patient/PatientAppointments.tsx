@@ -407,7 +407,7 @@ const PatientAppointments = () => {
   );
   const markJoined = useCallback((id: number) => {
     joinedSetRef.current.add(id);
-    try { sessionStorage.setItem("patient_joined_appts", JSON.stringify([...joinedSetRef.current])); } catch {}
+    try { sessionStorage.setItem("patient_joined_appts", JSON.stringify([...joinedSetRef.current])); } catch { /* storage unavailable */ }
   }, []);
 
   // Call the join endpoint, then open the SAME in-app ConsultationRoom the doctor
@@ -422,7 +422,7 @@ const PatientAppointments = () => {
         return;
       }
       if (!canJoinAppointment(appt)) {
-        toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 10 minutes before the appointment time." }));
+        toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 20 minutes before the appointment time." }));
         return;
       }
       joinMutation.mutate(appt.id, {
@@ -444,10 +444,10 @@ const PatientAppointments = () => {
             toast.error(t("consult.booking.join_failed"));
           }
         },
-        onError: (err: any) => {
-          // Surface the backend's actual reason (422 validation message, etc.).
-          console.error("[Appointment] join failed:", err?.status, err?.data);
-          toast.error(err?.message || t("consult.booking.join_failed"));
+        onError: (err: unknown) => {
+          const error = err as { status?: number; data?: unknown; message?: string };
+          console.error("[Appointment] join failed:", error.status, error.data);
+          toast.error(error.message || t("consult.booking.join_failed"));
         },
       });
     },
@@ -503,7 +503,7 @@ const PatientAppointments = () => {
         { value: "completed", label: t("pages.patient.status_completed") },
         { value: "cancelled", label: t("pages.patient.status_cancelled") },
       ],
-      onChange: (v: string) => set("status", v as any)
+      onChange: (v: string) => set("status", v as FilterState["status"])
     },
     {
       type: "select" as const,
@@ -515,7 +515,7 @@ const PatientAppointments = () => {
         { value: "online", label: t("pages.patient.appt_filter_video_consult") },
         { value: "in_person", label: t("pages.patient.appt_in_person_label") },
       ],
-      onChange: (v: string) => set("type", v as any)
+      onChange: (v: string) => set("type", v as FilterState["type"])
     },
     {
       type: "custom" as const,

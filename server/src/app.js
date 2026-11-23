@@ -60,7 +60,8 @@ import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
-import { average, displayedPaymentStatus, durationMinutes, earnedAverage, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { average, chartWithSpend, confirmedTodayCount, displayedPaymentStatus, durationMinutes, earnedAverage, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { likeContains } from "./search-text.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -231,8 +232,8 @@ async function listTable(req, table, scope) {
     const cols = [];
     for (const name of searchable) if (await hasColumn(table, name)) cols.push(name);
     if (cols.length) {
-      filters.push(`(${cols.map((name) => `\`${name}\` LIKE ?`).join(" OR ")})`);
-      cols.forEach(() => params.push(`%${term}%`));
+      filters.push(`(${cols.map((name) => `\`${name}\` LIKE ? ESCAPE '\\\\'`).join(" OR ")})`);
+      cols.forEach(() => params.push(likeContains(term)));
     }
   }
   const where = `WHERE ${filters.join(" AND ")}`;
@@ -245,7 +246,7 @@ async function listTable(req, table, scope) {
   }
   if (table === "team_members") data = data.map(withTeamPhoto);
   const path = publicPagePath(req);
-  return presentWithoutCallSecrets(scope, table, paginateList({ data, total, page, perPage, path }));
+  return presentWithoutCallSecrets(scope, table, paginateList({ data, total, page, perPage, path }), req.user);
 }
 
 async function doctorOnlineFee(doctorId) {
@@ -266,35 +267,24 @@ async function doctorOnlineFee(doctorId) {
   return amount;
 }
 
-async function deleteByReference(table, id) {
-  const [links] = await pool.query(
-    `SELECT TABLE_NAME, COLUMN_NAME
-     FROM information_schema.KEY_COLUMN_USAGE
-     WHERE REFERENCED_TABLE_SCHEMA = DATABASE()
-       AND REFERENCED_TABLE_NAME = ?
-       AND REFERENCED_COLUMN_NAME = 'id'`,
-    [table],
-  );
-  for (const link of links) {
-    await pool.query(`DELETE FROM \`${link.TABLE_NAME}\` WHERE \`${link.COLUMN_NAME}\` = ?`, [id]);
+async function retireUser(id) {
+  const user = await one("SELECT id FROM users WHERE id = ?", [id]).catch(() => null);
+  if (!user) return null;
+  const patch = {};
+  if (await hasColumn("users", "status")) patch.status = "suspended";
+  if (await hasColumn("users", "is_active")) patch.is_active = 0;
+  if (await hasColumn("users", "deleted_at")) patch.deleted_at = new Date();
+  if (!Object.keys(patch).length) {
+    const error = new Error("This account cannot be removed without deleting payment records.");
+    error.status = 409;
+    throw error;
   }
-}
-
-async function deleteUser(id) {
-  const profiles = ["doctors", "patients", "hospitals", "pharmacies"];
-  await pool.query("SET FOREIGN_KEY_CHECKS=0");
-  try {
-    for (const table of profiles) {
-      if (!(await tableExists(table)) || !(await hasColumn(table, "user_id"))) continue;
-      const rows = await q(`SELECT id FROM \`${table}\` WHERE user_id = ?`, [id]);
-      for (const row of rows) await deleteByReference(table, row.id);
-      await pool.query(`DELETE FROM \`${table}\` WHERE user_id = ?`, [id]);
-    }
-    await deleteByReference("users", id);
-    await pool.query("DELETE FROM users WHERE id = ?", [id]);
-  } finally {
-    await pool.query("SET FOREIGN_KEY_CHECKS=1");
+  await update("users", id, patch);
+  for (const table of ["doctors", "patients", "hospitals", "pharmacies"]) {
+    if (!(await tableExists(table)) || !(await hasColumn(table, "user_id")) || !(await hasColumn(table, "status"))) continue;
+    await pool.query(`UPDATE \`${table}\` SET status = 'suspended' WHERE user_id = ?`, [id]).catch(() => null);
   }
+  return patch;
 }
 
 function emptyDashboard(filters) {
@@ -1012,7 +1002,7 @@ export function appRoutes(router) {
         total: todayTally.total + instantActive,
         completed: pick(todayTally, ["completed", "done", "complete"]),
         pending: pick(todayTally, ["pending", "queued", "waiting", "in_progress"]),
-        confirmed: upcoming,
+        confirmed: confirmedTodayCount(todayTally.byStatus),
         cancelled: pick(todayTally, ["cancelled", "canceled"]),
         instant_active: instantActive,
       };
@@ -1079,6 +1069,33 @@ export function appRoutes(router) {
           in_person: Number(row.in_person ?? 0),
           spent: 0,
         }));
+      if (await tableExists("payments") && await hasColumn("payments", "amount")) {
+        const payOwned = await ownerWhere("payments");
+        const payDate = await firstColumn("payments", ["paid_at", "created_at"]);
+        if (payOwned && payDate) {
+          const payExpr = kigaliDaySql(payDate);
+          const payWindow = period === "today" || period === "day"
+            ? { sql: `AND ${payExpr} = ${kigaliNow}`, params: [] }
+            : period === "week"
+              ? { sql: `AND ${payExpr} >= DATE_SUB(${kigaliNow}, INTERVAL 6 DAY)`, params: [] }
+              : period === "year"
+                ? { sql: `AND ${payExpr} >= DATE_SUB(${kigaliNow}, INTERVAL 364 DAY)`, params: [] }
+                : period === "custom" && periodStart && periodEnd
+                  ? { sql: `AND ${payExpr} BETWEEN ? AND ?`, params: [periodStart, periodEnd] }
+                  : period === "month"
+                    ? { sql: `AND ${payExpr} >= DATE_SUB(${kigaliNow}, INTERVAL 29 DAY)`, params: [] }
+                    : { sql: "", params: [] };
+          const paidRows = await q(
+            `SELECT ${payExpr} AS label, COALESCE(SUM(amount), 0) AS total
+             FROM payments
+             WHERE ${payOwned.sql} AND LOWER(status) IN ('paid','completed','success','successful') ${payWindow.sql}
+             GROUP BY ${payExpr}`,
+            [...payOwned.params, ...payWindow.params],
+          ).catch(() => []);
+          const spentByLabel = Object.fromEntries(paidRows.map((row) => [String(row.label).slice(0, 10), Number(row.total || 0)]));
+          dashboard.activity_chart = chartWithSpend(dashboard.activity_chart, spentByLabel);
+        }
+      }
       dashboard.instant = {
         total: instant.total,
         completed: pick(instant, ["completed", "done"]),
@@ -1896,19 +1913,6 @@ export function appRoutes(router) {
         ).catch(() => null);
         if (paidPayments) revenueTotal = Number(paidPayments.total ?? 0);
       }
-      if (await tableExists("instant_consultation_requests") && await tableExists("payments") && await hasColumn("payments", "payable_id")) {
-        const instantPaid = await one(
-          `SELECT COALESCE(SUM(p.amount), 0) AS total, COUNT(DISTINCT i.id) AS visits
-           FROM payments p
-           INNER JOIN instant_consultation_requests i ON i.id = p.payable_id
-           WHERE i.doctor_id = ? AND p.status IN ('paid','completed','success','successful') AND p.payable_type LIKE '%instant%'`,
-          [doctorId],
-        ).catch(() => null);
-        if (instantPaid) {
-          revenueTotal += Number(instantPaid.total ?? 0);
-          instantPaidCount = Number(instantPaid.visits ?? 0);
-        }
-      }
       const change = previousTotal > 0 ? Math.round(((revenueTotal - previousTotal) / previousTotal) * 1000) / 10 : null;
       const labelExpr = !dateColumn
         ? kigaliTodaySql()
@@ -2025,13 +2029,16 @@ export function appRoutes(router) {
         const payDate = await firstColumn("payments", ["paid_at", "created_at"]);
         const payWindow = payDate ? periodWhere(payDate, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
         const paySql = payDate ? payWindow.sql.replaceAll(`\`${payDate}\``, `p.\`${payDate}\``) : "1=1";
-        instantPaidTotal = Number((await one(
-          `SELECT COALESCE(SUM(p.amount), 0) AS total
+        const instantPaid = await one(
+          `SELECT COALESCE(SUM(p.amount), 0) AS total, COUNT(DISTINCT i.id) AS visits
            FROM payments p INNER JOIN \`${instantTable}\` i ON i.id = p.payable_id
            WHERE i.doctor_id = ? AND LOWER(p.status) IN ('paid','completed','success','successful')
              AND p.payable_type LIKE '%instant%' AND ${paySql}`,
           [doctorId, ...payWindow.params],
-        ).catch(() => ({ total: 0 })))?.total || 0);
+        ).catch(() => ({ total: 0, visits: 0 }));
+        instantPaidTotal = Number(instantPaid?.total || 0);
+        instantPaidCount = Number(instantPaid?.visits || 0);
+        revenueTotal += instantPaidTotal;
       }
 
       res.json({
@@ -2877,15 +2884,15 @@ export function appRoutes(router) {
       const alive = async (table) => (await hasColumn(table, "deleted_at")) ? "deleted_at IS NULL" : "1=1";
       const count = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
       const sum = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
-      const like = req.query.q ? `%${req.query.q}%` : null;
-      const userFilter = like ? " AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)" : "";
+      const like = req.query.q ? likeContains(req.query.q) : null;
+      const userFilter = like ? " AND (name LIKE ? ESCAPE '\\\\' OR email LIKE ? ESCAPE '\\\\' OR phone LIKE ? ESCAPE '\\\\')" : "";
       const userParams = like ? [like, like, like] : [];
       const roleCount = async (table) => {
         if (!(await tableExists(table))) return 0;
         if (!like || !(await hasColumn(table, "user_id"))) return count(`SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${await alive(table)}`);
         const deleted = (await hasColumn(table, "deleted_at")) ? "t.deleted_at IS NULL" : "1=1";
         return count(
-          `SELECT COUNT(*) AS total FROM \`${table}\` t JOIN users u ON u.id = t.user_id WHERE ${deleted} AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)`,
+          `SELECT COUNT(*) AS total FROM \`${table}\` t JOIN users u ON u.id = t.user_id WHERE ${deleted} AND (u.name LIKE ? ESCAPE '\\\\' OR u.email LIKE ? ESCAPE '\\\\' OR u.phone LIKE ? ESCAPE '\\\\')`,
           userParams,
         );
       };
@@ -3031,8 +3038,8 @@ export function appRoutes(router) {
         params.push(status);
       }
       if (term) {
-        filters.push("(users.name LIKE ? OR users.email LIKE ? OR users.phone LIKE ?)");
-        const like = `%${term}%`;
+        filters.push("(users.name LIKE ? ESCAPE '\\\\' OR users.email LIKE ? ESCAPE '\\\\' OR users.phone LIKE ? ESCAPE '\\\\')");
+        const like = likeContains(term);
         params.push(like, like, like);
       }
       const where = `WHERE ${filters.join(" AND ")}`;
@@ -3113,8 +3120,9 @@ export function appRoutes(router) {
 
   router.delete("/admin/users/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
     try {
-      await deleteUser(Number(req.params.id));
-      res.json({ message: "User deleted." });
+      const retired = await retireUser(Number(req.params.id));
+      if (!retired) return res.status(404).json({ message: "User not found." });
+      res.json({ message: "User suspended.", status: "suspended" });
     } catch (error) {
       next(error);
     }
@@ -3673,7 +3681,7 @@ export function appRoutes(router) {
         const member = withTeamPhoto(row);
         return res.json({ member, data: member, ...member });
       }
-      res.json(presentWithoutCallSecrets(req.params.scope, table, { data: row, ...row }));
+      res.json(presentWithoutCallSecrets(req.params.scope, table, { data: row, ...row }, req.user));
     } catch (error) {
       next(error);
     }
@@ -3956,7 +3964,10 @@ export function appRoutes(router) {
               : [],
           }
         : {};
-      res.json({ [key]: found.merged, data: found.merged, ...extra });
+      const body = key === "doctor"
+        ? presentWithoutCallSecrets("admin", "doctors", found.merged, req.user)
+        : found.merged;
+      res.json({ [key]: body, data: body, ...extra });
     } catch (error) {
       next(error);
     }

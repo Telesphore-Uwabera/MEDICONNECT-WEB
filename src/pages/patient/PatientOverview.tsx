@@ -21,6 +21,7 @@ import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActi
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
 import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
 import { listFrom } from "@/lib/list-payload";
+import { canJoinAppointment } from "@/lib/appointment-join";
 import { format, parseISO } from "date-fns";
 import moment from "moment";
 import "moment/locale/fr";
@@ -440,8 +441,7 @@ const PatientOverview = () => {
                         const doctorName =
                           a.doctor?.designations ?? a.doctor?.user?.name ?? "—";
                         const speciality = a.doctor?.specialization ?? "—";
-                        const canJoin =
-                          a.status === "in_progress";
+                        const canJoin = canJoinAppointment(a);
 
                         return (
                           <div

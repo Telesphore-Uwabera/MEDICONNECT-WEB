@@ -11,6 +11,7 @@ import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { publicDoctor, publicHospital, publicPharmacy, publicSlot, stripCallSecrets } from "./public-profile.js";
+import { containsLike, languageFilterValues, likeContains, publicMedicine } from "./search-text.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { insuranceCatalogWhere, loadInstantViewer, releaseSlot, settledAppointmentPatch } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue, verifiedPaidAmount } from "./instant-visit.js";
@@ -793,11 +794,11 @@ export function publicRoutes(router) {
       const filters = ["(" + (await whereActive("doctors", "d")) + ")"];
       const params = [];
       if (req.query.q) {
-        const like = `%${String(req.query.q).trim()}%`;
-        const parts = ["u.name LIKE ?", "d.specialization LIKE ?", "d.slug LIKE ?"];
+        const like = likeContains(req.query.q);
+        const parts = [containsLike("u.name"), containsLike("d.specialization"), containsLike("d.slug")];
         params.push(like, like, like);
         if (await hasColumn("doctors", "city")) {
-          parts.push("d.city LIKE ?");
+          parts.push(containsLike("d.city"));
           params.push(like);
         }
         if (await tableExists("specialization_fees")) {
@@ -811,7 +812,7 @@ export function publicRoutes(router) {
           parts.push(`EXISTS (
             SELECT 1 FROM specialization_fees sf
             WHERE (sf.id = d.specialization_fee_id ${extraFee})
-              AND (sf.sub_specialization LIKE ? OR sf.sub_specialization_fr LIKE ? OR sf.sub_specialization_kiny LIKE ? OR sf.slug LIKE ?)
+              AND (${containsLike("sf.sub_specialization")} OR ${containsLike("sf.sub_specialization_fr")} OR ${containsLike("sf.sub_specialization_kiny")} OR ${containsLike("sf.slug")})
           )`);
           params.push(like, like, like, like);
         }
@@ -839,8 +840,8 @@ export function publicRoutes(router) {
       } else if (specialityName || subName) {
         const clauses = [];
         for (const name of [...new Set([specialityName, subName].filter(Boolean))]) {
-          const like = `%${name}%`;
-          clauses.push("(d.specialization = ? OR d.specialization LIKE ?)");
+        const like = likeContains(name);
+        clauses.push(`(d.specialization = ? OR ${containsLike("d.specialization")})`);
           params.push(name, like);
           if (await tableExists("specialization_fees")) {
             const extraFee = await tableExists("doctor_specialization_fees")
@@ -854,9 +855,9 @@ export function publicRoutes(router) {
               SELECT 1 FROM specialization_fees sf
               WHERE (sf.id = d.specialization_fee_id ${extraFee})
                 AND (
-                  sf.sub_specialization = ? OR sf.sub_specialization LIKE ?
-                  OR sf.sub_specialization_fr = ? OR sf.sub_specialization_fr LIKE ?
-                  OR sf.sub_specialization_kiny = ? OR sf.sub_specialization_kiny LIKE ?
+                  sf.sub_specialization = ? OR ${containsLike("sf.sub_specialization")}
+                  OR sf.sub_specialization_fr = ? OR ${containsLike("sf.sub_specialization_fr")}
+                  OR sf.sub_specialization_kiny = ? OR ${containsLike("sf.sub_specialization_kiny")}
                   OR sf.slug = ?
                 )
             )`);
@@ -876,29 +877,35 @@ export function publicRoutes(router) {
         params.push(consultationType);
       }
       if (req.query.language) {
-        const language = String(req.query.language).toLowerCase();
-        const aliases = {
-          en: ["en", "english"],
-          fr: ["fr", "french"],
-          kiny: ["kiny", "rw", "kin", "kinyarwanda"],
-          rw: ["kiny", "rw", "kin", "kinyarwanda"],
-        };
-        const values = aliases[language] || [language];
-        filters.push(`LOWER(d.preferred_language) IN (${values.map(() => "?").join(", ")})`);
-        params.push(...values);
+        const values = languageFilterValues(req.query.language);
+        if (values.length) {
+          const marks = values.map(() => "?").join(", ");
+          const parts = [`LOWER(d.preferred_language) IN (${marks})`];
+          const langParams = [...values];
+          if (await hasColumn("users", "preferred_language")) {
+            parts.push(`LOWER(u.preferred_language) IN (${marks})`);
+            langParams.push(...values);
+          }
+          if (await hasColumn("doctors", "languages")) {
+            parts.push(`LOWER(d.languages) IN (${marks})`);
+            langParams.push(...values);
+          }
+          filters.push(`(${parts.join(" OR ")})`);
+          params.push(...langParams);
+        }
       }
       if (req.query.city) {
-        const like = `%${String(req.query.city).trim().toLowerCase()}%`;
+        const like = likeContains(String(req.query.city).trim().toLowerCase());
         const cityParts = [];
         if (await hasColumn("doctors", "city")) {
-          cityParts.push("LOWER(d.city) LIKE ?");
+          cityParts.push(containsLike("LOWER(d.city)"));
           params.push(like);
         }
         if (await tableExists("hospitals") && await hasColumn("hospitals", "city") && await tableExists("hospital_doctors")) {
           cityParts.push(`EXISTS (
             SELECT 1 FROM hospital_doctors hd
             JOIN hospitals h ON h.id = hd.hospital_id
-            WHERE hd.doctor_id = d.id AND LOWER(h.city) LIKE ?
+            WHERE hd.doctor_id = d.id AND ${containsLike("LOWER(h.city)")}
           )`);
           params.push(like);
         }
@@ -1076,12 +1083,12 @@ export function publicRoutes(router) {
       const filters = [await whereActive("hospitals", "h")];
       const params = [];
       if (req.query.q) {
-        const like = `%${req.query.q}%`;
-        const parts = ["h.city LIKE ?", "h.slug LIKE ?"];
+        const like = likeContains(req.query.q);
+        const parts = [containsLike("h.city"), containsLike("h.slug")];
         params.push(like, like);
         for (const column of ["name", "name_en", "name_fr", "name_kiny", "address"]) {
           if (await hasColumn("hospitals", column)) {
-            parts.push(`h.${column} LIKE ?`);
+            parts.push(containsLike(`h.${column}`));
             params.push(like);
           }
         }
@@ -1090,7 +1097,7 @@ export function publicRoutes(router) {
           if (await hasColumn("hospital_departments", column)) departmentColumns.push(column);
         }
         if (departmentColumns.length) {
-          parts.push(`EXISTS (SELECT 1 FROM hospital_departments hd WHERE hd.hospital_id = h.id AND (${departmentColumns.map((column) => `hd.${column} LIKE ?`).join(" OR ")}))`);
+          parts.push(`EXISTS (SELECT 1 FROM hospital_departments hd WHERE hd.hospital_id = h.id AND (${departmentColumns.map((column) => containsLike(`hd.${column}`)).join(" OR ")}))`);
           departmentColumns.forEach(() => params.push(like));
         }
         filters.push(`(${parts.join(" OR ")})`);
@@ -1152,17 +1159,29 @@ export function publicRoutes(router) {
       const filters = [await whereActive("pharmacies", "p")];
       const params = [];
       if (req.query.q) {
-        filters.push("(p.name LIKE ? OR p.city LIKE ? OR p.slug LIKE ?)");
-        const like = `%${req.query.q}%`;
+        filters.push(`(${containsLike("p.name")} OR ${containsLike("p.city")} OR ${containsLike("p.slug")})`);
+        const like = likeContains(req.query.q);
         params.push(like, like, like);
       }
       if (req.query.city) {
         filters.push("p.city = ?");
         params.push(req.query.city);
       }
+      const lat = Number(req.query.lat ?? req.query.latitude);
+      const lng = Number(req.query.lng ?? req.query.longitude ?? req.query.lon);
+      const canDistance = Number.isFinite(lat) && Number.isFinite(lng)
+        && (await hasColumn("pharmacies", "latitude"))
+        && (await hasColumn("pharmacies", "longitude"));
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("pharmacies p", where, params);
-      const rows = await presentRows("pharmacies", await q(`SELECT p.* FROM pharmacies p ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
+      const distanceSql = canDistance
+        ? ", (6371 * ACOS(LEAST(1, COS(RADIANS(?)) * COS(RADIANS(p.latitude)) * COS(RADIANS(p.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(p.latitude))))) AS distance_km"
+        : "";
+      const order = canDistance
+        ? "(p.latitude IS NULL OR p.longitude IS NULL), distance_km ASC, p.id DESC"
+        : "p.id DESC";
+      const selectParams = canDistance ? [lat, lng, lat, ...params, perPage, offset] : [...params, perPage, offset];
+      const rows = await presentRows("pharmacies", await q(`SELECT p.*${distanceSql} FROM pharmacies p ${where} ORDER BY ${order} LIMIT ? OFFSET ?`, selectParams));
       const data = await Promise.all(rows.map(async (pharmacy) => {
         const linked = await facilityInsurances("pharmacy_insurances", "pharmacy_id", pharmacy.id);
         return publicPharmacy({
@@ -1206,8 +1225,8 @@ export function publicRoutes(router) {
       let where = "WHERE 1=1";
       if (await hasColumn("services", "is_active")) where += " AND (is_active = 1 OR is_active IS NULL)";
       if (req.query.search) {
-        where += " AND (title_en LIKE ? OR title_fr LIKE ? OR title_kiny LIKE ?)";
-        const like = `%${req.query.search}%`;
+        where += ` AND (${containsLike("title_en")} OR ${containsLike("title_fr")} OR ${containsLike("title_kiny")})`;
+        const like = likeContains(req.query.search);
         params.push(like, like, like);
       }
       const total = await countWhere("services", where, params);
@@ -1235,8 +1254,8 @@ export function publicRoutes(router) {
       let where = "WHERE 1=1";
       if (await hasColumn("team_members", "is_active")) where += " AND (is_active = 1 OR is_active IS NULL)";
       if (req.query.search) {
-        where += " AND name LIKE ?";
-        params.push(`%${req.query.search}%`);
+        where += ` AND ${containsLike("name")}`;
+        params.push(likeContains(req.query.search));
       }
       const total = await countWhere("team_members", where, params);
       const data = (await presentRows("team_members", await q(`SELECT * FROM team_members ${where} ORDER BY \`order\` ASC, id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(async () => q(`SELECT * FROM team_members ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset])))).map(withTeamPhoto);
@@ -1340,10 +1359,11 @@ export function publicRoutes(router) {
       const params = [];
       let where = "";
       if (req.query.search) {
-        where = "WHERE name LIKE ? OR slug LIKE ?";
-        params.push(`%${req.query.search}%`, `%${req.query.search}%`);
+        where = `WHERE ${containsLike("name")} OR ${containsLike("slug")}`;
+        const like = likeContains(req.query.search);
+        params.push(like, like);
       }
-      const rows = await presentRows("specializations", await q(`SELECT * FROM specializations ${where} ORDER BY name ASC`, params));
+      const rows = await presentRows("specializations", await q(`SELECT * FROM specializations ${where} ORDER BY name ASC LIMIT 100`, params));
       res.json(rows.map((row) => ({ ...row, doctorCount: undefined })));
     } catch (error) {
       next(error);
@@ -1359,12 +1379,12 @@ export function publicRoutes(router) {
         params.push(req.query.specialization_id);
       }
       if (req.query.search) {
-        filters.push("(sub_specialization LIKE ? OR tier_name LIKE ? OR slug LIKE ?)");
-        const like = `%${req.query.search}%`;
+        filters.push(`(${containsLike("sub_specialization")} OR ${containsLike("tier_name")} OR ${containsLike("slug")})`);
+        const like = likeContains(req.query.search);
         params.push(like, like, like);
       }
       const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
-      res.json(await presentRows("specialization_fees", await q(`SELECT * FROM specialization_fees ${where} ORDER BY id ASC`, params)));
+      res.json(await presentRows("specialization_fees", await q(`SELECT * FROM specialization_fees ${where} ORDER BY id ASC LIMIT 100`, params)));
     } catch (error) {
       next(error);
     }
@@ -1389,27 +1409,39 @@ export function publicRoutes(router) {
   router.get(["/public/medicines", "/public/medicines/all"], async (req, res, next) => {
     try {
       const all = req.path.endsWith("/all");
-      const { page, perPage, offset } = pageArgs(req, all ? 500 : 20);
-      const params = [];
-      let where = "WHERE 1=1";
-      if (req.query.q || req.query.search) {
-        where += " AND m.name LIKE ?";
-        const like = `%${req.query.q || req.query.search}%`;
-        params.push(like);
+      const { page, perPage, offset } = pageArgs(req, all ? 50 : 20);
+      if (!(await tableExists("pharmacy_medicines")) || !(await hasColumn("pharmacy_medicines", "pharmacy_id")) || !(await tableExists("pharmacies"))) {
+        const empty = [];
+        if (all) return res.json({ count: 0, medicines: empty, data: empty });
+        return res.json({ status: "success", count: 0, medicines: empty, data: empty, meta: { current_page: 1, last_page: 1, per_page: perPage, total: 0 } });
       }
-      const total = await countWhere("pharmacy_medicines m", where, params);
+      const params = [];
+      let where = `WHERE ${await whereActive("pharmacies", "p")}`;
+      if (req.query.q || req.query.search) {
+        where += ` AND ${containsLike("m.name")}`;
+        params.push(likeContains(req.query.q || req.query.search));
+      }
+      const total = await countWhere("pharmacy_medicines m JOIN pharmacies p ON p.id = m.pharmacy_id", where, params);
       const rows = await q(
-        `SELECT m.*
+        `SELECT m.*, p.name AS pharmacy_name, p.slug AS pharmacy_slug, p.city AS pharmacy_city
          FROM pharmacy_medicines m
+         JOIN pharmacies p ON p.id = m.pharmacy_id
          ${where}
          ORDER BY m.id DESC
          LIMIT ? OFFSET ?`,
-        [...params, all ? Math.max(perPage, 500) : perPage, all ? 0 : offset],
-      );
-      const data = rows.map((row) => ({ ...row, pharmacy: null }));
-      if (all) return res.json(data);
+        [...params, perPage, offset],
+      ).catch(() => []);
+      const data = rows.map((row) => publicMedicine(row));
       const last = Math.max(1, Math.ceil(total / perPage) || 1);
-      res.json({ status: "success", data, meta: { current_page: page, last_page: last, per_page: perPage, total } });
+      const body = {
+        status: "success",
+        count: data.length,
+        medicines: data,
+        data,
+        meta: { current_page: page, last_page: last, per_page: perPage, total },
+      };
+      if (all) return res.json(body);
+      res.json(body);
     } catch (error) {
       next(error);
     }
@@ -2017,13 +2049,24 @@ export function publicRoutes(router) {
 
   router.get("/public/medicines/pharmacy/:slug", async (req, res, next) => {
     try {
-      const pharmacy = await one("SELECT id FROM pharmacies WHERE slug = ? OR id = ? LIMIT 1", [req.params.slug, req.params.slug]);
-      if (!pharmacy) return res.status(404).json({ message: "Pharmacy not found." });
-      const rows = await presentRows("pharmacy_medicines", await q(
-        "SELECT * FROM pharmacy_medicines WHERE pharmacy_id = ? ORDER BY name LIMIT 200",
-        [pharmacy.id],
-      ).catch(() => []));
-      res.json({ data: rows });
+      const pharmacy = await one("SELECT * FROM pharmacies WHERE slug = ? OR id = ? LIMIT 1", [req.params.slug, req.params.slug]);
+      if (!pharmacy || !publiclyListed(pharmacy.status)) return res.status(404).json({ message: "Pharmacy not found." });
+      const params = [pharmacy.id];
+      let where = "WHERE m.pharmacy_id = ?";
+      if (req.query.q) {
+        where += ` AND ${containsLike("m.name")}`;
+        params.push(likeContains(req.query.q));
+      }
+      const rows = await q(
+        `SELECT m.*, ? AS pharmacy_name, ? AS pharmacy_slug, ? AS pharmacy_city
+         FROM pharmacy_medicines m
+         ${where}
+         ORDER BY m.name
+         LIMIT 100`,
+        [pharmacy.name || pharmacy.name_en || null, pharmacy.slug || null, pharmacy.city || null, ...params],
+      ).catch(() => []);
+      const data = rows.map((row) => publicMedicine(row));
+      res.json({ data, medicines: data, count: data.length });
     } catch (error) {
       next(error);
     }
@@ -2031,8 +2074,16 @@ export function publicRoutes(router) {
 
   router.get("/public/medicines/availability", async (req, res, next) => {
     try {
-      const medicine = await one("SELECT * FROM pharmacy_medicines WHERE id = ? LIMIT 1", [req.query.medicine_id]).catch(() => null);
-      res.json({ available: Boolean(medicine && Number(medicine.quantity ?? medicine.stock ?? 1) > 0), medicine });
+      const medicine = await one(
+        `SELECT m.*, p.name AS pharmacy_name, p.slug AS pharmacy_slug, p.city AS pharmacy_city
+         FROM pharmacy_medicines m
+         JOIN pharmacies p ON p.id = m.pharmacy_id
+         WHERE m.id = ? AND ${await whereActive("pharmacies", "p")}
+         LIMIT 1`,
+        [req.query.medicine_id],
+      ).catch(() => null);
+      const listed = medicine ? publicMedicine(medicine) : null;
+      res.json({ available: Boolean(listed?.in_stock), medicine: listed });
     } catch (error) {
       next(error);
     }
@@ -2047,8 +2098,8 @@ export function publicRoutes(router) {
         params.push(req.query.specialization_id, req.query.specialization_id);
       }
       if (req.query.search) {
-        where += " AND (sub_specialization LIKE ? OR sub_specialization_fr LIKE ? OR sub_specialization_kiny LIKE ?)";
-        const like = `%${req.query.search}%`;
+        where += ` AND (${containsLike("sub_specialization")} OR ${containsLike("sub_specialization_fr")} OR ${containsLike("sub_specialization_kiny")})`;
+        const like = likeContains(req.query.search);
         params.push(like, like, like);
       }
       const rows = await presentRows("specialization_fees", await q(`SELECT * FROM specialization_fees ${where} ORDER BY id LIMIT 200`, params).catch(() => []));
@@ -2088,12 +2139,10 @@ export function publicRoutes(router) {
   });
 
   router.get("/health", async (_req, res) => {
-    const row = await one("SELECT COUNT(*) AS users FROM users");
     res.json({
       status: true,
       service: "mediconnect-node",
       database: process.env.DB_DATABASE || "mediconnect",
-      users: Number(row?.users ?? 0),
       commit: runningCommit(),
     });
   });
