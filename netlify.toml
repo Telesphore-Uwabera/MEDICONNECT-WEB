@@ -6,7 +6,12 @@
   NODE_VERSION = "20"
   VITE_APP_BASE_URL = "/api/v1"
   VITE_REVERB_APP_KEY = "mediconnect-staging-key"
-  VITE_REVERB_HOST = "makers-chip-laboratories-maintains.trycloudflare.com"
+  # Rollback: the tunnel resets WebSocket handshakes, so the client ignored this host.
+  # VITE_REVERB_HOST = "makers-chip-laboratories-maintains.trycloudflare.com"
+  # Direct server. The wildcard certificate matches this name. wss://197.243.29.114
+  # does not, because the certificate is for *.mediconnect.rw and not the bare IP.
+  # DNS for ws.mediconnect.rw has to point at 197.243.29.114 before the browser can connect.
+  VITE_REVERB_HOST = "ws.mediconnect.rw"
   VITE_REVERB_PORT = "443"
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
@@ -51,9 +56,22 @@
   force = true
 
 # Same-origin API used by the website.
+# Rollback: tunnel in front of the Node server.
+# [[redirects]]
+#   from = "/api/v1/*"
+#   to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"
+#   status = 200
+#   force = true
+#
+# Active target: the public IP, which answers HTTPS directly.
+# Netlify checks the origin certificate against the host it dials. That
+# certificate is the *.mediconnect.rw wildcard, so the IP target can fail
+# verification. Once DNS for api.mediconnect.rw points at 197.243.29.114,
+# switch this line to https://api.mediconnect.rw/api/:splat. That also sends
+# Host: api.mediconnect.rw, which is the name /api/v1/health already answers.
 [[redirects]]
-  from = "/api/v1/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"
+  from = "/api/*"
+  to = "https://197.243.29.114/api/:splat"
   status = 200
   force = true
 
