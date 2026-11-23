@@ -6,38 +6,18 @@
   NODE_VERSION = "20"
   VITE_APP_BASE_URL = "/api/v1"
   VITE_REVERB_APP_KEY = "mediconnect-staging-key"
-  VITE_REVERB_HOST = "makers-chip-laboratories-maintains.trycloudflare.com"
+  # Rollback: the tunnel resets WebSocket handshakes, so the client ignored this host.
+  # VITE_REVERB_HOST = "makers-chip-laboratories-maintains.trycloudflare.com"
+  # Direct server. The certificate matches this name. Do not use the bare IP.
+  VITE_REVERB_HOST = "ws.mediconnect.rw"
   VITE_REVERB_PORT = "443"
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
 
-# The public addresses for the API, database console, and WebSocket are served
-# by this site and forwarded to Node on 10.10.141.149. Node then shows the API,
-# phpMyAdmin, or the WebSocket page based on the original hostname.
-[[redirects]]
-  from = "https://api.mediconnect.rw/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "https://api.mediconnect.rw/"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "https://ws.mediconnect.rw/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/ws/:splat"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "https://ws.mediconnect.rw/"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/ws/"
-  status = 200
-  force = true
-
+# api.mediconnect.rw and ws.mediconnect.rw resolve to the server, not this site.
+# Do not redirect those hostnames here: the rules would never run, and a rule
+# that sent them back to the same name would loop. db.mediconnect.rw is still a
+# Netlify hostname, so only that console stays proxied through the tunnel.
 [[redirects]]
   from = "https://db.mediconnect.rw/*"
   to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/db/:splat"
@@ -51,23 +31,40 @@
   force = true
 
 # Same-origin API used by the website.
+# Rollback: tunnel in front of the Node server.
+# [[redirects]]
+#   from = "/api/v1/*"
+#   to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"
+#   status = 200
+#   force = true
 [[redirects]]
-  from = "/api/v1/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"
+  from = "/api/*"
+  to = "https://api.mediconnect.rw/api/:splat"
   status = 200
   force = true
 
-# Forward /storage/* to the backend so uploaded files (images, docs) are served.
+# Uploaded files. The API host serves /storage (nginx) and /minio (the Node app).
+# Rollback: tunnel.
+# [[redirects]]
+#   from = "/storage/*"
+#   to = "https://makers-chip-laboratories-maintains.trycloudflare.com/storage/:splat"
+#   status = 200
+#   force = true
 [[redirects]]
   from = "/storage/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/storage/:splat"
+  to = "https://api.mediconnect.rw/storage/:splat"
   status = 200
   force = true
 
-# Forward /minio/* to MinIO so avatars and doctor images are served.
+# Rollback: tunnel.
+# [[redirects]]
+#   from = "/minio/*"
+#   to = "https://makers-chip-laboratories-maintains.trycloudflare.com/minio/:splat"
+#   status = 200
+#   force = true
 [[redirects]]
   from = "/minio/*"
-  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/minio/:splat"
+  to = "https://api.mediconnect.rw/minio/:splat"
   status = 200
   force = true
 

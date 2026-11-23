@@ -9,23 +9,21 @@ declare global {
 window.Pusher = Pusher;
 
 function socketHost() {
-  const host = String(import.meta.env.VITE_REVERB_HOST || "")
+  return String(import.meta.env.VITE_REVERB_HOST || "")
     .trim()
     .replace(/^https?:\/\//, "");
-  if (host) return host;
-  return "ws.mediconnect.rw";
 }
 
 function canUseWebsocket() {
   const host = socketHost();
   // Quick tunnels front the API over HTTP/2 and reset WebSocket handshakes
   // (ERR_HTTP2_PING_FAILED). Consult signaling and chat already poll HTTP.
+  // An empty host stays off, so local dev does not open a socket by itself.
   if (!host || host.includes("trycloudflare")) return false;
-  if (host === "ws.mediconnect.rw") return false;
   return true;
 }
 
-type ListenFn = (data: any) => void;
+type ListenFn = (data: unknown) => void;
 
 function wrapChannel(channel: ReturnType<Pusher["subscribe"]>) {
   return {
