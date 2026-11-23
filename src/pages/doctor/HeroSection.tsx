@@ -117,7 +117,7 @@ export default function HeroSection() {
       <img
         src={remote ? src : HERO_PHOTO}
         srcSet={remote ? undefined : HERO_SRCSET}
-        sizes={remote ? undefined : "(max-width: 768px) 100vw, 420px"}
+        sizes={remote ? undefined : "(max-width: 768px) 92vw, 640px"}
         alt={alt}
         width={1280}
         height={1920}
@@ -164,10 +164,6 @@ export default function HeroSection() {
       {/* Soft lighting */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_82%_35%,hsl(var(--primary)/0.16),transparent_38%),radial-gradient(circle_at_14%_60%,hsl(var(--primary)/0.08),transparent_36%)]" aria-hidden="true" />
 
-      {/* Diagonal lines */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.25]"
-           style={{ backgroundImage: "repeating-linear-gradient(135deg, hsl(var(--accent)) 0 1px, transparent 1px 22px)" }} />
-
       <div className="relative">
         <section
           id="landing-page"
@@ -176,7 +172,7 @@ export default function HeroSection() {
           {/* ── Text column ── */}
           <div className="relative z-10 mx-auto w-full max-w-[560px] text-left md:mx-0 md:max-w-none">
             <HeroHeadline />
-            <p className="mt-5 max-w-lg text-[15px] font-medium leading-7 text-muted-foreground sm:mt-6 sm:text-base">
+            <p className="mt-6 max-w-lg text-base font-normal leading-7 text-muted-foreground sm:text-lg sm:leading-8">
               {heroTagline}
             </p>
 
@@ -219,7 +215,7 @@ export default function HeroSection() {
             >
               {/* Card frame — 3:4 portrait, no circle */}
               <div
-                className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-border/40"
+                className="relative overflow-hidden rounded-3xl shadow-[0_24px_60px_-24px_hsl(172_45%_18%/0.45)] ring-1 ring-border/50"
                 style={{ aspectRatio: "3/4" }}
               >
                 {/* ── Crossfade image stack ── */}

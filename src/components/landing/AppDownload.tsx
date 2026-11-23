@@ -13,15 +13,15 @@ const POINTS = [
 export default function AppDownload() {
   const { t } = useTranslation();
   return (
-    <section id="download" className="scroll-mt-24 bg-background py-14 sm:py-16 md:py-20">
+    <section id="download" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
       <div className={landingShell}>
         <Reveal>
-          <div className="grid items-center gap-8 overflow-hidden rounded-3xl border border-border bg-card p-5 shadow-sm sm:p-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="landing-card grid items-center gap-8 overflow-hidden border border-border/80 bg-card p-6 sm:p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
                 {t("pages.landing.download_app")}
               </p>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                 {t("pages.landing.healthcare_pocket_title")}
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">

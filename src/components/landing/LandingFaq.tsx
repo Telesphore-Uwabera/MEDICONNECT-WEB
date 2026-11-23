@@ -14,7 +14,7 @@ const ITEMS = [
 export default function LandingFaq() {
   const { t } = useTranslation();
   return (
-    <section id="faq" className="scroll-mt-24 bg-gradient-soft py-14 sm:py-16 md:py-20">
+    <section id="faq" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
       <div className={landingShell}>
         <Reveal>
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
@@ -22,7 +22,7 @@ export default function LandingFaq() {
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
                 {t("pages.landing.faq_subtitle")}
               </p>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
                 {t("pages.landing.faq_title")}
               </h2>
               <Link
@@ -32,7 +32,7 @@ export default function LandingFaq() {
                 {t("pages.landing.visit_help_center")}
               </Link>
             </div>
-            <Accordion type="single" collapsible className="min-w-0 rounded-2xl border border-border bg-card px-4 sm:px-5">
+            <Accordion type="single" collapsible className="landing-card min-w-0 border border-border/80 bg-card px-5 sm:px-6">
               {ITEMS.map(([question, answer]) => (
                 <AccordionItem key={question} value={question}>
                   <AccordionTrigger className="min-h-11 py-3 text-left text-sm font-semibold text-foreground hover:no-underline sm:text-base">

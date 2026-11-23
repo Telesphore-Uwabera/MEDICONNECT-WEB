@@ -714,14 +714,14 @@ function Specialities() {
                 w-[140px] flex-shrink-0
                 flex-col items-center
                 justify-center gap-2.5
-                rounded-sm
+                rounded-[20px]
                 border border-border
                 bg-card px-2.5
-                text-center shadow-none
+                text-center
+                shadow-[0_1px_2px_hsl(215_28%_17%/0.04),0_16px_40px_-20px_hsl(172_45%_22%/0.22)]
                 transition-all duration-200
-                hover:-translate-y-px
-                hover:border-primary/50
-                hover:shadow-none
+                hover:-translate-y-0.5
+                hover:border-primary/40
               "
             >
               <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">

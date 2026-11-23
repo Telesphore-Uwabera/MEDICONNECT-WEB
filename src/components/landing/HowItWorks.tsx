@@ -11,22 +11,22 @@ const STEPS = [
 export default function HowItWorks() {
   const { t } = useTranslation();
   return (
-    <section id="how-it-works" className="scroll-mt-24 bg-background py-14 sm:py-16 md:py-20">
+    <section id="how-it-works" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
       <div className={landingShell}>
         <Reveal>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
             {t("pages.landing.how_it_works")}
           </p>
-          <h2 className="mt-2 max-w-xl font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h2 className="mt-3 max-w-xl font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             {t("pages.landing.how_title")}
           </h2>
         </Reveal>
-        <ol className="mt-8 grid gap-4 md:grid-cols-3 md:gap-5">
+        <ol className="mt-10 grid gap-6 md:grid-cols-3">
           {STEPS.map((step, index) => {
             const Icon = step.icon;
             return (
               <Reveal key={step.title} delay={index * 0.06}>
-                <li className="flex h-full min-w-0 gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform duration-300 hover:-translate-y-0.5 hover:border-primary/30 sm:p-5">
+                <li className="landing-card flex h-full min-w-0 gap-4 border border-border/80 bg-card p-6">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
                     <Icon className="h-5 w-5" aria-hidden="true" />
                   </span>

@@ -412,7 +412,7 @@ export function HeroHeader({
       className={cn(
         "top-0 left-0 right-0 z-50 w-full max-w-full min-w-0 transition-all duration-300",
         scrolled
-          ? "fixed bg-background/90 backdrop-blur-md border-b border-border shadow-sm"
+          ? "landing-glass fixed"
           : "relative bg-transparent",
       )}
     >
