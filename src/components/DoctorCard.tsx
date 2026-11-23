@@ -43,7 +43,7 @@ import {
   readConsultSession,
   pruneIfEnded,
 } from "@/hooks/patient/se-consultation-session";
-import { resolveMediaUrl } from "@/lib/image-url";
+import { publicMediaUrl } from "@/lib/image-url";
 import { apiFetch } from "@/lib/api";
 import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 import { landingSpecialityLabels } from "@/lib/browse-specialities";
@@ -73,6 +73,31 @@ function doctorSpecialityLabel(doctor: ApiDoctor) {
   return labels.join(", ");
 }
 
+function photoInitials(name: string) {
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return initials || "MC";
+}
+
+function PhotoFallback({ name, className }: { name: string; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,hsl(172_76%_30%),hsl(192_55%_24%))] font-semibold text-white select-none",
+        className,
+      )}
+      aria-hidden="true"
+    >
+      {photoInitials(name)}
+    </div>
+  );
+}
+
 function DoctorAvatar({
   doctor,
   size = "sm",
@@ -80,41 +105,35 @@ function DoctorAvatar({
   doctor: ApiDoctor;
   size?: "sm" | "lg";
 }) {
-  const [imgError, setImgError] = useState(false);
+  const [phase, setPhase] = useState<"loading" | "ready" | "missing">("loading");
   const displayName = doctor.name || doctor.user?.name || "";
-  const initials = displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-  const sizeClass =
-    size === "lg"
-      ? "h-full w-full text-2xl sm:text-3xl"
-      : "h-full w-full text-sm";
-
+  const sizeClass = size === "lg" ? "text-3xl sm:text-4xl" : "text-sm";
   const rawImage = doctor.image || doctor.photo || doctor.avatar || doctor.user?.avatar;
-  const imageSrc = resolveMediaUrl(rawImage);
+  const imageSrc = publicMediaUrl(rawImage);
 
-  if (!imageSrc || imgError) {
-    return (
-      <div
-        className={cn(
-          sizeClass,
-          "rounded-[inherit] bg-primary/10 text-primary flex items-center justify-center font-bold select-none",
-        )}
-      >
-        {initials}
-      </div>
-    );
+  if (!imageSrc || phase === "missing") {
+    return <PhotoFallback name={displayName} className={sizeClass} />;
   }
   return (
-    <img
-      src={imageSrc}
-      alt={displayName}
-      className="h-full w-full object-cover object-top md:object-center rounded-[inherit] transition-transform duration-500 group-hover/img:scale-105"
-      onError={() => setImgError(true)}
-    />
+    <span className="relative block h-full w-full overflow-hidden">
+      {phase !== "ready" && (
+        <span className="absolute inset-0 animate-pulse bg-[linear-gradient(145deg,hsl(172_40%_88%),hsl(180_30%_94%))]" aria-hidden="true" />
+      )}
+      <img
+        src={imageSrc}
+        alt={displayName}
+        width={640}
+        height={800}
+        decoding="async"
+        loading="lazy"
+        onLoad={() => setPhase("ready")}
+        onError={() => setPhase("missing")}
+        className={cn(
+          "h-full w-full object-cover object-top transition duration-500 group-hover/img:scale-105",
+          phase === "ready" ? "opacity-100 blur-0" : "scale-105 opacity-0 blur-md",
+        )}
+      />
+    </span>
   );
 }
 

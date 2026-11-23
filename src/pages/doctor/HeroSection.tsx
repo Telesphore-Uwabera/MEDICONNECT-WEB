@@ -8,13 +8,45 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import { apiFetch } from "@/lib/api";
-import { resolveMediaUrl } from "@/lib/image-url";
+import { publicMediaUrl } from "@/lib/image-url";
 import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 import { UnifiedModal } from "@/components/DoctorCard";
 import { BookingDialog } from "@/components/BookingDialog";
 import type { Doctor as CallDoctor } from "@/context/CallStore";
 
-const HERO_PHOTO = "/images/Jul18202601_47_20JM.png";
+const HERO_PHOTO = "/images/hero/consult-1280.webp";
+const HERO_SRCSET = "/images/hero/consult-640.webp 640w, /images/hero/consult-960.webp 960w, /images/hero/consult-1280.webp 1280w, /images/hero/consult-1920.webp 1920w";
+
+function HeroPhoto({ src, alt }: { src: string; alt: string }) {
+  const [phase, setPhase] = useState<"loading" | "ready" | "missing">(src ? "loading" : "missing");
+  const initials = alt.split(" ").map((part) => part[0]).filter(Boolean).join("").slice(0, 2).toUpperCase() || "MC";
+  if (!src || phase === "missing") {
+    return (
+      <span className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(145deg,hsl(172_76%_30%),hsl(192_55%_24%))] text-5xl font-semibold text-white">
+        {initials}
+      </span>
+    );
+  }
+  return (
+    <span className="absolute inset-0 block overflow-hidden bg-[linear-gradient(160deg,hsl(172_40%_90%),hsl(180_25%_96%))]">
+      {phase !== "ready" && (
+        <span className="absolute inset-0 animate-pulse" aria-hidden="true" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        width={1280}
+        height={1920}
+        decoding="async"
+        loading="eager"
+        fetchPriority="high"
+        onLoad={() => setPhase("ready")}
+        onError={() => setPhase("missing")}
+        className={`absolute inset-0 h-full w-full object-cover object-top transition duration-500 ${phase === "ready" ? "opacity-100 blur-0" : "scale-105 opacity-0 blur-md"}`}
+      />
+    </span>
+  );
+}
 const HERO_DOCTOR_ROTATE_MS = 5000; // 5 seconds per doctor
 
 const FEATURES = [
@@ -108,7 +140,7 @@ export default function HeroSection() {
     : null;
 
   const getPhotoSrc = (d: ApiDoctor | null) =>
-    resolveMediaUrl(d?.image || d?.user?.avatar) || HERO_PHOTO;
+    publicMediaUrl(d?.image || d?.user?.avatar) || "";
 
   const { data: activeSchedule } = useQuery({
     queryKey: ["doctor-availability", activeDoctor?.slug],
@@ -139,16 +171,12 @@ export default function HeroSection() {
 
       {/* Mobile backdrop */}
       <div className="absolute inset-0 top-0 pointer-events-none md:hidden" aria-hidden="true">
-        <img src={HERO_PHOTO} alt="" className="h-full w-full object-cover object-center opacity-45" loading="eager" />
+        <img src={HERO_PHOTO} srcSet={HERO_SRCSET} sizes="100vw" alt="" width={1280} height={1920} className="h-full w-full object-cover object-center opacity-45" loading="eager" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
       </div>
 
       {/* Soft lighting */}
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_82%_35%,hsl(var(--primary)/0.16),transparent_38%),radial-gradient(circle_at_14%_60%,hsl(var(--primary)/0.08),transparent_36%)]" aria-hidden="true" />
-
-      {/* Diagonal lines */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.25]"
-           style={{ backgroundImage: "repeating-linear-gradient(135deg, hsl(var(--accent)) 0 1px, transparent 1px 22px)" }} />
 
       <div className="relative">
         <section
@@ -158,7 +186,7 @@ export default function HeroSection() {
           {/* ── Text column ── */}
           <div className="relative z-10 mx-auto w-full max-w-[560px] text-left md:mx-0 md:max-w-none">
             <HeroHeadline />
-            <p className="mt-5 max-w-lg text-[15px] font-medium leading-7 text-muted-foreground sm:mt-6 sm:text-base">
+            <p className="mt-6 max-w-lg text-base font-normal leading-7 text-muted-foreground sm:text-lg sm:leading-8">
               {heroTagline}
             </p>
 
@@ -190,55 +218,49 @@ export default function HeroSection() {
           >
             {/* Animated background blobs */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-              <div className="absolute -top-8 -right-8 h-64 w-64 rounded-full bg-primary/10"
-                   style={{ animation: "hero-blob1 7s ease-in-out infinite" }} />
-              <div className="absolute -bottom-4 -left-4 h-44 w-44 rounded-full bg-primary/8"
-                   style={{ animation: "hero-blob2 9s ease-in-out infinite" }} />
+              <div className="hero-blob absolute -top-8 -right-8 h-64 w-64 rounded-full bg-primary/10" />
+              <div className="hero-blob hero-blob-slow absolute -bottom-4 -left-4 h-44 w-44 rounded-full bg-primary/8" />
             </div>
 
             {/* Portrait card — floats gently */}
             <div
-              className="group relative z-10 w-full cursor-pointer"
-              style={{ animation: "hero-float 5s ease-in-out infinite" }}
+              className="hero-float group relative z-10 w-full max-w-full cursor-pointer"
               onClick={handleHeroCta}
             >
               {/* Card frame — 3:4 portrait, no circle */}
               <div
-                className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-border/40"
+                className="relative overflow-hidden rounded-3xl shadow-[0_24px_60px_-24px_hsl(172_45%_18%/0.45)] ring-1 ring-border/50"
                 style={{ aspectRatio: "3/4" }}
               >
                 {/* ── Crossfade image stack ── */}
 
                 {/* Previous image — fades OUT as new one comes in */}
                 {prevDoctor && (
-                  <img
+                  <span
                     key={`prev-${prevDoctor.id}`}
-                    src={getPhotoSrc(prevDoctor)}
-                    alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 h-full w-full object-cover object-top"
+                    className="absolute inset-0"
                     style={{
                       opacity: isTransitioning ? 0 : 1,
                       transition: "opacity 1.4s cubic-bezier(0.4,0,0.2,1)",
                       zIndex: 1,
                     }}
-                    loading="eager"
-                  />
+                  >
+                    <HeroPhoto src={getPhotoSrc(prevDoctor)} alt="" />
+                  </span>
                 )}
 
-                {/* Active image — fades IN */}
-                <img
+                <span
                   key={`active-${activeDoctor?.id ?? "static"}`}
-                  src={getPhotoSrc(activeDoctor)}
-                  alt={activeDoctor?.user?.name ?? ""}
-                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  className="absolute inset-0 transition-transform duration-700 group-hover:scale-105"
                   style={{
                     opacity: isTransitioning ? 0 : 1,
                     transition: "opacity 1.4s cubic-bezier(0.4,0,0.2,1), transform 700ms ease",
                     zIndex: 2,
                   }}
-                  loading="eager"
-                />
+                >
+                  <HeroPhoto src={getPhotoSrc(activeDoctor)} alt={activeDoctor?.user?.name ?? t("pages.landing.hero_image_alt")} />
+                </span>
 
                 {/* Bottom gradient */}
                 <div
@@ -351,10 +373,15 @@ export default function HeroSection() {
             <style>{`
               @keyframes hero-feature-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
               .hero-feature { animation: hero-feature-in 520ms cubic-bezier(0.22,1,0.36,1) both; }
-              @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-              @keyframes hero-blob1 { 0%,100%{transform:scale(1) translate(0,0)} 33%{transform:scale(1.08) translate(6px,-8px)} 66%{transform:scale(0.96) translate(-4px,6px)} }
-              @keyframes hero-blob2 { 0%,100%{transform:scale(1) translate(0,0)} 40%{transform:scale(1.1) translate(-6px,8px)} 70%{transform:scale(0.94) translate(4px,-4px)} }
+              @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+              .hero-float { animation: hero-float 6s ease-in-out infinite; }
+              @keyframes hero-blob1 { 0%,100%{transform:scale(1) translate(0,0)} 50%{transform:scale(1.06) translate(4px,-6px)} }
+              .hero-blob { animation: hero-blob1 8s ease-in-out infinite; }
+              .hero-blob-slow { animation-duration: 10s; }
               @keyframes hero-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,0.5)} 50%{box-shadow:0 0 0 5px rgba(52,211,153,0)} }
+              @media (prefers-reduced-motion: reduce) {
+                .hero-feature, .hero-float, .hero-blob { animation: none; }
+              }
             `}</style>
           </div>
         </section>

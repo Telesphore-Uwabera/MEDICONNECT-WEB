@@ -23,86 +23,27 @@ const StartConsult = () => {
           {/* ── Instant Consultation — continuous wave CTA ── */}
           <Link
             to="/patient/search-doctors?instant=true"
-            className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md"
-            style={{ isolation: "isolate" }}
+            className="landing-cta group flex items-center justify-between gap-3 bg-primary px-4 py-3.5 text-primary-foreground shadow-[0_12px_28px_-14px_hsl(172_70%_28%/0.8)]"
           >
-            {/* Wave rings — three expanding rings */}
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
-              <span className="absolute h-full w-full rounded-[6px] bg-white/10"
-                    style={{ animation: "cta-wave 2.4s ease-out infinite" }} />
-              <span className="absolute h-full w-full rounded-[6px] bg-white/7"
-                    style={{ animation: "cta-wave 2.4s ease-out infinite 0.7s" }} />
-              <span className="absolute h-full w-full rounded-[6px] bg-white/5"
-                    style={{ animation: "cta-wave 2.4s ease-out infinite 1.4s" }} />
-            </span>
-
-            {/* Shimmer sweep */}
-            <span
-              className="pointer-events-none absolute inset-0 -translate-x-full skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/20 to-transparent"
-              style={{ animation: "cta-shimmer 3s ease-in-out infinite" }}
-              aria-hidden="true"
-            />
-
-            {/* Content */}
-            <div className="relative flex min-w-0 items-center gap-3">
-              <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-white/15">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15">
                 <Video className="h-4 w-4" />
-                {/* Pulsing dot on icon */}
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-primary"
-                      style={{ animation: "cta-dot-pulse 1.8s ease-in-out infinite" }} />
               </span>
-              <div className="relative min-w-0 text-left">
+              <div className="min-w-0 text-left">
                 <p className="truncate text-sm font-semibold leading-none">
                   {t("pages.landing.instant_consultation", "Instant Consultation")}
                 </p>
-                <p className="mt-1 truncate text-[11px] text-primary-foreground/70">
+                <p className="mt-1 truncate text-[11px] text-primary-foreground/80">
                   {t("pages.landing.instant_consultation_sub", "Connect with a doctor in seconds.")}
                 </p>
               </div>
             </div>
-
-            <div className="relative flex-shrink-0" aria-hidden="true">
-              {/* Arrow surrounded by expanding wave rings — like a signal/send icon */}
-              <style>{`
-                @keyframes send-ring1 { 0%{transform:scale(0.5);opacity:0.9} 100%{transform:scale(1.6);opacity:0} }
-                @keyframes send-ring2 { 0%{transform:scale(0.5);opacity:0.7} 100%{transform:scale(1.6);opacity:0} }
-                @keyframes send-ring3 { 0%{transform:scale(0.5);opacity:0.5} 100%{transform:scale(1.6);opacity:0} }
-              `}</style>
-              <span className="relative flex h-9 w-9 items-center justify-center">
-                {/* Expanding rings behind the arrow */}
-                <span className="absolute inset-0 rounded-full border-2 border-white/60"
-                      style={{ animation: "send-ring1 1.8s ease-out infinite" }} />
-                <span className="absolute inset-0 rounded-full border-2 border-white/40"
-                      style={{ animation: "send-ring2 1.8s ease-out infinite 0.5s" }} />
-                <span className="absolute inset-0 rounded-full border-2 border-white/25"
-                      style={{ animation: "send-ring3 1.8s ease-out infinite 1s" }} />
-                {/* Arrow icon in center */}
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="relative z-10 text-primary-foreground">
-                  <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </span>
-            </div>
-
-            {/* Keyframes */}
-            <style>{`
-              @keyframes cta-wave {
-                0%   { transform: scale(1);    opacity: 0.6; }
-                100% { transform: scale(1.18); opacity: 0; }
-              }
-              @keyframes cta-shimmer {
-                0%   { transform: translateX(-100%) skewX(-18deg); }
-                60%, 100% { transform: translateX(200%) skewX(-18deg); }
-              }
-              @keyframes cta-dot-pulse {
-                0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.6); }
-                50%       { box-shadow: 0 0 0 4px rgba(52,211,153,0); }
-              }
-            `}</style>
+            <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
 
           <Link
             to="/patient/search-doctors"
-            className="group flex items-center justify-between gap-3 rounded-[6px] border border-border bg-card px-4 py-3.5 text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+            className="landing-cta group flex items-center justify-between gap-3 border border-border bg-card px-4 py-3.5 text-foreground shadow-sm hover:border-primary/40 hover:bg-primary/5"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
@@ -128,7 +69,7 @@ const StartConsult = () => {
         </div>
 
         {/* Download app row */}
-        <div className="flex flex-col items-start justify-between gap-3 rounded-[6px] border border-border bg-card/60 px-4 py-3.5 sm:flex-row sm:items-center">
+        <div className="landing-card flex flex-col items-start justify-between gap-3 border border-border/80 bg-card/80 px-4 py-4 lg:flex-row lg:items-center">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
               <Download className="h-4 w-4" />
@@ -145,7 +86,7 @@ const StartConsult = () => {
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <StoreBadge
               href={import.meta.env.VITE_APP_STORE_URL}
               src="/images/apple.png"

@@ -56,9 +56,11 @@ const normalizeLanguageCode = (code?: string | null) => {
 export const LanguageSwitcher = ({
   variant = "ghost",
   compact = false,
+  className,
 }: {
   variant?: "ghost" | "outline";
   compact?: boolean;
+  className?: string;
 }) => {
   const { i18n, t } = useTranslation();
   const { data: publicSettings } = usePublicSettings();
@@ -103,7 +105,7 @@ export const LanguageSwitcher = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size="sm" className="gap-1.5" aria-label={t("common.language")}>
+        <Button variant={variant} size="sm" className={cn("gap-1.5", className)} aria-label={t("common.language")}>
           <FlagCircle flag={current.flag} label={current.label} />
           {!compact && <span className="text-xs font-semibold">{current.short}</span>}
         </Button>

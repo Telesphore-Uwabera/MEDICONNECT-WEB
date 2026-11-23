@@ -88,6 +88,34 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
   return `/storage/${cleanPath}`;
 }
 
+const PUBLIC_MEDIA_ORIGIN = "https://mediconnect.rw";
+
+/**
+ * Absolute media URL for public pages. Same-origin /minio, /storage, and
+ * /api/v1/media paths only work where Netlify proxies them. The production
+ * site already serves those files, so the landing page loads them from there.
+ */
+export function publicMediaUrl(url?: string | null): string | undefined {
+  const resolved = resolveMediaUrl(url);
+  if (!resolved) return undefined;
+  if (
+    resolved.startsWith("data:")
+    || resolved.startsWith("blob:")
+    || resolved.startsWith("http://")
+    || resolved.startsWith("https://")
+  ) {
+    return resolved;
+  }
+  if (
+    resolved.startsWith("/minio/")
+    || resolved.startsWith("/storage/")
+    || resolved.startsWith("/api/v1/media/")
+  ) {
+    return `${PUBLIC_MEDIA_ORIGIN}${resolved}`;
+  }
+  return resolved;
+}
+
 /** Team photos are stored as `team/...webp`. Prefer that file over a raw photo_url the browser cannot load. */
 export function teamMemberPhotoSrc(photoUrl?: string | null, photo?: string | null): string | undefined {
   const fromPhoto = resolveMediaUrl(photo);
@@ -129,8 +157,8 @@ export function sanitizePayloadUrls<T>(data: T): T {
     return data.map((item) => sanitizePayloadUrls(item)) as unknown as T;
   }
 
-  const result: Record<string, any> = {};
-  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
     result[key] = sanitizePayloadUrls(value);
   }
   return result as T;

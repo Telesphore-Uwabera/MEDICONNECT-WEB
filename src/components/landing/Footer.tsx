@@ -151,7 +151,7 @@ function Footer({ className, hideTopBorder, containerClassName }: FooterProps = 
                   target="_blank"
                   rel="noreferrer"
                   aria-label={s.label}
-                  className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                  className="flex h-11 w-11 items-center justify-center rounded-[6px] border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
                 >
                   <svg
                     className="h-3.5 w-3.5"

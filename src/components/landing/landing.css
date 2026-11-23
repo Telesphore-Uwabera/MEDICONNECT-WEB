@@ -1,0 +1,76 @@
+/* Landing-only visual system. Dashboards keep the global Poppins theme. */
+.landing-root {
+  --landing-shadow:
+    0 1px 2px hsl(215 28% 17% / 0.04),
+    0 16px 40px -20px hsl(172 45% 22% / 0.22);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  letter-spacing: -0.011em;
+  background:
+    radial-gradient(ellipse 70% 36% at 100% -8%, hsl(168 76% 90% / 0.85), transparent 58%),
+    radial-gradient(ellipse 50% 28% at 0% 18%, hsl(172 60% 94% / 0.7), transparent 52%),
+    hsl(var(--background));
+}
+
+.landing-root :where(h1, h2, h3, .font-display, .hero-headline) {
+  font-family: "Plus Jakarta Sans", Inter, sans-serif;
+  letter-spacing: -0.034em;
+  line-height: 1.12;
+}
+
+.landing-root .landing-card,
+.landing-root #doctors .landing-card-in > *,
+.landing-root #specialities a.group,
+.landing-root #healthfacilities article {
+  border-radius: 20px;
+  box-shadow: var(--landing-shadow);
+}
+
+.landing-root #doctors .landing-card-in > * {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.landing-root #doctors .landing-card-in > *:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 2px hsl(215 28% 17% / 0.05),
+    0 22px 44px -18px hsl(172 45% 22% / 0.32);
+}
+
+.landing-root .landing-cta {
+  min-height: 44px;
+  border-radius: 16px;
+  transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.landing-root .landing-cta:hover {
+  transform: translateY(-1px);
+}
+
+.landing-root .landing-cta:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+}
+
+.landing-root .landing-glass {
+  background: hsl(var(--background) / 0.72);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  box-shadow: 0 10px 30px -18px hsl(172 40% 18% / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-root .landing-cta:hover,
+  .landing-root #doctors .landing-card-in > *:hover,
+  .landing-root .landing-card:hover {
+    transform: none;
+  }
+
+  .landing-root .hero-accent::after,
+  .landing-root .hero-float,
+  .landing-root .hero-blob {
+    animation: none;
+  }
+}

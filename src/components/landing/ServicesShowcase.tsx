@@ -103,7 +103,9 @@ export default function ServicesShowcase() {
   };
 
   return (
-    <div className="mt-10" id="services">
+    <section id="services" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
+    <div className="mx-auto w-full min-w-0 max-w-[1920px] px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+    <div>
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
@@ -130,7 +132,7 @@ export default function ServicesShowcase() {
           ? Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
-                className="h-[260px] animate-pulse rounded-[6px] border border-border bg-card"
+                className="h-[260px] animate-pulse rounded-[20px] border border-border bg-card"
               />
             ))
           : services.map((service, index) => {
@@ -148,7 +150,7 @@ export default function ServicesShowcase() {
                 <button
                   type="button"
                   onClick={() => setSelected(service)}
-                  className="group h-full w-full overflow-hidden rounded-[6px] border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+                  className="landing-card group h-full w-full overflow-hidden border border-border/80 bg-card text-left transition-all hover:-translate-y-1 hover:border-primary/30"
                 >
                   <div className="aspect-[16/10] overflow-hidden bg-primary/10">
                     <ServiceImage
@@ -287,5 +289,7 @@ export default function ServicesShowcase() {
         document.body,
       )}
     </div>
+    </div>
+    </section>
   );
 }

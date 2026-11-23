@@ -45,9 +45,9 @@ const TopBar = ({ settings }: TopBarProps) => {
 
   return (
     <div className="bg-[#3a8fa3] dark:bg-[#1e5f70] text-white text-xs">
-      <div className="container flex min-w-0 max-w-full items-center justify-between gap-2 overflow-hidden py-3">
+      <div className="mx-auto flex w-full min-w-0 max-w-[1400px] flex-nowrap items-center justify-between px-2 py-0 sm:px-8">
         {/* Socials */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center">
           {SOCIALS.map((s) => (
             <a
               key={s.label}
@@ -55,7 +55,7 @@ const TopBar = ({ settings }: TopBarProps) => {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={s.label}
-              className="text-white/80 hover:text-white transition-colors"
+              className="inline-flex h-11 w-11 items-center justify-center text-white/80 transition-colors hover:text-white"
             >
               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d={s.path} />
@@ -65,10 +65,10 @@ const TopBar = ({ settings }: TopBarProps) => {
         </div>
 
         {/* Contact info */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-0 sm:gap-3">
           <a
             href={`mailto:${email}`}
-            className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-1 text-white/90 transition-colors hover:text-white"
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -83,11 +83,11 @@ const TopBar = ({ settings }: TopBarProps) => {
             <span className="hidden max-w-[28vw] truncate md:inline">{email}</span>
           </a>
 
-          <span className="text-white/30">|</span>
+          <span className="hidden text-white/30 sm:inline">|</span>
 
           <a
             href={`tel:${phone.replace(/\s+/g, "")}`}
-            className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-1 text-white/90 transition-colors hover:text-white"
           >
             <svg
               className="h-3.5 w-3.5 shrink-0"
@@ -101,13 +101,15 @@ const TopBar = ({ settings }: TopBarProps) => {
             <span className="hidden md:inline">{phone}</span>
           </a>
 
-          <span className="text-white/30">|</span>
+          <span className="hidden text-white/30 sm:inline">|</span>
 
           <Link
             to="/help"
-            className="text-white/90 hover:text-white font-medium transition-colors"
+            aria-label={t("nav.topnav.help")}
+            className="inline-flex h-11 min-w-11 items-center justify-center px-2 font-medium text-white/90 transition-colors hover:text-white"
           >
-            {t("nav.topnav.help")}
+            <span className="sm:hidden" aria-hidden="true">?</span>
+            <span className="hidden sm:inline">{t("nav.topnav.help")}</span>
           </Link>
         </div>
       </div>

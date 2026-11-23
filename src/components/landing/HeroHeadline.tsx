@@ -6,21 +6,19 @@ export function HeroHeadline() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&display=swap');
-
         .hero-headline {
-          font-family: 'Bricolage Grotesque', var(--font-display), sans-serif;
-          font-size: clamp(1.75rem, 5.5vw, 3.25rem);
-          font-weight: 800;
+          font-family: "Plus Jakarta Sans", Inter, sans-serif;
+          font-size: clamp(2.25rem, 4.6vw, 4.25rem);
+          font-weight: 700;
           line-height: 1.08;
-          letter-spacing: -0.03em;
+          letter-spacing: -0.04em;
           text-align: left;
-          max-width: 100%;
+          max-width: 14ch;
         }
 
         .hero-line {
           display: block;
-          color: var(--foreground);
+          color: hsl(var(--foreground));
           white-space: normal;
           word-break: break-word;
         }
@@ -39,25 +37,19 @@ export function HeroHeadline() {
           content: '';
           position: absolute;
           left: 0;
-          bottom: -3px;
-          height: 3px;
+          bottom: 0.04em;
+          height: 0.12em;
           width: 100%;
           border-radius: 99px;
-          background: hsl(var(--primary));
-          transform-origin: left;
-          animation: hero-underline 3s ease-in-out infinite;
+          background: hsl(var(--primary) / 0.22);
+          z-index: -1;
         }
 
-        @keyframes hero-underline {
-          0%, 100% { transform: scaleX(1); opacity: 1; }
-          50% { transform: scaleX(0.6); opacity: 0.5; }
-        }
-
-        @media (min-width: 768px) { .hero-headline { line-height: 1.06; } }
+        @media (min-width: 768px) { .hero-headline { line-height: 1.05; } }
 
         @media (max-width: 480px) {
           .hero-line-nowrap { white-space: normal; }
-          .hero-headline { font-size: clamp(1.5rem, 7vw, 2rem); }
+          .hero-headline { font-size: clamp(2rem, 9vw, 2.5rem); max-width: 12ch; }
         }
 
         @media (max-width: 340px) {
@@ -66,7 +58,7 @@ export function HeroHeadline() {
       `}</style>
 
       <h1 className="hero-headline">
-        <span className="hero-line hero-line-nowrap">
+        <span className="hero-line">
           {t("pages.landing.hero_instant_virtual", { defaultValue: "Instant Virtual" })}{" "}
           {t("pages.landing.hero_consultation", { defaultValue: "Consultation." })}
         </span>

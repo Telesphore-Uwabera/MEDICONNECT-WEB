@@ -4,25 +4,16 @@ import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
-  ArrowLeft,
   ArrowRight,
-  Calendar,
-  Stethoscope,
   Pill,
-  Activity,
-  Shield,
   Clock,
   ChevronRight,
-  Zap,
-  X,
-  Mail,
   MapPin,
   Phone,
   Building2,
   BadgeCheck,
   Truck,
   Navigation,
-  ShoppingBag,
 } from "lucide-react";
 
 import echo from "@/lib/echo";
@@ -38,7 +29,8 @@ import { useTheme } from "@/context/ThemeContext";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 
-import TopBar from "@/components/landing/TopBar"; 
+import TopBar from "@/components/landing/TopBar";
+import "@/components/landing/landing.css"; 
 import { 
   useInfiniteSearchHospitals,
 } from "@/hooks/patient/use-patient-search-hospital";
@@ -65,6 +57,11 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
 import { RevealSection } from "@/components/RevealSection";
+import HowItWorks from "@/components/landing/HowItWorks";
+import WhyMediconnect from "@/components/landing/WhyMediconnect";
+import AppDownload from "@/components/landing/AppDownload";
+import LandingFaq from "@/components/landing/LandingFaq";
+import FinalCta from "@/components/landing/FinalCta";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
 
@@ -76,11 +73,11 @@ interface DoctorAvailabilityEvent {
 
  
 const SECTION_EYEBROW =
-  "text-xs font-black uppercase tracking-[0.18em] text-primary";
+  "text-xs font-semibold uppercase tracking-[0.16em] text-primary";
 const SECTION_TITLE =
-  "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl";
+  "font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl";
 const SECTION_SUBTITLE =
-  "mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground md:text-base";
+  "mt-3 max-w-2xl text-base font-normal leading-7 text-muted-foreground";
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -349,29 +346,6 @@ const Index = () => {
 
   // ── Static content ───────────────────────────────────────────────────────────
 
-  const features = [
-    {
-      icon: Calendar,
-      title: t("pages.landing.f_smart_booking_t"),
-      desc: t("pages.landing.f_smart_booking_d"),
-    },
-    {
-      icon: Activity,
-      title: t("pages.landing.f_instant_t"),
-      desc: t("pages.landing.f_instant_d"),
-    },
-    {
-      icon: Stethoscope,
-      title: t("pages.landing.f_records_t"),
-      desc: t("pages.landing.f_records_d"),
-    },
-    {
-      icon: Pill,
-      title: t("pages.landing.f_pharmacy_t"),
-      desc: t("pages.landing.f_pharmacy_d"),
-    },
-  ];
-
   const footerPlatformLinks = [
     { label: "Doctors", to: "/patient/search-doctors" },
     { label: "Hospitals", to: "/patient/search-facilities" },
@@ -426,7 +400,7 @@ const Index = () => {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh max-w-full overflow-x-hidden bg-background text-md">
+    <div className="landing-root min-h-dvh max-w-full overflow-x-hidden text-base">
       <div className="sticky top-0 z-50 w-full min-w-0 max-w-full">
         <TopBar settings={generalSettings} />
         <HeroHeader
@@ -438,12 +412,14 @@ const Index = () => {
       </div>
 
       {/* ── Hero ── */}
-      <section id="home" className="relative bg-gradient-hero">
+      <section id="home" className="relative overflow-hidden bg-gradient-hero">
         <HeroSection />
       </section>
 
+      <HowItWorks />
+
       {/* ── Available Doctors Grid ── */}
-      <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
+      <section id="doctors" className="py-16 md:py-20 lg:py-24">
         <RevealSection direction="up" delay={0} className="box-border w-full min-w-0 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div className="w-full min-w-0 max-w-full">
             <div className="mb-6">
@@ -451,10 +427,10 @@ const Index = () => {
                 {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
               </p>
               <div className="mt-1 flex items-center justify-between gap-2">
-                <h2 className="min-w-0 flex-1 whitespace-normal font-display text-[13px] font-bold leading-tight tracking-tight text-foreground min-[380px]:text-sm sm:whitespace-nowrap sm:text-2xl md:text-3xl">
+                <h2 className="min-w-0 flex-1 font-display text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl md:text-3xl">
                   {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
                 </h2>
-                <Link to="/patient/search-doctors" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-primary hover:underline sm:text-sm">
+                <Link to="/patient/search-doctors" className="inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-primary hover:underline">
                   {t("pages.landing.view_all", { defaultValue: "View all" })}
                   <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Link>
@@ -468,7 +444,7 @@ const Index = () => {
             >
               {doctorsLoading
                 ? Array.from({ length: 6 }).map((_, index) => (
-                    <div key={index} className="h-[320px] w-full min-w-0 max-w-full animate-pulse rounded-[6px] border border-border bg-card" />
+                    <div key={index} className="h-[320px] w-full min-w-0 max-w-full animate-pulse rounded-[20px] border border-border bg-card" />
                   ))
                 : visibleDoctors.map((doctor, index) => (
                     <div
@@ -481,10 +457,10 @@ const Index = () => {
                   ))}
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-[8px] border border-primary/20 bg-primary/10 p-4 sm:p-5 shadow-sm">
+            <div className="landing-card mt-8 overflow-hidden border border-primary/15 bg-primary/10 p-5 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <a href={`tel:${contactPhone}`} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                  <a href={`tel:${contactPhone}`} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm" aria-label={contactPhone}>
                     <Phone className="h-6 w-6" />
                   </a>
                   <div>
@@ -496,24 +472,25 @@ const Index = () => {
                     </p>
                   </div>
                 </div>
-                <a href={`tel:${contactPhone}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
+                <a href={`tel:${contactPhone}`} className="landing-cta inline-flex items-center justify-center gap-2 bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
                   <Phone className="h-4 w-4" />
                   {contactPhone}
                 </a>
               </div>
             </div>
           </div>
-          <ServicesShowcase />
         </RevealSection>
       </section>
+      <ServicesShowcase />
+      <WhyMediconnect />
       {/* Specialities */}
-      <section id="specialities" className="scroll-mt-24 bg-background py-12 md:py-14">
+      <section id="specialities" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
         <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <Specialities />
         </RevealSection>
       </section>
       {/* Verified facilities and pharmacies */}
-      <section id="healthfacilities" className="bg-background py-12 md:py-14">
+      <section id="healthfacilities" className="py-16 md:py-20 lg:py-24">
         <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -524,9 +501,9 @@ const Index = () => {
                 {t("pages.landing.verified_facilities_sub")}
               </p>
             </div>
-            <Link
+              <Link
               to={partnerTab === "facilities" ? "/patient/search-facilities" : "/patient/search-pharmacy"}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+              className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-primary hover:underline"
             >
               {partnerTab === "facilities"
                 ? t("pages.landing.view_all_facilities")
@@ -536,7 +513,7 @@ const Index = () => {
           </div>
 
           <div id="pharmacy" className="mb-7 flex flex-wrap items-center justify-between gap-4 scroll-mt-24">
-            <div className="inline-flex rounded-[6px] bg-muted/60 p-1 ring-1 ring-border">
+            <div className="inline-flex rounded-2xl bg-muted/70 p-1 ring-1 ring-border">
               <button
                 type="button"
                 onClick={() => {
@@ -545,7 +522,7 @@ const Index = () => {
                   setPartnerTab("facilities");
                 }}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
+                  "inline-flex min-h-11 items-center gap-2 rounded-xl px-5 text-xs font-semibold transition-all",
                   partnerTab === "facilities"
                     ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
                     : "text-muted-foreground hover:bg-background hover:text-foreground",
@@ -562,7 +539,7 @@ const Index = () => {
                   setPartnerTab("pharmacies");
                 }}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
+                  "inline-flex min-h-11 items-center gap-2 rounded-xl px-5 text-xs font-semibold transition-all",
                   partnerTab === "pharmacies"
                     ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
                     : "text-muted-foreground hover:bg-background hover:text-foreground",
@@ -581,7 +558,7 @@ const Index = () => {
                   setPageDir(-1);
                   setPartnerPage((page) => Math.max(0, page - 1));
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                 aria-label={t("pages.landing.previous_cards")}
               >
                 <ChevronRight className="h-4 w-4 rotate-180" />
@@ -593,7 +570,7 @@ const Index = () => {
                   setPageDir(1);
                   setPartnerPage((page) => Math.min(partnerPageCount - 1, page + 1));
                 }}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
                 aria-label={t("pages.landing.next_cards")}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -610,7 +587,7 @@ const Index = () => {
             >
               {hospitalsLoading && visibleHospitals.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
+                    <div key={index} className="h-[330px] animate-pulse rounded-[20px] border border-border bg-card" />
                   ))
                 : visibleHospitals.map((hospital) => (
                     <HospitalCard key={hospital.id} hospital={hospital} />
@@ -627,7 +604,7 @@ const Index = () => {
             >
               {pharmaciesLoading && visiblePharmacies.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
+                    <div key={index} className="h-[330px] animate-pulse rounded-[20px] border border-border bg-card" />
                   ))
                 : visiblePharmacies.map((pharmacy) => {
                     const deliveryMins = parseDeliveryMins(pharmacy.estimated_delivery_minutes);
@@ -637,7 +614,7 @@ const Index = () => {
                     return (
                       <article
                         key={pharmacy.id}
-                        className="flex flex-col overflow-hidden rounded-[6px] border border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl"
+                        className="landing-card flex flex-col overflow-hidden border border-border/70 bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30"
                       >
                         <div className="flex items-center justify-between border-b border-border bg-muted/60 px-4 py-2">
                           <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -657,7 +634,7 @@ const Index = () => {
                           <div className="flex items-start gap-3.5">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[6px] border border-primary/15 bg-primary/10 text-primary shadow-sm">
                               {pharmacy.logo ? (
-                                <img src={pharmacy.logo} alt={pharmacy.name} className="h-full w-full object-cover" />
+                                <img src={pharmacy.logo} alt={pharmacy.name} width={64} height={64} loading="lazy" decoding="async" className="h-full w-full max-w-full object-cover" />
                               ) : (
                                 <Pill className="h-6 w-6" />
                               )}
@@ -736,13 +713,13 @@ const Index = () => {
                           </p>
 
                           <div className="mt-auto flex items-center gap-2 border-t border-border/40 pt-4">
-                            <Button asChild size="sm" variant="outline" className="h-8 flex-1 rounded-[6px] border-border/60 px-3 text-xs font-bold hover:bg-muted/50">
+                            <Button asChild size="sm" variant="outline" className="landing-cta h-11 flex-1 border-border/60 px-3 text-xs font-semibold hover:bg-muted/50">
                               <Link to={`/patient/search-pharmacy?pharmacy=${pharmacy.slug}`}>
                                 <Pill className="mr-1.5 h-3.5 w-3.5" />
                                 {t("pages.patient.inventory_action")}
                               </Link>
                             </Button>
-                            <Button asChild size="sm" className="h-8 flex-1 rounded-[6px] bg-primary px-3 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90">
+                            <Button asChild size="sm" className="landing-cta h-11 flex-1 bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
                               <Link to={`/patient/search-pharmacy?pharmacy=${pharmacy.slug}`}>
                                 {t("pages.patient.order_now_action")}
                               </Link>
@@ -772,6 +749,10 @@ const Index = () => {
           <OurTeam />
         </RevealSection>
       </section>
+
+      <AppDownload />
+      <LandingFaq />
+      <FinalCta />
 
    <Footer hideTopBorder className="border-t-0 border-none shadow-none" />
     </div>
