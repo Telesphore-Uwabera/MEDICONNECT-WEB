@@ -58,7 +58,7 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 
 import TopBar from "@/components/landing/TopBar";
 import { HeroHeader } from "@/components/landing/HeroHeader";
-import { usePublicSettings } from "@/hooks/use-public-settings";
+import { usePublicSettings, type PublicGeneralSettings, type PublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
 import { useGetHelpCenterLinks } from "@/hooks/public/use-help-center";
@@ -152,9 +152,11 @@ const Help = () => {
   const { data: publicSettings } = usePublicSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const publicPayload = publicSettings as any;
-  const generalSettings =
-    publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
+  const publicPayload = (publicSettings ?? {}) as PublicSettings & {
+    settings?: PublicGeneralSettings;
+  } & PublicGeneralSettings;
+  const generalSettings: PublicGeneralSettings =
+    publicPayload.general ?? publicPayload.settings ?? publicPayload;
 
   const logo =
     generalSettings?.app_logo_url ||
@@ -337,7 +339,7 @@ const Help = () => {
         {/* Subtle decorative background circles */}
         <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-96 w-96 rounded-full bg-primary/10 blur-3xl opacity-50" />
 
-        <div className="relative z-10 w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24 text-center">
+        <div className="relative z-10 page-shell text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary mb-4 shadow-none">
             <Headphones className="h-3.5 w-3.5" />
             <span>{t("pages.help.eyebrow", { defaultValue: "Help & Contact Center" })}</span>
@@ -379,7 +381,7 @@ const Help = () => {
 
       {/* 4 Interactive Direct Contact Action Cards */}
       <section className="py-10 bg-muted/20">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+        <div className="page-shell">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {/* Card 1: Phone Support */}
             <div className="box-border group relative rounded-lg border border-border bg-card p-5 transition-all duration-200 hover:border-primary/50 shadow-none hover:shadow-none">
@@ -493,7 +495,7 @@ const Help = () => {
       </section>
 
       {/* Main Two-Column Contact Section */}
-      <section className="py-12 md:py-16 w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24 flex-1">
+      <section className="py-12 md:py-16 page-shell flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 xl:gap-10 items-stretch w-full">
           {/* LEFT COLUMN: Get In Touch Directly Card (same height as contact form) */}
           <div className="lg:col-span-5 flex flex-col">
@@ -884,7 +886,7 @@ const Help = () => {
 
       {/* Frequently Asked Questions Section */}
       <section className="py-14 bg-muted/20 shadow-none border-b-0 border-none">
-        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+        <div className="page-shell">
           <div className="text-center mb-10">
             <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary text-xs mb-3 shadow-none">
               Help Center FAQs

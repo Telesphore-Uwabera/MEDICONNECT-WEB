@@ -13,7 +13,7 @@ const POINTS = [
 export default function AppDownload() {
   const { t } = useTranslation();
   return (
-    <section id="download" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
+    <section id="download" className="page-section scroll-mt-24">
       <div className={landingShell}>
         <Reveal>
           <div className="landing-card grid items-center gap-8 overflow-hidden border border-border/80 bg-card p-6 sm:p-8 lg:grid-cols-[1.2fr_0.8fr] lg:p-10">

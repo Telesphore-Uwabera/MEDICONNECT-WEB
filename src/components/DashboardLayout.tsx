@@ -743,7 +743,8 @@ export const DashboardLayout = ({ role, children }: Props) => {
           {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
         </button>
 
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card sticky top-0 z-30">
+        <div className="sticky top-0 z-30 border-b border-border bg-card lg:hidden">
+          <div className="page-shell flex items-center gap-3 py-3">
           <button
             className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             onClick={() => setMobileOpen(true)}
@@ -758,6 +759,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
             />
 
           </NavLink>
+          </div>
         </div>
 
         <motion.main

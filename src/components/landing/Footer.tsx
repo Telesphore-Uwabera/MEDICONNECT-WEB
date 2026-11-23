@@ -112,7 +112,7 @@ function Footer({ className, hideTopBorder, containerClassName }: FooterProps = 
         className
       )}
     >
-      <div className={cn("w-full px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24 py-12 lg:py-16 mx-auto", containerClassName)}>
+      <div className={cn("page-shell page-section", containerClassName)}>
         <div className="grid gap-10 border-b border-border/40 dark:border-border/20 pb-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(150px,0.65fr)_minmax(150px,0.65fr)_minmax(0,1fr)]">
           <div className="space-y-5">
             <img

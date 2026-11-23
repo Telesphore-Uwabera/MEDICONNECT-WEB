@@ -12,7 +12,7 @@ const REASONS = [
 export default function WhyMediconnect() {
   const { t } = useTranslation();
   return (
-    <section id="why" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
+    <section id="why" className="page-section scroll-mt-24">
       <div className={landingShell}>
         <Reveal>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">

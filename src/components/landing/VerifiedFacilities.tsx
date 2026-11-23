@@ -204,9 +204,9 @@ export default function VerifiedFacilities() {
   };
 
   return (
-    <section id="pharmacy" className="relative border-t border-border bg-background py-10 md:py-12">
+    <section id="pharmacy" className="page-section relative border-t border-border bg-background">
       <span id="hospitals" className="absolute -top-24" aria-hidden="true" />
-      <div className="container">
+      <div className="page-shell">
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="font-display text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">

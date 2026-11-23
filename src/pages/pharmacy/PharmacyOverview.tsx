@@ -745,7 +745,7 @@ function PharmacyDashboard() {
           subtitle={t("pages.pharmacy.overview_sub")}
         />
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="page-shell flex-1 space-y-3 overflow-y-auto py-4">
           <RoleStart
             actions={[
               { to: "/pharmacy/orders", title: t("clinical.flow.pharmacy_orders"), hint: t("clinical.flow.pharmacy_orders_hint") },

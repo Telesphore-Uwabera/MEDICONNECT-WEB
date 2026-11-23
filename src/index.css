@@ -5,6 +5,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/* One content column for the landing page and the main dashboards.
+   Full-bleed bands stay full width; their inner content uses this shell. */
+.page-shell {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 75rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.page-section {
+  padding-block: 4rem;
+}
+
+@media (min-width: 768px) {
+  .page-shell {
+    padding-inline: 1.5rem;
+  }
+
+  .page-section {
+    padding-block: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-shell {
+    padding-inline: 2rem;
+  }
+
+  .page-section {
+    padding-block: 6rem;
+  }
+}
+
 /* MEDICONNECT design system — Teal/mint healthcare aesthetic */
 @layer base {
   :root {

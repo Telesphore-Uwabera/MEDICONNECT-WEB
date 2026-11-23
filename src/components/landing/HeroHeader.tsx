@@ -417,7 +417,7 @@ export function HeroHeader({
       )}
     >
       {/* ── Navbar row ── */}
-      <div className="flex w-full min-w-0 max-w-full items-center justify-between gap-1.5 px-3 py-1.5 sm:px-4 xl:px-6">
+      <div className="page-shell flex min-w-0 items-center justify-between gap-1.5 py-1.5">
 
         {/* Logo */}
         <div className="flex min-w-0 shrink items-center">
