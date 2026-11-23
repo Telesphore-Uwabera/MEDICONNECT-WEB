@@ -1,4 +1,3 @@
-import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
@@ -17,6 +16,7 @@ import { remindUpcomingVisits, autoDisableInstantOutsideSchedule } from "./visit
 import { expireUnpaidPayments } from "./public.js";
 import { normalizeStoredPhones } from "./phone.js";
 import { ensureSettingsTables } from "./system-settings.js";
+import { rewriteServiceHost } from "./service-host.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -25,43 +25,10 @@ function publicHost(req) {
   return String(raw).split(",")[0].trim().split(":")[0].toLowerCase();
 }
 
-function proxyRequest(req, res, target) {
-  const headers = { ...req.headers, host: target.host };
-  const proxyReq = http.request({
-    hostname: target.hostname,
-    port: target.port,
-    method: req.method,
-    path: req.originalUrl || req.url,
-    headers,
-  }, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
-    proxyRes.pipe(res);
-  });
-  proxyReq.on("error", () => {
-    if (!res.headersSent) res.status(502).type("text").send("Upstream unavailable");
-  });
-  req.pipe(proxyReq);
-}
-
 const app = express();
-app.use((req, res, next) => {
-  const url = req.originalUrl || req.url || "";
-  if (url === "/__host/ws" || url.startsWith("/__host/ws/")) {
-    const stripped = url.slice("/__host/ws".length) || "/";
-    req.url = stripped;
-    req.originalUrl = stripped;
-    req.headers["x-forwarded-host"] = "ws.mediconnect.rw";
-    return next();
-  }
-  if (url === "/__host/db" || url.startsWith("/__host/db/")) {
-    const stripped = url.slice("/__host/db".length) || "/";
-    req.url = stripped;
-    req.originalUrl = stripped;
-    req.headers["x-forwarded-host"] = "db.mediconnect.rw";
-    return proxyRequest(req, res, { hostname: "127.0.0.1", port: 80, host: "db.mediconnect.rw" });
-  }
-  if (publicHost(req) !== "db.mediconnect.rw") return next();
-  proxyRequest(req, res, { hostname: "127.0.0.1", port: 80, host: "db.mediconnect.rw" });
+app.use((req, _res, next) => {
+  rewriteServiceHost(req);
+  next();
 });
 const hidePrivateDoctorFiles = privateFileGuard(findDoctorByStoredFile);
 app.use("/minio", hidePrivateDoctorFiles, express.static(process.env.MINIO_DIR || "/var/www/mediconnect-minio"));
