@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { ApiTeamMember, useGetOurTeam } from "@/hooks/use-our-team";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { resolveMediaUrl } from "@/lib/image-url";
+import { publicMediaUrl } from "@/lib/image-url";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -101,13 +101,16 @@ function OrgCard({
 
         {/* Photo area — changed to portrait-friendly 4/5 ratio */}
         <div className="relative h-28 w-full shrink-0 overflow-hidden bg-muted sm:h-44 sm:max-h-[32vh]">
-          {(resolveMediaUrl(member.photo_url || member.photo)) && !imgError ? (
+          {(publicMediaUrl(member.photo_url || member.photo)) && !imgError ? (
             <>
               <img
-                src={resolveMediaUrl(member.photo_url || member.photo)}
+                src={publicMediaUrl(member.photo_url || member.photo)}
                 alt={member.name}
-                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${
-                  imgLoaded ? "opacity-100" : "opacity-0"
+                width={640}
+                height={800}
+                decoding="async"
+                className={`absolute inset-0 h-full w-full object-cover object-top transition duration-500 ${
+                  imgLoaded ? "opacity-100 blur-0" : "scale-105 opacity-0 blur-md"
                 }`}
                 onLoad={() => setImgLoaded(true)}
                 onError={() => setImgError(true)}
@@ -118,8 +121,8 @@ function OrgCard({
               )}
             </>
           ) : (
-            <div className="h-full w-full flex items-center justify-center bg-primary/10">
-              <span className="text-5xl font-medium text-primary">
+            <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(145deg,hsl(172_76%_30%),hsl(192_55%_24%))]">
+              <span className="text-5xl font-semibold text-white">
                 {getInitials(member.name)}
               </span>
             </div>
@@ -186,6 +189,33 @@ function OrgCard({
 
 // ── Member card ──────────────────────────────────────────────
 
+function TeamPortrait({ name, src }: { name: string; src?: string }) {
+  const [phase, setPhase] = useState<"loading" | "ready" | "missing">(src ? "loading" : "missing");
+  if (!src || phase === "missing") {
+    return (
+      <div className="mx-auto flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(145deg,hsl(172_76%_30%),hsl(192_55%_24%))] text-2xl font-semibold text-white ring-8 ring-muted/40">
+        {getInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <div className="relative mx-auto h-28 w-28 shrink-0 overflow-hidden rounded-full bg-[linear-gradient(145deg,hsl(172_40%_88%),hsl(180_30%_94%))] ring-8 ring-muted/40">
+      {phase !== "ready" && <span className="absolute inset-0 animate-pulse" aria-hidden="true" />}
+      <img
+        src={src}
+        alt={name}
+        width={224}
+        height={224}
+        decoding="async"
+        loading="lazy"
+        onLoad={() => setPhase("ready")}
+        onError={() => setPhase("missing")}
+        className={`h-full w-full object-cover object-top transition duration-500 ${phase === "ready" ? "opacity-100 blur-0" : "scale-105 opacity-0 blur-md"}`}
+      />
+    </div>
+  );
+}
+
 function MemberCard({
   member,
   interactive = true,
@@ -206,19 +236,7 @@ function MemberCard({
         aria-hidden={interactive ? undefined : true}
         aria-label={t("pages.landing.team_view_profile", { name: member.name })}
       >
-        <div className="mx-auto h-28 w-28 shrink-0 overflow-hidden rounded-full bg-primary/10 ring-8 ring-muted/40">
-          {resolveMediaUrl(member.photo_url || member.photo) ? (
-            <img
-              src={resolveMediaUrl(member.photo_url || member.photo)}
-              alt={member.name}
-              className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-2xl font-black text-primary">
-              {getInitials(member.name)}
-            </div>
-          )}
-        </div>
+        <TeamPortrait name={member.name} src={publicMediaUrl(member.photo_url || member.photo)} />
         <h3 className="mt-3 line-clamp-2 h-8 w-full text-[13px] font-bold leading-4 text-foreground">
           {member.name}
         </h3>

@@ -8,7 +8,7 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import { apiFetch } from "@/lib/api";
-import { resolveMediaUrl } from "@/lib/image-url";
+import { publicMediaUrl } from "@/lib/image-url";
 import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 import { UnifiedModal } from "@/components/DoctorCard";
 import { BookingDialog } from "@/components/BookingDialog";
@@ -16,6 +16,37 @@ import type { Doctor as CallDoctor } from "@/context/CallStore";
 
 const HERO_PHOTO = "/images/hero/consult-1280.webp";
 const HERO_SRCSET = "/images/hero/consult-640.webp 640w, /images/hero/consult-960.webp 960w, /images/hero/consult-1280.webp 1280w, /images/hero/consult-1920.webp 1920w";
+
+function HeroPhoto({ src, alt }: { src: string; alt: string }) {
+  const [phase, setPhase] = useState<"loading" | "ready" | "missing">(src ? "loading" : "missing");
+  const initials = alt.split(" ").map((part) => part[0]).filter(Boolean).join("").slice(0, 2).toUpperCase() || "MC";
+  if (!src || phase === "missing") {
+    return (
+      <span className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(145deg,hsl(172_76%_30%),hsl(192_55%_24%))] text-5xl font-semibold text-white">
+        {initials}
+      </span>
+    );
+  }
+  return (
+    <span className="absolute inset-0 block overflow-hidden bg-[linear-gradient(160deg,hsl(172_40%_90%),hsl(180_25%_96%))]">
+      {phase !== "ready" && (
+        <span className="absolute inset-0 animate-pulse" aria-hidden="true" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        width={1280}
+        height={1920}
+        decoding="async"
+        loading="eager"
+        fetchPriority="high"
+        onLoad={() => setPhase("ready")}
+        onError={() => setPhase("missing")}
+        className={`absolute inset-0 h-full w-full object-cover object-top transition duration-500 ${phase === "ready" ? "opacity-100 blur-0" : "scale-105 opacity-0 blur-md"}`}
+      />
+    </span>
+  );
+}
 const HERO_DOCTOR_ROTATE_MS = 5000; // 5 seconds per doctor
 
 const FEATURES = [
@@ -109,24 +140,7 @@ export default function HeroSection() {
     : null;
 
   const getPhotoSrc = (d: ApiDoctor | null) =>
-    resolveMediaUrl(d?.image || d?.user?.avatar) || "";
-
-  const heroPhoto = (src: string, alt: string, eager: boolean) => {
-    const remote = Boolean(src);
-    return (
-      <img
-        src={remote ? src : HERO_PHOTO}
-        srcSet={remote ? undefined : HERO_SRCSET}
-        sizes={remote ? undefined : "(max-width: 768px) 92vw, 640px"}
-        alt={alt}
-        width={1280}
-        height={1920}
-        decoding="async"
-        loading={eager ? "eager" : "lazy"}
-        className="absolute inset-0 h-full w-full object-cover object-top"
-      />
-    );
-  };
+    publicMediaUrl(d?.image || d?.user?.avatar) || "";
 
   const { data: activeSchedule } = useQuery({
     queryKey: ["doctor-availability", activeDoctor?.slug],
@@ -232,7 +246,7 @@ export default function HeroSection() {
                       zIndex: 1,
                     }}
                   >
-                    {heroPhoto(getPhotoSrc(prevDoctor), "", true)}
+                    <HeroPhoto src={getPhotoSrc(prevDoctor)} alt="" />
                   </span>
                 )}
 
@@ -245,7 +259,7 @@ export default function HeroSection() {
                     zIndex: 2,
                   }}
                 >
-                  {heroPhoto(getPhotoSrc(activeDoctor), activeDoctor?.user?.name ?? t("pages.landing.hero_image_alt"), true)}
+                  <HeroPhoto src={getPhotoSrc(activeDoctor)} alt={activeDoctor?.user?.name ?? t("pages.landing.hero_image_alt")} />
                 </span>
 
                 {/* Bottom gradient */}
