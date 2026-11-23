@@ -480,11 +480,7 @@ const Index = () => {
           </div>
         </RevealSection>
       </section>
-      <section className="scroll-mt-24 bg-background py-12 md:py-16">
-        <div className="mx-auto w-full min-w-0 max-w-[1920px] px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
-          <ServicesShowcase />
-        </div>
-      </section>
+      <ServicesShowcase />
       <WhyMediconnect />
       {/* Specialities */}
       <section id="specialities" className="scroll-mt-24 bg-background py-12 md:py-14">

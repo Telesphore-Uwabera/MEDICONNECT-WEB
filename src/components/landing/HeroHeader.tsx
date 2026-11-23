@@ -575,10 +575,10 @@ export function HeroHeader({
         <div className="hidden shrink-0 items-center gap-0.5 xl:flex 2xl:gap-2">
           <ThemeToggle className="h-11 w-11" />
           <div className="2xl:hidden">
-            <LanguageSwitcher compact />
+            <LanguageSwitcher compact className="h-11 min-h-11 min-w-11 px-2" />
           </div>
           <div className="hidden 2xl:block">
-            <LanguageSwitcher />
+            <LanguageSwitcher className="h-11 min-h-11 min-w-11 px-2" />
           </div>
 
           {user ? (
@@ -643,7 +643,7 @@ export function HeroHeader({
           {facilitySearch(mobileSearchRef)}
           <ThemeToggle className="h-11 w-11" />
           <div className="hidden sm:flex items-center gap-1">
-            <LanguageSwitcher compact />
+            <LanguageSwitcher compact className="h-11 min-h-11 min-w-11 px-2" />
           </div>
 
           {user ? (
@@ -848,7 +848,7 @@ export function HeroHeader({
 
               {/* Language switcher — top bar only shows it from sm up */}
               <div className="px-4 sm:px-6 pb-2 flex items-center gap-1 sm:hidden">
-                <LanguageSwitcher />
+                <LanguageSwitcher className="h-11 min-h-11 min-w-11 px-2" />
               </div>
 
               <div className="border-t border-border mx-4 sm:mx-6" />

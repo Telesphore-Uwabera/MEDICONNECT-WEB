@@ -45,9 +45,9 @@ const TopBar = ({ settings }: TopBarProps) => {
 
   return (
     <div className="bg-[#3a8fa3] dark:bg-[#1e5f70] text-white text-xs">
-      <div className="container flex min-w-0 max-w-full flex-wrap items-center justify-between gap-x-2 gap-y-1 py-1">
+      <div className="mx-auto flex w-full min-w-0 max-w-[1400px] flex-nowrap items-center justify-between px-2 py-0 sm:px-8">
         {/* Socials */}
-        <div className="flex items-center">
+        <div className="flex shrink-0 items-center">
           {SOCIALS.map((s) => (
             <a
               key={s.label}
@@ -65,7 +65,7 @@ const TopBar = ({ settings }: TopBarProps) => {
         </div>
 
         {/* Contact info */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-0 sm:gap-3">
           <a
             href={`mailto:${email}`}
             className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-1 text-white/90 transition-colors hover:text-white"
@@ -83,7 +83,7 @@ const TopBar = ({ settings }: TopBarProps) => {
             <span className="hidden max-w-[28vw] truncate md:inline">{email}</span>
           </a>
 
-          <span className="text-white/30">|</span>
+          <span className="hidden text-white/30 sm:inline">|</span>
 
           <a
             href={`tel:${phone.replace(/\s+/g, "")}`}
@@ -101,13 +101,15 @@ const TopBar = ({ settings }: TopBarProps) => {
             <span className="hidden md:inline">{phone}</span>
           </a>
 
-          <span className="text-white/30">|</span>
+          <span className="hidden text-white/30 sm:inline">|</span>
 
           <Link
             to="/help"
-            className="inline-flex min-h-11 min-w-11 items-center px-2 font-medium text-white/90 transition-colors hover:text-white"
+            aria-label={t("nav.topnav.help")}
+            className="inline-flex h-11 min-w-11 items-center justify-center px-2 font-medium text-white/90 transition-colors hover:text-white"
           >
-            {t("nav.topnav.help")}
+            <span className="sm:hidden" aria-hidden="true">?</span>
+            <span className="hidden sm:inline">{t("nav.topnav.help")}</span>
           </Link>
         </div>
       </div>

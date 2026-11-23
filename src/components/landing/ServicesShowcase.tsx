@@ -103,7 +103,9 @@ export default function ServicesShowcase() {
   };
 
   return (
-    <div className="mt-10" id="services">
+    <section id="services" className="scroll-mt-24 bg-background py-12 md:py-16">
+    <div className="mx-auto w-full min-w-0 max-w-[1920px] px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+    <div>
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
@@ -287,5 +289,7 @@ export default function ServicesShowcase() {
         document.body,
       )}
     </div>
+    </div>
+    </section>
   );
 }
