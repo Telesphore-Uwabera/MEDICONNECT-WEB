@@ -11,6 +11,7 @@ import {
   languageFilterValues,
   likeContains,
   publicMedicine,
+  serviceBookingIsPaid,
   sortByDistance,
 } from "./search-text.js";
 import { sumPharmacyStock } from "./medicine-stock.js";
@@ -112,5 +113,16 @@ describe("audit dashboard rules", () => {
       [{ label: "2026-11-23", appointments: 1, spent: 0 }],
       { "2026-11-23": 4500 },
     )).toEqual([{ label: "2026-11-23", appointments: 1, spent: 4500 }]);
+  });
+});
+
+describe("service booking completion", () => {
+  it("allows completion only after payment, or when no fee is due", () => {
+    expect(serviceBookingIsPaid({ payment_status: "paid" })).toBe(true);
+    expect(serviceBookingIsPaid({ payment_status: "completed" })).toBe(true);
+    expect(serviceBookingIsPaid({ payment_status: "pending", price: 5000 })).toBe(false);
+    expect(serviceBookingIsPaid({ price: 1500 })).toBe(false);
+    expect(serviceBookingIsPaid({ patient_pays: 0, price: 0 })).toBe(true);
+    expect(serviceBookingIsPaid({})).toBe(true);
   });
 });

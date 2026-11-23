@@ -21,7 +21,7 @@ import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
 import { attachMedicineStock, lowStockFilter } from "./medicine-stock.js";
 import { publicPagePath } from "./public-url.js";
-import { containsLike, likeContains } from "./search-text.js";
+import { containsLike, likeContains, serviceBookingIsPaid } from "./search-text.js";
 
 function hideCallSecrets(scope, table, rows, user) {
   return presentWithoutCallSecrets(scope, table, rows, user);
@@ -744,6 +744,11 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
               const fulfilled = await applyPharmacyFulfillment(table, row, req.body || {});
               const tagged = await presentDedicated(table, fulfilled, spec, scope, req.user);
               return res.json({ message: "Updated.", data: tagged, booking: tagged, order: tagged, ...tagged });
+            }
+            if (action === "complete" && table === "service_bookings" && !serviceBookingIsPaid(row)) {
+              return res.status(422).json({
+                message: "This booking is not paid yet. The patient must finish payment before it can be completed.",
+              });
             }
             const patch = { status: nextStatus };
             if (action === "reject" && table === "service_bookings") {
