@@ -94,8 +94,9 @@ export function InstantToggleButton({ doctorId, isInstant, compact = false }: {
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isInstant) return;
     try {
-      const res = await toggleMutation.mutateAsync({ doctor_id: doctorId, active: !isInstant });
+      const res = await toggleMutation.mutateAsync({ doctor_id: doctorId, active: false });
  
       sonnerToast.success(res.message);
     } catch (error) {
@@ -107,8 +108,8 @@ export function InstantToggleButton({ doctorId, isInstant, compact = false }: {
 
   if (compact) {
     return (
-      <button onClick={handleToggle} disabled={isPending}
-        title={isInstant ? "Disable instant consultation" : "Enable instant consultation"}
+      <button onClick={handleToggle} disabled={isPending || !isInstant}
+        title={isInstant ? "Disable instant consultation" : "Only the doctor can turn instant consultation on"}
         className={cn(
           "inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-[6px] border font-medium transition-all duration-200",
           "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -136,7 +137,7 @@ export function InstantToggleButton({ doctorId, isInstant, compact = false }: {
           {isInstant ? "Doctor appears in instant consultation pool" : "Doctor is not available for instant calls"}
         </p>
       </div>
-      <button onClick={handleToggle} disabled={isPending} className="disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+      <button onClick={handleToggle} disabled={isPending || !isInstant} title={isInstant ? "Disable instant consultation" : "Only the doctor can turn instant consultation on"} className="disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
         {isPending
           ? <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           : isInstant

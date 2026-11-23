@@ -34,7 +34,6 @@ import {
   MapPin,
   ExternalLink,
   CalendarDays,
-  ToggleLeft,
   ToggleRight,
   CreditCard,
   RefreshCw,
@@ -1737,27 +1736,22 @@ function InstantTab({ doctor }: { doctor: ApiDoctor }) {
                   {instantData.instant_consultation ? "ON" : "OFF"}
                 </Pill>
               )}
+              {instantData?.instant_consultation ? (
               <Button
                 size="sm"
                 variant="outline"
-                className={cn(
-                  "h-8 px-4 text-[11px] rounded-[6px] gap-1.5 font-medium transition-all",
-                  instantData?.instant_consultation
-                    ? "border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20"
-                    : "hover:border-primary/40 hover:text-primary hover:bg-accent/20",
-                )}
+                className="h-8 px-4 text-[11px] rounded-[6px] gap-1.5 font-medium transition-all border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20"
                 disabled={instantLoading || toggleInstant.isPending}
                 onClick={handleToggleInstant}
               >
                 {toggleInstant.isPending ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
-                ) : instantData?.instant_consultation ? (
-                  <ToggleRight className="w-3.5 h-3.5" />
                 ) : (
-                  <ToggleLeft className="w-3.5 h-3.5" />
+                  <ToggleRight className="w-3.5 h-3.5" />
                 )}
-                {instantData?.instant_consultation ? "Disable" : "Enable"}
+                Disable
               </Button>
+              ) : null}
             </div>
           </div>
 

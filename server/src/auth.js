@@ -136,7 +136,7 @@ export async function issueToken(userId, role) {
   return `${id}|${plain}`;
 }
 
-export async function userFromToken(header) {
+export async function userFromToken(header, options = {}) {
   if (!header?.startsWith("Bearer ")) return null;
   const raw = header.slice(7).trim();
   const split = raw.indexOf("|");
@@ -146,7 +146,8 @@ export async function userFromToken(header) {
   if (!id || !plain) return null;
   const token = await one("SELECT * FROM personal_access_tokens WHERE id = ? AND token = ?", [id, sha256(plain)]);
   if (!token) return null;
-  if (token.expires_at && new Date(token.expires_at).getTime() < Date.now()) return null;
+  const expired = Boolean(token.expires_at && new Date(token.expires_at).getTime() < Date.now());
+  if (expired && !options.allowExpired) return null;
   const row = await one("SELECT * FROM users WHERE id = ?", [token.tokenable_id]);
   if (!row) return null;
   let abilities = token.abilities;
@@ -154,7 +155,20 @@ export async function userFromToken(header) {
     try { abilities = JSON.parse(abilities); } catch { abilities = []; }
   }
   const user = await toUser(row, roleFromAbilities(abilities));
-  return { token, row, user };
+  return { token, row, user, expired };
+}
+
+export async function countLiveTokens(userId, exceptId = null) {
+  if (!(await tableExists("personal_access_tokens"))) return 0;
+  const hasExpiry = await hasColumn("personal_access_tokens", "expires_at");
+  const sql = hasExpiry
+    ? `SELECT COUNT(*) AS total FROM personal_access_tokens
+       WHERE tokenable_id = ? AND (? IS NULL OR id <> ?)
+         AND (expires_at IS NULL OR expires_at > NOW())`
+    : `SELECT COUNT(*) AS total FROM personal_access_tokens
+       WHERE tokenable_id = ? AND (? IS NULL OR id <> ?)`;
+  const row = await one(sql, [userId, exceptId, exceptId]).catch(() => ({ total: 0 }));
+  return Number(row?.total || 0);
 }
 
 export async function auth(req, res, next) {

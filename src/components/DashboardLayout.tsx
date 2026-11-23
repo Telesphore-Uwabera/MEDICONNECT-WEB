@@ -57,7 +57,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { apiFetch } from "@/lib/api";
+import { startDoctorHeartbeat } from "@/lib/doctor-heartbeat";
 import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
 import { PatientCallAlertListener } from "@/components/patient/PatientCallAlertListener";
 import { RoleApprovalGate } from "@/components/RoleApprovalGate";
@@ -517,6 +519,13 @@ interface Props {
   children: React.ReactNode;
 }
 
+function DoctorPresenceHeartbeat() {
+  useEffect(() => startDoctorHeartbeat(() => {
+    apiFetch("/doctor/presence", { method: "POST" }).catch(() => null);
+  }), []);
+  return null;
+}
+
 export const DashboardLayout = ({ role, children }: Props) => {
   const location = useLocation();
   const { t, i18n } = useTranslation();
@@ -771,6 +780,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
         >
           <RoleApprovalGate role={role}>{children}</RoleApprovalGate>
         </motion.main>
+        {role === "doctor" && <DoctorPresenceHeartbeat />}
         {role === "doctor" && <InstantPaidAlertListener />}
         {role === "patient" && <PatientCallAlertListener />}
       </div>

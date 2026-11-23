@@ -20,7 +20,6 @@ import { Check, Loader2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 import { STEPS, CONSULTATION_TYPES, LANGUAGES } from "./Constants";
-import { Switch } from "@/components/ui/switch";
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { FormField } from "./UiPrimitives";
 import { SpecialitiesStep } from "./SpecialitiesStep";
@@ -130,7 +129,6 @@ export function DoctorProfileForm({
   } = useForm<PersonalInfo>({
     defaultValues: {
       consultation_type: "online",
-      instant_consultation: false,
       insurance_ids: [],
       working_days: [],
       city: "",
@@ -143,7 +141,6 @@ export function DoctorProfileForm({
   useEffect(() => {
     register("consultation_type", { required: t("profile.required") });
     register("gender");
-    register("instant_consultation");
     register("insurance_ids");
     register("working_days");
     if (!getValues("consultation_type")) setValue("consultation_type", "online");
@@ -371,16 +368,6 @@ export function DoctorProfileForm({
                   ))}
                 </SelectContent>
               </Select>
-            </FormField>
-
-            <FormField label={t("doctorProfile.instant_consultation")}>
-              <div className="flex h-9 items-center justify-between gap-3 rounded-[6px] border border-border px-3">
-                <span className="text-[11px] text-muted-foreground">{t("doctorProfile.instant_consultation_hint")}</span>
-                <Switch
-                  checked={Boolean(watch("instant_consultation"))}
-                  onCheckedChange={(checked) => setValue("instant_consultation", checked, { shouldDirty: true })}
-                />
-              </div>
             </FormField>
 
             <div className="col-span-1 sm:col-span-2 space-y-2">

@@ -127,14 +127,74 @@ export async function doctorOnInstantSchedule(doctorId) {
   return false;
 }
 
+/** A doctor tab must check in at least this often or instant consultation turns off. */
+export const INSTANT_HEARTBEAT_MS = 3 * 60 * 1000;
+
 /**
- * Automatically disables instant consultation for any doctor who currently has
- * instant_consultation = 1 but is outside their consultation hours.
- * Note: NEVER turns instant consultation on automatically; only the doctor can turn it on.
+ * Turns instant consultation off only. A live logout always does.
+ * An expired token does too, unless another unexpired token is still signed in.
+ */
+export function shouldDisableInstantOnLogout({ expired = false, otherValidTokens = 0 } = {}) {
+  if (!expired) return true;
+  return Number(otherValidTokens) <= 0;
+}
+
+/** True when the doctor has not been seen inside the heartbeat window. */
+export function instantSeenIsStale(seenAt, now = Date.now(), staleMs = INSTANT_HEARTBEAT_MS) {
+  if (seenAt == null || seenAt === "") return true;
+  const ms = new Date(seenAt).getTime();
+  if (Number.isNaN(ms)) return true;
+  return now - ms >= staleMs;
+}
+
+/** Only sets instant_consultation to 0. Never turns it on. */
+export const TURN_OFF_STALE_INSTANT_SQL = `UPDATE doctors
+ SET instant_consultation = 0
+ WHERE instant_consultation = 1
+   AND (instant_seen_at IS NULL OR instant_seen_at < DATE_SUB(NOW(), INTERVAL 3 MINUTE))`;
+
+let warnedMissingSeenColumn = false;
+
+/**
+ * Turns instant consultation off for doctors who still have it on and have
+ * not sent a heartbeat for about 3 minutes. Never turns it on.
+ * If instant_seen_at does not exist yet, this does nothing and warns once.
  */
 export async function autoDisableInstantOutsideSchedule() {
-  // Instant consultation is a doctor-controlled flag. It must not turn off
-  // because the clock moved outside generated appointment slots.
+  try {
+    const { hasColumn, pool } = await import("./db.js");
+    if (!(await tableExists("doctors"))) return { disabled: 0, missingColumn: false };
+    if (!(await hasColumn("doctors", "instant_consultation"))) return { disabled: 0, missingColumn: false };
+    if (!(await hasColumn("doctors", "instant_seen_at"))) {
+      if (!warnedMissingSeenColumn) {
+        warnedMissingSeenColumn = true;
+        console.warn("[instant] doctors.instant_seen_at is missing. Apply server/sql/2026-11-23-doctor-instant-seen.sql after the owner approves it. Idle doctors stay instant-on until that column exists.");
+      }
+      return { disabled: 0, missingColumn: true };
+    }
+    const result = await pool.query(TURN_OFF_STALE_INSTANT_SQL);
+    const header = Array.isArray(result) ? result[0] : result;
+    return { disabled: Number(header?.affectedRows || 0), missingColumn: false };
+  } catch (error) {
+    console.error("[instant] could not turn off stale instant consultations", error?.message || error);
+    return { disabled: 0, missingColumn: false };
+  }
+}
+
+/** Records that this doctor's dashboard is still open. No-op if the column is absent. */
+export async function touchDoctorPresence(userId) {
+  try {
+    const { hasColumn, update } = await import("./db.js");
+    const { loadOwnedId } = await import("./auth.js");
+    if (!(await hasColumn("doctors", "instant_seen_at"))) return false;
+    const doctorId = await loadOwnedId(userId, "doctors");
+    if (!doctorId) return false;
+    await update("doctors", doctorId, { instant_seen_at: new Date() });
+    return true;
+  } catch (error) {
+    console.error("[instant] could not record doctor presence", error?.message || error);
+    return false;
+  }
 }
 
 /** Last explicit logout turns the doctor's instant flag off. Login and password change do not. */
