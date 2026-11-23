@@ -75,6 +75,7 @@ const PERIOD_OPTIONS: { value: Period; labelKey: string }[] = [
   { value: "week", labelKey: "pages.doctor.period_week" },
   { value: "month", labelKey: "pages.doctor.period_month" },
   { value: "year", labelKey: "pages.doctor.period_year" },
+  { value: "all", labelKey: "pages.doctor.period_all" },
 ];
  
 function formatCurrency(value: number) {

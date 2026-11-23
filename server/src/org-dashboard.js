@@ -188,7 +188,7 @@ export async function pharmacyDashboard(req) {
     }
     if (orderDate) {
       base.orders_chart = (await q(
-        `SELECT DATE(\`${orderDate}\`) AS label,
+        `SELECT ${kigaliDaySql(orderDate)} AS label,
                 COUNT(*) AS total,
                 SUM(CASE WHEN status IN ('completed','dispensed','paid','delivered') THEN 1 ELSE 0 END) AS completed,
                 SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected,
@@ -196,7 +196,7 @@ export async function pharmacyDashboard(req) {
                 COALESCE(SUM(CASE WHEN ${paidSql} THEN total_amount ELSE 0 END), 0) AS revenue
          FROM pharmacy_orders
          WHERE pharmacy_id = ? AND ${current.sql}
-         GROUP BY DATE(\`${orderDate}\`)
+         GROUP BY ${kigaliDaySql(orderDate)}
          ORDER BY label`,
         [pharmacyId, ...current.params],
       ).catch(() => [])).map((row) => ({
@@ -233,7 +233,7 @@ export async function pharmacyDashboard(req) {
     const stockByMedicine = new Map();
     if (await tableExists("pharmacy_stocks")) {
       const stocks = await q(
-        "SELECT medicine_id, quantity, low_stock_threshold, expiry_date FROM pharmacy_stocks WHERE pharmacy_id = ? OR pharmacy_id IS NULL",
+        "SELECT medicine_id, quantity, low_stock_threshold, expiry_date FROM pharmacy_stocks WHERE pharmacy_id = ?",
         [pharmacyId],
       ).catch(() => []);
       for (const stock of stocks) stockByMedicine.set(Number(stock.medicine_id), stock);
@@ -550,9 +550,11 @@ export async function hospitalDashboard(req) {
     },
   };
   if (await tableExists("service_bookings") && await hasColumn("service_bookings", "hospital_id") && await hasColumn("service_bookings", "patient_id")) {
+    const bookingDate = (await hasColumn("service_bookings", "preferred_date")) ? "preferred_date" : "created_at";
+    const bookingWindow = dated(window.current, bookingDate);
     const bookingPatients = Number((await one(
-      "SELECT COUNT(DISTINCT patient_id) AS total FROM service_bookings WHERE hospital_id = ?",
-      [hospitalId],
+      `SELECT COUNT(DISTINCT patient_id) AS total FROM service_bookings WHERE hospital_id = ? AND ${bookingWindow.sql}`,
+      [hospitalId, ...bookingWindow.params],
     ).catch(() => ({ total: 0 })))?.total || 0);
     empty.period_stats.service_bookings.unique_patients = bookingPatients;
     if (!uniquePatients) uniquePatients = bookingPatients;

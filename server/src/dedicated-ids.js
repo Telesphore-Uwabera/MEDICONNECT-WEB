@@ -21,6 +21,7 @@ import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
 import { attachMedicineStock, lowStockFilter } from "./medicine-stock.js";
 import { publicPagePath } from "./public-url.js";
+import { containsLike, likeContains } from "./search-text.js";
 
 function hideCallSecrets(scope, table, rows, user) {
   return presentWithoutCallSecrets(scope, table, rows, user);
@@ -481,6 +482,28 @@ async function extraFilters(req, table, spec) {
       }
     }
   }
+  if (table === "service_bookings") {
+    const dayColumn = (await hasColumn(table, "preferred_date")) ? "preferred_date" : ((await hasColumn(table, "created_at")) ? "created_at" : null);
+    if (dayColumn) {
+      const day = kigaliDaySql(dayColumn);
+      if (req.query.date_from) {
+        filters.push(`${day} >= ?`);
+        params.push(String(req.query.date_from).slice(0, 10));
+      }
+      if (req.query.date_to) {
+        filters.push(`${day} <= ?`);
+        params.push(String(req.query.date_to).slice(0, 10));
+      }
+    }
+    if (req.query.hospital_service_id && (await hasColumn(table, "hospital_service_id"))) {
+      filters.push("`hospital_service_id` = ?");
+      params.push(Number(req.query.hospital_service_id));
+    }
+    if (req.query.payment_status && (await hasColumn(table, "payment_status"))) {
+      filters.push("`payment_status` = ?");
+      params.push(String(req.query.payment_status));
+    }
+  }
   for (const column of ["patient_id", "doctor_id", "hospital_id", "pharmacy_id", "department_id", "user_id"]) {
     if (req.query[column] && (await hasColumn(table, column))) {
       filters.push(`\`${column}\` = ?`);
@@ -499,8 +522,22 @@ async function extraFilters(req, table, spec) {
       cols.forEach(() => params.push(`%${term}%`));
     }
     if (["doctors", "patients", "hospitals", "pharmacies"].includes(table) && (await hasColumn(table, "user_id"))) {
-      likeParts.push(`EXISTS (SELECT 1 FROM users u WHERE u.id = \`${table}\`.user_id AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?))`);
-      params.push(`%${term}%`, `%${term}%`, `%${term}%`);
+      likeParts.push(`EXISTS (SELECT 1 FROM users u WHERE u.id = \`${table}\`.user_id AND (${containsLike("u.name")} OR ${containsLike("u.email")} OR ${containsLike("u.phone")}))`);
+      const like = likeContains(term);
+      params.push(like, like, like);
+    }
+    if (["appointments", "instant_consultation_requests", "instant_consultations", "service_bookings"].includes(table)) {
+      const like = likeContains(term);
+      if (await hasColumn(table, "patient_id")) {
+        likeParts.push(`EXISTS (SELECT 1 FROM users pu WHERE pu.id = \`${table}\`.patient_id AND ${containsLike("pu.name")})`);
+        params.push(like);
+        likeParts.push(`EXISTS (SELECT 1 FROM patients pp JOIN users pu ON pu.id = pp.user_id WHERE pp.id = \`${table}\`.patient_id AND ${containsLike("pu.name")})`);
+        params.push(like);
+      }
+      if (await hasColumn(table, "doctor_id")) {
+        likeParts.push(`EXISTS (SELECT 1 FROM doctors dd JOIN users du ON du.id = dd.user_id WHERE dd.id = \`${table}\`.doctor_id AND ${containsLike("du.name")})`);
+        params.push(like);
+      }
     }
     if (likeParts.length) filters.push(`(${likeParts.join(" OR ")})`);
   }
@@ -709,7 +746,11 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
               return res.json({ message: "Updated.", data: tagged, booking: tagged, order: tagged, ...tagged });
             }
             const patch = { status: nextStatus };
-            if (action === "reject" && req.body?.rejection_reason && (await hasColumn(table, "rejection_reason"))) {
+            if (action === "reject" && table === "service_bookings") {
+              const reason = String(req.body?.rejection_reason || req.body?.reason || "").trim();
+              if (!reason) return res.status(422).json({ message: "A reason is required to reject this booking." });
+              if (await hasColumn(table, "rejection_reason")) patch.rejection_reason = reason;
+            } else if (action === "reject" && req.body?.rejection_reason && (await hasColumn(table, "rejection_reason"))) {
               patch.rejection_reason = req.body.rejection_reason;
             }
             if (req.body?.notes && (await hasColumn(table, "notes"))) patch.notes = req.body.notes;

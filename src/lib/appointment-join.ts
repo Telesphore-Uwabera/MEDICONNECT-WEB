@@ -74,11 +74,18 @@ export function canJoinAppointment(
   const date = String(appointment.appointment_date || "").slice(0, 10);
   const start = clockTime(appointment.appointment_time);
   if (!date || !start) return false;
-  const kigali = kigaliClock(new Date(nowMs));
-  if (date !== kigali.date) return false;
   const from = start.hour * 60 + start.minute;
   const duration = Math.max(5, Number(appointment.duration_minutes) || 30);
-  if (kigali.minutes < from - APPOINTMENT_JOIN_EARLY_MINUTES) return false;
-  if (kigali.minutes > from + duration + APPOINTMENT_JOIN_LATE_MINUTES) return false;
-  return true;
+  const kigali = kigaliClock(new Date(nowMs));
+  const opens = kigaliStamp(date, from - APPOINTMENT_JOIN_EARLY_MINUTES);
+  const closes = kigaliStamp(date, from + duration + APPOINTMENT_JOIN_LATE_MINUTES);
+  const current = kigaliStamp(kigali.date, kigali.minutes);
+  if (opens == null || closes == null || current == null) return false;
+  return current >= opens && current <= closes;
+}
+
+function kigaliStamp(date: string, minutesOfDay: number) {
+  const [year, month, day] = date.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return Date.UTC(year, month - 1, day, 0, minutesOfDay);
 }

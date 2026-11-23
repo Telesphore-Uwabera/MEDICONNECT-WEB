@@ -11,7 +11,8 @@ import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-
 import { notifyPaidVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { publicDoctor, publicHospital, publicPharmacy, publicSlot, stripCallSecrets } from "./public-profile.js";
-import { containsLike, languageFilterValues, likeContains, publicMedicine } from "./search-text.js";
+import { containsLike, doctorOrderKey, languageFilterValues, likeContains, publicMedicine } from "./search-text.js";
+import { sumPharmacyStock } from "./medicine-stock.js";
 import { addIsoDays, upcomingPublicSlots } from "./booking-calendar.js";
 import { insuranceCatalogWhere, loadInstantViewer, releaseSlot, settledAppointmentPatch } from "./visit-rules.js";
 import { ageSeconds, canJoinInstant, canPayInstant, ownsInstant, placeInQueue, verifiedPaidAmount } from "./instant-visit.js";
@@ -43,6 +44,20 @@ export function withTeamPhoto(member) {
 }
 
 const UNLISTED_PUBLIC = new Set(["pending", "submitted", "rejected", "suspended", "action_requested", "inactive", "draft"]);
+
+async function overlayPharmacyStock(rows) {
+  if (!rows?.length || !(await tableExists("pharmacy_stocks")) || !(await hasColumn("pharmacy_stocks", "medicine_id"))) return rows;
+  const ids = [...new Set(rows.map((row) => Number(row.id)).filter((id) => id > 0))];
+  if (!ids.length) return rows;
+  const stocks = await q(
+    `SELECT medicine_id, pharmacy_id, quantity FROM pharmacy_stocks WHERE pharmacy_id IS NOT NULL AND medicine_id IN (${ids.map(() => "?").join(",")})`,
+    ids,
+  ).catch(() => []);
+  return rows.map((row) => ({
+    ...row,
+    quantity: sumPharmacyStock(stocks.filter((stock) => Number(stock.medicine_id) === Number(row.id)), row.pharmacy_id),
+  }));
+}
 
 function publiclyListed(status) {
   const value = String(status || "").trim().toLowerCase();
@@ -801,6 +816,14 @@ export function publicRoutes(router) {
           parts.push(containsLike("d.city"));
           params.push(like);
         }
+        if (await tableExists("hospitals") && await tableExists("hospital_doctors")) {
+          parts.push(`EXISTS (
+            SELECT 1 FROM hospital_doctors hd
+            JOIN hospitals h ON h.id = hd.hospital_id
+            WHERE hd.doctor_id = d.id AND (${containsLike("h.name")} OR ${containsLike("COALESCE(h.name_en, h.name)")})
+          )`);
+          params.push(like, like);
+        }
         if (await tableExists("specialization_fees")) {
           const extraFee = await tableExists("doctor_specialization_fees")
             ? `OR EXISTS (
@@ -955,14 +978,14 @@ export function publicRoutes(router) {
       }
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("doctors d JOIN users u ON u.id = d.user_id", where, params);
-      const rotationSlot = Math.floor(Date.now() / (10 * 60 * 1000));
+      const orderKey = doctorOrderKey(req.query);
       const rows = await q(
         `SELECT d.*, u.name AS user_name, u.avatar AS user_avatar
          FROM doctors d JOIN users u ON u.id = d.user_id
          ${where}
          ORDER BY CRC32(CONCAT(d.id, ':', ?)), d.id
          LIMIT ? OFFSET ?`,
-        [...params, rotationSlot, perPage, offset],
+        [...params, orderKey, perPage, offset],
       );
       const shaped = await presentRows("doctors", rows);
       const data = await attachDoctorRelations(shaped);
@@ -1113,20 +1136,43 @@ export function publicRoutes(router) {
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("hospitals h", where, params);
       const rows = await presentRows("hospitals", await q(`SELECT h.* FROM hospitals h ${where} ORDER BY h.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
-      const data = await Promise.all(rows.map(async (hospital) => {
-        const departments = await q("SELECT * FROM hospital_departments WHERE hospital_id = ?", [hospital.id]).catch(() => []);
-        const hours = await q("SELECT day, day_of_week, open_time, close_time, is_closed FROM hospital_working_hours WHERE hospital_id = ?", [hospital.id]).catch(() => []);
-        const doctorsCount = await one("SELECT COUNT(*) AS total FROM hospital_doctors WHERE hospital_id = ?", [hospital.id]).catch(() => ({ total: 0 }));
-        const insurances = await facilityInsurances("hospital_insurances", "hospital_id", hospital.id);
-        return publicHospital({
-          ...hospital,
-          name_en: hospital.name_en || hospital.name,
-          doctors_count: Number(doctorsCount?.total ?? 0),
-          departments_count: departments.length,
-          departments,
-          ...(insurances.length ? { insurances } : {}),
-          working_hours: hours,
-        });
+      const ids = rows.map((hospital) => hospital.id).filter((id) => Number(id) > 0);
+      const marks = ids.map(() => "?").join(",") || "0";
+      const [departments, hours, doctorCounts, insuranceRows] = ids.length
+        ? await Promise.all([
+          q(`SELECT * FROM hospital_departments WHERE hospital_id IN (${marks})`, ids).catch(() => []),
+          q(`SELECT day, day_of_week, open_time, close_time, is_closed, hospital_id FROM hospital_working_hours WHERE hospital_id IN (${marks})`, ids).catch(() => []),
+          q(`SELECT hospital_id, COUNT(*) AS total FROM hospital_doctors WHERE hospital_id IN (${marks}) GROUP BY hospital_id`, ids).catch(() => []),
+          q(
+            `SELECT hi.hospital_id, i.id, i.name, i.code, i.logo
+             FROM hospital_insurances hi
+             JOIN insurances i ON i.id = hi.insurance_id
+             WHERE hi.hospital_id IN (${marks})`,
+            ids,
+          ).catch(() => []),
+        ])
+        : [[], [], [], []];
+      const grouped = (list, key = "hospital_id") => {
+        const map = new Map();
+        for (const row of list || []) {
+          const id = Number(row[key]);
+          if (!map.has(id)) map.set(id, []);
+          map.get(id).push(row);
+        }
+        return map;
+      };
+      const departmentMap = grouped(departments);
+      const hourMap = grouped(hours);
+      const countMap = new Map((doctorCounts || []).map((row) => [Number(row.hospital_id), Number(row.total || 0)]));
+      const insuranceMap = grouped(insuranceRows);
+      const data = rows.map((hospital) => publicHospital({
+        ...hospital,
+        name_en: hospital.name_en || hospital.name,
+        doctors_count: countMap.get(Number(hospital.id)) || 0,
+        departments_count: (departmentMap.get(Number(hospital.id)) || []).length,
+        departments: departmentMap.get(Number(hospital.id)) || [],
+        ...((insuranceMap.get(Number(hospital.id)) || []).length ? { insurances: insuranceMap.get(Number(hospital.id)) } : {}),
+        working_hours: hourMap.get(Number(hospital.id)) || [],
       }));
       res.json(paginateList({ data, total, page, perPage, path: pathOf(req) }));
     } catch (error) {
@@ -1431,7 +1477,7 @@ export function publicRoutes(router) {
          LIMIT ? OFFSET ?`,
         [...params, perPage, offset],
       ).catch(() => []);
-      const data = rows.map((row) => publicMedicine(row));
+      const data = (await overlayPharmacyStock(rows)).map((row) => publicMedicine(row));
       const last = Math.max(1, Math.ceil(total / perPage) || 1);
       const body = {
         status: "success",
@@ -1442,6 +1488,39 @@ export function publicRoutes(router) {
       };
       if (all) return res.json(body);
       res.json(body);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/public/medicines/where", async (req, res, next) => {
+    try {
+      const term = String(req.query.q || req.query.search || "").trim();
+      if (term.length < 2) return res.json({ query: term, count: 0, pharmacies: [] });
+      if (!(await tableExists("pharmacy_medicines")) || !(await tableExists("pharmacies"))) {
+        return res.json({ query: term, count: 0, pharmacies: [] });
+      }
+      const rows = await q(
+        `SELECT m.id, m.name, m.pharmacy_id, m.quantity, p.name AS pharmacy_name, p.slug AS pharmacy_slug, p.city AS pharmacy_city
+         FROM pharmacy_medicines m
+         JOIN pharmacies p ON p.id = m.pharmacy_id
+         WHERE ${await whereActive("pharmacies", "p")} AND ${containsLike("m.name")}
+         ORDER BY p.name, m.name
+         LIMIT 50`,
+        [likeContains(term)],
+      ).catch(() => []);
+      const stocked = await overlayPharmacyStock(rows);
+      const pharmacies = stocked.map((row) => ({
+        medicine: row.name || null,
+        in_stock: Number(row.quantity) > 0,
+        pharmacy: {
+          id: row.pharmacy_id ?? null,
+          name: row.pharmacy_name || null,
+          slug: row.pharmacy_slug || null,
+          city: row.pharmacy_city || null,
+        },
+      }));
+      res.json({ query: term, count: pharmacies.length, pharmacies });
     } catch (error) {
       next(error);
     }
@@ -2065,7 +2144,7 @@ export function publicRoutes(router) {
          LIMIT 100`,
         [pharmacy.name || pharmacy.name_en || null, pharmacy.slug || null, pharmacy.city || null, ...params],
       ).catch(() => []);
-      const data = rows.map((row) => publicMedicine(row));
+      const data = (await overlayPharmacyStock(rows)).map((row) => publicMedicine(row));
       res.json({ data, medicines: data, count: data.length });
     } catch (error) {
       next(error);
@@ -2082,7 +2161,8 @@ export function publicRoutes(router) {
          LIMIT 1`,
         [req.query.medicine_id],
       ).catch(() => null);
-      const listed = medicine ? publicMedicine(medicine) : null;
+      const [listedRow] = medicine ? await overlayPharmacyStock([medicine]) : [];
+      const listed = listedRow ? publicMedicine(listedRow) : null;
       res.json({ available: Boolean(listed?.in_stock), medicine: listed });
     } catch (error) {
       next(error);

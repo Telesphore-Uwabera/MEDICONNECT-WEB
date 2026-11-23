@@ -21,6 +21,16 @@ export function stockDetails(medicine, stockRow) {
   };
 }
 
+/** Sum only this pharmacy's stock rows. A row with no pharmacy is not anyone's stock. */
+export function sumPharmacyStock(rows, pharmacyId) {
+  const id = Number(pharmacyId);
+  return (rows || []).reduce((sum, row) => {
+    if (row?.pharmacy_id == null || row.pharmacy_id === "") return sum;
+    if (Number.isFinite(id) && id > 0 && Number(row.pharmacy_id) !== id) return sum;
+    return sum + (Number(row.quantity) || 0);
+  }, 0);
+}
+
 export function isLowStock(stock) {
   const quantity = Number(stock?.quantity ?? 0);
   const threshold = Number(stock?.low_stock_threshold ?? 10);
@@ -34,19 +44,18 @@ function scopedViewer(pharmacyId) {
 }
 
 /**
- * Same predicate as the pharmacy dashboard: this pharmacy's row, or a shared
- * row that names no pharmacy. Another pharmacy's quantity never matches.
+ * This pharmacy's own stock rows. A row with no pharmacy_id is ignored.
  */
 async function stockScope(alias, table, pharmacyId) {
   if (!(await hasColumn("pharmacy_stocks", "pharmacy_id"))) return { sql: "1=1", params: [] };
   const viewer = scopedViewer(pharmacyId);
   if (viewer != null) {
-    return { sql: `(${alias}.pharmacy_id = ? OR ${alias}.pharmacy_id IS NULL)`, params: [viewer] };
+    return { sql: `${alias}.pharmacy_id = ?`, params: [viewer] };
   }
   if (await hasColumn(table, "pharmacy_id")) {
-    return { sql: `(${alias}.pharmacy_id IS NULL OR ${alias}.pharmacy_id = \`${table}\`.pharmacy_id)`, params: [] };
+    return { sql: `${alias}.pharmacy_id = \`${table}\`.pharmacy_id`, params: [] };
   }
-  return { sql: `${alias}.pharmacy_id IS NULL`, params: [] };
+  return { sql: "0", params: [] };
 }
 
 export async function lowStockFilter(table, pharmacyId = null) {

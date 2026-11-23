@@ -60,8 +60,8 @@ import { attachChatRoutes } from "./chat.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto, expireUnpaidPayments } from "./public.js";
 import { ageSeconds, canJoinInstant, countsInInstantQueue, isPaidStatus, paidMarkerSql, placeInQueue, UNPAID_INSTANT_JOIN_MESSAGE } from "./instant-visit.js";
-import { average, chartWithSpend, confirmedTodayCount, displayedPaymentStatus, durationMinutes, earnedAverage, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
-import { likeContains } from "./search-text.js";
+import { average, chartWithSpend, displayedPaymentStatus, durationMinutes, earnedAverage, historyMeta, historyPageArgs, kigaliDaySql, kigaliPeriodSql, kigaliPreviousSql, kigaliTodaySql } from "./dashboard-stats.js";
+import { freshInstantSql, likeContains } from "./search-text.js";
 import { registerPatientInstantList } from "./instant-list.js";
 import { plausibleDateOfBirth } from "./input-checks.js";
 import { validateIncomingPhone } from "./phone.js";
@@ -231,10 +231,18 @@ async function listTable(req, table, scope) {
     const searchable = ["name", "name_en", "title", "email", "phone", "slug", "status"].filter(asyncName => true);
     const cols = [];
     for (const name of searchable) if (await hasColumn(table, name)) cols.push(name);
+    const likeParts = [];
     if (cols.length) {
-      filters.push(`(${cols.map((name) => `\`${name}\` LIKE ? ESCAPE '\\\\'`).join(" OR ")})`);
+      likeParts.push(`(${cols.map((name) => `\`${name}\` LIKE ? ESCAPE '\\\\'`).join(" OR ")})`);
       cols.forEach(() => params.push(likeContains(term)));
     }
+    if (["appointments", "instant_consultation_requests", "instant_consultations"].includes(table)) {
+      const like = likeContains(term);
+      likeParts.push(`EXISTS (SELECT 1 FROM users pu WHERE pu.id = \`${table}\`.patient_id AND pu.name LIKE ? ESCAPE '\\\\')`);
+      likeParts.push(`EXISTS (SELECT 1 FROM doctors dd JOIN users du ON du.id = dd.user_id WHERE dd.id = \`${table}\`.doctor_id AND du.name LIKE ? ESCAPE '\\\\')`);
+      params.push(like, like);
+    }
+    if (likeParts.length) filters.push(`(${likeParts.join(" OR ")})`);
   }
   const where = `WHERE ${filters.join(" AND ")}`;
   const total = await countWhere(table, where, params);
@@ -982,7 +990,10 @@ export function appRoutes(router) {
       const todayGroups = await q(`SELECT status, COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND ${dateExpr} = ${kigaliNow} GROUP BY status`, ownerParams).catch(() => []);
       const todayTally = tally(todayGroups);
       const upcoming = Number((await one(
-        `SELECT COUNT(*) AS total FROM appointments WHERE ${apptOwner} AND (${dateExpr} >= ${kigaliNow} OR LOWER(status) IN ('in_progress','confirmed','accepted','pending')) AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')`,
+        `SELECT COUNT(*) AS total FROM appointments
+         WHERE ${apptOwner}
+           AND LOWER(status) IN ('pending','confirmed','accepted','in_progress')
+           AND NOT (LOWER(status) IN ('pending','queued','waiting') AND ${dateExpr} < ${kigaliNow})`,
         ownerParams,
       ).catch(() => ({ total: 0 })))?.total ?? 0);
       const instantTableName = (await tableExists("instant_consultation_requests"))
@@ -991,9 +1002,13 @@ export function appRoutes(router) {
       let instantRows = [];
       if (instantTableName) {
         const instantOwned = await patientOwnedWhere(instantTableName, req.user);
+        const instantDate = await firstColumn(instantTableName, ["created_at", "updated_at"]);
+        const instantPeriod = instantDate
+          ? periodFilter.sql.replaceAll(dateExpr, kigaliDaySql(instantDate))
+          : "";
         instantRows = await q(
-          `SELECT status, COUNT(*) AS total FROM \`${instantTableName}\` WHERE ${instantOwned.sql} GROUP BY status`,
-          instantOwned.params,
+          `SELECT status, COUNT(*) AS total FROM \`${instantTableName}\` WHERE ${instantOwned.sql} ${instantPeriod} GROUP BY status`,
+          [...instantOwned.params, ...(instantPeriod ? periodFilter.params : [])],
         ).catch(() => []);
       }
       const instant = tally(instantRows);
@@ -1002,7 +1017,8 @@ export function appRoutes(router) {
         total: todayTally.total + instantActive,
         completed: pick(todayTally, ["completed", "done", "complete"]),
         pending: pick(todayTally, ["pending", "queued", "waiting", "in_progress"]),
-        confirmed: confirmedTodayCount(todayTally.byStatus),
+        confirmed: upcoming,
+        upcoming,
         cancelled: pick(todayTally, ["cancelled", "canceled"]),
         instant_active: instantActive,
       };
@@ -1019,7 +1035,9 @@ export function appRoutes(router) {
       dashboard.period_stats.unique_doctors = Number((await one(`SELECT COUNT(DISTINCT doctor_id) AS total FROM appointments WHERE ${apptOwner} ${periodFilter.sql}`, [...ownerParams, ...periodFilter.params]).catch(() => ({ total: 0 })))?.total ?? 0);
       if (await tableExists("service_bookings")) {
         const bookingOwned = await patientOwnedWhere("service_bookings", req.user);
-        const bookings = await q(`SELECT status, COUNT(*) AS total FROM service_bookings WHERE ${bookingOwned.sql} GROUP BY status`, bookingOwned.params).catch(() => []);
+        const bookingDate = await firstColumn("service_bookings", ["preferred_date", "created_at"]);
+        const bookingPeriod = bookingDate ? periodFilter.sql.replaceAll(dateExpr, kigaliDaySql(bookingDate)) : "";
+        const bookings = await q(`SELECT status, COUNT(*) AS total FROM service_bookings WHERE ${bookingOwned.sql} ${bookingPeriod} GROUP BY status`, [...bookingOwned.params, ...(bookingPeriod ? periodFilter.params : [])]).catch(() => []);
         const bookingTally = tally(bookings);
         dashboard.service_bookings.total = bookingTally.total;
         dashboard.service_bookings.completed = bookingTally.byStatus.completed ?? 0;
@@ -1028,15 +1046,17 @@ export function appRoutes(router) {
         dashboard.service_bookings.cancelled = bookingTally.byStatus.cancelled ?? 0;
         dashboard.period_stats.service_bookings_total = bookingTally.total;
         dashboard.period_stats.unique_hospitals = Number((await one(
-          `SELECT COUNT(DISTINCT hospital_id) AS total FROM service_bookings WHERE ${bookingOwned.sql} AND hospital_id IS NOT NULL`,
-          bookingOwned.params,
+          `SELECT COUNT(DISTINCT hospital_id) AS total FROM service_bookings WHERE ${bookingOwned.sql} AND hospital_id IS NOT NULL ${bookingPeriod}`,
+          [...bookingOwned.params, ...(bookingPeriod ? periodFilter.params : [])],
         ).catch(() => ({ total: 0 })))?.total ?? 0);
       }
       if (await tableExists("pharmacy_orders")) {
         const orderOwned = await patientOwnedWhere("pharmacy_orders", req.user);
+        const orderDate = await firstColumn("pharmacy_orders", ["created_at", "updated_at"]);
+        const orderPeriod = orderDate ? periodFilter.sql.replaceAll(dateExpr, kigaliDaySql(orderDate)) : "";
         dashboard.period_stats.pharmacy_orders_total = Number((await one(
-          `SELECT COUNT(*) AS total FROM pharmacy_orders WHERE ${orderOwned.sql} AND (status IS NULL OR status <> 'draft')`,
-          orderOwned.params,
+          `SELECT COUNT(*) AS total FROM pharmacy_orders WHERE ${orderOwned.sql} AND (status IS NULL OR status <> 'draft') ${orderPeriod}`,
+          [...orderOwned.params, ...(orderPeriod ? periodFilter.params : [])],
         ).catch(() => ({ total: 0 })))?.total ?? 0);
       }
       if (await tableExists("reviews")) {
@@ -1106,7 +1126,12 @@ export function appRoutes(router) {
       };
       const rxOwned = await ownerWhere("prescriptions");
       if (rxOwned) {
-        const rxGroups = await q(`SELECT status, COUNT(*) AS total FROM prescriptions WHERE ${rxOwned.sql} GROUP BY status`, rxOwned.params).catch(() => []);
+        const unsigned = (await hasColumn("prescriptions", "signed_at"))
+          ? "AND NOT (LOWER(COALESCE(status,'')) IN ('draft','pending') AND signed_at IS NULL)"
+          : "AND LOWER(COALESCE(status,'')) <> 'draft'";
+        const rxDate = await firstColumn("prescriptions", ["created_at", "issued_at", "updated_at"]);
+        const rxPeriod = rxDate ? periodFilter.sql.replaceAll(dateExpr, kigaliDaySql(rxDate)) : "";
+        const rxGroups = await q(`SELECT status, COUNT(*) AS total FROM prescriptions WHERE ${rxOwned.sql} ${unsigned} ${rxPeriod} GROUP BY status`, [...rxOwned.params, ...(rxPeriod ? periodFilter.params : [])]).catch(() => []);
         const rx = tally(rxGroups);
         dashboard.prescriptions.total = rx.total;
         dashboard.prescriptions.issued = pick(rx, ["issued", "signed", "sent_to_pharmacy", "active", "dispensed", "filled", "completed"]);
@@ -1850,6 +1875,78 @@ export function appRoutes(router) {
     return setDoctorFlag(req, res, next, column, flagValue(req.body, ["bookings_paused", "paused", "enabled"], current));
   });
 
+  router.get("/doctor/my-patients", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      if (!doctorId) return res.json({ data: [] });
+      const search = String(req.query.search || req.query.q || "").trim().toLowerCase();
+      const appointments = await tableExists("appointments")
+        ? await q(
+          "SELECT patient_id, user_id, appointment_date AS visit_date, status FROM appointments WHERE doctor_id = ? ORDER BY id DESC LIMIT 500",
+          [doctorId],
+        ).catch(() => [])
+        : [];
+      const instantTable = (await tableExists("instant_consultation_requests"))
+        ? "instant_consultation_requests"
+        : ((await tableExists("instant_consultations")) ? "instant_consultations" : null);
+      const instants = instantTable
+        ? await q(
+          `SELECT patient_id, user_id, created_at AS visit_date, status FROM \`${instantTable}\` WHERE doctor_id = ? ORDER BY id DESC LIMIT 500`,
+          [doctorId],
+        ).catch(() => [])
+        : [];
+      const grouped = new Map();
+      const add = (row, kind) => {
+        const accountId = Number(row.user_id) || 0;
+        const profileId = Number(row.patient_id) || 0;
+        const key = accountId ? `u:${accountId}` : (profileId ? `p:${profileId}` : "");
+        if (!key) return;
+        const date = String(row.visit_date || "").slice(0, 10);
+        const current = grouped.get(key) || { accountId, profileId, visits: 0, last_visit: "", kind };
+        current.visits += 1;
+        if (date && date > current.last_visit) current.last_visit = date;
+        if (!current.kind) current.kind = kind;
+        grouped.set(key, current);
+      };
+      for (const row of appointments) add(row, "Appointment");
+      for (const row of instants) add(row, "Instant consult");
+      const accountIds = [...grouped.values()].map((row) => row.accountId).filter((id) => id > 0);
+      const profileIds = [...grouped.values()].map((row) => row.profileId).filter((id) => id > 0);
+      const users = accountIds.length
+        ? await q(`SELECT id, name FROM users WHERE id IN (${accountIds.map(() => "?").join(",")})`, accountIds).catch(() => [])
+        : [];
+      const profiles = profileIds.length && await tableExists("patients")
+        ? await q(`SELECT id, user_id, name FROM patients WHERE id IN (${profileIds.map(() => "?").join(",")})`, profileIds).catch(() => [])
+        : [];
+      const userName = new Map(users.map((row) => [Number(row.id), row]));
+      const profileName = new Map(profiles.map((row) => [Number(row.id), row]));
+      const ageOf = (value) => {
+        const date = String(value || "").slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+        const born = new Date(`${date}T00:00:00Z`);
+        const years = Math.floor((Date.now() - born.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+        return years > 0 && years < 130 ? years : null;
+      };
+      let data = [...grouped.values()].map((row) => {
+        const account = userName.get(row.accountId);
+        const profile = profileName.get(row.profileId);
+        const person = account || profile;
+        return {
+          id: row.accountId || row.profileId,
+          name: person?.name || "Patient",
+          age: ageOf(person?.date_of_birth),
+          last_visit: row.last_visit || null,
+          condition: row.kind,
+          visits: row.visits,
+        };
+      }).sort((a, b) => String(b.last_visit || "").localeCompare(String(a.last_visit || "")));
+      if (search) data = data.filter((row) => row.name.toLowerCase().includes(search));
+      res.json({ data });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/doctor/dashboard", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctor, doctorId } = await currentDoctor(req);
@@ -1896,14 +1993,17 @@ export function appRoutes(router) {
         ).catch(() => ({ total: 0 })))?.total ?? 0);
       };
       const completedSql = "status IN ('completed','done','complete','paid')";
-      let revenueTotal = await sumAmount(`${window.sql} AND ${completedSql}`, window.params);
+      const paidAppointmentSql = (await hasColumn("appointments", "payment_status"))
+        ? `${completedSql} AND LOWER(COALESCE(payment_status,'')) IN ('paid','completed','success','successful')`
+        : completedSql;
+      let revenueTotal = await sumAmount(`${window.sql} AND ${paidAppointmentSql}`, window.params);
       let instantPaidCount = 0;
-      const previousTotal = await sumAmount(`${previous.sql} AND ${completedSql}`, previous.params);
-      const revenueCount = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} AND ${completedSql}`, [doctorId, ...window.params]);
-      const onlineRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND \`${typeColumn}\` NOT LIKE '%person%' AND \`${typeColumn}\` NOT LIKE '%instant%'`, window.params) : revenueTotal;
-      const inPersonRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND (\`${typeColumn}\` LIKE '%person%' OR \`${typeColumn}\` LIKE '%clinic%')`, window.params) : 0;
-      const instantRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND \`${typeColumn}\` LIKE '%instant%'`, window.params) : 0;
-      if (!(revenueTotal > 0) && await tableExists("payments") && await hasColumn("payments", "amount") && await hasColumn("payments", "appointment_id")) {
+      let previousTotal = await sumAmount(`${previous.sql} AND ${paidAppointmentSql}`, previous.params);
+      const revenueCount = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} AND ${paidAppointmentSql}`, [doctorId, ...window.params]);
+      const onlineRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${paidAppointmentSql} AND \`${typeColumn}\` NOT LIKE '%person%' AND \`${typeColumn}\` NOT LIKE '%instant%'`, window.params) : revenueTotal;
+      const inPersonRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${paidAppointmentSql} AND (\`${typeColumn}\` LIKE '%person%' OR \`${typeColumn}\` LIKE '%clinic%')`, window.params) : 0;
+      const instantRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${paidAppointmentSql} AND \`${typeColumn}\` LIKE '%instant%'`, window.params) : 0;
+      if (period === "all" && !(revenueTotal > 0) && await tableExists("payments") && await hasColumn("payments", "amount") && await hasColumn("payments", "appointment_id")) {
         const paidPayments = await one(
           `SELECT COALESCE(SUM(p.amount), 0) AS total
            FROM payments p
@@ -1913,7 +2013,6 @@ export function appRoutes(router) {
         ).catch(() => null);
         if (paidPayments) revenueTotal = Number(paidPayments.total ?? 0);
       }
-      const change = previousTotal > 0 ? Math.round(((revenueTotal - previousTotal) / previousTotal) * 1000) / 10 : null;
       const labelExpr = !dateColumn
         ? kigaliTodaySql()
         : chartGroup === "month"
@@ -1929,11 +2028,13 @@ export function appRoutes(router) {
         : null;
       const rxOwnerId = (rxOwnerCol === "user_id" || rxOwnerCol === "created_by") ? req.user.id : doctorId;
       const prescriptionAlive = (await hasColumn("prescriptions", "deleted_at")) ? "deleted_at IS NULL" : "1=1";
-      const prescriptionCount = async (extra = "1=1") => {
+      const rxDate = rxOwnerCol ? await firstColumn("prescriptions", ["created_at", "issued_at", "updated_at"]) : null;
+      const rxWindow = rxDate ? periodWhere(rxDate, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
+      const prescriptionCount = async (extra = "1=1", extraParams = []) => {
         if (!rxOwnerCol) return 0;
         return count(
-          `SELECT COUNT(*) AS total FROM prescriptions WHERE \`${rxOwnerCol}\` = ? AND ${prescriptionAlive} AND ${extra}`,
-          [rxOwnerId],
+          `SELECT COUNT(*) AS total FROM prescriptions WHERE \`${rxOwnerCol}\` = ? AND ${prescriptionAlive} AND ${rxWindow.sql} AND ${extra}`,
+          [rxOwnerId, ...rxWindow.params, ...extraParams],
         );
       };
       const patientIdCols = [];
@@ -1954,16 +2055,22 @@ export function appRoutes(router) {
         : 0;
       const reviewAlive = (await hasColumn("reviews", "deleted_at")) ? "r.deleted_at IS NULL" : "1=1";
       const ratingColumn = await firstColumn("reviews", ["rating", "stars", "score"]);
-      const reviewStats = ratingColumn ? await one(
-        `SELECT COUNT(*) AS total,
+      const reviewDate = await firstColumn("reviews", ["created_at", "updated_at"]);
+      const reviewWindow = reviewDate ? periodWhere(reviewDate, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
+      const reviewSelect = ratingColumn
+        ? `SELECT COUNT(*) AS total,
                 AVG(\`${ratingColumn}\`) AS avg_rating,
                 SUM(CASE WHEN \`${ratingColumn}\` >= 5 THEN 1 ELSE 0 END) AS five_star,
                 SUM(CASE WHEN \`${ratingColumn}\` >= 4 AND \`${ratingColumn}\` < 5 THEN 1 ELSE 0 END) AS four_star,
                 SUM(CASE WHEN \`${ratingColumn}\` >= 3 AND \`${ratingColumn}\` < 4 THEN 1 ELSE 0 END) AS three_star,
                 SUM(CASE WHEN \`${ratingColumn}\` < 3 THEN 1 ELSE 0 END) AS low_star
-         FROM reviews r WHERE r.doctor_id = ? AND ${reviewAlive}`,
-        [doctorId],
+         FROM reviews r WHERE r.doctor_id = ? AND ${reviewAlive}`
+        : "";
+      const reviewStats = ratingColumn ? await one(
+        `${reviewSelect} AND ${reviewWindow.sql.replaceAll(`\`${reviewDate}\``, `r.\`${reviewDate}\``)}`,
+        [doctorId, ...reviewWindow.params],
       ).catch(() => null) : null;
+      const allTimeReviews = ratingColumn ? await one(reviewSelect, [doctorId]).catch(() => null) : null;
       const recentReviews = ratingColumn ? await q(
         `SELECT r.id, r.\`${ratingColumn}\` AS rating, r.comment, r.created_at, u.name AS patient_name
          FROM reviews r
@@ -2009,9 +2116,10 @@ export function appRoutes(router) {
       if (instantTable) {
         const idCol = await firstColumn(instantTable, ["patient_id", "user_id"]);
         if (idCol) {
+          const peopleWindow = instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
           instantPatients = await count(
-            `SELECT COUNT(DISTINCT \`${idCol}\`) AS total FROM \`${instantTable}\` WHERE ${instantOwned}`,
-            instantParams,
+            `SELECT COUNT(DISTINCT \`${idCol}\`) AS total FROM \`${instantTable}\` WHERE ${instantOwned} AND ${peopleWindow.sql}`,
+            [...instantParams, ...peopleWindow.params],
           );
         }
         const startCol = await firstColumn(instantTable, ["started_at", "accepted_at"]);
@@ -2039,7 +2147,18 @@ export function appRoutes(router) {
         instantPaidTotal = Number(instantPaid?.total || 0);
         instantPaidCount = Number(instantPaid?.visits || 0);
         revenueTotal += instantPaidTotal;
+        const previousPay = payDate ? previousWhere(payDate, period) : { sql: "1=0", params: [] };
+        const previousPaySql = payDate ? previousPay.sql.replaceAll(`\`${payDate}\``, `p.\`${payDate}\``) : "1=0";
+        const previousInstant = await one(
+          `SELECT COALESCE(SUM(p.amount), 0) AS total
+           FROM payments p INNER JOIN \`${instantTable}\` i ON i.id = p.payable_id
+           WHERE i.doctor_id = ? AND LOWER(p.status) IN ('paid','completed','success','successful')
+             AND p.payable_type LIKE '%instant%' AND ${previousPaySql}`,
+          [doctorId, ...previousPay.params],
+        ).catch(() => ({ total: 0 }));
+        previousTotal += Number(previousInstant?.total || 0);
       }
+      const change = previousTotal > 0 ? Math.round(((revenueTotal - previousTotal) / previousTotal) * 1000) / 10 : null;
 
       res.json({
         filters_applied: {
@@ -2060,8 +2179,8 @@ export function appRoutes(router) {
           confirmed: periodStats.confirmed,
           online_count: onlineCount,
           in_person_count: inPersonCount,
-          instant_total: instantCount + await instantStatus("1=1"),
-          instant_completed: await instantStatus("status IN ('completed','done')"),
+          instant_total: instantCount + await instantStatus(instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).sql : "1=1", instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).params : []),
+          instant_completed: await instantStatus(instantCompletedAt ? `status IN ('completed','done') AND ${periodWhere(instantCompletedAt, period, req.query.start_date, req.query.end_date).sql}` : "status IN ('completed','done')", instantCompletedAt ? periodWhere(instantCompletedAt, period, req.query.start_date, req.query.end_date).params : []),
           avg_duration_minutes: Math.round(avgDuration),
           prescriptions_issued: await prescriptionCount("status IN ('issued','signed','completed','active','sent_to_pharmacy','dispensed','filled')"),
         },
@@ -2087,10 +2206,11 @@ export function appRoutes(router) {
           return { label: String(row.label).slice(0, 10), rate: patients > 0 ? Math.round((completed / patients) * 100) : 0 };
         }),
         instant: {
-          total: await instantStatus("1=1"),
-          completed: await instantStatus("status IN ('completed','done')"),
-          declined: await instantStatus("status IN ('declined','rejected','cancelled','canceled')"),
-          pending: await instantStatus("status IN ('pending','queued','waiting')"),
+          scope: "period",
+          total: await instantStatus(instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).sql : "1=1", instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).params : []),
+          completed: await instantStatus(instantCompletedAt ? `status IN ('completed','done') AND ${periodWhere(instantCompletedAt, period, req.query.start_date, req.query.end_date).sql}` : "status IN ('completed','done')", instantCompletedAt ? periodWhere(instantCompletedAt, period, req.query.start_date, req.query.end_date).params : []),
+          declined: await instantStatus(instantCreated ? `status IN ('declined','rejected','cancelled','canceled') AND ${periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).sql}` : "status IN ('declined','rejected','cancelled','canceled')", instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).params : []),
+          pending: await instantStatus(instantCreated ? `status IN ('pending','queued','waiting') AND ${periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).sql}` : "status IN ('pending','queued','waiting')", instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).params : []),
           current_queue: paidWaiting,
           paid_waiting: paidWaiting,
           avg_duration_min: instantAvg,
@@ -2102,7 +2222,7 @@ export function appRoutes(router) {
           signed: await prescriptionCount("status IN ('signed','issued')"),
         },
         reviews: {
-          all_time_avg: reviewStats?.avg_rating == null ? null : Math.round(Number(reviewStats.avg_rating) * 10) / 10,
+          all_time_avg: allTimeReviews?.avg_rating == null ? null : Math.round(Number(allTimeReviews.avg_rating) * 10) / 10,
           period: {
             total: Number(reviewStats?.total ?? 0),
             avg: reviewStats?.avg_rating == null ? null : Math.round(Number(reviewStats.avg_rating) * 10) / 10,
@@ -2905,19 +3025,23 @@ export function appRoutes(router) {
       const dateClause = async (table) => {
         const column = await dateColumn(table);
         if (!column) return { sql: "", params: [] };
-        if (req.query.date) return { sql: ` AND DATE(\`${column}\`) = ?`, params: [req.query.date] };
+        const day = kigaliDaySql(column);
+        if (req.query.date) return { sql: ` AND ${day} = ?`, params: [String(req.query.date).slice(0, 10)] };
         const params = [];
         let sql = "";
-        if (req.query.date_from) { sql += ` AND DATE(\`${column}\`) >= ?`; params.push(req.query.date_from); }
-        if (req.query.date_to) { sql += ` AND DATE(\`${column}\`) <= ?`; params.push(req.query.date_to); }
+        if (req.query.date_from) { sql += ` AND ${day} >= ?`; params.push(String(req.query.date_from).slice(0, 10)); }
+        if (req.query.date_to) { sql += ` AND ${day} <= ?`; params.push(String(req.query.date_to).slice(0, 10)); }
         return { sql, params };
       };
 
       const appointmentDates = await dateClause("appointments");
       const paymentDates = await dateClause("payments");
       const appointmentAlive = await alive("appointments");
+      const patientDeleted = (await tableExists("users") && await hasColumn("users", "deleted_at"))
+        ? " AND u.deleted_at IS NULL"
+        : "";
       const patientsByRole = await tableExists("model_has_roles") && await tableExists("roles")
-        ? await count("SELECT COUNT(DISTINCT m.model_id) AS total FROM model_has_roles m JOIN roles r ON r.id = m.role_id WHERE r.name = 'patient'")
+        ? await count(`SELECT COUNT(DISTINCT m.model_id) AS total FROM model_has_roles m JOIN roles r ON r.id = m.role_id JOIN users u ON u.id = m.model_id WHERE r.name = 'patient'${patientDeleted}`)
         : 0;
       const patients = patientsByRole || await roleCount("patients");
       const doctors = await roleCount("doctors");
@@ -2959,8 +3083,12 @@ export function appRoutes(router) {
            WHERE ${paymentAlive} AND ${paid} AND payable_type LIKE '%fitness%'`,
         )
         : 0;
+      const instantColumns = [];
+      for (const name of ["started_at", "accepted_at", "created_at", "updated_at"]) {
+        if (await tableExists("instant_consultation_requests") && await hasColumn("instant_consultation_requests", name)) instantColumns.push(name);
+      }
       const activeConsultations = await tableExists("instant_consultation_requests")
-        ? await count("SELECT COUNT(*) AS total FROM instant_consultation_requests WHERE LOWER(status) IN ('confirmed','accepted','in_progress')")
+        ? await count(`SELECT COUNT(*) AS total FROM instant_consultation_requests WHERE LOWER(status) IN ('confirmed','accepted','in_progress') AND ${freshInstantSql(instantColumns)}`)
         : await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('in_progress','active','ongoing')`);
 
       res.json({

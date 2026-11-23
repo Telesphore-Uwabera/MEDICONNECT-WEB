@@ -18,6 +18,20 @@ describe("appointment join window", () => {
     expect(canJoinAppointment(slot, Date.parse("2026-11-22T08:00:00Z"))).toBe(false);
   });
 
+  it("stays open when a late slot's window crosses midnight", () => {
+    const late = {
+      appointment_date: "2026-11-23",
+      appointment_time: "23:50",
+      duration_minutes: 30,
+      status: "confirmed",
+      payment_status: "paid",
+    };
+    expect(canJoinAppointment(late, Date.parse("2026-11-23T21:29:00Z"))).toBe(false);
+    expect(canJoinAppointment(late, Date.parse("2026-11-23T21:30:00Z"))).toBe(true);
+    expect(canJoinAppointment(late, Date.parse("2026-11-23T22:30:00Z"))).toBe(true);
+    expect(canJoinAppointment(late, Date.parse("2026-11-23T23:01:00Z"))).toBe(false);
+  });
+
   it("lets a paid instant consult be joined immediately and keeps an unpaid one closed", () => {
     expect(canJoinAppointment({ instant: true, status: "pending", payment_status: "paid" }, Date.parse("2026-11-23T01:00:00Z"))).toBe(true);
     expect(canJoinAppointment({ instant: true, status: "confirmed", payment_status: "unpaid" })).toBe(false);

@@ -11,6 +11,7 @@ export function kigaliTodaySql() {
 export function kigaliPeriodSql(column, period) {
   const day = kigaliDaySql(column);
   const today = kigaliTodaySql();
+  if (period === "all") return "1=1";
   if (period === "today" || period === "day") return `${day} = ${today}`;
   if (period === "week") return `${day} >= DATE_SUB(${today}, INTERVAL 6 DAY)`;
   if (period === "year") return `${day} >= DATE_SUB(${today}, INTERVAL 364 DAY)`;
@@ -20,6 +21,7 @@ export function kigaliPeriodSql(column, period) {
 export function kigaliPreviousSql(column, period) {
   const day = kigaliDaySql(column);
   const today = kigaliTodaySql();
+  if (period === "all") return "1=0";
   if (period === "today" || period === "day") return `${day} = DATE_SUB(${today}, INTERVAL 1 DAY)`;
   if (period === "week") return `${day} >= DATE_SUB(${today}, INTERVAL 13 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 6 DAY)`;
   if (period === "year") return `${day} >= DATE_SUB(${today}, INTERVAL 729 DAY) AND ${day} < DATE_SUB(${today}, INTERVAL 364 DAY)`;
