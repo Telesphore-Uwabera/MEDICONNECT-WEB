@@ -3,6 +3,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
 import { partitionWrite } from "./write-fields.js";
+import { withoutTunnelHost } from "./public-url.js";
 
 dotenv.config({
   path: path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".env"),
@@ -123,7 +124,8 @@ export function pageArgs(req, fallback = 10) {
 
 export function paginateList({ data, total, page, perPage, path }) {
   const last = Math.max(1, Math.ceil(total / perPage) || 1);
-  const withPage = (n) => `${path}?page=${n}`;
+  const safePath = withoutTunnelHost(path);
+  const withPage = (n) => `${safePath}?page=${n}`;
   return {
     current_page: page,
     data,
@@ -133,9 +135,10 @@ export function paginateList({ data, total, page, perPage, path }) {
     last_page_url: withPage(last),
     links: [],
     next_page_url: page < last ? withPage(page + 1) : null,
-    path,
+    path: safePath,
     per_page: perPage,
     prev_page_url: page > 1 ? withPage(page - 1) : null,
+    self: withPage(page),
     to: total === 0 ? null : Math.min(page * perPage, total),
     total,
   };

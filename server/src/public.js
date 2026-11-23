@@ -19,9 +19,10 @@ import { clientMayClaimEmail, isReservedAccountEmail, isServerGuestAccount } fro
 import { normalizeLang } from "./user-text.js";
 import { withNamedLock } from "./named-lock.js";
 import { runningCommit } from "./runtime-commit.js";
+import { publicPagePath } from "./public-url.js";
 
 function pathOf(req) {
-  return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
+  return publicPagePath(req);
 }
 
 export function teamPhotoUrl(photo) {
