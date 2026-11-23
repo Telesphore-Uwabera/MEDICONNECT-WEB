@@ -38,6 +38,7 @@ import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import { notifyAccessPrompt } from "@/lib/access-events";
+import { isChunkLoadError } from "@/lib/chunk-reload";
  
 export type ErrorStatus = 400 | 401 | 403 | 404 | 419 | 422 | 429 | 500 | 502 | 503 | 504;
 
@@ -267,6 +268,16 @@ export default function ErrorPage({
                     )}
 
                     <div className="mt-7 grid gap-2 sm:grid-cols-2">
+                        {isChunkLoadError(error) && (
+                            <Button
+                                className="h-10 rounded-[6px] sm:col-span-2"
+                                onClick={() => window.location.reload()}
+                            >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Reload page
+                            </Button>
+                        )}
+
                         {status === 401 && (
                             <Button
                                 className="h-10 rounded-[6px] sm:col-span-2"

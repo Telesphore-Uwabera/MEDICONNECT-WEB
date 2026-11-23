@@ -1,5 +1,6 @@
 import React from "react";
 import ErrorPage, { getErrorStatus } from "@/pages/errors/ErrorPage";
+import { isChunkLoadError, reloadForChunkError } from "@/lib/chunk-reload";
 
 interface ErrorBoundaryProps {
     children: React.ReactNode;
@@ -28,6 +29,7 @@ export default class ErrorBoundary extends React.Component<
     }
 
     componentDidCatch(error: unknown, info: React.ErrorInfo) {
+        if (isChunkLoadError(error) && reloadForChunkError(error)) return;
         console.error("Application error boundary caught:", error, info);
     }
 
