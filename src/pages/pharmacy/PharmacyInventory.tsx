@@ -68,9 +68,25 @@ import { DateField } from "@/components/ui/date-field";
  
 type StockStatus = "in-stock" | "low" | "out";
 
+function stockOf(m: Medicine) {
+  const own = m as Medicine & {
+    quantity?: number | null;
+    low_stock_threshold?: number | null;
+    batch_number?: string | null;
+    expiry_date?: string | null;
+  };
+  return {
+    quantity: m.stock?.quantity ?? Number(own.quantity ?? 0),
+    low_stock_threshold: m.stock?.low_stock_threshold ?? Number(own.low_stock_threshold ?? 10),
+    batch_number: m.stock?.batch_number ?? own.batch_number ?? null,
+    expiry_date: m.stock?.expiry_date ?? own.expiry_date ?? null,
+  };
+}
+
 function resolveStockStatus(m: Medicine): StockStatus {
-  const qty = m.stock?.quantity ?? 0;
-  const threshold = m.stock?.low_stock_threshold ?? 10;
+  const stock = stockOf(m);
+  const qty = stock.quantity;
+  const threshold = stock.low_stock_threshold;
   if (qty === 0) return "out";
   if (qty <= threshold) return "low";
   return "in-stock";
@@ -771,23 +787,23 @@ function MedicineDetailsDrawer({
                     status === "out" ? "text-red-600" : status === "low" ? "text-amber-600" : "text-foreground",
                   )}
                 >
-                  {medicine.stock?.quantity ?? 0}
+                  {stockOf(medicine).quantity}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.low_stock_threshold")}</p>
                 <p className="text-[12px] font-mono font-semibold tabular-nums text-foreground">
-                  {medicine.stock?.low_stock_threshold ?? "-"}
+                  {stockOf(medicine).low_stock_threshold}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.batch_number")}</p>
-                <p className="text-[11px] text-foreground">{medicine.stock?.batch_number ?? "-"}</p>
+                <p className="text-[11px] text-foreground">{stockOf(medicine).batch_number ?? "-"}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.expiry_date")}</p>
                 <p className="text-[11px] text-foreground">
-                  {medicine.stock?.expiry_date ? formatDate(medicine.stock.expiry_date) : "-"}
+                  {stockOf(medicine).expiry_date ? formatDate(String(stockOf(medicine).expiry_date)) : "-"}
                 </p>
               </div>
             </div>
@@ -897,8 +913,8 @@ const PharmacyInventory = () => {
         return true;
       })
       .sort((a, b) => {
-        const qa = a.stock?.quantity ?? 0;
-        const qb = b.stock?.quantity ?? 0;
+        const qa = stockOf(a).quantity;
+        const qb = stockOf(b).quantity;
         switch (filters.sort) {
           case "stock-asc": return qa - qb;
           case "stock-desc": return qb - qa;
@@ -939,7 +955,7 @@ const PharmacyInventory = () => {
         { value: "low", label: t("pages.pharmacy.low_stock_filter") },
         { value: "out", label: t("pages.pharmacy.out_of_stock_filter") },
       ],
-      onChange: (v: string) => set("status", v as any)
+      onChange: (v: string) => set("status", v as StockStatus | "all"),
     },
     {
       type: "select" as const,
@@ -1252,10 +1268,10 @@ const PharmacyInventory = () => {
                                   : "text-foreground",
                             )}
                           >
-                            {m.stock?.quantity ?? 0}
-                            {m.stock?.low_stock_threshold != null && (
+                            {stockOf(m).quantity}
+                            {stockOf(m).low_stock_threshold != null && (
                               <span className="text-muted-foreground/40 font-normal">
-                                {" "}/ {m.stock.low_stock_threshold}
+                                {" "}/ {stockOf(m).low_stock_threshold}
                               </span>
                             )}
                           </td>
