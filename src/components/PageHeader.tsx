@@ -237,7 +237,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   return (
     <>
       <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-40 shadow-sm shadow-black/5">
-        <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:gap-4 sm:px-4 lg:px-6">
+        <div className="page-shell flex items-center justify-between gap-2 py-2.5 sm:gap-4">
 
           {/* ── Left: Title / greeting ─────────────────────────────── */}
           <div className="min-w-0 flex-1">

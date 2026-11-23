@@ -276,7 +276,7 @@ const AdminOverview = () => {
         subtitle={t("admin.overview.subtitle")}
       />
 
-      <div className="p-5 space-y-5">
+      <div className="page-shell space-y-5 py-5">
         <RoleStart
           actions={[
             { to: "/admin/approvals", title: t("clinical.flow.admin_approvals"), hint: t("clinical.flow.admin_approvals_hint") },

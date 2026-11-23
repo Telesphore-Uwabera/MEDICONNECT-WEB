@@ -45,7 +45,7 @@ const TopBar = ({ settings }: TopBarProps) => {
 
   return (
     <div className="bg-[#3a8fa3] dark:bg-[#1e5f70] text-white text-xs">
-      <div className="mx-auto flex w-full min-w-0 max-w-[1400px] flex-nowrap items-center justify-between px-2 py-0 sm:px-8">
+      <div className="page-shell flex min-w-0 flex-nowrap items-center justify-between py-0">
         {/* Socials */}
         <div className="flex shrink-0 items-center">
           {SOCIALS.map((s) => (

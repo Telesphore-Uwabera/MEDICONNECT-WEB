@@ -201,7 +201,7 @@ const PatientOverview = () => {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 space-y-6">
+          <div className="page-shell space-y-6 py-4 sm:py-6">
             <div className="grid gap-3 lg:grid-cols-2">
               <PatientNextVisit appointment={upcomingAppointments[0]} />
               <ProfileProgress profile={profile} />

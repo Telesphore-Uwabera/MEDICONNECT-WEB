@@ -14,7 +14,7 @@ const ITEMS = [
 export default function LandingFaq() {
   const { t } = useTranslation();
   return (
-    <section id="faq" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
+    <section id="faq" className="page-section scroll-mt-24">
       <div className={landingShell}>
         <Reveal>
           <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">

@@ -103,8 +103,8 @@ export default function ServicesShowcase() {
   };
 
   return (
-    <section id="services" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
-    <div className="mx-auto w-full min-w-0 max-w-[1920px] px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+    <section id="services" className="page-section scroll-mt-24">
+    <div className="page-shell">
     <div>
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>

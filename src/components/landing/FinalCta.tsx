@@ -6,7 +6,7 @@ import { Reveal, landingShell } from "./LandingMotion";
 export default function FinalCta() {
   const { t } = useTranslation();
   return (
-    <section id="start" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
+    <section id="start" className="page-section scroll-mt-24">
       <div className={landingShell}>
         <Reveal>
           <div className="overflow-hidden rounded-3xl bg-[linear-gradient(145deg,hsl(172_76%_28%),hsl(192_55%_22%))] px-6 py-10 text-white shadow-[0_24px_60px_-28px_hsl(172_60%_18%/0.7)] sm:px-10 sm:py-12">

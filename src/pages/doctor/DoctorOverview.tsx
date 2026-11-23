@@ -451,7 +451,7 @@ const DoctorOverview = () => {
           })}
         />
 
-        <div className="px-4 pt-3">
+        <div className="page-shell pt-3">
           <RoleStart
             actions={[
               { to: "/doctor/appointments", title: t("clinical.flow.doctor_agenda"), hint: t("clinical.flow.doctor_agenda_hint") },

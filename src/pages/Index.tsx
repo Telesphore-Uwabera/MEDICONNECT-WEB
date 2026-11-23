@@ -419,8 +419,8 @@ const Index = () => {
       <HowItWorks />
 
       {/* ── Available Doctors Grid ── */}
-      <section id="doctors" className="py-16 md:py-20 lg:py-24">
-        <RevealSection direction="up" delay={0} className="box-border w-full min-w-0 max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+      <section id="doctors" className="page-section">
+        <RevealSection direction="up" delay={0} className="page-shell">
           <div className="w-full min-w-0 max-w-full">
             <div className="mb-6">
               <p className={SECTION_EYEBROW}>
@@ -484,14 +484,14 @@ const Index = () => {
       <ServicesShowcase />
       <WhyMediconnect />
       {/* Specialities */}
-      <section id="specialities" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
-        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+      <section id="specialities" className="page-section scroll-mt-24">
+        <RevealSection direction="up" delay={0} className="page-shell">
           <Specialities />
         </RevealSection>
       </section>
       {/* Verified facilities and pharmacies */}
-      <section id="healthfacilities" className="py-16 md:py-20 lg:py-24">
-        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+      <section id="healthfacilities" className="page-section">
+        <RevealSection direction="up" delay={0} className="page-shell">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className={SECTION_TITLE}>
@@ -738,8 +738,8 @@ const Index = () => {
       </section>
 
       {/* Our Team */}
-      <section id="team" className="bg-background py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
+      <section id="team" className="page-section bg-background">
+        <RevealSection direction="up" delay={0} className="page-shell">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className={SECTION_TITLE}>{t("pages.landing.team_heading")}</h2>

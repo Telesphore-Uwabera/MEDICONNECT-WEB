@@ -11,7 +11,7 @@ const STEPS = [
 export default function HowItWorks() {
   const { t } = useTranslation();
   return (
-    <section id="how-it-works" className="scroll-mt-24 py-16 md:py-20 lg:py-24">
+    <section id="how-it-works" className="page-section scroll-mt-24">
       <div className={landingShell}>
         <Reveal>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">

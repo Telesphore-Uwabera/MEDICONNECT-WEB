@@ -393,7 +393,7 @@ const HospitalAnalytics = () => {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-3">
+          <div className="page-shell space-y-3 py-4">
             <RoleStart
               actions={[
                 { to: "/hospital/appointments", title: t("clinical.flow.hospital_visits"), hint: t("clinical.flow.hospital_visits_hint") },
