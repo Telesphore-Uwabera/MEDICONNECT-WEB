@@ -10,29 +10,25 @@ import { TablePager, paginateRows, tablePageCount } from "@/components/TablePage
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type RiskLevel = "High" | "Medium" | "Low";
 type ViewMode = "table" | "cards";
 type SortOption = "name" | "age-asc" | "age-desc" | "last";
 
 interface Patient {
   id: string;
   name: string;
-  age: number;
+  age: number | null;
   last: string;
-  rawLast: string; // ISO for sorting
+  rawLast: string;
   conditionKey: string;
-  risk: RiskLevel;
 }
 
 interface FilterState {
   search: string;
-  risk: RiskLevel | "All";
   sort: SortOption;
 }
 
 const INITIAL_FILTERS: FilterState = {
   search: "",
-  risk: "All",
   sort: "name",
 };
 
@@ -42,12 +38,6 @@ const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
   { value: "age-desc", labelKey: "pages.doctor.sort_age_oldest" },
   { value: "last", labelKey: "pages.doctor.sort_last_visit_recent" },
 ];
-
-const RISK_STYLES: Record<RiskLevel, string> = {
-  High: "bg-destructive/10 text-destructive",
-  Medium: "bg-warning/10 text-warning",
-  Low: "bg-success/10 text-success",
-};
 
 interface SeenPatient {
   id: number;
@@ -59,52 +49,6 @@ interface SeenPatient {
 }
 
 // ─── Sidebar atoms ────────────────────────────────────────────────────────────
-
-function FilterSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="py-5 border-b border-border last:border-b-0">
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-        {title}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function PillGroup<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { value: T; label: string }[];
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "px-3 py-2 rounded-[6px] text-sm border transition-all text-left",
-            value === o.value
-              ? "bg-teal-600 text-white border-teal-600"
-              : "border-border text-muted-foreground hover:border-teal-400 hover:text-foreground",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 // ─── Initials avatar ──────────────────────────────────────────────────────────
 
@@ -137,21 +81,11 @@ function PatientCard({
       <Avatar name={p.name} />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-foreground">
-            {p.name}
-          </span>
-          <span
-            className={cn(
-              "text-xs font-medium px-2 py-0.5 rounded-[6px]",
-              RISK_STYLES[p.risk],
-            )}
-          >
-            {t(`pages.doctor.risk_${p.risk.toLowerCase()}`)}
-          </span>
-        </div>
+        <span className="text-sm font-semibold text-foreground">
+          {p.name}
+        </span>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
-          {p.conditionKey} - {p.age ? t("pages.doctor.age_value", { age: p.age }) : "—"}
+          {p.conditionKey}{p.age != null ? ` - ${t("pages.doctor.age_value", { age: p.age })}` : ""}
         </p>
       </div>
 
@@ -206,20 +140,20 @@ const DoctorPatients = () => {
   const fetched = useMemo(() => patientsQuery.data?.data ?? [], [patientsQuery.data]);
 
   const filtered = useMemo(() => {
+    const ageRank = (age: number | null) => age ?? Number.POSITIVE_INFINITY;
     return fetched.map((row): Patient => ({
       id: String(row.id),
       name: row.name,
-      age: row.age ?? 0,
+      age: row.age ?? null,
       last: row.last_visit || "—",
       rawLast: row.last_visit || "",
       conditionKey: row.condition,
-      risk: "Low",
     })).sort((a, b) => {
       switch (filters.sort) {
         case "age-asc":
-          return a.age - b.age;
+          return ageRank(a.age) - ageRank(b.age);
         case "age-desc":
-          return b.age - a.age;
+          return ageRank(b.age) - ageRank(a.age);
         case "last":
           return b.rawLast.localeCompare(a.rawLast);
         default:
@@ -227,6 +161,8 @@ const DoctorPatients = () => {
       }
     });
   }, [fetched, filters.sort]);
+  const showAge = filtered.some((patient) => patient.age != null);
+  const sortOptions = SORT_OPTIONS.filter((option) => showAge || !option.value.startsWith("age"));
 
   useEffect(() => {
     setPage(1);
@@ -234,8 +170,6 @@ const DoctorPatients = () => {
 
   const lastPage = tablePageCount(filtered.length);
   const paged = paginateRows(filtered, page);
-
-  const highRiskCount = filtered.filter((p) => p.risk === "High").length;
 
   const handleAction = useCallback((_p: Patient) => {
     // plug into router / modal here
@@ -279,7 +213,7 @@ const DoctorPatients = () => {
           </div>
           <CustomSelect
             value={filters.sort}
-            options={SORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
+            options={sortOptions.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
             onChange={(v) => set("sort", v as SortOption)}
             label={t("pages.doctor.sort_label", { defaultValue: "Sort" })}
             compact
@@ -290,54 +224,6 @@ const DoctorPatients = () => {
 
       {/* ── Body: sidebar + results ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* ── Left Sidebar ── */}
-        <aside className="w-60 flex-shrink-0 border-r border-border bg-card overflow-y-auto">
-          <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
-                />
-              </svg>
-              <span className="text-sm font-semibold text-foreground">
-                {t("pages.doctor.filters")}
-              </span>
-            </div>
-            {hasActiveFilters && (
-              <button
-                onClick={clearAll}
-                className="text-sm text-teal-600 hover:underline"
-              >
-                {t("pages.doctor.reset_all")}
-              </button>
-            )}
-          </div>
-
-          <div className="px-4">
-            <FilterSection title={t("pages.doctor.risk_level")}>
-              <PillGroup<RiskLevel | "All">
-                value={filters.risk}
-                onChange={(v) => set("risk", v)}
-                options={[
-                  { value: "All", label: t("pages.doctor.all_levels") },
-                  { value: "High", label: t("pages.doctor.high_risk") },
-                  { value: "Medium", label: t("pages.doctor.medium_risk") },
-                  { value: "Low", label: t("pages.doctor.low_risk") },
-                ]}
-              />
-            </FilterSection>
-          </div>
-        </aside>
-
-        {/* ── Results ── */}
         <main className="flex-1 overflow-y-auto">
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border px-5 py-2.5 flex items-center justify-between gap-3">
@@ -357,13 +243,6 @@ const DoctorPatients = () => {
             </p>
 
             <div className="flex items-center gap-3">
-              {highRiskCount > 0 && (
-                <span className="hidden sm:flex items-center gap-2 text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-full">
-                  <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                  {t("pages.doctor.high_risk_count", { count: highRiskCount })}
-                </span>
-              )}
-
               {/* View toggle */}
               <div className="flex rounded-[6px] border border-border overflow-hidden bg-card">
                 <button
@@ -455,17 +334,16 @@ const DoctorPatients = () => {
                       <th className="text-left px-5 py-3 font-medium">
                         {t("pages.doctor.th_patient")}
                       </th>
-                      <th className="text-left px-5 py-3 font-medium">
-                        {t("pages.doctor.th_age")}
-                      </th>
+                      {showAge ? (
+                        <th className="text-left px-5 py-3 font-medium">
+                          {t("pages.doctor.th_age")}
+                        </th>
+                      ) : null}
                       <th className="text-left px-5 py-3 font-medium">
                         {t("pages.doctor.th_last")}
                       </th>
                       <th className="text-left px-5 py-3 font-medium">
                         {t("pages.doctor.th_condition")}
-                      </th>
-                      <th className="text-left px-5 py-3 font-medium">
-                        {t("pages.doctor.th_risk")}
                       </th>
                       <th className="px-5 py-3" />
                     </tr>
@@ -484,23 +362,15 @@ const DoctorPatients = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-muted-foreground">
-                          {p.age || "—"}
-                        </td>
+                        {showAge ? (
+                          <td className="px-5 py-4 text-muted-foreground">
+                            {p.age ?? ""}
+                          </td>
+                        ) : null}
                         <td className="px-5 py-4 text-muted-foreground">
                           {p.last}
                         </td>
                         <td className="px-5 py-4">{p.conditionKey}</td>
-                        <td className="px-5 py-4">
-                          <span
-                            className={cn(
-                              "text-xs font-medium px-2.5 py-1 rounded-[6px]",
-                              RISK_STYLES[p.risk],
-                            )}
-                          >
-                            {t(`pages.doctor.risk_${p.risk.toLowerCase()}`)}
-                          </span>
-                        </td>
                         <td className="px-5 py-4 text-right">
                           <Button
                             size="sm"

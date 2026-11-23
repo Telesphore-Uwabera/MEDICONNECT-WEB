@@ -7,6 +7,20 @@ export function doctorOrderKey(query = {}, now = Date.now()) {
   return String(Math.floor(now / (10 * 60 * 1000)));
 }
 
+const PAID_BOOKING = new Set(["paid", "completed", "success", "successful"]);
+
+/** A service booking can be completed only after payment, or when the fee is zero. */
+export function serviceBookingIsPaid(row) {
+  if (!row || typeof row !== "object") return false;
+  const payment = String(row.payment_status ?? "").trim().toLowerCase();
+  if (PAID_BOOKING.has(payment)) return true;
+  if (payment) return false;
+  const amounts = [row.patient_pays, row.price, row.amount, row.consultation_fee]
+    .filter((value) => value != null && value !== "")
+    .map(Number);
+  return !amounts.some((value) => Number.isFinite(value) && value > 0);
+}
+
 /** A live instant consult with no activity for two hours after it started is stale. */
 export function freshInstantSql(columns = []) {
   const present = new Set(columns);

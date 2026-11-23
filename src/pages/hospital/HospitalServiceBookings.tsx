@@ -29,6 +29,7 @@ function HospitalServiceBookings() {
   const accept = useAcceptServiceBooking();
   const reject = useRejectServiceBooking();
   const complete = useCompleteServiceBooking();
+  const [completeError, setCompleteError] = useState<string | null>(null);
   const rows = list.data?.data ?? [];
   const busy = accept.isPending || reject.isPending || complete.isPending;
 
@@ -63,6 +64,7 @@ function HospitalServiceBookings() {
         </div>
         {list.isLoading ? <p className="text-sm text-muted-foreground">{t("common.loading", { defaultValue: "Loading..." })}</p> : null}
         {list.isError ? <p className="text-sm text-destructive">{t("pages.hospital.service_bookings_error", { defaultValue: "Could not load bookings." })}</p> : null}
+        {completeError ? <p className="text-sm text-destructive">{completeError}</p> : null}
         {!list.isLoading && rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("pages.hospital.service_bookings_empty", { defaultValue: "No bookings match these filters." })}</p>
         ) : null}
@@ -87,7 +89,12 @@ function HospitalServiceBookings() {
                     </Button>
                   ) : null}
                   {booking.status === "accepted" ? (
-                    <Button className="h-10" disabled={busy} onClick={() => complete.mutate(booking.id)}>
+                    <Button className="h-10" disabled={busy} onClick={() => {
+                      setCompleteError(null);
+                      complete.mutate(booking.id, {
+                        onError: (error) => setCompleteError(error instanceof Error ? error.message : t("pages.hospital.complete_unpaid", { defaultValue: "This booking is not paid yet. The patient must finish payment before it can be completed." })),
+                      });
+                    }}>
                       {t("pages.hospital.complete", { defaultValue: "Complete" })}
                     </Button>
                   ) : null}

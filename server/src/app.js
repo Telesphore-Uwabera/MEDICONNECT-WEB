@@ -1912,11 +1912,13 @@ export function appRoutes(router) {
       for (const row of instants) add(row, "Instant consult");
       const accountIds = [...grouped.values()].map((row) => row.accountId).filter((id) => id > 0);
       const profileIds = [...grouped.values()].map((row) => row.profileId).filter((id) => id > 0);
+      const userDob = accountIds.length && await hasColumn("users", "date_of_birth") ? ", date_of_birth" : "";
       const users = accountIds.length
-        ? await q(`SELECT id, name FROM users WHERE id IN (${accountIds.map(() => "?").join(",")})`, accountIds).catch(() => [])
+        ? await q(`SELECT id, name${userDob} FROM users WHERE id IN (${accountIds.map(() => "?").join(",")})`, accountIds).catch(() => [])
         : [];
+      const profileDob = profileIds.length && await tableExists("patients") && await hasColumn("patients", "date_of_birth") ? ", date_of_birth" : "";
       const profiles = profileIds.length && await tableExists("patients")
-        ? await q(`SELECT id, user_id, name FROM patients WHERE id IN (${profileIds.map(() => "?").join(",")})`, profileIds).catch(() => [])
+        ? await q(`SELECT id, user_id, name${profileDob} FROM patients WHERE id IN (${profileIds.map(() => "?").join(",")})`, profileIds).catch(() => [])
         : [];
       const userName = new Map(users.map((row) => [Number(row.id), row]));
       const profileName = new Map(profiles.map((row) => [Number(row.id), row]));
@@ -2075,9 +2077,9 @@ export function appRoutes(router) {
         `SELECT r.id, r.\`${ratingColumn}\` AS rating, r.comment, r.created_at, u.name AS patient_name
          FROM reviews r
          LEFT JOIN users u ON u.id = r.patient_id
-         WHERE r.doctor_id = ? AND ${reviewAlive}
+         WHERE r.doctor_id = ? AND ${reviewAlive} AND ${reviewWindow.sql.replaceAll(`\`${reviewDate}\``, `r.\`${reviewDate}\``)}
          ORDER BY r.id DESC LIMIT 5`,
-        [doctorId],
+        [doctorId, ...reviewWindow.params],
       ).catch(() => []) : [];
       const instantTable = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
       // Must match the ownership clause used by /doctor/instant-consultations/queue,
@@ -2212,6 +2214,7 @@ export function appRoutes(router) {
           declined: await instantStatus(instantCreated ? `status IN ('declined','rejected','cancelled','canceled') AND ${periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).sql}` : "status IN ('declined','rejected','cancelled','canceled')", instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).params : []),
           pending: await instantStatus(instantCreated ? `status IN ('pending','queued','waiting') AND ${periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).sql}` : "status IN ('pending','queued','waiting')", instantCreated ? periodWhere(instantCreated, period, req.query.start_date, req.query.end_date).params : []),
           current_queue: paidWaiting,
+          queue_scope: "live",
           paid_waiting: paidWaiting,
           avg_duration_min: instantAvg,
         },
