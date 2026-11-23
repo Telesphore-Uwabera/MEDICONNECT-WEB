@@ -29,6 +29,7 @@ import { registerClinicalDocumentRoutes } from "./clinical-documents.js";
 import { isDedicatedResource, registerDedicatedResourceRoutes } from "./dedicated-ids.js";
 import { registerPrivateDocumentRoutes } from "./private-documents.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
+import { publicPagePath } from "./public-url.js";
 import { selectedBrowseSpecialities } from "./browse-specialities.js";
 import {
   appointmentCollision,
@@ -243,7 +244,7 @@ async function listTable(req, table, scope) {
     data = await verifierNames(data);
   }
   if (table === "team_members") data = data.map(withTeamPhoto);
-  const path = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
+  const path = publicPagePath(req);
   return presentWithoutCallSecrets(scope, table, paginateList({ data, total, page, perPage, path }));
 }
 
@@ -2571,7 +2572,7 @@ export function appRoutes(router) {
         total,
         page,
         perPage,
-        path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+        path: publicPagePath(req),
       }));
     } catch (error) {
       next(error);
@@ -3042,7 +3043,7 @@ export function appRoutes(router) {
         total: Number(totalRow?.total || 0),
         page: pageNo,
         perPage,
-        path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+        path: publicPagePath(req),
       });
       page.data = await Promise.all(page.data.map(async (user) => {
         const roles = await q(
@@ -3126,7 +3127,7 @@ export function appRoutes(router) {
         const { page: pageNo, perPage, offset } = pageArgs(req);
         const total = await countWhere("notifications", "WHERE notifiable_id = ?", [req.user.id]);
         const data = await presentRows("notifications", await q("SELECT * FROM notifications WHERE notifiable_id = ? ORDER BY id DESC LIMIT ? OFFSET ?", [req.user.id, perPage, offset]));
-        const path = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
+        const path = publicPagePath(req);
         return res.json(paginateList({ data, total, page: pageNo, perPage, path }));
       }
       res.json(page);

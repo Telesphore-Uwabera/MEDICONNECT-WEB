@@ -20,6 +20,7 @@ import { afterResourceSaved, applyPharmacyFulfillment } from "./care-spec.js";
 import { kigaliDaySql, kigaliTodaySql } from "./dashboard-stats.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
 import { attachMedicineStock, lowStockFilter } from "./medicine-stock.js";
+import { publicPagePath } from "./public-url.js";
 
 function hideCallSecrets(scope, table, rows) {
   return presentWithoutCallSecrets(scope, table, rows);
@@ -650,7 +651,7 @@ export function registerDedicatedResourceRoutes(router, { requireAuth, requireRo
             total,
             page,
             perPage,
-            path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+            path: publicPagePath(req),
           });
           res.json({ ...pagePayload, [spec.idName.replace(/_id$/, "s")]: data });
         } catch (error) {

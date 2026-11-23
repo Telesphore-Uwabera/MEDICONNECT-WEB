@@ -20,6 +20,7 @@ import { withLiveIce } from "./call-token.js";
 import { readAuditLogs, readPublicSettings, readSettingsGroup, writeSettingsGroup } from "./system-settings.js";
 import { normalizeStoredPhone } from "./phone.js";
 import { clientMayClaimEmail } from "./guest-account.js";
+import { publicPagePath } from "./public-url.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
 import { nameVisitRows } from "./visit-rows.js";
 
@@ -950,7 +951,7 @@ async function fillGap(req, res, parts) {
       total: Number(totalRow?.total ?? 0),
       page,
       perPage,
-      path: `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`,
+      path: publicPagePath(req),
     }));
     return true;
   }
