@@ -23,7 +23,7 @@ function canUseWebsocket() {
   return true;
 }
 
-type ListenFn = (data: any) => void;
+type ListenFn = (data: unknown) => void;
 
 function wrapChannel(channel: ReturnType<Pusher["subscribe"]>) {
   return {
