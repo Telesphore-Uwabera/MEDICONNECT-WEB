@@ -10,7 +10,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Period = "today" | "week" | "month" | "year" | "custom";
+export type Period = "today" | "week" | "month" | "year" | "all" | "custom";
 export type ChartGroup = "day" | "week" | "month";
 export type AppointmentType = "all" | "online" | "in_person" | "instant";
 

@@ -48,17 +48,34 @@ export function visitAwaitsPayment(row) {
  * accepted would let a visit booked years ahead issue a room token today.
  * A row with no stored date or time cannot be placed on the clock.
  */
+function kigaliStamp(date, minutesOfDay) {
+  const [year, month, day] = String(date).slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return Date.UTC(year, month - 1, day, 0, minutesOfDay);
+}
+
 export function appointmentJoinWindow(appointment, now = new Date()) {
   const date = String(appointment?.appointment_date || "").slice(0, 10);
   const start = clockTime(appointment?.appointment_time);
   if (!date || !start) return { ok: false, reason: "no-schedule" };
-  const kigali = kigaliClock(now);
-  if (date !== kigali.date) return { ok: false, reason: "not-today" };
   const [hour, minute] = start.split(":").map(Number);
   const from = hour * 60 + minute;
   const duration = Math.max(5, Number(appointment?.duration_minutes) || 30);
-  if (kigali.minutes < from - 20) return { ok: false, reason: "too-early" };
-  if (kigali.minutes > from + duration + 40) return { ok: false, reason: "too-late" };
+  const opens = kigaliStamp(date, from - 20);
+  const closes = kigaliStamp(date, from + duration + 40);
+  const kigali = kigaliClock(now);
+  const current = kigaliStamp(kigali.date, kigali.minutes);
+  if (opens == null || closes == null || current == null) return { ok: false, reason: "no-schedule" };
+  const spillsBack = from - 20 < 0;
+  const spillsForward = from + duration + 40 >= 24 * 60;
+  if (current < opens) {
+    if (kigali.date !== date && !spillsBack) return { ok: false, reason: "not-today" };
+    return { ok: false, reason: "too-early" };
+  }
+  if (current > closes) {
+    if (kigali.date !== date && !spillsForward) return { ok: false, reason: "not-today" };
+    return { ok: false, reason: "too-late" };
+  }
   return { ok: true, reason: null };
 }
 

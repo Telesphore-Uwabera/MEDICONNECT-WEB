@@ -1,5 +1,28 @@
 /** Search helpers that do not touch the database. */
 
+/** Same order for every page of a session. A missing seed falls back to the 10-minute window. */
+export function doctorOrderKey(query = {}, now = Date.now()) {
+  const seed = String(query?.seed || "").trim();
+  if (/^[A-Za-z0-9_-]{8,80}$/.test(seed)) return seed;
+  return String(Math.floor(now / (10 * 60 * 1000)));
+}
+
+/** A live instant consult with no activity for two hours after it started is stale. */
+export function freshInstantSql(columns = []) {
+  const present = new Set(columns);
+  const start = ["started_at", "accepted_at", "created_at"].find((name) => present.has(name));
+  if (!start) return "1=1";
+  const activity = ["updated_at", start].filter((name) => present.has(name));
+  const activityExpr = activity.length > 1
+    ? `COALESCE(${activity.map((name) => `\`${name}\``).join(", ")})`
+    : `\`${activity[0]}\``;
+  return `(
+    \`${start}\` IS NULL
+    OR \`${start}\` >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 HOUR)
+    OR ${activityExpr} >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 HOUR)
+  )`;
+}
+
 const LANGUAGE_GROUPS = {
   en: ["en", "english"],
   fr: ["fr", "french", "francais"],

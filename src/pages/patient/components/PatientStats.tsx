@@ -735,11 +735,14 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
     return 0;
   };
   const record = medicalQuery.data;
-  const openVisitCount = appointmentRows.filter((row) =>
-    ["pending", "confirmed", "accepted", "in_progress"].includes(
-      String((row as { status?: string }).status || "").toLowerCase(),
-    ),
-  ).length;
+  const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Kigali", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const openVisitCount = appointmentRows.filter((row) => {
+    const status = String((row as { status?: string }).status || "").toLowerCase();
+    if (!["pending", "confirmed", "accepted", "in_progress"].includes(status)) return false;
+    const date = String((row as { appointment_date?: string }).appointment_date || "").slice(0, 10);
+    if (["pending", "queued", "waiting"].includes(status) && date && date < todayKey) return false;
+    return true;
+  }).length;
   const data: PatientDashboardResponse | undefined = {
     ...(dashboard ?? ({} as PatientDashboardResponse)),
     today: {
@@ -1308,7 +1311,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 loading={isLoading}
               />
               <KpiCard
-                label={t("pages.patient.kpi_confirmed")}
+                label={t("pages.patient.upcoming_visits", { defaultValue: "Upcoming" })}
                 value={today?.confirmed ?? 0}
                 icon={CheckCircle2}
                 accent="info"

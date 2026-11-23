@@ -15,6 +15,19 @@ export function msUntilNextDoctorRotation(now = Date.now()) {
   return DOCTOR_ROTATION_MS - (now % DOCTOR_ROTATION_MS);
 }
 
+export function doctorSearchSeed() {
+  const key = "doctor_search_seed";
+  try {
+    const existing = sessionStorage.getItem(key);
+    if (existing && /^[A-Za-z0-9_-]{8,80}$/.test(existing)) return existing;
+    const seed = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`.slice(0, 40);
+    sessionStorage.setItem(key, seed);
+    return seed;
+  } catch {
+    return doctorRotationSlot().toString();
+  }
+}
+
 export function useDoctorRotationSlot() {
   const [slot, setSlot] = useState(() => doctorRotationSlot());
 
@@ -229,6 +242,7 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
   if (params.date) sp.set("date", params.date);
   if (params.page && params.page > 1) sp.set("page", String(params.page));
   if (params.per_page) sp.set("per_page", String(params.per_page));
+  sp.set("seed", doctorSearchSeed());
 
   const queryString = sp.toString();
   const available_doctors_url = `${BASE}/available-doctors`;
@@ -237,7 +251,7 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     : available_doctors_url;
 
   const query = useQuery({
-    queryKey: ["patient-search-doctors", url, rotationSlot],
+    queryKey: ["patient-search-doctors", url],
 
     queryFn: (): Promise<ApiDoctorListResponse> =>
       apiFetch(url).then((res) => withResolvedFees(res as ApiDoctorListResponse)),
@@ -276,6 +290,7 @@ export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {
       if (params.available_today) sp.set("available_today", "true");
       if (params.instant) sp.set("instant", "true");
       if (params.date) sp.set("date", params.date);
+      sp.set("seed", doctorSearchSeed());
       sp.set("page", String(pageParam));
       if (params.per_page) sp.set("per_page", String(params.per_page));
 

@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { apiFetch } from "@/lib/api";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,53 +49,14 @@ const RISK_STYLES: Record<RiskLevel, string> = {
   Low: "bg-success/10 text-success",
 };
 
-const PATIENTS: Patient[] = [
-  {
-    id: "pt1",
-    name: "John Mukasa",
-    age: 54,
-    last: "Apr 25",
-    rawLast: "2026-04-25",
-    conditionKey: "pages.doctor.condition_hypertension",
-    risk: "Medium",
-  },
-  {
-    id: "pt2",
-    name: "Sarah Uwase",
-    age: 32,
-    last: "Apr 22",
-    rawLast: "2026-04-22",
-    conditionKey: "pages.doctor.condition_bronchitis",
-    risk: "Low",
-  },
-  {
-    id: "pt3",
-    name: "David Niyonzima",
-    age: 41,
-    last: "Apr 27",
-    rawLast: "2026-04-27",
-    conditionKey: "pages.doctor.condition_eczema",
-    risk: "Low",
-  },
-  {
-    id: "pt4",
-    name: "Marie Iradukunda",
-    age: 8,
-    last: "Apr 18",
-    rawLast: "2026-04-18",
-    conditionKey: "pages.doctor.condition_routine_checkup",
-    risk: "Low",
-  },
-  {
-    id: "pt5",
-    name: "Eric Habimana",
-    age: 67,
-    last: "Apr 20",
-    rawLast: "2026-04-20",
-    conditionKey: "pages.doctor.condition_post_op_cardiac",
-    risk: "High",
-  },
-];
+interface SeenPatient {
+  id: number;
+  name: string;
+  age: number | null;
+  last_visit: string | null;
+  condition: string;
+  visits: number;
+}
 
 // ─── Sidebar atoms ────────────────────────────────────────────────────────────
 
@@ -188,7 +151,7 @@ function PatientCard({
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
-          {t(p.conditionKey)} - {t("pages.doctor.age_value", { age: p.age })}
+          {p.conditionKey} - {p.age ? t("pages.doctor.age_value", { age: p.age }) : "—"}
         </p>
       </div>
 
@@ -233,18 +196,25 @@ const DoctorPatients = () => {
     [filters],
   );
 
+  const patientsQuery = useQuery({
+    queryKey: ["doctor-my-patients", filters.search],
+    queryFn: () => {
+      const search = filters.search.trim();
+      return apiFetch<{ data: SeenPatient[] }>(`/doctor/my-patients${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+    },
+  });
+  const fetched = useMemo(() => patientsQuery.data?.data ?? [], [patientsQuery.data]);
+
   const filtered = useMemo(() => {
-    const q = filters.search.toLowerCase().trim();
-    return PATIENTS.filter((p) => {
-      if (filters.risk !== "All" && p.risk !== filters.risk) return false;
-      if (
-        q &&
-        !p.name.toLowerCase().includes(q) &&
-        !t(p.conditionKey).toLowerCase().includes(q)
-      )
-        return false;
-      return true;
-    }).sort((a, b) => {
+    return fetched.map((row): Patient => ({
+      id: String(row.id),
+      name: row.name,
+      age: row.age ?? 0,
+      last: row.last_visit || "—",
+      rawLast: row.last_visit || "",
+      conditionKey: row.condition,
+      risk: "Low",
+    })).sort((a, b) => {
       switch (filters.sort) {
         case "age-asc":
           return a.age - b.age;
@@ -256,7 +226,7 @@ const DoctorPatients = () => {
           return a.name.localeCompare(b.name);
       }
     });
-  }, [filters, t]);
+  }, [fetched, filters.sort]);
 
   useEffect(() => {
     setPage(1);
@@ -280,7 +250,9 @@ const DoctorPatients = () => {
             {t("pages.doctor.patients_title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {t("pages.doctor.patients_sub", { count: PATIENTS.length })}
+            {patientsQuery.isLoading
+              ? t("common.loading", { defaultValue: "Loading..." })
+              : t("pages.doctor.patients_sub", { count: filtered.length })}
           </p>
         </div>
 
@@ -513,12 +485,12 @@ const DoctorPatients = () => {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-muted-foreground">
-                          {p.age}
+                          {p.age || "—"}
                         </td>
                         <td className="px-5 py-4 text-muted-foreground">
                           {p.last}
                         </td>
-                        <td className="px-5 py-4">{t(p.conditionKey)}</td>
+                        <td className="px-5 py-4">{p.conditionKey}</td>
                         <td className="px-5 py-4">
                           <span
                             className={cn(
