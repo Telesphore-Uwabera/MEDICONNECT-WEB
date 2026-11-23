@@ -16,7 +16,7 @@ import {
 } from "./doctor-review.js";
 import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
-import { disableInstantOnLogout } from "./doctor-schedule.js";
+import { disableInstantOnLogout, shouldDisableInstantOnLogout, touchDoctorPresence } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { nameVisitRows } from "./visit-rows.js";
 import { registerCareOrderRoutes } from "./care-orders.js";
@@ -96,6 +96,8 @@ import {
   requireAuth,
   requireRole,
   setActiveRole,
+  userFromToken,
+  countLiveTokens,
   stampPatientProfileCompletion,
   toUser,
   verifyPassword,
@@ -636,11 +638,23 @@ export function appRoutes(router) {
     res.json({ user: req.user });
   });
 
-  router.post("/auth/logout", requireAuth, async (req, res, next) => {
+  router.post("/auth/logout", async (req, res, next) => {
     try {
-      await disableInstantOnLogout(req.user.id);
-      const tokenId = req.auth?.token?.id;
-      if (tokenId) await pool.query("DELETE FROM personal_access_tokens WHERE id = ?", [tokenId]);
+      let user = req.user;
+      let token = req.auth?.token;
+      let expired = false;
+      if (!user) {
+        const found = await userFromToken(req.headers.authorization, { allowExpired: true });
+        if (!found) return res.status(401).json({ message: "Unauthenticated." });
+        user = found.user;
+        token = found.token;
+        expired = Boolean(found.expired);
+      }
+      const otherValidTokens = expired ? await countLiveTokens(user.id, token?.id) : 0;
+      if (shouldDisableInstantOnLogout({ expired, otherValidTokens })) {
+        await disableInstantOnLogout(user.id);
+      }
+      if (token?.id) await pool.query("DELETE FROM personal_access_tokens WHERE id = ?", [token.id]);
       res.json({ message: "Signed out." });
     } catch (error) {
       next(error);
@@ -678,6 +692,8 @@ export function appRoutes(router) {
       const current = await toUser(row);
       const allowed = current.available_roles.includes(role) || (role === "admin" && current.can_be_admin);
       if (!allowed) return res.status(403).json({ message: "That role is not on this account." });
+      const leavingDoctor = (req.user.active_role || req.user.role) === "doctor" && role !== "doctor";
+      if (leavingDoctor) await disableInstantOnLogout(req.user.id);
       await setActiveRole(req.user.id, role);
       await pool.query("DELETE FROM personal_access_tokens WHERE id = ?", [req.auth.token.id]);
       const token = await issueToken(req.user.id, role);
@@ -1834,7 +1850,13 @@ export function appRoutes(router) {
     try {
       const { doctorId } = await currentDoctor(req);
       if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
-      if (await hasColumn("doctors", column)) await update("doctors", doctorId, { [column]: value ? 1 : 0 });
+      if (await hasColumn("doctors", column)) {
+        const patch = { [column]: value ? 1 : 0 };
+        if (column === "instant_consultation" && value && await hasColumn("doctors", "instant_seen_at")) {
+          patch.instant_seen_at = new Date();
+        }
+        await update("doctors", doctorId, patch);
+      }
       const doctor = await one("SELECT * FROM doctors WHERE id = ?", [doctorId]);
       res.json({
         message: "Updated.",
@@ -1855,6 +1877,15 @@ export function appRoutes(router) {
     }
     return !current;
   }
+
+  router.post("/doctor/presence", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const tracked = await touchDoctorPresence(req.user.id);
+      res.json({ ok: true, tracked });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   router.patch("/doctor/toggle/instant", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
@@ -3368,8 +3399,7 @@ export function appRoutes(router) {
     "specialization", "doctor_degree", "medical_license", "designations",
     "consultation_type", "preferred_language", "bio_en", "bio_fr", "bio_kiny",
     "consultation_fee", "currency", "specialization_fee_id", "sub_specialization",
-    "sub_specializations", "years_of_experience", "is_available", "city",
-    "instant_consultation",
+    "sub_specializations",     "years_of_experience", "is_available", "city",
   ];
 
   const WORKING_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -3540,9 +3570,7 @@ export function appRoutes(router) {
       }
       delete fields.license_expires_at;
       delete fields.license_expiry_reminded_for;
-      if (fields.instant_consultation != null) {
-        fields.instant_consultation = fields.instant_consultation ? 1 : 0;
-      }
+      delete fields.instant_consultation;
       if (Object.keys(fields).length) await update("doctors", doctorId, fields);
       if (body.gender && await hasColumn("users", "gender")) {
         await update("users", req.user.id, { gender: String(body.gender).toLowerCase() });
@@ -3934,6 +3962,52 @@ export function appRoutes(router) {
       else await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [req.params.id]);
       if (table === "appointments" && current) await releaseSlot(current);
       res.json({ message: "Deleted." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  async function forceInstantOff(doctorId) {
+    const doctor = await one("SELECT id, instant_consultation, status FROM doctors WHERE id = ?", [doctorId]);
+    if (!doctor) return { status: 404, body: { message: "Doctor not found." } };
+    if (!Number(doctor.instant_consultation)) {
+      return { status: 422, body: { message: "Only the doctor can turn instant consultation on.", doctor_id: doctor.id, instant_consultation: false } };
+    }
+    await update("doctors", doctor.id, { instant_consultation: 0 });
+    return { status: 200, body: { message: "Instant consultation turned off.", doctor_id: doctor.id, instant_consultation: false, status: doctor.status } };
+  }
+
+  router.get("/admin/doctors/:id/instant-status", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const doctor = await one("SELECT id, instant_consultation, status FROM doctors WHERE id = ?", [req.params.id]);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      res.json({
+        doctor_id: doctor.id,
+        instant_consultation: Boolean(Number(doctor.instant_consultation)),
+        status: doctor.status ?? "active",
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctors/:id/toggle-instant", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const result = await forceInstantOff(req.params.id);
+      res.status(result.status).json(result.body);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/instant-consultations", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const requestedOn = req.body?.active === true || req.body?.instant_consultation === true || req.body?.instant_consultation === 1;
+      if (requestedOn) {
+        return res.status(422).json({ message: "Only the doctor can turn instant consultation on." });
+      }
+      const result = await forceInstantOff(req.body?.doctor_id);
+      res.status(result.status).json(result.body);
     } catch (error) {
       next(error);
     }
