@@ -361,31 +361,18 @@ export function RoleApprovalGate({
   }
 
   if (isCheckingAccess) {
+    /*
+     * Render the workspace immediately and show only a thin progress line.
+     * Blocking the whole dashboard on this query made role workspaces look
+     * frozen for several seconds on a cold load, even though every data
+     * endpoint is role-protected and returns 200.
+     */
     return (
-      <div className="flex min-h-[60vh] items-center justify-center p-6">
-        <div className="w-full max-w-sm ">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">
-                {t("common.loading", { defaultValue: "Loading..." })}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {t("common.checking_access", {
-                  defaultValue: "Checking role access...",
-                })}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <div className="h-2.5 w-4/5 animate-pulse rounded bg-muted" />
-            <div className="h-2.5 w-full animate-pulse rounded bg-muted/80" />
-            <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted/70" />
-          </div>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="h-0.5 w-full overflow-hidden bg-primary/10" role="progressbar" aria-label={t("common.checking_access", { defaultValue: "Checking role access..." })}>
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
         </div>
+        {children}
       </div>
     );
   }

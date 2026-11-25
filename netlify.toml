@@ -6,16 +6,17 @@
   NODE_VERSION = "20"
   VITE_APP_BASE_URL = "/api/v1"
   VITE_REVERB_APP_KEY = "mediconnect-staging-key"
-  # Direct server. The certificate matches this name. Do not use the bare IP.
-  # The old Cloudflare tunnel (makers-chip-laboratories-maintains.trycloudflare.com)
-  # is shut down and is not a host or proxy target.
-  VITE_REVERB_HOST = "ws.mediconnect.rw"
+  # The Pusher-protocol WebSocket endpoint /app/ is served on the API host
+  # (verified with a real wss handshake). ws.mediconnect.rw has no DNS record,
+  # so use the API host until that DNS is provisioned.
+  VITE_REVERB_HOST = "api.mediconnect.rw"
   VITE_REVERB_PORT = "443"
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
 
-# api.mediconnect.rw and ws.mediconnect.rw resolve to the server. The database
-# console is VPN-only, so this site does not redirect db.mediconnect.rw.
+# api.mediconnect.rw resolves to the server (and serves /app/ WebSockets).
+# When ws.mediconnect.rw gets its DNS record, VITE_REVERB_HOST can point there.
+# The database console is VPN-only, so this site does not redirect db.mediconnect.rw.
 # Same-origin API used by the website.
 [[redirects]]
   from = "/api/*"

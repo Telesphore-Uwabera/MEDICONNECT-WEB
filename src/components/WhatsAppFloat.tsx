@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useLocation } from "react-router-dom";
 import { useCallContext } from "@/context/CallContext";
 
 const WHATSAPP_NUMBER = "250792353501";
@@ -6,7 +7,11 @@ const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 export function WhatsAppFloat() {
   const { activeCall } = useCallContext();
-  if (activeCall) return null;
+  const { pathname } = useLocation();
+  // Inside the dashboards the support link lives in the header next to the
+  // bell/theme controls, so the floating button never covers data cards.
+  const inDashboard = /^\/(patient|doctor|hospital|pharmacy|admin)(\/|$)/.test(pathname);
+  if (activeCall || inDashboard) return null;
 
   return createPortal(
     <a

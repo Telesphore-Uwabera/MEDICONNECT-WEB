@@ -22,6 +22,7 @@ import {
   Sunrise,
   UserCircle,
   Calendar,
+  MessageCircle,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -290,6 +291,16 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
             </div>
 
             <ThemeToggle />
+            <a
+              href="https://wa.me/250792353501"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Chat on WhatsApp"
+              title="Chat on WhatsApp"
+              className="p-2 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200"
+            >
+              <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+            </a>
             <div className="hidden sm:block">
               <LanguageSwitcher compact />
             </div>
