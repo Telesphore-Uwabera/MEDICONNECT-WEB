@@ -1,5 +1,6 @@
 import { loadOwnedId } from "./auth.js";
 import { hasColumn, insert, one, presentRow, q, tableExists, update, forgetColumns } from "./db.js";
+import { buildEmailHtml, emailP, sendMail } from "./mail.js";
 
 const INVESTIGATION_TYPES = new Set(["lab", "imaging", "procedure", "facility_packet", "nursing", "rehab", "vaccination"]);
 const CLINICAL_OPEN = new Set(["CREATED", "SCHEDULED", "IN_PROGRESS", "AWAITING_INVESTIGATIONS", "AWAITING_RESULTS_REVIEW", "AWAITING_REFERRAL_OUTCOME", "AWAITING_FOLLOW_UP"]);
@@ -71,8 +72,8 @@ export async function ensureCareOrderReviewColumns() {
   }
 }
 
-async function notifyUser(userId, title, message, type = "care.episode") {
-  if (!userId || !(await hasColumn("notifications", "notifiable_id"))) return;
+async function notifyUser(userId, title, message, type = "care.episode", options = {}) {
+  if (!userId) return;
   const fields = {
     notifiable_id: userId,
     data: JSON.stringify({ title, message, body: message, type }),
@@ -83,6 +84,30 @@ async function notifyUser(userId, title, message, type = "care.episode") {
   if (await hasColumn("notifications", "created_at")) fields.created_at = now;
   if (await hasColumn("notifications", "updated_at")) fields.updated_at = now;
   await insert("notifications", fields).catch(() => {});
+
+  // Key care events also reach the user by email. In-app notices alone are
+  // easy to miss once the patient or doctor leaves the dashboard.
+  if (options.email) {
+    const recipient = await one(
+      "SELECT email, preferred_language FROM users WHERE id = ? LIMIT 1",
+      [userId],
+    ).catch(() => null);
+    if (recipient?.email) {
+      const lang = recipient.preferred_language || "en";
+      const intro = options.intro || message;
+      const html = buildEmailHtml({
+        title,
+        preheader: message,
+        lang,
+        body: `
+          ${emailP(intro)}
+          ${emailP(message)}
+          ${emailP("Open MediConnect to view the full record and respond.", "font-size:12px;color:#6b7280;")}
+        `,
+      });
+      await sendMail({ to: recipient.email, subject: title, text: `${intro}\n\n${message}`, html }).catch(() => {});
+    }
+  }
 }
 
 export async function ensureEpisode(input = {}) {
@@ -268,6 +293,7 @@ export async function onCareOrderUpdated(order, action, scope) {
         "Results ready for clinical review",
         "A facility uploaded investigation results. Review them before closing this episode — an upload does not complete the consult.",
         "care.review",
+        { email: true, intro: "Investigation results are ready for your review." },
       );
     }
   } else if (action === "complete" && type === "pharmacy_packet") {
@@ -363,7 +389,7 @@ export async function onPharmacyRequestFulfilled(row, fulfillmentStatus = "SERVE
     payload_json: { shortages, method },
   });
   const notice = dispenseNotice(method, shortages);
-  await notifyUser(await patientUserId(patientId), notice.title, notice.body, "care.pharmacy");
+  await notifyUser(await patientUserId(patientId), notice.title, notice.body, "care.pharmacy", { email: true });
   if (prescription?.id && (await tableExists("prescriptions")) && (await hasColumn("prescriptions", "status"))) {
     await update("prescriptions", prescription.id, {
       status: status === "PARTIALLY_FULFILLED" ? "partially_dispensed" : "dispensed",
@@ -666,7 +692,7 @@ export async function onPharmacyShopOrder(order, action) {
       payload_json: { shortages, method },
     });
     const notice = dispenseNotice(method, shortages);
-    await notifyUser(await patientUserId(order.patient_id), notice.title, notice.body, "care.pharmacy");
+    await notifyUser(await patientUserId(order.patient_id), notice.title, notice.body, "care.pharmacy", { email: true });
   } else if (action === "reject") {
     await upsertTask(episode.id, "pharmacy_fulfillment", "pharmacy_orders", order.id, { task_status: "CANCELLED" });
   }
