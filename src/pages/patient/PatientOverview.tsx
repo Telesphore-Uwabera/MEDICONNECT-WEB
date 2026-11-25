@@ -95,6 +95,7 @@ import { useState, useRef, useEffect } from "react";
 import { PatientNextVisit } from "@/components/flow/PatientNextVisit";
 import { ProfileProgress } from "@/components/flow/ProfileProgress";
 import { useGetProfile } from "@/hooks/use-patient-profile";
+import { isPatientRecordComplete } from "@/lib/patient-profile-complete";
 import { useMe } from "@/hooks/useAuth";
 import { firstName, hasEarlierVisit, hasPriorSignIn, welcomeMode } from "@/lib/visit-greeting";
 
@@ -142,6 +143,7 @@ const PatientOverview = () => {
   // ── Appointments (real API) ──────────────────────────────────────────────
   const { data: me } = useMe();
   const { data: profile, isLoading: profileLoading } = useGetProfile();
+  const profileNeedsCompletion = profile != null && !isPatientRecordComplete(profile);
   const { data: dash } = useGetPatientStats({ period: "all" });
   const { data: appointmentsData, isLoading: appointmentsLoading } =
     useGetPatientAppointments({ per_page: 50 });
@@ -204,7 +206,11 @@ const PatientOverview = () => {
           <div className="page-shell space-y-6 py-4 sm:py-6">
             <div className="grid gap-3 lg:grid-cols-2">
               <PatientNextVisit appointment={upcomingAppointments[0]} />
-              <ProfileProgress profile={profile} loading={profileLoading} />
+              {profileNeedsCompletion || profileLoading ? (
+                <ProfileProgress profile={profile} loading={profileLoading} />
+              ) : (
+                <PatientNextStepCard />
+              )}
             </div>
             <PatientCareNext />
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
@@ -633,5 +639,37 @@ const PatientOverview = () => {
     </DashboardLayout>
   );
 };
+
+/** Replaces the profile-progress card once the patient file is complete. */
+function PatientNextStepCard() {
+  const { t } = useTranslation();
+  return (
+    <section className="rounded-xl border border-primary/25 bg-primary/5 p-4 shadow-soft">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
+        {t("pages.patient.profile_ready", "You're all set")}
+      </p>
+      <h2 className="mt-1 text-base font-semibold text-foreground">
+        {t("pages.patient.next_step_title", "What would you like to do?")}
+      </h2>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {t("pages.patient.next_step_sub", "Your patient file is ready. Find a doctor or check your appointments.")}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link
+          to="/patient/search-doctors"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          {t("pages.patient.find_care", "Find care")}
+        </Link>
+        <Link
+          to="/patient/appointments"
+          className="inline-flex h-9 items-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          {t("pages.patient.my_appointments", "My appointments")}
+        </Link>
+      </div>
+    </section>
+  );
+}
 
 export default PatientOverview;

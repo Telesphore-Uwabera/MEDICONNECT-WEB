@@ -148,7 +148,7 @@ function FilterBar({
 
         {/* Search */}
         <div className="flex flex-col gap-1 w-full sm:flex-1 min-w-0">
-          <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <label className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
             {t("admin.overview.search")}
           </label>
           <div className="relative">
@@ -165,7 +165,7 @@ function FilterBar({
 
         {/* Exact date */}
         <div className="flex flex-col gap-1 w-full sm:flex-1 min-w-0">
-          <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <label className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
             {t("admin.overview.exact_date")}
           </label>
           <div className="relative">
@@ -182,7 +182,7 @@ function FilterBar({
 
         {/* Date range */}
         <div className="flex flex-col gap-1 w-full sm:flex-[2] min-w-0">
-          <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <label className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
             Date range
           </label>
           <div className="flex items-center gap-1.5">
@@ -356,12 +356,12 @@ const AdminOverview = () => {
                         <Icon className="h-3.5 w-3.5" />
                       </div>
                       <p className="text-sm font-bold tabular-nums text-foreground leading-none">{count}</p>
-                      <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">
+                      <p className="text-[10px] text-muted-foreground mt-0.5 capitalize">
                         {t(`admin.roles.${({ patients: "patient", doctors: "doctor", hospitals: "hospital", pharmacies: "pharmacy", admins: "admin" } as Record<string, string>)[key] ?? key}`)}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <MiniBar pct={pct} className={roleBarColor[key]} />
-                        <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">{pct}%</span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{pct}%</span>
                       </div>
                     </div>
                   );
@@ -373,7 +373,7 @@ const AdminOverview = () => {
             {!isLoading && users && (
               <div className="rounded-[6px] border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Total registered</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Total registered</p>
                   <p className="text-sm font-bold text-foreground tabular-nums leading-tight">{users.total}</p>
                 </div>
                 <div className="relative w-10 h-10">

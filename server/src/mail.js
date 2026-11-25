@@ -132,7 +132,7 @@ export function buildEmailHtml({ title, preheader = "", body, accentHex, lang = 
                   <td>
                     <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#ffffff;font-family:'Segoe UI',Arial,sans-serif;">MediConnect Rwanda</p>
                     <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">📧 <a href="mailto:admin@mediconnect.rw" style="color:${BRAND.footerText};">admin@mediconnect.rw</a></p>
-                    <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">📞 <a href="tel:+250792353501" style="color:${BRAND.footerText};">+250 792 363 601</a></p>
+                    <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">📞 <a href="tel:+250792353501" style="color:${BRAND.footerText};">+250 792 353 501</a></p>
                     <p style="margin:0 0 4px;font-size:11px;color:${BRAND.footerText};font-family:'Segoe UI',Arial,sans-serif;">🌐 <a href="https://mediconnect.rw" style="color:${BRAND.accent};">mediconnect.rw</a></p>
                   </td>
                   <td align="right" valign="top" class="hide-mobile">
@@ -358,9 +358,9 @@ export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.
     : pick(lang, { en: "Welcome to MediConnect!", fr: "Bienvenue sur MediConnect !", rw: "Murakaza neza kuri MediConnect!" });
   const preheader = patientProfile
     ? pick(lang, {
-      en: "Finish your patient profile before you book or start a consultation.",
-      fr: "Terminez votre profil patient avant de réserver ou de commencer une consultation.",
-      rw: "Uzuza umwirondoro wawe w'umurwayi mbere yo gufata gahunda cyangwa gutangira ikiganiro.",
+      en: "Start an instant consultation right away. Complete your profile for scheduled visits and faster care.",
+      fr: "Commencez une consultation instantanée immédiatement. Complétez votre profil pour les rendez-vous planifiés.",
+      rw: "Tangira ikiganiro cyihuse ubu. Uzuza umwirondoro wawe kugira ngo ubone gahunda n'ubuvuzi bwihuse.",
     })
     : pick(lang, {
       en: `Your ${roleLabel} account is ready. Sign in to get started.`,
@@ -371,15 +371,15 @@ export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.
   const body = `
     ${emailP(greeting(name, lang))}
     ${emailHtml(patientProfile
-      ? `Your MediConnect <strong>Patient</strong> account has been created. Complete your profile next — date of birth, gender, phone, and address — so doctors have your file before any consultation.`
+      ? `Your MediConnect <strong>Patient</strong> account is ready. You can start an instant consultation right away — the doctor will complete your file with you during the call. For a scheduled appointment, complete your profile after payment so you can join the video visit without any paperwork on the day.`
       : `Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
       <tr>
         <td style="background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;padding:16px 20px;border-left:4px solid #0BA59B;">
-          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;">${patientProfile ? "Before you can consult" : "What you can do on MediConnect"}</p>
+          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;">${patientProfile ? "Your care, your way" : "What you can do on MediConnect"}</p>
           ${role === "patient" ? `
-            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Fill date of birth, gender, phone, and address</p>
-            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Then book appointments or start instant video visits</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Instant consultation — no forms before the call</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Scheduled visits — fill your profile once after payment</p>
             <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ View prescriptions and medical records</p>
             <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Order medications from partnered pharmacies</p>
           ` : role === "doctor" ? `

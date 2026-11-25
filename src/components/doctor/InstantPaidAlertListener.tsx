@@ -14,7 +14,6 @@ const ALERT_AUDIO_SRC = "/audio/new-notification-057-494255.mp3";
 const SEEN_STORAGE_KEY = "doctor_instant_paid_alert_seen_ids";
 const SEEN_APPOINTMENT_STORAGE_KEY = "doctor_appointment_paid_alert_seen_ids";
 const ALERT_DURATION_MS = 60_000;
-const SPEECH_INTERVAL_MS = 12_000;
 
 type PaidAlert =
   | { kind: "instant"; item: InstantConsultQueueItem }
@@ -155,15 +154,16 @@ export function InstantPaidAlertListener() {
       stopAlertSound();
 
       const audio = new Audio(ALERT_AUDIO_SRC);
-      audio.loop = true;
-      audio.volume = 0.85;
+      audio.loop = false;
+      audio.volume = 0.7;
       audioRef.current = audio;
       void audio.play().catch(() => {
         audioRef.current = null;
       });
 
+      // Speak once — repeating speech every few seconds is disruptive while
+      // the doctor is already reading the patient's chart.
       speakAlert(alert);
-      speechTimerRef.current = setInterval(() => speakAlert(alert), SPEECH_INTERVAL_MS);
       stopTimerRef.current = setTimeout(stopAlertSound, ALERT_DURATION_MS);
     },
     [speakAlert, stopAlertSound],
@@ -214,55 +214,52 @@ export function InstantPaidAlertListener() {
   if (!activeAlert) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-[95] w-[min(480px,calc(100vw-24px))] rounded-[6px] border border-primary/30 bg-card shadow-2xl">
-      <div className="flex items-start gap-3 p-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] bg-primary/15 text-primary">
-          <BellRing className="h-5 w-5 animate-pulse" />
+    <div className="fixed left-1/2 top-4 z-[95] w-[min(640px,calc(100vw-24px))] -translate-x-1/2 rounded-[8px] border border-primary/30 bg-card/95 shadow-2xl backdrop-blur-sm">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-primary/15 text-primary">
+          <BellRing className="h-4 w-4 animate-pulse" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                {activeAlert.kind === "instant" ? "Paid instant consultation" : "Confirmed appointment"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <p className="text-sm font-semibold text-foreground">
+                  {getAlertTitle(activeAlert)}
+                </p>
+                <span className="inline-flex items-center gap-1 text-xs text-foreground">
+                  <Phone className="h-3 w-3 text-primary" />
+                  <span className="truncate">{getAlertPatientLabel(activeAlert)}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock3 className="h-3 w-3" />
+                  {activeAlert.kind === "instant"
+                    ? activeAlert.item.waiting_label || "Waiting now"
+                    : formatAppointmentDateTime(
+                        activeAlert.item.appointment_date,
+                        activeAlert.item.appointment_time,
+                      )}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {activeAlert.kind === "instant"
                   ? activeAlert.item.payment_status === "paid"
-                    ? "Payment confirmed — the patient is ready. Join now or open the queue."
+                    ? "Payment confirmed — the patient is ready."
                     : "A patient is waiting for you to accept the call."
-                  : "A scheduled appointment is ready for you to review or join."}
+                  : "A scheduled appointment is ready to review or join."}
               </p>
             </div>
             <button
               type="button"
               onClick={dismiss}
-              className="rounded-[6px] p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="Dismiss instant consultation alert"
+              className="shrink-0 rounded-[6px] p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Dismiss alert"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="mt-3 grid gap-2 rounded-[6px] border border-border/70 bg-background p-3 text-xs">
-            <div className="flex items-center gap-2 text-foreground">
-              <Phone className="h-3.5 w-3.5 text-primary" />
-              <span className="truncate">{getAlertPatientLabel(activeAlert)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock3 className="h-3.5 w-3.5" />
-              <span>
-                {activeAlert.kind === "instant"
-                  ? activeAlert.item.waiting_label || "Waiting now"
-                  : formatAppointmentDateTime(
-                      activeAlert.item.appointment_date,
-                      activeAlert.item.appointment_time,
-                    )}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center justify-end gap-2">
+          <div className="mt-2 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={dismiss}

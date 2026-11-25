@@ -917,7 +917,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                       <Icon className="h-4 w-4" />
                     </div>
                     <p className=" mt-4 leading-none font-bold text-foreground text-sm">
-                      {isLoading ? "..." : item.value}
+                      <span className="block h-5 w-10 animate-pulse rounded bg-muted" aria-hidden="true" />
                     </p>
                     <p className="text-xs font-semibold text-foreground mt-1">
                       {item.label}
@@ -957,7 +957,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                     {item.label}
                   </p>
                   <p className="text-sm font-bold text-foreground mt-1">
-                    {isLoading ? "..." : item.value}
+                    <span className="block h-5 w-10 animate-pulse rounded bg-muted" aria-hidden="true" />
                   </p>
                 </div>
               ))}
@@ -985,7 +985,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               ].map((item) => (
                 <div key={item.label}>
                   <p className=" leading-none font-bold text-foreground text-sm leading-none">
-                    {isLoading ? "..." : item.value}
+                    <span className="block h-5 w-10 animate-pulse rounded bg-muted" aria-hidden="true" />
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
                 </div>
@@ -998,7 +998,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               {t("pages.patient.tab_payments")}
             </p>
             <p className=" leading-none font-bold text-foreground text-sm font-bold text-foreground mt-4 leading-none">
-              {isLoading ? "..." : `RWF ${Number(spending?.total ?? 0).toLocaleString()}`}
+              <span className="block h-5 w-24 animate-pulse rounded bg-muted" aria-hidden="true" />
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               {t("pages.patient.total_spent_period")}
@@ -1024,7 +1024,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                   className="flex items-center justify-between rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2 hover:border-primary/40"
                 >
                   <span className="text-xs text-muted-foreground">{item.label}</span>
-                  <span className="text-sm font-bold text-foreground">{isLoading ? "..." : item.value}</span>
+                  <span className="text-sm font-bold text-foreground"><span className="block h-5 w-10 animate-pulse rounded bg-muted" aria-hidden="true" /></span>
                 </Link>
               ))}
             </div>
