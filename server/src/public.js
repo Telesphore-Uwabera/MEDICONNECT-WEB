@@ -8,7 +8,7 @@ import { createGuestPassword } from "./guest-password.js";
 import { publishSignal, realtimeStats, signalsSince } from "./realtime.js";
 import { publicRealtimeConfig } from "./realtime-config.js";
 import { callToken, relayDiagnostics, roomFromToken, withLiveIce } from "./call-token.js";
-import { notifyPaidVisit } from "./visit-notify.js";
+import { notifyPaidVisit, notifyUnconductedInstantVisit } from "./visit-notify.js";
 import { handlePublicFitness, markFitnessCertificatePaid } from "./fitness-certificates.js";
 import { publicDoctor, publicHospital, publicPharmacy, publicSlot, stripCallSecrets } from "./public-profile.js";
 import { containsLike, doctorOrderKey, languageFilterValues, likeContains, publicMedicine } from "./search-text.js";
@@ -571,6 +571,44 @@ async function expireStaleUnpaidVisits() {
     const patch = paidCol ? { status: expiredStatus, payment_status: "expired" } : { status: expiredStatus };
     const saved = await update(table, row.id, patch).catch(() => null);
     if (!saved && paidCol) await update(table, row.id, { status: expiredStatus }).catch(() => null);
+  }
+
+  // ── 1-hour timeout for paid instant consultations that were never conducted ──
+  const hasStartedAt = await hasColumn(table, "started_at");
+  const notStartedSql = hasStartedAt ? "AND started_at IS NULL" : "";
+  const unconductedRows = await q(
+    `SELECT * FROM \`${table}\`
+     WHERE LOWER(status) IN ('confirmed','accepted')
+       ${notStartedSql}
+       AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE)
+     ORDER BY id ASC LIMIT 100`,
+  ).catch(() => []);
+  for (const row of unconductedRows) {
+    const age = ageSeconds(row.created_at);
+    if (age == null || age < 3600) continue;
+    if (hasStartedAt && row.started_at) continue;
+    await update(table, row.id, { status: "expired" }).catch(() => null);
+    if (await tableExists("refunds")) {
+      const existingRefund = await one(
+        "SELECT id FROM refunds WHERE payable_type = 'instant_consultation' AND payable_id = ? LIMIT 1",
+        [row.id],
+      ).catch(() => null);
+      if (!existingRefund) {
+        const refund = await knownWrite("refunds", {
+          patient_id: row.patient_id || row.user_id || null,
+          doctor_id: row.doctor_id || null,
+          amount: row.amount || row.consultation_fee || row.patient_pays || 0,
+          reason: "Instant consultation was not conducted within 1 hour",
+          status: "pending",
+          payable_type: "instant_consultation",
+          payable_id: row.id,
+        });
+        if (Object.keys(refund.payload).length) {
+          await insert("refunds", refund.payload).catch(() => null);
+        }
+      }
+    }
+    notifyUnconductedInstantVisit(row).catch(() => null);
   }
 }
 

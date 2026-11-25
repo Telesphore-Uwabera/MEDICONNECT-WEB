@@ -942,15 +942,32 @@ export function appRoutes(router) {
     try {
       const row = await findUserByLogin(req.body ?? {});
       if (!row) return res.status(422).json({ message: "Account not found." });
-      const otp = await one(
-        "SELECT id, expires_at FROM otps WHERE code = ? AND (email = ? OR phone = ?) AND type = 'password_reset' ORDER BY id DESC LIMIT 1",
-        [req.body?.otp, req.body?.email ?? "", req.body?.phone ?? ""],
-      );
+      const emailCandidates = [...new Set([req.body?.email, row.email].map((v) => String(v || "").trim()).filter(Boolean))];
+      const phoneCandidates = [...new Set([req.body?.phone, row.phone].map((v) => String(v || "").trim()).filter(Boolean))];
+      const otpClauses = [];
+      const otpParams = [String(req.body?.otp || "").trim()];
+      if (emailCandidates.length) {
+        otpClauses.push(`email IN (${emailCandidates.map(() => "?").join(", ")})`);
+        otpParams.push(...emailCandidates);
+      }
+      if (phoneCandidates.length) {
+        otpClauses.push(`phone IN (${phoneCandidates.map(() => "?").join(", ")})`);
+        otpParams.push(...phoneCandidates);
+      }
+      const otp = otpClauses.length
+        ? await one(
+            `SELECT id, expires_at FROM otps WHERE code = ? AND (${otpClauses.join(" OR ")}) AND type = 'password_reset' ORDER BY id DESC LIMIT 1`,
+            otpParams,
+          )
+        : null;
       if (!otp) return res.status(422).json({ message: "That code is not valid." });
       // Check expiry
       if (otp.expires_at && new Date(otp.expires_at).getTime() < Date.now()) {
         await pool.query("DELETE FROM otps WHERE id = ?", [otp.id]);
         return res.status(422).json({ message: "That code has expired. Please request a new one." });
+      }
+      if (String(req.body?.password || "").length < 8) {
+        return res.status(422).json({ message: "Password must be at least 8 characters." });
       }
       if (req.body?.password !== req.body?.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match." });
@@ -961,6 +978,7 @@ export function appRoutes(router) {
         temp_password_used_at: new Date(),
       });
       await pool.query("DELETE FROM otps WHERE id = ?", [otp.id]);
+      await pool.query("DELETE FROM personal_access_tokens WHERE tokenable_id = ?", [row.id]).catch(() => null);
 
       // Send confirmation email
       if (row.email) {
@@ -1074,19 +1092,37 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/broadcasting/auth", requireAuth, (req, res) => {
-    const secret = String(process.env.REVERB_APP_SECRET || "").trim();
-    const key = String(process.env.REVERB_APP_KEY || "").trim();
-    if (!secret || !key) {
-      return res.status(503).json({ message: "Realtime auth is not configured." });
+  router.post("/broadcasting/auth", async (req, res, next) => {
+    try {
+      if (!req.user) {
+        const authHeader = String(req.headers?.authorization || "").trim();
+        const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+        let guestAuthorized = false;
+        if (bearer) {
+          const table = await instantTable();
+          if (table) {
+            const guestRow = await one(`SELECT id FROM \`${table}\` WHERE guest_token = ? LIMIT 1`, [bearer]).catch(() => null);
+            if (guestRow) guestAuthorized = true;
+          }
+          if (!guestAuthorized && roomFromToken(bearer)) guestAuthorized = true;
+        }
+        if (!guestAuthorized) return res.status(401).json({ message: "Unauthenticated." });
+      }
+      const secret = String(process.env.REVERB_APP_SECRET || "").trim();
+      const key = String(process.env.REVERB_APP_KEY || "").trim();
+      if (!secret || !key) {
+        return res.status(503).json({ message: "Realtime auth is not configured." });
+      }
+      const socketId = String(req.body?.socket_id || "");
+      const channel = String(req.body?.channel_name || "");
+      if (!socketId || !channel) {
+        return res.status(422).json({ message: "socket_id and channel_name are required." });
+      }
+      const signature = crypto.createHmac("sha256", secret).update(`${socketId}:${channel}`).digest("hex");
+      res.json({ auth: `${key}:${signature}` });
+    } catch (error) {
+      next(error);
     }
-    const socketId = String(req.body?.socket_id || "");
-    const channel = String(req.body?.channel_name || "");
-    if (!socketId || !channel) {
-      return res.status(422).json({ message: "socket_id and channel_name are required." });
-    }
-    const signature = crypto.createHmac("sha256", secret).update(`${socketId}:${channel}`).digest("hex");
-    res.json({ auth: `${key}:${signature}` });
   });
 
   router.post("/auth/guest", async (req, res, next) => {
@@ -2656,7 +2692,19 @@ export function appRoutes(router) {
         active = await doctorActiveInstant(doctorId);
         const named = rows.filter((row) => Number(row.doctor_id) === Number(doctorId));
         queue = rows.map((row) => {
-          const waitingSeconds = ageSeconds(row.created_at) ?? 0;
+          const lowerStatus = String(row.status || "pending").toLowerCase();
+          const isStillWaiting = ["pending", "queued", "waiting", "payment_pending", "confirmed"].includes(lowerStatus);
+          const waitUntil = isStillWaiting
+            ? new Date()
+            : (row.accepted_at || row.started_at || row.completed_at || row.ended_at || row.updated_at || new Date());
+          const waitingSeconds = Math.max(0, ageSeconds(row.created_at, waitUntil) ?? 0);
+          const currentAgeSeconds = Math.max(0, ageSeconds(row.created_at) ?? 0);
+          const rowDurationMinutes = durationMinutes(row.started_at || row.accepted_at, row.completed_at || row.ended_at);
+          const rowDurationSeconds = row.duration_seconds != null
+            ? Number(row.duration_seconds)
+            : (row.started_at || row.accepted_at) && (row.completed_at || row.ended_at)
+              ? Math.max(1, ageSeconds(row.started_at || row.accepted_at, row.completed_at || row.ended_at) ?? 0)
+              : null;
           const place = placeInQueue(row, named.length ? named : [row]);
           return {
           id: row.id,
@@ -2667,7 +2715,7 @@ export function appRoutes(router) {
           status: row.status || "pending",
           payment_status: displayedPaymentStatus(row),
           queue_position: Number(row.doctor_id) === Number(doctorId) ? place.queue_position : null,
-          age_seconds: waitingSeconds,
+          age_seconds: isStillWaiting ? currentAgeSeconds : waitingSeconds,
           waiting_seconds: waitingSeconds,
           waiting_label: waitingSeconds >= 3600
             ? `${Math.floor(waitingSeconds / 3600)}h`
@@ -2675,6 +2723,12 @@ export function appRoutes(router) {
               ? `${Math.floor(waitingSeconds / 60)}m`
               : `${waitingSeconds}s`,
           created_at: row.created_at || null,
+          accepted_at: row.accepted_at || null,
+          started_at: row.started_at || null,
+          completed_at: row.completed_at || row.ended_at || null,
+          ended_at: row.ended_at || row.completed_at || null,
+          duration_seconds: rowDurationSeconds,
+          duration_minutes: rowDurationMinutes,
           patient_id: row.patient_id || row.user_id || null,
           user_id: row.user_id || null,
         };
@@ -2877,11 +2931,16 @@ export function appRoutes(router) {
       }
       const patch = { status: "completed" };
       const ended = new Date();
+      const start = row.started_at || row.accepted_at || row.created_at;
       if (await hasColumn(table, "completed_at")) patch.completed_at = ended;
       if (await hasColumn(table, "ended_at")) patch.ended_at = ended;
       if (await hasColumn(table, "duration_seconds")) {
-        const minutes = durationMinutes(row.started_at || row.accepted_at, ended);
-        if (minutes != null) patch.duration_seconds = minutes * 60;
+        const exactSeconds = ageSeconds(start, ended);
+        if (exactSeconds != null) patch.duration_seconds = Math.max(1, exactSeconds);
+      }
+      if (await hasColumn(table, "duration_minutes")) {
+        const minutes = durationMinutes(start, ended);
+        if (minutes != null) patch.duration_minutes = minutes;
       }
       await update(table, row.id, patch);
       const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
@@ -3038,8 +3097,18 @@ export function appRoutes(router) {
         return res.status(422).json({ message: "Confirm this appointment before completing it — the patient has not paid yet." });
       }
       const patch = { status: "completed" };
-      if (await hasColumn("appointments", "completed_at")) patch.completed_at = new Date();
-      if (await hasColumn("appointments", "ended_at")) patch.ended_at = new Date();
+      const ended = new Date();
+      const start = appointment.started_at || appointment.confirmed_at || appointment.updated_at || appointment.created_at;
+      if (await hasColumn("appointments", "completed_at")) patch.completed_at = ended;
+      if (await hasColumn("appointments", "ended_at")) patch.ended_at = ended;
+      if (await hasColumn("appointments", "duration_minutes")) {
+        const minutes = durationMinutes(start, ended);
+        if (minutes != null) patch.duration_minutes = minutes;
+      }
+      if (await hasColumn("appointments", "duration_seconds")) {
+        const exactSeconds = ageSeconds(start, ended);
+        if (exactSeconds != null) patch.duration_seconds = Math.max(1, exactSeconds);
+      }
       await update("appointments", appointment.id, patch);
       const updated = await one("SELECT * FROM appointments WHERE id = ?", [appointment.id]);
       notifyVisitCompleted(updated || appointment, "appointment").catch(() => null);
@@ -3494,6 +3563,290 @@ export function appRoutes(router) {
       const retired = await retireUser(Number(req.params.id));
       if (!retired) return res.status(404).json({ message: "User not found." });
       res.json({ message: "User suspended.", status: "suspended" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post(["/admin/users/:id/reset-credentials", "/admin/users/:id/reset-password"], requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const target = await one("SELECT * FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "User not found." });
+      const patch = {};
+      const changes = [];
+      let temporaryPassword = null;
+
+      if (req.body?.email != null && String(req.body.email).trim() !== "" && String(req.body.email).trim() !== String(target.email || "")) {
+        const nextEmail = String(req.body.email).trim().toLowerCase();
+        if (!clientMayClaimEmail(nextEmail)) {
+          return res.status(422).json({ message: "Choose a different email address." });
+        }
+        const collision = await one("SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1", [nextEmail, target.id]);
+        if (collision) return res.status(422).json({ message: "That email address is already in use." });
+        patch.email = nextEmail;
+        changes.push("email");
+      }
+
+      if (req.body?.phone != null && String(req.body.phone).trim() !== "") {
+        const nextPhone = String(req.body.phone).trim();
+        if (nextPhone !== String(target.phone || "")) {
+          patch.phone = nextPhone;
+          changes.push("phone");
+        }
+      }
+      if (req.body?.country_code != null && String(req.body.country_code).trim() !== "") {
+        patch.country_code = String(req.body.country_code).trim();
+      }
+
+      const explicitPassword = req.body?.password != null && String(req.body.password) !== "" ? String(req.body.password) : null;
+      const isLegacyResetRoute = req.path.endsWith("/reset-password");
+      if (explicitPassword || (isLegacyResetRoute && !changes.length)) {
+        const plainPassword = explicitPassword || `MC-${crypto.randomBytes(4).toString("hex")}!`;
+        if (plainPassword.length < 8) {
+          return res.status(422).json({ message: "Password must be at least 8 characters." });
+        }
+        patch.password = await hashPassword(plainPassword);
+        if (await hasColumn("users", "password_must_change")) patch.password_must_change = explicitPassword ? 0 : 1;
+        if (!explicitPassword) temporaryPassword = plainPassword;
+        changes.push("password");
+      }
+
+      if (!changes.length && !Object.keys(patch).length) {
+        return res.status(422).json({ message: "Provide at least one credential to update." });
+      }
+
+      const known = await knownWrite("users", patch);
+      if (Object.keys(known.payload).length) await update("users", target.id, known.payload);
+      if (changes.includes("password") && await tableExists("personal_access_tokens")) {
+        await pool.query("DELETE FROM personal_access_tokens WHERE tokenable_id = ?", [target.id]).catch(() => null);
+      }
+      const updated = await one("SELECT * FROM users WHERE id = ?", [target.id]);
+      res.json({
+        message: "Credentials updated.",
+        ...(temporaryPassword ? { temporary_password: temporaryPassword } : {}),
+        changes,
+        user: {
+          id: updated.id,
+          name: updated.name || "",
+          email: updated.email || "",
+          phone: updated.phone || "",
+          country_code: updated.country_code || "",
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/users/:id/revoke-sessions", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const target = await one("SELECT id FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "User not found." });
+      await disableInstantOnLogout(target.id);
+      if (await tableExists("personal_access_tokens")) {
+        await pool.query("DELETE FROM personal_access_tokens WHERE tokenable_id = ?", [target.id]).catch(() => null);
+      }
+      res.json({ message: "All active sessions revoked." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/users/:id/resend-verification", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const target = await one("SELECT * FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "User not found." });
+      const code = String(crypto.randomInt(100000, 1000000));
+      await insert("otps", {
+        email: target.email || null,
+        phone: target.phone || null,
+        country_code: target.country_code || null,
+        code,
+        type: "verification",
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "),
+      }).catch(() => null);
+      if (target.email) {
+        const lang = languageFromUserRow(target);
+        const html = buildOtpEmail({ code, type: "verification", recipientName: target.name, lang });
+        sendMail({
+          to: target.email,
+          subject: "MediConnect — Verification code",
+          text: `Your MediConnect verification code is: ${code}\n\nThis code expires in 10 minutes.`,
+          html,
+        }).catch(() => null);
+      }
+      res.json({ message: "Verification code sent." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const STAFF_ROLE_NAMES = ["moderator", "finance", "help_desk"];
+
+  async function shapeStaffMember(row) {
+    if (!row) return null;
+    const roles = await q(
+      `SELECT r.id, r.name FROM model_has_roles m JOIN roles r ON r.id = m.role_id WHERE m.model_id = ? ORDER BY r.id`,
+      [row.id],
+    ).catch(() => []);
+    const presented = await presentRow("users", row);
+    return { ...presented, roles };
+  }
+
+  router.get("/admin/staff", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const { page: pageNo, perPage, offset } = pageArgs(req);
+      const role = req.query.role ? String(req.query.role) : "";
+      const term = req.query.search || req.query.q;
+      const allowedRoles = role && STAFF_ROLE_NAMES.includes(role) ? [role] : STAFF_ROLE_NAMES;
+      const rolePlaceholders = allowedRoles.map(() => "?").join(", ");
+      const filters = [
+        `EXISTS (SELECT 1 FROM model_has_roles m JOIN roles r ON r.id = m.role_id WHERE m.model_id = users.id AND r.name IN (${rolePlaceholders}))`,
+      ];
+      const params = [...allowedRoles];
+      if (await hasColumn("users", "deleted_at")) filters.push("users.deleted_at IS NULL");
+      if (term) {
+        filters.push("(users.name LIKE ? ESCAPE '\\\\' OR users.email LIKE ? ESCAPE '\\\\' OR users.phone LIKE ? ESCAPE '\\\\')");
+        const like = likeContains(term);
+        params.push(like, like, like);
+      }
+      const where = `WHERE ${filters.join(" AND ")}`;
+      const totalRow = await one(`SELECT COUNT(DISTINCT users.id) AS total FROM users ${where}`, params).catch(() => ({ total: 0 }));
+      const rows = await q(`SELECT users.* FROM users ${where} ORDER BY users.id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]);
+      const data = await Promise.all(rows.map(shapeStaffMember));
+      res.json(paginateList({
+        data,
+        total: Number(totalRow?.total || 0),
+        page: pageNo,
+        perPage,
+        path: publicPagePath(req),
+      }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/staff", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const role = String(req.body?.role || "").trim();
+      if (!STAFF_ROLE_NAMES.includes(role)) {
+        return res.status(422).json({ message: "Choose a valid staff role (moderator, finance, or help_desk)." });
+      }
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      const name = String(req.body?.name || "").trim();
+      const password = String(req.body?.password || "");
+      if (!name || !email) return res.status(422).json({ message: "Name and email are required." });
+      if (password.length < 8) return res.status(422).json({ message: "Password must be at least 8 characters." });
+      let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]);
+      let created = false;
+      if (!user) {
+        const known = await knownWrite("users", {
+          name,
+          email,
+          phone: req.body?.phone || null,
+          country_code: req.body?.country_code || null,
+          password: await hashPassword(password),
+          status: "active",
+          active_role: role,
+          is_verified: 1,
+        });
+        const id = await insert("users", known.payload);
+        user = await one("SELECT * FROM users WHERE id = ?", [id]);
+        created = true;
+      } else {
+        const known = await knownWrite("users", {
+          name,
+          phone: req.body?.phone || user.phone,
+          password: await hashPassword(password),
+          status: "active",
+          active_role: role,
+        });
+        if (Object.keys(known.payload).length) await update("users", user.id, known.payload);
+      }
+      await ensureRole(user.id, role);
+      const shaped = await shapeStaffMember(await one("SELECT * FROM users WHERE id = ?", [user.id]));
+      res.status(created ? 201 : 200).json({ message: "Staff member saved.", user: shaped });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/staff/:id/role", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const role = String(req.body?.role || "").trim();
+      if (!STAFF_ROLE_NAMES.includes(role)) {
+        return res.status(422).json({ message: "Choose a valid staff role." });
+      }
+      const target = await one("SELECT * FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "Staff member not found." });
+      const staffRoleRows = await q(
+        `SELECT id FROM roles WHERE name IN (${STAFF_ROLE_NAMES.map(() => "?").join(", ")})`,
+        STAFF_ROLE_NAMES,
+      ).catch(() => []);
+      if (staffRoleRows.length) {
+        await pool.query(
+          `DELETE FROM model_has_roles WHERE model_id = ? AND role_id IN (${staffRoleRows.map(() => "?").join(", ")})`,
+          [target.id, ...staffRoleRows.map((r) => r.id)],
+        ).catch(() => null);
+      }
+      await ensureRole(target.id, role);
+      await setActiveRole(target.id, role);
+      const shaped = await shapeStaffMember(await one("SELECT * FROM users WHERE id = ?", [target.id]));
+      res.json({ message: "Staff role updated.", user: shaped });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/staff/:id/password", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const target = await one("SELECT id FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "Staff member not found." });
+      const password = String(req.body?.password || "");
+      if (password.length < 8) return res.status(422).json({ message: "Password must be at least 8 characters." });
+      if (req.body?.password_confirmation != null && password !== String(req.body.password_confirmation)) {
+        return res.status(422).json({ message: "Password confirmation does not match." });
+      }
+      await update("users", target.id, { password: await hashPassword(password) });
+      if (await tableExists("personal_access_tokens")) {
+        await pool.query("DELETE FROM personal_access_tokens WHERE tokenable_id = ?", [target.id]).catch(() => null);
+      }
+      res.json({ message: "Staff password updated." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/staff/:id/suspend", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const target = await one("SELECT id FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "Staff member not found." });
+      if (await hasColumn("users", "status")) await update("users", target.id, { status: "suspended" });
+      if (await tableExists("personal_access_tokens")) {
+        await pool.query("DELETE FROM personal_access_tokens WHERE tokenable_id = ?", [target.id]).catch(() => null);
+      }
+      res.json({ message: "Staff member suspended." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/staff/:id/activate", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const target = await one("SELECT id FROM users WHERE id = ?", [req.params.id]);
+      if (!target) return res.status(404).json({ message: "Staff member not found." });
+      if (await hasColumn("users", "status")) await update("users", target.id, { status: "active" });
+      res.json({ message: "Staff member activated." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete("/admin/staff/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const retired = await retireUser(Number(req.params.id));
+      if (!retired) return res.status(404).json({ message: "Staff member not found." });
+      res.json({ message: "Staff member removed." });
     } catch (error) {
       next(error);
     }
@@ -3971,12 +4324,29 @@ export function appRoutes(router) {
     try {
       const { doctorId } = await currentDoctor(req);
       const table = await firstExistingTable(["instant_consultation_requests", "instant_consultations"]);
-      if (!table || !(await hasColumn(table, "doctor_id"))) return res.json({ data: null });
+      if (!table || !(await hasColumn(table, "doctor_id"))) return res.json({ has_live_session: false, data: null });
       const row = await one(
         `SELECT * FROM \`${table}\` WHERE doctor_id = ? AND status IN ('in_progress','accepted') ORDER BY id DESC LIMIT 1`,
         [doctorId],
       ).catch(() => null);
-      res.json(row ? await presentRow(table, row) : { data: null });
+      if (!row) return res.json({ has_live_session: false, data: null });
+      const presented = await presentRow(table, row);
+      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+      const roomUrl = row.daily_room_url || row.room_url || `/consultation/${roomName}`;
+      const doctorToken = instantDoctorToken(row, roomName);
+      const payload = {
+        ...presented,
+        has_live_session: true,
+        consultation_id: row.id,
+        instant_consultation_request_id: row.id,
+        room_name: roomName,
+        daily_room_name: roomName,
+        room_url: roomUrl,
+        token: doctorToken,
+        doctor_token: doctorToken,
+        daily_doctor_token: doctorToken,
+      };
+      res.json({ ...payload, data: payload });
     } catch (error) {
       next(error);
     }
@@ -4322,6 +4692,64 @@ export function appRoutes(router) {
     return patch;
   }
 
+  router.post("/admin/manageusers/:profiles/create-user", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const key = MANAGED_PROFILES[req.params.profiles];
+      if (!key) return next();
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      const name = String(req.body?.name || "").trim();
+      const phone = String(req.body?.phone || "").trim();
+      const password = String(req.body?.password || "");
+      if (!name || !email) return res.status(422).json({ message: "Name and email are required." });
+      if (!clientMayClaimEmail(email)) return res.status(422).json({ message: "Choose a different email address." });
+
+      let user = await one("SELECT * FROM users WHERE email = ? LIMIT 1", [email]);
+      let created = false;
+      if (!user) {
+        if (password.length < 8) return res.status(422).json({ message: "Password must be at least 8 characters." });
+        const known = await knownWrite("users", {
+          name,
+          email,
+          phone: phone || null,
+          country_code: req.body?.country_code || "+250",
+          gender: req.body?.gender || null,
+          password: await hashPassword(password),
+          status: "active",
+          active_role: key,
+          is_verified: 1,
+        });
+        const id = await insert("users", known.payload);
+        user = await one("SELECT * FROM users WHERE id = ?", [id]);
+        created = true;
+      } else {
+        const patch = {
+          name: name || user.name,
+          phone: phone || user.phone,
+          ...(req.body?.country_code ? { country_code: req.body.country_code } : {}),
+          ...(req.body?.gender ? { gender: req.body.gender } : {}),
+        };
+        if (password.length >= 8) patch.password = await hashPassword(password);
+        const known = await knownWrite("users", patch);
+        if (Object.keys(known.payload).length) await update("users", user.id, known.payload);
+        user = await one("SELECT * FROM users WHERE id = ?", [user.id]);
+      }
+      await ensureRole(user.id, key);
+      await createProfile({ ...user, ...req.body, id: user.id }, key);
+      res.status(created ? 201 : 200).json({
+        message: created ? "Account created." : "Account updated.",
+        role: key,
+        user: {
+          id: user.id,
+          name: user.name || name,
+          email: user.email || email,
+          phone: user.phone || phone,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/admin/manageusers/:profiles/:userId/get-profile", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
     try {
       const key = MANAGED_PROFILES[req.params.profiles];
@@ -4404,6 +4832,109 @@ export function appRoutes(router) {
       const found = await managedProfile(req.params.userId, "patients");
       if (!found) return res.status(404).json({ message: "User not found." });
       res.json({ insurance: found.merged.insurance ?? null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/manageusers/patients/:userId/medical", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const found = await managedProfile(req.params.userId, "patients");
+      if (!found) return res.status(404).json({ message: "User not found." });
+      let patientId = found.profile?.id;
+      if (!patientId) {
+        const created = await ensurePatientRow(found.user);
+        patientId = created?.id || null;
+      }
+      const medTable = (await tableExists("patient_medical_infos"))
+        ? "patient_medical_infos"
+        : (await tableExists("medical_infos"))
+          ? "medical_infos"
+          : null;
+      let medical = null;
+      if (medTable && patientId) {
+        const existing = await one(`SELECT id FROM \`${medTable}\` WHERE patient_id = ? ORDER BY id DESC LIMIT 1`, [patientId]).catch(() => null);
+        const known = await knownWrite(medTable, { ...(req.body || {}), patient_id: patientId });
+        if (existing && Object.keys(known.payload).length) {
+          await update(medTable, existing.id, known.payload);
+        } else if (Object.keys(known.payload).length) {
+          await insert(medTable, known.payload);
+        }
+        medical = await one(`SELECT * FROM \`${medTable}\` WHERE patient_id = ? ORDER BY id DESC LIMIT 1`, [patientId]).catch(() => null);
+      }
+      if (patientId) {
+        const knownPatient = await knownWrite("patients", req.body || {});
+        if (Object.keys(knownPatient.payload).length) await update("patients", patientId, knownPatient.payload);
+      }
+      res.json({
+        message: "Medical info saved.",
+        medical_info: medical || { id: patientId || 0, patient_id: patientId || 0, ...(req.body || {}) },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/manageusers/patients/:userId/insurance", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const found = await managedProfile(req.params.userId, "patients");
+      if (!found) return res.status(404).json({ message: "User not found." });
+      let patientId = found.profile?.id;
+      if (!patientId) {
+        const created = await ensurePatientRow(found.user);
+        patientId = created?.id || null;
+      }
+      if (patientId) {
+        const known = await knownWrite("patients", {
+          insurance_id: req.body?.insurance_id,
+          insurance_number: req.body?.insurance_number,
+        });
+        if (Object.keys(known.payload).length) await update("patients", patientId, known.payload);
+      }
+      const ins = req.body?.insurance_id && await tableExists("insurances")
+        ? await one("SELECT * FROM insurances WHERE id = ? LIMIT 1", [req.body.insurance_id]).catch(() => null)
+        : null;
+      res.json({
+        message: "Insurance updated.",
+        insurance: ins || {
+          id: Number(req.body?.insurance_id || 0),
+          name: "",
+          code: String(req.body?.insurance_number || ""),
+          coverage_percentage: 0,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/manageusers/:profiles/:userId/:mediaField", requireAuth, requireRole("admin", "moderator"), licenseUpload.any(), async (req, res, next) => {
+    try {
+      const key = MANAGED_PROFILES[req.params.profiles];
+      const table = req.params.profiles;
+      const field = req.params.mediaField;
+      if (!key || !["avatar", "logo", "image", "gallery"].includes(field)) return next();
+      const found = await managedProfile(req.params.userId, table);
+      if (!found) return res.status(404).json({ message: "User not found." });
+      const files = req.files || [];
+      if (!files.length) return res.status(422).json({ message: "Choose a file to upload." });
+      if (field === "gallery") {
+        const uploaded = files.map((file, idx) => ({
+          id: Date.now() + idx,
+          url: saveUploadedFile(file, `${key}_gallery_${found.user.id}_${idx}`),
+          caption: req.body?.[`captions[${idx}]`] || undefined,
+        }));
+        return res.json({ message: "Gallery uploaded.", images: uploaded });
+      }
+      const url = saveUploadedFile(files[0], `${key}_${field}_${found.user.id}`);
+      if (field === "avatar" && await hasColumn("users", "avatar")) {
+        await update("users", found.user.id, { avatar: url });
+      }
+      if (found.profile?.id) {
+        const targetCol = (await hasColumn(table, field)) ? field : ((await hasColumn(table, "image")) ? "image" : null);
+        if (targetCol) await update(table, found.profile.id, { [targetCol]: url });
+      }
+      res.json({ message: "Uploaded.", [field]: url, avatar: url, logo: url, image: url, url });
     } catch (error) {
       next(error);
     }

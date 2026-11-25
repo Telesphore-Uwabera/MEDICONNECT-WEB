@@ -845,5 +845,61 @@ export async function remindUpcomingVisits() {
   }
 }
 
+export async function notifyUnconductedInstantVisit(row) {
+  if (!row?.id || reminded.has(`instant-missed-${row.id}`)) return;
+  reminded.add(`instant-missed-${row.id}`);
+  const doctor = await doctorContact(row?.doctor_id);
+  const patient = await patientNotice(row);
+  if (!patient.email && !patient.userId) return;
+
+  const subject = pick(patient.lang, {
+    en: `Instant consultation #${row.id} did not take place within 1 hour`,
+    fr: `La consultation instantanée n° ${row.id} n'a pas eu lieu dans l'heure`,
+    rw: `Konsultasiyo y'ako kanya #${row.id} ntiyabaye mu isaha imwe`,
+  });
+  const text = pick(patient.lang, {
+    en: `We're sorry — your instant consultation #${row.id}${doctor?.name ? ` with Dr. ${doctor.name}` : ""} was not conducted within 1 hour. We have closed this request so you are not kept waiting. You can choose another available doctor or request a refund from your MediConnect dashboard.`,
+    fr: `Nous sommes désolés — votre consultation instantanée n° ${row.id}${doctor?.name ? ` avec Dr. ${doctor.name}` : ""} n'a pas eu lieu dans l'heure. Nous avons clôturé cette demande afin que vous n'attendiez plus. Vous pouvez choisir un autre médecin disponible ou demander un remboursement depuis votre tableau de bord MediConnect.`,
+    rw: `Mutwihanganire — konsultasiyo yanyu y'ako kanya #${row.id}${doctor?.name ? ` na Dr. ${doctor.name}` : ""} ntiyakozwe mu isaha 1. Twahagaritse ubu busabe kugira ngo mudakomeza gutegereza. Mushobora guhitamo undi muganga uremye cyangwa mugasaba gusubizwa amafaranga kuri MediConnect.`,
+  });
+  const html = buildEmailHtml({
+    lang: patient.lang,
+    title: pick(patient.lang, {
+      en: "Instant consultation did not take place",
+      fr: "La consultation n'a pas eu lieu",
+      rw: "Konsultasiyo ntiyabaye",
+    }),
+    preheader: text,
+    accentHex: "#d97706",
+    body: `
+      ${emailP(greeting(patient.name, patient.lang))}
+      ${emailHtml(pick(patient.lang, {
+        en: `Your instant consultation <strong>#${row.id}</strong>${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} was not conducted within <strong>1 hour</strong>.`,
+        fr: `Votre consultation instantanée <strong>n° ${row.id}</strong>${doctor?.name ? ` avec <strong>Dr. ${doctor.name}</strong>` : ""} n'a pas eu lieu dans un délai d'<strong>1 heure</strong>.`,
+        rw: `Konsultasiyo yanyu y'ako kanya <strong>#${row.id}</strong>${doctor?.name ? ` na <strong>Dr. ${doctor.name}</strong>` : ""} ntiyakozwe mu gihe cy'<strong>isaha 1</strong>.`,
+      }))}
+      ${emailP(pick(patient.lang, {
+        en: "We have automatically closed the session so you are no longer kept waiting. If you already paid, a refund request has been logged for you, or you can connect with another available doctor right away.",
+        fr: "Nous avons clôturé la session automatiquement. Si vous avez déjà payé, une demande de remboursement a été enregistrée, ou vous pouvez consulter un autre médecin disponible immédiatement.",
+        rw: "Twahagaritse iyi nama mu buryo bwikora. Niba mwari mwishyuye, ubusabe bwo gusubizwa amafaranga bwanditswe, cyangwa mushobora kuvugana n'undi muganga uremye ako kanya.",
+      }))}
+      ${emailBtn(
+        pick(patient.lang, { en: "Find Another Doctor", fr: "Trouver un autre médecin", rw: "Shaka undi muganga" }),
+        "https://mediconnect.rw/patient/search-doctors",
+        "#0BA59B",
+      )}
+    `,
+  });
+
+  await deliver({
+    userId: patient.userId,
+    email: patient.email,
+    subject,
+    text,
+    html,
+    type: "visit.expired",
+  });
+}
+
 export { autoDisableInstantOutsideSchedule, doctorOnInstantSchedule } from "./doctor-schedule.js";
 

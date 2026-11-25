@@ -83,7 +83,14 @@ export function InstantPaidAlertListener() {
   const speechTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const paidRequests = useMemo(
-    () => (instantData?.queue ?? []).filter((item) => item.payment_status === "paid" || item.status === "confirmed"),
+    () =>
+      (instantData?.queue ?? []).filter((item) => {
+        const status = String(item.status || "").toLowerCase();
+        const isWaiting = ["confirmed", "pending", "queued", "waiting"].includes(status);
+        const isPaid = item.payment_status === "paid" || status === "confirmed";
+        const isFresh = (item.age_seconds ?? item.waiting_seconds ?? 0) < 3600;
+        return isWaiting && isPaid && isFresh;
+      }),
     [instantData?.queue],
   );
 

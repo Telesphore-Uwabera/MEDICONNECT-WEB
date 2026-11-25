@@ -200,8 +200,20 @@ export async function hashPassword(plain) {
 }
 
 export async function findUserByLogin(body) {
-  if (body.email) return one("SELECT * FROM users WHERE email = ? LIMIT 1", [String(body.email).trim()]);
-  if (body.phone) return one("SELECT * FROM users WHERE phone = ? LIMIT 1", [String(body.phone).trim()]);
+  if (body?.email) return one("SELECT * FROM users WHERE email = ? LIMIT 1", [String(body.email).trim()]);
+  if (body?.phone) {
+    const raw = String(body.phone).trim();
+    const digits = raw.replace(/\D/g, "");
+    const normalized = normalizeStoredPhone(raw, body.country_code).phone;
+    const withoutZero = digits.startsWith("0") ? digits.slice(1) : digits;
+    const withZero = withoutZero ? `0${withoutZero}` : raw;
+    const cc = String(body.country_code || "+250").trim();
+    const withCc = withoutZero ? `${cc}${withoutZero}` : null;
+    const candidates = [...new Set([raw, digits, normalized, withoutZero, withZero, withCc].filter(Boolean))];
+    if (!candidates.length) return null;
+    const placeholders = candidates.map(() => "?").join(", ");
+    return one(`SELECT * FROM users WHERE phone IN (${placeholders}) ORDER BY id ASC LIMIT 1`, candidates);
+  }
   return null;
 }
 

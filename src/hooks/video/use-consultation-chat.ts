@@ -42,6 +42,24 @@ export interface ChatMessage {
 
 export type ChatMode = "instant" | "appointment";
 
+function readGuestChatHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    for (const key of ["instant_consult_session", "mediconnect_instant_session"]) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      const token = parsed?.token || parsed?.guest_token || parsed?.consultationToken;
+      if (typeof token === "string" && token.trim()) {
+        return { "X-Guest-Token": token.trim() };
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return {};
+}
+
 export function useConsultationChat(
   consultationId: number | null,
   isOwner?: boolean,
@@ -100,7 +118,9 @@ export function useConsultationChat(
     setLoading(true);
 
     const load = (first: boolean) => {
-      apiFetch<GetMessagesResponse>(chatBase)
+      apiFetch<GetMessagesResponse>(chatBase, {
+        headers: readGuestChatHeaders(),
+      })
         .then((res) => {
           if (cancelled) return;
           const mapped = (res.messages?.data ?? []).map(toUiMessage);
@@ -198,6 +218,7 @@ export function useConsultationChat(
             method: "POST",
             headers: {
               "X-Socket-ID": echo.socketId() || "",
+              ...readGuestChatHeaders(),
             },
             body: {
               message: text.trim(),
@@ -234,6 +255,7 @@ export function useConsultationChat(
     try {
       await apiFetch(`${chatBase}/read`, {
         method: "POST",
+        headers: readGuestChatHeaders(),
       });
     } catch (err) {
       console.error("[Chat] Failed to mark as read:", err);
