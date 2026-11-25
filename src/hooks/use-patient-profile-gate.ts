@@ -1,7 +1,7 @@
 import { useGetProfile } from "@/hooks/use-patient-profile";
 import { useMe } from "@/hooks/useAuth";
 import { getAuthToken } from "@/lib/auth-session";
-import { isPatientRecordComplete, isServerGuestAccount } from "@/lib/patient-profile-complete";
+import { isPatientRecordComplete, isServerGuestAccount, appointmentProfileRequired } from "@/lib/patient-profile-complete";
 
 /** True while a signed-in patient still has to finish the profile form. */
 export function usePatientProfileLocked() {
@@ -11,13 +11,15 @@ export function usePatientProfileLocked() {
   const role = user?.active_role ?? user?.role;
   const isPatient = hasToken && role === "patient";
   const flag = user?.profile_complete;
-  const needsLookup = isPatient && me.isFetched && !me.isLoading && flag == null;
+  const needsLookup =
+    isPatient && me.isFetched && !me.isLoading &&
+    (flag == null || appointmentProfileRequired());
   const profile = useGetProfile(needsLookup);
 
   if (!isPatient) return { locked: false, pending: false };
   if (me.isLoading || !me.isFetched) return { locked: false, pending: true };
   if (isServerGuestAccount(user?.email)) return { locked: false, pending: false };
-  if (flag === true) return { locked: false, pending: false };
+  if (flag === true && !appointmentProfileRequired()) return { locked: false, pending: false };
   if (flag === false) return { locked: true, pending: false };
   if (!profile.isFetched) return { locked: false, pending: true };
   if (profile.isError) {

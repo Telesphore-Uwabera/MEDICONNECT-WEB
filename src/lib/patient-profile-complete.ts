@@ -3,12 +3,26 @@ export function isServerGuestAccount(email: string | null | undefined) {
   return /^guest-\d+@mediconnect\.local$/i.test(String(email || "").trim());
 }
 
+const APPOINTMENT_PROFILE_FLAG = "appointment_profile_required";
+
+/** Set after a guest books and pays for a scheduled appointment. */
+export function requireAppointmentProfile() {
+  try { localStorage.setItem(APPOINTMENT_PROFILE_FLAG, "1"); } catch { /* ignore */ }
+}
+
+export function clearAppointmentProfileRequirement() {
+  try { localStorage.removeItem(APPOINTMENT_PROFILE_FLAG); } catch { /* ignore */ }
+}
+
+export function appointmentProfileRequired() {
+  try { return localStorage.getItem(APPOINTMENT_PROFILE_FLAG) === "1"; } catch { return false; }
+}
+
 /** Fields the patient profile form treats as required before the account can be used. */
 export const REQUIRED_PROFILE_FIELDS = [
   "date_of_birth",
   "gender",
   "national_id",
-  "blood_type",
   "address",
   "city",
   "province",

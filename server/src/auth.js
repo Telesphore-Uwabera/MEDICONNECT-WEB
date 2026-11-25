@@ -35,7 +35,6 @@ const REQUIRED_PATIENT_FIELDS = [
   "date_of_birth",
   "gender",
   "national_id",
-  "blood_type",
   "address",
   "city",
   "province",

@@ -137,14 +137,23 @@ export async function autoDisableInstantOutsideSchedule() {
   // because the clock moved outside generated appointment slots.
 }
 
+/** Turn the doctor's instant flag off (logout, joining a video meeting, etc.). */
+export async function disableInstantForDoctor(doctorId) {
+  try {
+    const { hasColumn, update } = await import("./db.js");
+    if (!doctorId || !(await hasColumn("doctors", "instant_consultation"))) return;
+    await update("doctors", doctorId, { instant_consultation: 0 });
+  } catch (error) {
+    console.error("[instant] could not disable instant consultations", error?.message || error);
+  }
+}
+
 /** Last explicit logout turns the doctor's instant flag off. Login and password change do not. */
 export async function disableInstantOnLogout(userId) {
   try {
     const { loadOwnedId } = await import("./auth.js");
-    const { hasColumn, update } = await import("./db.js");
     const doctorId = await loadOwnedId(userId, "doctors");
-    if (!doctorId || !(await hasColumn("doctors", "instant_consultation"))) return;
-    await update("doctors", doctorId, { instant_consultation: 0 });
+    await disableInstantForDoctor(doctorId);
   } catch (error) {
     console.error("[logout] could not turn off instant consultations", error?.message || error);
   }

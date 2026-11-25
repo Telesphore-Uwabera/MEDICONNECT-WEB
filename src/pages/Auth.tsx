@@ -93,7 +93,7 @@ const { data: publicSettings } = usePublicSettings();
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="
-            w-full max-w-6xl rounded-[6px] overflow-hidden
+            w-full max-w-[1400px] rounded-[6px] overflow-hidden
             bg-card ring-1 ring-border
             flex flex-col
             lg:grid lg:grid-cols-[minmax(280px,48%)_1fr]

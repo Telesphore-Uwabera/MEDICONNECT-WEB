@@ -601,7 +601,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
                     {group.items.map((item) => {
                       const Icon = item.icon;
                       const active = isActive(item.to);
-                      const itemLocked = profileLocked && item.to !== "/patient/profile";
+                      const itemLocked = false;
                       const itemClass = cn(
                         "group relative flex w-full items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-all duration-150",
                         itemLocked
@@ -736,15 +736,15 @@ export const DashboardLayout = ({ role, children }: Props) => {
           aria-label={sidebarOpen ? t("sidebar.hideSidebar") : t("sidebar.showSidebar")}
           title={sidebarOpen ? t("sidebar.hideSidebar") : t("sidebar.showSidebar")}
           className={cn(
-            "hidden lg:flex fixed top-0 left-0 z-[99] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
-            sidebarOpen ? "left-[202px]" : "left-0",
+            "hidden lg:flex fixed top-3 z-[60] h-8 w-8 items-center justify-center rounded-md border border-sidebar-border bg-sidebar/90 backdrop-blur-sm shadow-sm hover:bg-sidebar-accent text-primary transition-all duration-200",
+            sidebarOpen ? "left-[200px]" : "left-2",
           )}
         >
           {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
         </button>
 
-        <div className="sticky top-0 z-30 border-b border-border bg-card lg:hidden">
-          <div className="page-shell flex items-center gap-3 py-3">
+        <div className="border-b border-border bg-card lg:hidden">
+          <div className="page-shell flex items-center gap-3 py-2.5">
           <button
             className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             onClick={() => setMobileOpen(true)}
@@ -755,7 +755,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
             <img
               src={logo}
               alt="MEDICONNECT"
-              className="h-12 w-auto rounded-[6px]"
+              className="h-10 w-auto rounded-[6px]"
             />
 
           </NavLink>
@@ -767,7 +767,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex flex-1 min-h-0 min-w-0 flex-col overflow-x-hidden"
+          className="flex flex-1 min-h-0 min-w-0 flex-col overflow-x-hidden pb-24 sm:pb-12"
         >
           <RoleApprovalGate role={role}>{children}</RoleApprovalGate>
         </motion.main>

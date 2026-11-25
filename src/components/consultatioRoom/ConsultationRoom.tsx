@@ -126,6 +126,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<ReturnType<typeof echo.channel> | null>(null);
+  const lastOfferAtRef = useRef<number>(0);
   const makingOffer = useRef(false);
   const candidateQueue = useRef<RTCIceCandidateInit[]>([]);
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,7 +180,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const [chatOpen, setChatOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(() => {
     if (typeof window === "undefined") return false;
-    return new URLSearchParams(window.location.search).get("notes") === "1";
+    if (new URLSearchParams(window.location.search).get("notes") === "1") return true;
+    return isOwner && window.innerWidth >= 640;
   });
   const [proofsOpen, setProofsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -724,6 +726,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     try {
       makingOffer.current = true;
+      lastOfferAtRef.current = Date.now();
       const offer = await pc.createOffer(iceRestart ? { iceRestart: true } : undefined);
       offer.sdp = optimizeAudioSDP(offer.sdp);
 
@@ -850,9 +853,19 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           pc.connectionState === "connected" &&
           Boolean(remoteStreamRef.current?.getTracks().some((track) => track.readyState === "live"));
         if (live) return;
-        // Doctor may already be sitting on a stale local offer from waiting.
+        // If we are currently checking/connecting or just sent an offer within the last 8s,
+        // do not tear down the in-flight PeerConnection — let the offer/answer/ICE handshake finish!
+        const offerAge = Date.now() - lastOfferAtRef.current;
+        if (
+          pc.connectionState === "connecting" ||
+          pc.iceConnectionState === "checking" ||
+          ((pc.signalingState === "have-local-offer" || pc.remoteDescription) && offerAge < 8000)
+        ) {
+          return;
+        }
+        // Doctor may already be sitting on a stale local offer from waiting (>8s old).
         // Recreate the PC so the joining patient's ready can start a clean offer.
-        if (pc.connectionState === "connecting" || pc.signalingState !== "stable" || pc.remoteDescription) {
+        if (pc.signalingState !== "stable" || pc.remoteDescription) {
           pc.close();
           candidateQueue.current = [];
           pc = createPeerConnection();
@@ -862,6 +875,19 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       else if (payload.type === "offer") {
         const offerCollision = makingOffer.current || pc.signalingState !== "stable";
         if (offerCollision && isOwner) return;
+
+        // If the patient already answered an earlier offer and is still connecting/checking,
+        // or if the doctor sent a fresh offer to replace a stale one, reset the patient's PC
+        // cleanly before applying the new remote offer.
+        if (!isOwner && (pc.signalingState !== "stable" || pc.remoteDescription)) {
+          const live =
+            pc.connectionState === "connected" &&
+            Boolean(remoteStreamRef.current?.getTracks().some((track) => track.readyState === "live"));
+          if (live) return;
+          pc.close();
+          candidateQueue.current = [];
+          pc = createPeerConnection();
+        }
 
         const rawData = payload.data as RTCSessionDescriptionInit;
         if (rawData.sdp) rawData.sdp = sanitizeSDP(rawData.sdp);
@@ -1056,14 +1082,18 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           if (cancelled) return;
           const pc = pcRef.current;
           const st = pc?.connectionState;
-          // Resend `ready` when there's no usable connection. Includes
-          // `disconnected`, but only after a grace window so a self-healing
-          // ICE blip doesn't trigger an unnecessary full renegotiation.
+          const iceSt = pc?.iceConnectionState;
+          // Resend `ready` when there's no usable connection and no offer has been received yet.
+          // Never resend `ready` while we already have a remote description and ICE is checking/connecting,
+          // otherwise the doctor would reset the connection mid-handshake.
+          const negotiating = Boolean(pc?.remoteDescription) && (st === "connecting" || iceSt === "checking");
           const needsReady =
-            !pc ||
-            ["new", "failed", "closed"].includes(st as string) ||
-            (st === "disconnected" &&
-              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+            !negotiating && (
+              !pc ||
+              ["new", "failed", "closed"].includes(st as string) ||
+              (st === "disconnected" &&
+                Date.now() - (disconnectedSinceRef.current ?? 0) > 4000)
+            );
 
           if (needsReady) sendSignalRef.current?.("ready");
           setTimeout(sendReadyLoop, 3000);

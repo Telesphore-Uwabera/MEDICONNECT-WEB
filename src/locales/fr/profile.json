@@ -2,8 +2,8 @@
   "field": {
     "dob": "Date de naissance",
     "gender": "Genre",
-    "national_id": "Carte d'identité nationale",
-    "blood_type": "Groupe sanguin",
+    "national_id": "Passeport / Carte d'identité / Laissez-passer / Permis de conduire",
+    "blood_type": "Groupe sanguin (facultatif)",
     "address": "Adresse",
     "city": "Ville",
     "province": "Province",

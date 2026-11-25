@@ -262,8 +262,8 @@
     "field": {
       "date_of_birth": "Date of birth",
       "gender": "Gender",
-      "national_id": "National ID",
-      "blood_type": "Blood type",
+      "national_id": "Passport / ID / Laissez-Passer / Driving License",
+      "blood_type": "Blood type (optional)",
       "address": "Address",
       "city": "City",
       "province": "Province",

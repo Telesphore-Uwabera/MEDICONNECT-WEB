@@ -16,7 +16,7 @@ import {
 } from "./doctor-review.js";
 import { callToken } from "./call-token.js";
 import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
-import { disableInstantOnLogout } from "./doctor-schedule.js";
+import { disableInstantForDoctor, disableInstantOnLogout } from "./doctor-schedule.js";
 import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { nameVisitRows } from "./visit-rows.js";
 import { registerCareOrderRoutes } from "./care-orders.js";
@@ -496,6 +496,13 @@ const PATIENT_PROFILE_WRITE_OK = [
   "/patient/insurance",
   "/notifications",
   "/broadcasting/auth",
+  "/public/instant-consultations",
+  "/public/payments",
+  "/public/consultations",
+  "/patient/instant-consultations",
+  "/patient/quick",
+  "/patient/telemedicine-consent",
+  "/chat",
 ];
 
 export function appRoutes(router) {
@@ -2350,6 +2357,16 @@ export function appRoutes(router) {
     return null;
   }
 
+  /** A doctor already inside a live appointment cannot take an instant consult. */
+  async function doctorInActiveAppointment(doctorId) {
+    if (!doctorId || !(await tableExists("appointments")) || !(await hasColumn("appointments", "doctor_id"))) return false;
+    const row = await one(
+      "SELECT id FROM appointments WHERE doctor_id = ? AND LOWER(COALESCE(status,'')) = 'in_progress' ORDER BY id DESC LIMIT 1",
+      [doctorId],
+    ).catch(() => null);
+    return Boolean(row?.id);
+  }
+
   async function doctorActiveInstant(doctorId, exceptId = null) {
     const table = await instantTable();
     if (!table || !(await hasColumn(table, "doctor_id"))) return null;
@@ -2518,6 +2535,11 @@ export function appRoutes(router) {
       if (!isPaidStatus(row)) {
         return res.status(422).json({ message: "This consultation is not paid yet. The patient must complete payment before you can accept it." });
       }
+      if (await doctorInActiveAppointment(doctorId)) {
+        return res.status(409).json({
+          message: "Finish your current video consultation before accepting an instant consultation.",
+        });
+      }
       const busy = await doctorActiveInstant(doctorId, row.id);
       if (busy) {
         return res.status(409).json({
@@ -2603,6 +2625,8 @@ export function appRoutes(router) {
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       const roomUrl = row.daily_room_url || row.room_url || `/consultation/${roomName}`;
       const doctorToken = instantDoctorToken(row, roomName);
+      // Entering a call turns instant availability off until the doctor turns it back on.
+      await disableInstantForDoctor(doctorId);
       const patch = { status: "in_progress" };
       if (await hasColumn(table, "doctor_id")) patch.doctor_id = doctorId;
       if (await hasColumn(table, "started_at") && !row.started_at) patch.started_at = new Date();
@@ -2765,6 +2789,8 @@ export function appRoutes(router) {
         consultationId: appointment.id,
         name: "Doctor",
       });
+      // The doctor is now in a live video meeting: stop accepting instant consults.
+      await disableInstantForDoctor(doctorId);
       if (await hasColumn("appointments", "status") && !["in_progress", "completed", "done"].includes(String(appointment.status || "").toLowerCase())) {
         const started = { status: "in_progress" };
         if (await hasColumn("appointments", "started_at") && !appointment.started_at) started.started_at = new Date();
@@ -2813,7 +2839,11 @@ export function appRoutes(router) {
     }
   });
 
-  router.get("/patient/instant-consultations/ready", requireAuth, async (req, res, next) => {
+  router.get([
+    "/patient/instant-consultations/ready",
+    "/patient/instant-consultations/active-session",
+    "/patient/instant-consultations/active-session/live",
+  ], requireAuth, async (req, res, next) => {
     try {
       const table = await instantTable();
       if (!table) return res.json({ data: null });
@@ -3742,6 +3772,183 @@ export function appRoutes(router) {
     }
   });
 
+  // ── Admin doctor pricing & availability (dedicated routes) ─────────────────
+  // The generic table routes cannot express these shapes, so they live here
+  // ahead of the catch-all /:scope/:resource/:id handlers.
+  const adminPricingRole = requireRole("admin", "moderator", "finance");
+
+  async function feeRecord(doctorId) {
+    const doctor = await one("SELECT * FROM doctors WHERE id = ? LIMIT 1", [doctorId]).catch(() => null);
+    if (!doctor) return null;
+    const feeId = doctor.specialization_fee_id;
+    const fee = feeId && await tableExists("specialization_fees")
+      ? await one("SELECT * FROM specialization_fees WHERE id = ? LIMIT 1", [feeId]).catch(() => null)
+      : null;
+    const hasInPerson = await hasColumn("doctors", "in_person_fee");
+    const onlineOverride = Number(doctor.consultation_fee) > 0 ? Number(doctor.consultation_fee) : null;
+    const inPersonOverride = hasInPerson && Number(doctor.in_person_fee) > 0 ? Number(doctor.in_person_fee) : null;
+    const baseOnline = Number(fee?.online_fee ?? 0);
+    const baseInPerson = Number(fee?.in_person_fee ?? 0);
+    return {
+      id: doctor.id,
+      doctor_id: doctor.id,
+      specialization_fee_id: feeId ?? null,
+      specialization_id: fee?.specialization_id ?? null,
+      specialization_fee: fee
+        ? { id: fee.id, online_fee: baseOnline, in_person_fee: baseInPerson, sub_specialization: fee.sub_specialization }
+        : null,
+      online_fee_override: onlineOverride,
+      in_person_fee_override: inPersonOverride,
+      resolved_online_fee: onlineOverride ?? baseOnline,
+      resolved_in_person_fee: inPersonOverride ?? baseInPerson,
+      is_active: Number(doctor.is_active ?? 1) !== 0 && String(doctor.status || "active") !== "suspended",
+    };
+  }
+
+  router.get("/admin/doctor-consultations/:doctorId", requireAuth, adminPricingRole, async (req, res, next) => {
+    try {
+      const record = await feeRecord(req.params.doctorId);
+      if (!record) return res.status(404).json({ message: "Doctor not found." });
+      res.json({ doctor_id: record.doctor_id, records: [record], consultation: record, data: record });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctor-consultations/:doctorId/fee-override", requireAuth, adminPricingRole, async (req, res, next) => {
+    try {
+      const doctorId = Number(req.params.doctorId);
+      const doctor = await one("SELECT id FROM doctors WHERE id = ? LIMIT 1", [doctorId]).catch(() => null);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      const patch = {};
+      const body = req.body || {};
+      if (body.online_fee_override !== undefined && body.online_fee_override !== null) {
+        const value = Number(body.online_fee_override);
+        if (!Number.isFinite(value) || value < 0) return res.status(422).json({ message: "Enter a valid online fee." });
+        patch.consultation_fee = value;
+      } else if (body.online_fee_override === null) {
+        patch.consultation_fee = 0; // fall back to the specialization fee tier
+      }
+      if (body.in_person_fee_override !== undefined && await hasColumn("doctors", "in_person_fee")) {
+        const value = body.in_person_fee_override == null ? 0 : Number(body.in_person_fee_override);
+        if (!Number.isFinite(value) || value < 0) return res.status(422).json({ message: "Enter a valid in-person fee." });
+        patch.in_person_fee = value;
+      }
+      if (body.override_reason !== undefined && await hasColumn("doctors", "override_reason")) {
+        patch.override_reason = body.override_reason;
+      }
+      if (Object.keys(patch).length) await update("doctors", doctorId, patch);
+      const record = await feeRecord(doctorId);
+      res.json({
+        message: "Fee override saved.",
+        record,
+        consultation: record,
+        resolved_online_fee: record.resolved_online_fee,
+        resolved_in_person_fee: record.resolved_in_person_fee,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctor-consultations/:doctorId", requireAuth, adminPricingRole, async (req, res, next) => {
+    try {
+      const doctorId = Number(req.params.doctorId);
+      const doctor = await one("SELECT id FROM doctors WHERE id = ? LIMIT 1", [doctorId]).catch(() => null);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      const patch = {};
+      if (req.body?.specialization_fee_id != null) {
+        const fee = await one("SELECT id FROM specialization_fees WHERE id = ? LIMIT 1", [req.body.specialization_fee_id]).catch(() => null);
+        if (!fee) return res.status(422).json({ message: "Choose an existing fee tier." });
+        patch.specialization_fee_id = fee.id;
+      }
+      if (req.body?.is_active !== undefined && await hasColumn("doctors", "is_active")) {
+        patch.is_active = req.body.is_active ? 1 : 0;
+      }
+      if (Object.keys(patch).length) await update("doctors", doctorId, patch);
+      const record = await feeRecord(doctorId);
+      res.json({ message: "Consultation fee tier saved.", record, consultation: record });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/instant-consultations", requireAuth, adminPricingRole, async (req, res, next) => {
+    try {
+      const doctorId = Number(req.body?.doctor_id);
+      const doctor = await one("SELECT id FROM doctors WHERE id = ? LIMIT 1", [doctorId]).catch(() => null);
+      if (!doctor) return res.status(422).json({ message: "Choose a doctor." });
+      const active = req.body?.active === true || req.body?.active === 1 || req.body?.active === "1";
+      if (await hasColumn("doctors", "instant_consultation")) {
+        await update("doctors", doctorId, { instant_consultation: active ? 1 : 0 });
+      }
+      res.json({ message: active ? "Instant consultation enabled." : "Instant consultation disabled.", data: { doctor_id: doctorId, instant_consultation: active, active } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  for (const [action, column, flag] of [
+    ["instant", "instant_consultation", "instant_consultation"],
+    ["paused", "bookings_paused", "bookings_paused"],
+  ]) {
+    router.get(`/admin/doctors/:doctorId/${action}-status`, requireAuth, adminPricingRole, async (req, res, next) => {
+      try {
+        const doctor = await one("SELECT * FROM doctors WHERE id = ? LIMIT 1", [req.params.doctorId]).catch(() => null);
+        if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+        const enabled = Boolean(Number(doctor[column] ?? 0));
+        res.json({
+          doctor_id: doctor.id,
+          [flag]: enabled,
+          status: enabled ? "active" : "inactive",
+          data: { doctor_id: doctor.id, [flag]: enabled },
+        });
+      } catch (error) {
+        next(error);
+      }
+    });
+    router.post(`/admin/doctors/:doctorId/toggle-${action}`, requireAuth, adminPricingRole, async (req, res, next) => {
+      try {
+        const doctor = await one("SELECT id FROM doctors WHERE id = ? LIMIT 1", [req.params.doctorId]).catch(() => null);
+        if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+        const current = Boolean(Number(doctor[column] ?? 0));
+        const nextValue = req.body?.active === undefined
+          ? !current
+          : (req.body.active === true || req.body.active === 1 || req.body.active === "1");
+        const targetColumn = column === "bookings_paused" && !(await hasColumn("doctors", "bookings_paused")) && await hasColumn("doctors", "pause_bookings")
+          ? "pause_bookings"
+          : column;
+        await update("doctors", doctor.id, { [targetColumn]: nextValue ? 1 : 0 });
+        res.json({ message: "Updated.", doctor_id: doctor.id, [flag]: nextValue });
+      } catch (error) {
+        next(error);
+      }
+    });
+  }
+
+  router.put("/admin/service-pricing/bulk", requireAuth, adminPricingRole, async (req, res, next) => {
+    try {
+      const prices = Array.isArray(req.body?.prices) ? req.body.prices : [];
+      if (!prices.length) return res.status(422).json({ message: "No prices were supplied." });
+      let saved = 0;
+      for (const item of prices) {
+        const id = Number(item?.id);
+        if (!id || !(await tableExists("service_pricing"))) continue;
+        const patch = {};
+        for (const key of ["price", "name", "name_en", "description", "is_paid", "currency", "is_active"]) {
+          if (item[key] !== undefined && await hasColumn("service_pricing", key)) patch[key] = item[key];
+        }
+        if (Object.keys(patch).length) {
+          await update("service_pricing", id, patch);
+          saved += 1;
+        }
+      }
+      res.json({ message: `${saved} price${saved === 1 ? "" : "s"} updated.`, updated: saved });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/:scope/profile", allowPublic, async (req, res, next) => {
     try {
       const table = PROFILE_TABLE[req.params.scope];
@@ -3781,6 +3988,7 @@ export function appRoutes(router) {
 
   router.get("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
+      if (!/^\d+$/.test(String(req.params.id || ""))) return next();
       if (req.params.resource === "profile") {
         const table = PROFILE_TABLE[req.params.scope];
         if (!table) return next();
@@ -3913,6 +4121,7 @@ export function appRoutes(router) {
 
   router.delete("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
+      if (!/^\d+$/.test(String(req.params.id || ""))) return next();
       if (isDedicatedResource(req.params.resource)) return next();
       if (!scopeRoleAllowed(req.user, req.params.scope)) {
         return res.status(403).json({ message: "You do not have access to this area." });
@@ -4355,6 +4564,7 @@ export function appRoutes(router) {
 
 async function updateResource(req, res, next) {
   try {
+    if (!/^\d+$/.test(String(req.params.id || ""))) return next();
     if (isDedicatedResource(req.params.resource)) return next();
     if (!scopeRoleAllowed(req.user, req.params.scope)) {
       return res.status(403).json({ message: "You do not have access to this area." });

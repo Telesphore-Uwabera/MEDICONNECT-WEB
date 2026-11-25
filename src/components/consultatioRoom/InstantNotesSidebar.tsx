@@ -165,7 +165,13 @@ export function InstantNotesSidebar({
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [identityOpen, setIdentityOpen] = useState(() => {
     const initial = readCallChart(consultationId, mode);
-    return !initial.identity.full_name.trim() || !initial.identity.phone.trim();
+    return (
+      !initial.identity.full_name.trim() ||
+      !initial.identity.phone.trim() ||
+      !initial.identity.national_id.trim() ||
+      !initial.identity.date_of_birth.trim() ||
+      !initial.identity.city.trim()
+    );
   });
 
   const notesExistRef = useRef(false);

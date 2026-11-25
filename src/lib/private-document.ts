@@ -62,7 +62,10 @@ export async function privateDocumentDataUrl(pathOrUrl: string): Promise<string>
   if (pathOrUrl.startsWith("data:")) return pathOrUrl;
   const blob = await fetchPrivateDocumentBlob(pathOrUrl);
   if (!blob) return "";
-  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const buffer = typeof blob.arrayBuffer === "function"
+    ? await blob.arrayBuffer()
+    : await new Response(blob).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   const type = blob.type || "application/octet-stream";

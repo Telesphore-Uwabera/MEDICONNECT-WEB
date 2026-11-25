@@ -30,6 +30,7 @@ import {
 import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
 import { useConvertGuest, useCreateGuest, useMe } from "@/hooks/useAuth";
 import { clearAuthToken, setAuthToken } from "@/lib/auth-session";
+import { requireAppointmentProfile } from "@/lib/patient-profile-complete";
 import { Input } from "@/components/ui/input";
 import { FlowSteps } from "@/components/flow/FlowSteps";
 import { GuestAccessCard } from "@/components/flow/GuestAccessCard";
@@ -558,10 +559,19 @@ export const BookingDialog = ({
                       setGuestAccess({ email, password: result.temp_password });
                       return;
                     }
+                    if (guestAccess || result?.account_created) {
+                      // A guest who paid for a scheduled appointment must complete their
+                      // profile NOW, so at appointment time they join the video call directly.
+                      requireAppointmentProfile();
+                      toast.success(t("booking.doctorAppointment.paymentSuccessful"), {
+                        description: t("booking.doctorAppointment.completeProfileNow", "Complete your profile now so you can join your video consultation without doing it at the appointment time."),
+                      });
+                      onOpenChange(false);
+                      navigate("/patient/profile?reason=appointment_payment");
+                      return;
+                    }
                     toast.success(t("booking.doctorAppointment.paymentSuccessful"), {
-                      description: result?.account_created
-                        ? t("booking.doctorAppointment.accountEmailed", "We emailed a temporary password. Sign in with it to see this appointment. Your doctor keeps these details on your account.")
-                        : t("booking.doctorAppointment.paymentSuccessfulDesc"),
+                      description: t("booking.doctorAppointment.paymentSuccessfulDesc"),
                     });
                     onOpenChange(false);
                     navigate("/patient/appointments");

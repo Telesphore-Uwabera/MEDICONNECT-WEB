@@ -116,9 +116,14 @@ const { READY_CLAIM_STALE_MS, READY_MAIL_TIMEOUT_MS } = await import("./ready-ma
 
 function clock(minutesAhead) {
   const start = new Date(Date.now() + minutesAhead * 60000);
+  const year = start.getFullYear();
+  const month = String(start.getMonth() + 1).padStart(2, "0");
+  const day = String(start.getDate()).padStart(2, "0");
+  const hours = String(start.getHours()).padStart(2, "0");
+  const minutes = String(start.getMinutes()).padStart(2, "0");
   return {
-    appointment_date: start.toISOString().slice(0, 10),
-    appointment_time: start.toISOString().slice(11, 16),
+    appointment_date: `${year}-${month}-${day}`,
+    appointment_time: `${hours}:${minutes}`,
   };
 }
 

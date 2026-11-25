@@ -294,7 +294,11 @@ const AccessPromptManager = () => {
 };
 
 const profileAllowedPath = (path: string) =>
+  path === "/" ||
   path === "/patient/profile" ||
+  path === "/patient/instant" ||
+  path.startsWith("/patient/search-") ||
+  path.startsWith("/consultation/") ||
   path.startsWith("/auth") ||
   path.startsWith("/onboarding") ||
   path === "/help" ||

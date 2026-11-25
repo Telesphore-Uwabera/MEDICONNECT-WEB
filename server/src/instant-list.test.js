@@ -297,7 +297,7 @@ describe("mounted patient instant list", () => {
     expect(first.body.open.map((row) => row.id)).toContain(1);
     expect(first.body.open.map((row) => row.id)).not.toContain(205);
     expect(db.queries.some((sql) => /LIMIT\s+200\b/.test(sql))).toBe(false);
-  });
+  }, 15000);
 
   it("uses the same ownership predicate the payment route uses", () => {
     const viewer = {

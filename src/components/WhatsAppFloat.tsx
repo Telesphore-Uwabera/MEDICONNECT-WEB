@@ -14,7 +14,7 @@ export function WhatsAppFloat() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat on WhatsApp, +250 792 353 501"
-      className="whatsapp-float fixed top-1/2 z-[45] flex h-8 w-8 -translate-y-1/2 items-center justify-center right-1.5 sm:right-2 sm:h-10 sm:w-10"
+      className="whatsapp-float fixed bottom-5 right-3 z-[45] flex h-9 w-9 items-center justify-center sm:bottom-6 sm:right-5 sm:h-10 sm:w-10"
     >
       <span
         aria-hidden

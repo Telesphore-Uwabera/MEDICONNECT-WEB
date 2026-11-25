@@ -51,6 +51,7 @@ import {
   useGetPublicInsurances,
 } from "@/hooks/use-patient-profile";
 import { usePatientProfileLocked } from "@/hooks/use-patient-profile-gate";
+import { clearAppointmentProfileRequirement } from "@/lib/patient-profile-complete";
 import type {
   PatientProfile as TPatientProfile,
   MedicalInfo,
@@ -95,7 +96,7 @@ const PROFILE_STEPS = [
     label: "Personal",
     icon: User,
     sectionTitle: "Personal information",
-    description: "DOB, gender & national ID",
+    description: "DOB, gender & ID document",
     fields: ["date_of_birth", "gender", "national_id"] as (keyof ProfileFormData)[],
   },
   {
@@ -103,8 +104,8 @@ const PROFILE_STEPS = [
     label: "Medical",
     icon: HeartPulse,
     sectionTitle: "Medical information",
-    description: "Blood type & health details",
-    fields: ["blood_type"] as (keyof ProfileFormData)[],
+    description: "Blood type & health details (optional)",
+    fields: [] as (keyof ProfileFormData)[],
   },
   {
     id: "address" as const,
@@ -786,7 +787,7 @@ function ProfileForm({
   const isLast = currentStep === PROFILE_STEPS.length - 1;
   const isEdit = mode === "edit";
   register("gender", { required: t("profile.required") });
-  register("blood_type", { required: t("profile.required") });
+  register("blood_type"); // Optional field, no validation required
   register("emergency_contact_relation", { required: t("profile.required") });
 
   const goTo = (i: number) => {
@@ -822,7 +823,7 @@ function ProfileForm({
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col flex-1">
       <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -833,7 +834,7 @@ function ProfileForm({
         </span>
       </div>
 
-      <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5">
+      <div key={currentStep} className="flex-1 p-4 sm:p-5">
         {step.id === "personal" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t("profile.field.dob", "Date of birth")} error={errors.date_of_birth?.message}>
@@ -861,19 +862,15 @@ function ProfileForm({
               </Select>
             </FormField>
             <FormField
-              label={t("profile.field.national_id", "National ID")}
+              label={t("profile.field.national_id", "ID Document (Passport/ID/Laissez-Passer/Driving License)")}
               error={errors.national_id?.message}
               className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("national_id", {
                   required: t("profile.required"),
-                  minLength: { value: 16, message: t("profile.national_id_length") },
-                  maxLength: { value: 16, message: t("profile.national_id_length") },
-                  pattern: { value: /^\d+$/, message: t("profile.digits_only") },
                 })}
-                placeholder="1199580012345678"
-                maxLength={16}
+                placeholder="ID/Passport/License number"
                 className="border-border focus-visible:ring-primary font-mono text-xs h-9"
               />
             </FormField>
@@ -1114,7 +1111,7 @@ function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: ()
               value={formatGender(profile.gender)}
             />
             <div className="col-span-2">
-              <Field label={t("profile.field.national_id", "National ID")} value={profile.national_id ?? EMPTY_VALUE} mono />
+              <Field label={t("profile.field.national_id", "ID Document")} value={profile.national_id ?? EMPTY_VALUE} mono />
             </div>
           </div>
         </SectionCard>
@@ -1722,6 +1719,7 @@ const PatientProfile = () => {
   const handleSubmit = (data: ProfileFormData) => {
     upsert.mutate(data, {
       onSuccess: () => {
+        clearAppointmentProfileRequirement();
         toast.success(resolvedMode === "edit" ? t("profile.profile_updated") : t("profile.profile_created"));
         setProfileMode("view");
       },
@@ -1763,10 +1761,10 @@ const PatientProfile = () => {
         </div>
       )}
       <div className="px-3 py-4 sm:px-6 sm:py-8">
-        <div className="rounded-[6px] border border-border bg-card overflow-hidden flex flex-col min-h-[540px]">
+        <div className="rounded-[6px] border border-border bg-card flex flex-col">
           <TabBar active={mainTab} onChange={setMainTab} hasProfile={!!profile} />
-          <div className="flex flex-1 flex-col min-h-0">
-            <div className={cn("flex flex-1 flex-col sm:flex-row min-h-0", mainTab !== "profile" && "hidden")}>
+          <div className="flex flex-1 flex-col">
+            <div className={cn("flex flex-1 flex-col sm:flex-row", mainTab !== "profile" && "hidden")}>
               <ProfileSidebar
                   currentStep={currentStep}
                   visited={visited}

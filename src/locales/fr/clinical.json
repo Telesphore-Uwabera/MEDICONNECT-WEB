@@ -262,8 +262,8 @@
     "field": {
       "date_of_birth": "Date de naissance",
       "gender": "Sexe",
-      "national_id": "Numéro d'identité",
-      "blood_type": "Groupe sanguin",
+      "national_id": "Passeport / Carte d'identité / Laissez-passer / Permis",
+      "blood_type": "Groupe sanguin (facultatif)",
       "address": "Adresse",
       "city": "Ville",
       "province": "Province",

@@ -302,7 +302,17 @@ async function doctorBusyInstant(doctorId, exceptId = null) {
     params.push(exceptId);
   }
   sql += " ORDER BY id DESC LIMIT 1";
-  return one(sql, params).catch(() => null);
+  const instant = await one(sql, params).catch(() => null);
+  if (instant) return instant;
+  // A live appointment (video meeting) also makes the doctor busy for instant consults.
+  if (await tableExists("appointments") && await hasColumn("appointments", "doctor_id")) {
+    const appointment = await one(
+      "SELECT id FROM appointments WHERE doctor_id = ? AND LOWER(COALESCE(status,'')) = 'in_progress' ORDER BY id DESC LIMIT 1",
+      [doctorId],
+    ).catch(() => null);
+    if (appointment) return appointment;
+  }
+  return null;
 }
 
 async function doctorNetAmount(gross) {
@@ -803,7 +813,7 @@ export function publicRoutes(router) {
       next(error);
     }
   });
-  router.get("/public/doctors/available-doctors", async (req, res, next) => {
+  router.get(["/public/doctors", "/public/doctors/available-doctors"], async (req, res, next) => {
     try {
       const { page, perPage, offset } = pageArgs(req, 15);
       const filters = ["(" + (await whereActive("doctors", "d")) + ")"];
@@ -1628,12 +1638,8 @@ export function publicRoutes(router) {
       }
       const role = req.user?.active_role || req.user?.role;
       const accountEmail = String(req.user?.email || "");
-      if (req.user && role === "patient" && !isServerGuestAccount(accountEmail) && req.user.profile_complete === false) {
-        return res.status(403).json({
-          message: "Complete your profile before requesting an instant consultation.",
-          profile_complete: false,
-        });
-      }
+      void role;
+      void accountEmail;
       const rawPhone = body.phone || body.guest_phone || req.user?.phone || "";
       const rawCode = body.country_code || req.user?.country_code || "+250";
       let phone = rawPhone;
@@ -1919,6 +1925,11 @@ export function publicRoutes(router) {
             description: `Instant consultation ${row.id}`,
           });
         } else {
+          let payerUserId = Number(req.user?.id || row.user_id) || null;
+          if (!payerUserId && row.patient_id && await tableExists("patients")) {
+            const patientRow = await one("SELECT user_id FROM patients WHERE id = ? LIMIT 1", [row.patient_id]).catch(() => null);
+            payerUserId = Number(patientRow?.user_id) || null;
+          }
           const paymentUuid = crypto.randomUUID();
           const paymentId = await insert("payments", {
             uuid: paymentUuid,
@@ -1932,7 +1943,7 @@ export function publicRoutes(router) {
             status: "pending",
             description: `Instant consultation ${row.id}`,
             expires_at: expiresAt,
-            patient_id: row.patient_id || null,
+            patient_id: payerUserId,
             payment_account_identifier: process.env.PAYMENT_ACCOUNT_IDENTIFIER || "Mediconnect_RWF",
           });
           payment = { id: paymentId, uuid: paymentUuid };

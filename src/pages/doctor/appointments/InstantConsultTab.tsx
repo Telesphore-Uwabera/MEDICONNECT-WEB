@@ -65,8 +65,8 @@ function attachPatientToCallToken(
     token.guest_phone ||
     token.patient_phone;
   const pid = Number(
-    (item as { user_id?: number; patient_id?: number } | null)?.user_id ??
-      (item as { patient_id?: number } | null)?.patient_id ??
+    (item as { patient_id?: number; user_id?: number } | null)?.patient_id ??
+      (item as { user_id?: number } | null)?.user_id ??
       liveAny.patient_id ??
       liveAny.user_id,
   );
@@ -355,7 +355,7 @@ export function InstantConsultTab() {
   const patientIdOf = (item: InstantConsultQueueItem | null): number | null =>
     item == null
       ? null
-      : (item.user_id ?? item.patient_id ?? null);
+      : (item.patient_id ?? item.user_id ?? null);
 
   // Resolve the real `instant_consultations` id for the summary payload, since
   // the queue item only carries the request id.
@@ -511,10 +511,10 @@ export function InstantConsultTab() {
   };
 
   return (
-    <div className="flex min-h-[calc(100dvh-12rem)] flex-1 overflow-hidden bg-background">
+    <div className="flex flex-1 flex-col bg-background">
 
       {/* Main queue */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="flex-1 p-4 space-y-5">
 
         {/* Rejoin in-progress consultation */}
         {liveTarget && (
