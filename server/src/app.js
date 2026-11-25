@@ -1108,12 +1108,10 @@ export function appRoutes(router) {
         }
         if (!guestAuthorized) return res.status(401).json({ message: "Unauthenticated." });
       }
-      const secret = String(process.env.REVERB_APP_SECRET || "").trim();
-      const key = String(process.env.REVERB_APP_KEY || "").trim();
-      if (!secret || !key) {
-        // Reverb is not configured on this server. Return 200 with enabled:false
-        // so the frontend Pusher client stops retrying instead of spamming 503s.
-        // Chat falls back to HTTP polling.
+      const secret = String(process.env.REVERB_APP_SECRET || process.env.CALL_TOKEN_SECRET || "").trim();
+      const key = String(process.env.REVERB_APP_KEY || "mediconnect-staging-key").trim();
+      const host = String(process.env.REVERB_HOST || "api.mediconnect.rw").trim();
+      if (!secret || !host) {
         return res.status(200).json({ auth: null, enabled: false });
       }
       const socketId = String(req.body?.socket_id || "");
