@@ -27,14 +27,21 @@ export function unpaidJoinMessage(table) {
   return table === "appointments" ? UNPAID_APPOINTMENT_JOIN_MESSAGE : UNPAID_INSTANT_JOIN_MESSAGE;
 }
 
-export function ageSeconds(value, now = new Date()) {
-  if (value == null || value === "") return null;
+function parseUtcMs(value) {
+  if (value == null || value === "") return NaN;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number") return value;
   const text = String(value).trim();
   const hasZone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(text);
   const iso = hasZone ? text : `${text.replace(" ", "T")}Z`;
-  const ms = new Date(iso).getTime();
-  if (Number.isNaN(ms)) return null;
-  return Math.max(0, Math.floor((now.getTime() - ms) / 1000));
+  return new Date(iso).getTime();
+}
+
+export function ageSeconds(value, now = new Date()) {
+  const ms = parseUtcMs(value);
+  const nowMs = parseUtcMs(now);
+  if (Number.isNaN(ms) || Number.isNaN(nowMs)) return null;
+  return Math.max(0, Math.floor((nowMs - ms) / 1000));
 }
 
 export function isPaidStatus(row) {
