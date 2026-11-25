@@ -141,7 +141,7 @@ const PatientOverview = () => {
 
   // ── Appointments (real API) ──────────────────────────────────────────────
   const { data: me } = useMe();
-  const { data: profile } = useGetProfile();
+  const { data: profile, isLoading: profileLoading } = useGetProfile();
   const { data: dash } = useGetPatientStats({ period: "all" });
   const { data: appointmentsData, isLoading: appointmentsLoading } =
     useGetPatientAppointments({ per_page: 50 });
@@ -204,7 +204,7 @@ const PatientOverview = () => {
           <div className="page-shell space-y-6 py-4 sm:py-6">
             <div className="grid gap-3 lg:grid-cols-2">
               <PatientNextVisit appointment={upcomingAppointments[0]} />
-              <ProfileProgress profile={profile} />
+              <ProfileProgress profile={profile} loading={profileLoading} />
             </div>
             <PatientCareNext />
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">

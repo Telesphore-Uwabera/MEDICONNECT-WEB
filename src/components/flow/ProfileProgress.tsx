@@ -7,13 +7,28 @@ function filled(value: unknown) {
   return Boolean(text) && !text.startsWith("0000-00-00");
 }
 
-/** Shows which of the 11 required profile fields are still missing, and why. */
-export function ProfileProgress({ profile }: { profile?: object | null }) {
+/** Shows which of the required profile fields are still missing, and why. */
+export function ProfileProgress({ profile, loading = false }: { profile?: object | null; loading?: boolean }) {
   const { t } = useTranslation();
   const record = (profile ?? {}) as Record<string, unknown>;
   const done = REQUIRED_PROFILE_FIELDS.filter((field) => filled(record[field]));
   const missing = REQUIRED_PROFILE_FIELDS.filter((field) => !filled(record[field]));
   const percent = Math.round((done.length / REQUIRED_PROFILE_FIELDS.length) * 100);
+
+  if (loading || profile == null) {
+    return (
+      <section data-testid="profile-progress" className="rounded-xl border border-border bg-card p-4 shadow-soft">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t("clinical.flow.profile_title")}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t("clinical.flow.profile_why")}</p>
+          </div>
+        </div>
+        <div className="mt-3 h-2 animate-pulse rounded-full bg-muted" />
+        <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-muted" />
+      </section>
+    );
+  }
 
   return (
     <section data-testid="profile-progress" className="rounded-xl border border-border bg-card p-4 shadow-soft">
