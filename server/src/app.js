@@ -5154,6 +5154,18 @@ export function appRoutes(router) {
     });
   });
 
+  router.post("/notifications/read-all", requireAuth, async (req, res, next) => {
+    try {
+      await pool.query(
+        "UPDATE notifications SET read_at = NOW() WHERE notifiable_id = ? AND read_at IS NULL",
+        [req.user?.id || 0],
+      ).catch(() => {});
+      res.json({ message: "Notifications marked as read." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   registerActions(router, RESOURCES);
 }
 
