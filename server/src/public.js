@@ -86,7 +86,7 @@ async function attachDoctorRelations(doctors) {
     ids,
   ).catch(() => []);
   const hospitals = await q(
-    `SELECT hd.doctor_id, h.id, COALESCE(h.name_en, h.name) AS name, h.city, h.address
+    `SELECT hd.doctor_id, h.id, COALESCE(h.name_en, h.name_kiny, h.name_fr, h.slug) AS name, h.city, h.address
      FROM hospital_doctors hd
      JOIN hospitals h ON h.id = hd.hospital_id
      WHERE hd.doctor_id IN (${marks})`,
@@ -868,7 +868,7 @@ export function publicRoutes(router) {
           parts.push(`EXISTS (
             SELECT 1 FROM hospital_doctors hd
             JOIN hospitals h ON h.id = hd.hospital_id
-            WHERE hd.doctor_id = d.id AND (${containsLike("h.name")} OR ${containsLike("COALESCE(h.name_en, h.name)")})
+            WHERE hd.doctor_id = d.id AND (${containsLike("COALESCE(h.name_en, h.name_kiny, h.name_fr)")} OR ${containsLike("COALESCE(h.name_en, h.name_kiny, h.name_fr)")})
           )`);
           params.push(like, like);
         }
