@@ -1111,7 +1111,10 @@ export function appRoutes(router) {
       const secret = String(process.env.REVERB_APP_SECRET || "").trim();
       const key = String(process.env.REVERB_APP_KEY || "").trim();
       if (!secret || !key) {
-        return res.status(503).json({ message: "Realtime auth is not configured." });
+        // Reverb is not configured on this server. Return 200 with enabled:false
+        // so the frontend Pusher client stops retrying instead of spamming 503s.
+        // Chat falls back to HTTP polling.
+        return res.status(200).json({ auth: null, enabled: false });
       }
       const socketId = String(req.body?.socket_id || "");
       const channel = String(req.body?.channel_name || "");

@@ -15,18 +15,40 @@ function socketHost() {
   return host;
 }
 
+// Cached server-side Reverb availability. Fetched once on first use.
+let serverReverbEnabled: boolean | null = null;
+let serverReverbChecked = false;
+
 function canUseWebsocket() {
   const host = socketHost();
   // Quick tunnels front the API over HTTP/2 and reset WebSocket handshakes
   // (ERR_HTTP2_PING_FAILED). Consult signaling and chat already poll HTTP.
   // An empty host stays off, so local dev does not open a socket by itself.
-  // ws.mediconnect.rw is also skipped unless explicitly enabled via VITE_REVERB_ENABLED=true
-  // because DNS for ws.mediconnect.rw is not provisioned and HTTP polling handles signaling.
   if (!host || host.includes("trycloudflare")) return false;
   if (host === "ws.mediconnect.rw" && String(import.meta.env.VITE_REVERB_ENABLED || "").toLowerCase() !== "true") {
     return false;
   }
+  // If the server has already told us Reverb is not configured, stay off.
+  if (serverReverbChecked && serverReverbEnabled === false) return false;
   return true;
+}
+
+// Check server-side Reverb availability (async, called once).
+async function checkServerReverb() {
+  if (serverReverbChecked) return serverReverbEnabled;
+  try {
+    const res = await fetch(`${import.meta.env.VITE_APP_BASE_URL}/public/realtime`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      serverReverbEnabled = Boolean(data?.reverb?.enabled);
+    } else {
+      serverReverbEnabled = false;
+    }
+  } catch {
+    serverReverbEnabled = false;
+  }
+  serverReverbChecked = true;
+  return serverReverbEnabled;
 }
 
 type ListenFn = (data: unknown) => void;
@@ -55,6 +77,7 @@ function wrapChannel(channel: ReturnType<Pusher["subscribe"]>) {
 
 const authHeaders: Record<string, string> = {};
 
+// Synchronously check: if server Reverb is known to be off, disable.
 const pusher = canUseWebsocket()
   ? new Pusher(import.meta.env.VITE_REVERB_APP_KEY || "mediconnect-staging-key", {
   wsHost: socketHost(),
@@ -93,7 +116,15 @@ const pusher = canUseWebsocket()
           if (!response.ok) throw new Error("Auth failed");
           return response.json();
         })
-        .then((data) => callback(null, data))
+        .then((data) => {
+          if (data?.enabled === false || !data?.auth) {
+            // Reverb is not configured on the server; chat falls back to
+            // HTTP polling. Fail authorization silently (no retry).
+            callback(new Error("Realtime not configured"), null);
+            return;
+          }
+          callback(null, data);
+        })
         .catch((error: unknown) => callback(error instanceof Error ? error : new Error("Auth failed"), null));
     },
   }),
