@@ -110,6 +110,29 @@ const PROFILE_TABLE = {
   pharmacy: "pharmacies",
 };
 
+async function ensureEnumValue(table, column, value) {
+  const { tableExists, hasColumn, one, pool } = await import("./db.js");
+  if (!(await tableExists(table)) || !(await hasColumn(table, column))) return false;
+  const meta = await one(
+    `SELECT COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column],
+  ).catch(() => null);
+  if (!meta) return false;
+  const type = String(meta.column_type || "");
+  if (!/^enum\(/i.test(type)) return true;
+  if (type.toLowerCase().includes(`'${String(value).toLowerCase()}'`)) return true;
+  const widened = type.replace(/\)\s*$/, `,'${value}')`);
+  let sql = `ALTER TABLE \`${table}\` MODIFY \`${column}\` ${widened}`;
+  sql += String(meta.is_nullable).toUpperCase() === "NO" ? " NOT NULL" : " NULL";
+  if (meta.column_default != null && String(meta.column_default).toUpperCase() !== "NULL") {
+    sql += ` DEFAULT '${String(meta.column_default).replace(/'/g, "''")}'`;
+  }
+  await pool.query(sql);
+  return true;
+}
+
 function slugify(value) {
   const base = String(value || "user").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "user";
   return `${base}-${crypto.randomBytes(3).toString("hex")}`;
@@ -907,6 +930,8 @@ export function appRoutes(router) {
 
   router.post("/auth/forgot-password", async (req, res, next) => {
     try {
+      await ensureEnumValue("otps", "type", "password_reset").catch(() => null);
+      await ensureEnumValue("otps", "type", "verification").catch(() => null);
       const row = await findUserByLogin(req.body ?? {});
       // Always return the same message so we don't leak whether the account exists.
       if (!row) return res.json({ message: "If that account exists, a reset code has been sent." });
@@ -1016,6 +1041,9 @@ export function appRoutes(router) {
 
   router.post("/auth/send-otp", async (req, res, next) => {
     try {
+      await ensureEnumValue("otps", "type", "password_reset").catch(() => null);
+      await ensureEnumValue("otps", "type", "verification").catch(() => null);
+      await ensureEnumValue("otps", "type", req.body?.type || "login").catch(() => null);
       const code = String(crypto.randomInt(100000, 1000000));
       await insert("otps", {
         email: req.body?.email,
@@ -1062,6 +1090,7 @@ export function appRoutes(router) {
 
   router.post("/auth/verify-otp", async (req, res, next) => {
     try {
+      await ensureEnumValue("otps", "type", "verification").catch(() => null);
       const row = await one(
         "SELECT * FROM otps WHERE code = ? AND (email = ? OR phone = ?) ORDER BY id DESC LIMIT 1",
         [req.body?.code, req.body?.email ?? "", req.body?.phone ?? ""],
@@ -3655,6 +3684,7 @@ export function appRoutes(router) {
 
   router.post("/admin/users/:id/resend-verification", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
     try {
+      await ensureEnumValue("otps", "type", "verification").catch(() => null);
       const target = await one("SELECT * FROM users WHERE id = ?", [req.params.id]);
       if (!target) return res.status(404).json({ message: "User not found." });
       const code = String(crypto.randomInt(100000, 1000000));
