@@ -100,7 +100,7 @@ import {
   toUser,
   verifyPassword,
 } from "./auth.js";
-import { sendMail, buildOtpEmail, buildWelcomeEmail, buildEmailHtml, emailP, emailBtn } from "./mail.js";
+import { sendMail, buildOtpEmail, buildWelcomeEmail, buildEmailHtml, emailP, emailBtn, escHtml } from "./mail.js";
 import { languageFromUserRow, normalizeLang, pick } from "./user-text.js";
 
 const PROFILE_TABLE = {
@@ -1220,6 +1220,32 @@ export function appRoutes(router) {
       if (!issued.extra.password_must_change && req.body?.email && issued.plain) {
         tempPassword = issued.plain;
         const line = guestAccessLine(lang, req.body.email, issued.plain);
+        const html = buildEmailHtml({
+          title: pick(lang, {
+            en: "Your MediConnect temporary password",
+            fr: "Votre mot de passe temporaire MediConnect",
+            rw: "Ijambo ry'ibanga ry'igihe gito rya MediConnect",
+          }),
+          preheader: line,
+          accentHex: "#0BA59B",
+          lang,
+          body: `
+            ${emailP(pick(lang, {
+              en: `Your MediConnect account has been created. Here is your temporary password:`,
+              fr: `Votre compte MediConnect a été créé. Voici votre mot de passe temporaire :`,
+              rw: `Konti yawe ya MediConnect yarakozwe. Iri ni ijambo ry'ibanga ry'igihe gito:`,
+            }))}
+            <div style="margin:20px 0;padding:16px 20px;background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;border-left:4px solid #0BA59B;">
+              <p style="margin:0 0 4px;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">${escHtml(req.body.email)}</p>
+              <p style="margin:0;font-size:20px;font-weight:800;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;letter-spacing:2px;">${escHtml(issued.plain)}</p>
+            </div>
+            ${emailP(pick(lang, {
+              en: "Sign in at https://mediconnect.rw/auth with this password. You will be asked to choose a new password on first login. This temporary password expires in 7 days.",
+              fr: "Connectez-vous sur https://mediconnect.rw/auth avec ce mot de passe. Vous devrez choisir un nouveau mot de passe lors de la première connexion. Ce mot de passe temporaire expire dans 7 jours.",
+              rw: "Injira kuri https://mediconnect.rw/auth ukoresheje iri jambo ry'ibanga. Uzabazwa guhitamo ijambo ry'ibanga rishya ku nshuro ya mbere. Iri jambo ry'ibanga ry'igihe gito rirangira mu minsi 7.",
+            }), "font-size:12px;color:#6b7280;")}
+          `,
+        });
         await sendMail({
           to: req.body.email,
           subject: pick(lang, {
@@ -1228,6 +1254,7 @@ export function appRoutes(router) {
             rw: "Ijambo ry'ibanga ry'igihe gito rya MediConnect",
           }),
           text: line,
+          html,
         }).catch(() => null);
       }
       res.json({

@@ -2,7 +2,7 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import * as db from "./db.js";
-import { sendMail } from "./mail.js";
+import { sendMail, buildEmailHtml, emailP, emailHtml } from "./mail.js";
 import { pick } from "./user-text.js";
 import { languageForUserId } from "./user-language.js";
 import { ensureVerifierColumns } from "./verification.js";
@@ -106,8 +106,19 @@ export async function notifyAdminsProfileReady(doctor) {
     "If you reject or request changes, include a message. The doctor receives that message by email.",
   ].filter(Boolean).join("\n");
   const admins = await adminRecipients();
+  const html = buildEmailHtml({
+    title: subject,
+    preheader: text,
+    accentHex: "#0BA59B",
+    body: `
+      ${emailP(`A doctor has submitted a complete profile for review.`)}
+      ${emailP(`<strong>${name}</strong> saved a complete profile and is waiting for your decision.`)}
+      ${user?.email ? `<p style="margin:8px 0;font-size:13px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">Email: <strong>${user.email}</strong></p>` : ""}
+      ${emailP("Open Admin → Doctors to approve, reject, or request changes. If you reject or request changes, include a message — the doctor receives it by email.", "font-size:12px;color:#6b7280;")}
+    `,
+  });
   for (const admin of admins) {
-    await sendMail({ to: admin.email, subject, text });
+    await sendMail({ to: admin.email, subject, text, html });
     await notifyInApp(admin.id, subject, text);
   }
 }
@@ -117,7 +128,17 @@ export async function notifyDoctorReview(doctor, { subject, message }) {
     ? await one("SELECT id, name, email FROM users WHERE id = ?", [doctor.user_id])
     : null;
   const text = [`Hello ${user?.name || "Doctor"},`, "", message].join("\n");
-  if (user?.email) await sendMail({ to: user.email, subject, text });
+  const html = buildEmailHtml({
+    title: subject,
+    preheader: message,
+    accentHex: "#0BA59B",
+    body: `
+      ${emailP(`Hello ${user?.name || "Doctor"},`)}
+      ${emailP(message)}
+      ${emailP("Open MediConnect to view the full details and respond.", "font-size:12px;color:#6b7280;")}
+    `,
+  });
+  if (user?.email) await sendMail({ to: user.email, subject, text, html });
   await notifyInApp(user?.id, subject, message);
 }
 
@@ -293,8 +314,19 @@ export async function remindExpiringLicenses() {
       "",
       "Upload the renewed license and set the new expiry date. Only an admin can change the expiry date.",
     ].filter(Boolean).join("\n");
+    const adminHtml = buildEmailHtml({
+      title: adminSubject,
+      preheader: adminText,
+      accentHex: "#d97706",
+      body: `
+        ${emailP(`A doctor's medical license requires attention.`)}
+        ${emailP(`<strong>${name}</strong>'s medical license ${timing}.`)}
+        ${doctor.medical_license ? `<p style="margin:8px 0;font-size:13px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">License number: <strong>${doctor.medical_license}</strong></p>` : ""}
+        ${emailP("Upload the renewed license and set the new expiry date. Only an admin can change the expiry date.", "font-size:12px;color:#6b7280;")}
+      `,
+    });
     for (const admin of admins) {
-      await sendMail({ to: admin.email, subject: adminSubject, text: adminText });
+      await sendMail({ to: admin.email, subject: adminSubject, text: adminText, html: adminHtml });
       await notifyInApp(admin.id, adminSubject, adminText);
     }
     await notifyDoctorReview(doctor, {

@@ -161,7 +161,7 @@ export function buildEmailHtml({ title, preheader = "", body, accentHex, lang = 
 // ─── Reusable building blocks ─────────────────────────────────────────────────
 
 /** Escape HTML special characters */
-function escHtml(str) {
+export function escHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
