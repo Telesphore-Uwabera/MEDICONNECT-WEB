@@ -315,6 +315,8 @@ const NESTED_TABLES = {
   "pharmacy/closures": ["pharmacy_closures"],
   "hospital/working-hours": ["hospital_working_hours"],
   "hospital/closures": ["hospital_closures"],
+  "hospital/departments": ["hospital_departments", "departments"],
+  "hospital/services": ["hospital_services", "services"],
   "doctor/instant-consultations": ["instant_consultation_requests", "instant_consultations"],
   "patient/instant-consultations": ["instant_consultation_requests", "instant_consultations"],
   "patient/quick": ["appointments"],

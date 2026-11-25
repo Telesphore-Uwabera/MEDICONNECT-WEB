@@ -713,6 +713,14 @@ export async function resolveCreateBody(scope, table, body, user) {
         actor.pharmacy_id = Number(pharmacy.id);
       }
     } else if (scope === "hospital" || scope === "pharmacy") {
+      // Alias frontend field names to DB column names for services
+      if (table === "services" || table === "hospital_services") {
+        if (source.name_en && !source.title_en) source.title_en = source.name_en;
+        if (source.name_fr && !source.title_fr) source.title_fr = source.name_fr;
+        if (source.name_kiny && !source.title_kiny) source.title_kiny = source.name_kiny;
+        if (source.name && !source.title_en) source.title_en = source.name;
+        if (!source.slug && source.title_en) source.slug = String(source.title_en).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      }
       const ownerId = await loadOwnedId(user.id, PROFILE_TABLE[scope]);
       if (!ownerId) return { ok: false, status: 403, message: "You do not have access to this area." };
       const column = `${scope}_id`;
