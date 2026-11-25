@@ -1024,7 +1024,7 @@ export function registerActions(router, RESOURCES) {
       if (await handleCareReferrals(req, res, parts)) return;
       if (await handleFitnessCertificates(req, res, parts)) return;
       if (parts[0] === "patient" && parts[1] === "pharmacy-orders") {
-        return handlePharmacyOrders(req, res, parts);
+        return await handlePharmacyOrders(req, res, parts);
       }
       if (req.method === "GET" && parts[0] === "pharmacy" && parts[1] === "dashboard") {
         return res.json(await pharmacyDashboard(req));
