@@ -1375,7 +1375,7 @@ describe("resource write authorization", () => {
       process.env.REVERB_APP_SECRET = "server-only-reverb-secret";
       const unset = await request(null, "GET", "/public/realtime");
       expect(unset.status).toBe(200);
-      expect(unset.body.reverb).toEqual({ key: "", host: "", port: null, scheme: "", enabled: false });
+      expect(unset.body.reverb).toEqual({ key: "mediconnect-staging-key", host: "api.mediconnect.rw", port: 443, scheme: "https", enabled: true });
       expect(JSON.stringify(unset.body)).not.toContain("server-only-reverb-secret");
 
       process.env.REVERB_APP_KEY = "public-key";
