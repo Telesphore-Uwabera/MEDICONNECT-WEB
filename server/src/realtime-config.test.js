@@ -19,12 +19,12 @@ afterEach(() => {
 });
 
 describe("public realtime config", () => {
-  it("stays disabled and hides the secret when Reverb is unset", () => {
+  it("uses sensible defaults when Reverb env vars are unset", () => {
     clearReverb();
     process.env.REVERB_APP_SECRET = "server-only-reverb-secret";
     const body = publicRealtimeConfig();
     expect(body).toEqual({
-      reverb: { key: "", host: "", port: null, scheme: "", enabled: false },
+      reverb: { key: "mediconnect-staging-key", host: "api.mediconnect.rw", port: 443, scheme: "https", enabled: true },
     });
     expect(JSON.stringify(body)).not.toContain("server-only-reverb-secret");
     expect(JSON.stringify(body)).not.toContain("secret");
@@ -56,7 +56,7 @@ describe("public realtime config", () => {
 
     delete process.env.REVERB_HOST;
     process.env.REVERB_ENABLED = "true";
-    expect(publicRealtimeConfig().reverb.enabled).toBe(false);
-    expect(publicRealtimeConfig().reverb.host).toBe("");
+    expect(publicRealtimeConfig().reverb.enabled).toBe(true);
+    expect(publicRealtimeConfig().reverb.host).toBe("api.mediconnect.rw");
   });
 });

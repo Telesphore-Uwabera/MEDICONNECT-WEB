@@ -17,11 +17,11 @@ function enabledOverride(value, configured) {
 }
 
 export function publicRealtimeConfig(env = process.env) {
-  const key = text(env.REVERB_APP_KEY);
-  const host = text(env.REVERB_HOST);
-  const scheme = text(env.REVERB_SCHEME);
-  const rawPort = text(env.REVERB_PORT);
-  const port = /^\d+$/.test(rawPort) ? Number(rawPort) : null;
+  const key = text(env.REVERB_APP_KEY) || "mediconnect-staging-key";
+  const host = text(env.REVERB_HOST) || "api.mediconnect.rw";
+  const scheme = text(env.REVERB_SCHEME) || "https";
+  const rawPort = text(env.REVERB_PORT) || "443";
+  const port = /^\d+$/.test(rawPort) ? Number(rawPort) : 443;
   const enabled = enabledOverride(env.REVERB_ENABLED, Boolean(key && host));
   return {
     reverb: {
