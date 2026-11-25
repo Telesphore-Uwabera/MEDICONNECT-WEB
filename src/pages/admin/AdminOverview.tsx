@@ -144,10 +144,10 @@ function FilterBar({
   return (
     <div className="flex items-end justify-between flex-wrap gap-3 rounded-[6px] border border-border bg-card px-3.5 py-3 shadow-sm w-full">
       {/* Left: filter inputs */}
-      <div className="flex items-end flex-wrap gap-3 flex-1 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3 flex-1 min-w-0">
 
         {/* Search */}
-        <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <div className="flex flex-col gap-1 w-full sm:flex-1 min-w-0">
           <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             {t("admin.overview.search")}
           </label>
@@ -164,7 +164,7 @@ function FilterBar({
         </div>
 
         {/* Exact date */}
-        <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <div className="flex flex-col gap-1 w-full sm:flex-1 min-w-0">
           <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             {t("admin.overview.exact_date")}
           </label>
@@ -181,26 +181,30 @@ function FilterBar({
         </div>
 
         {/* Date range */}
-        <div className="flex flex-col gap-1 flex-[2] min-w-0">
+        <div className="flex flex-col gap-1 w-full sm:flex-[2] min-w-0">
           <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             Date range
           </label>
           <div className="flex items-center gap-1.5">
-            <DateField
-              value={filters.date_from ?? ""}
-              onChange={(e) =>
-                onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })
-              }
-              className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
-            />
+            <div className="min-w-0 flex-1">
+              <DateField
+                value={filters.date_from ?? ""}
+                onChange={(e) =>
+                  onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })
+                }
+                className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+              />
+            </div>
             <span className="text-[10px] text-muted-foreground shrink-0">→</span>
-            <DateField
-              value={filters.date_to ?? ""}
-              onChange={(e) =>
-                onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })
-              }
-              className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
-            />
+            <div className="min-w-0 flex-1">
+              <DateField
+                value={filters.date_to ?? ""}
+                onChange={(e) =>
+                  onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })
+                }
+                className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+              />
+            </div>
           </div>
         </div>
 
