@@ -478,6 +478,23 @@ const DoctorOverview = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
 
+            {instantQueue > 0 && (
+              <Link
+                to="/doctor/appointments?tab=instant"
+                className="flex items-center gap-3 rounded-[8px] border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-500/15 dark:text-emerald-200"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20">
+                  <Zap className="h-4 w-4" />
+                </span>
+                <span>
+                  {t("pages.doctor.queue_waiting", { count: instantQueue, defaultValue: "{{count}} patient(s) waiting in your instant queue" })}
+                </span>
+                <span className="ml-auto text-xs font-bold underline">
+                  {t("pages.doctor.manage_queue", "Manage queue")}
+                </span>
+              </Link>
+            )}
+
             {/*  Toolbar: today badge + period picker + chart group + refresh  */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-primary/10 border border-primary/20 text-xs font-bold text-primary">
