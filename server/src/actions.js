@@ -238,8 +238,10 @@ async function findDraft(patientId, pharmacyId) {
 }
 
 async function handlePharmacyOrders(req, res, parts) {
-  const patientId = await loadOwnedId(req.user.id, "patients");
-  if (!patientId) return res.status(403).json({ message: "A patient profile is required." });
+  const patientProfileId = await loadOwnedId(req.user.id, "patients");
+  if (!patientProfileId) return res.status(403).json({ message: "A patient profile is required." });
+  // pharmacy_orders.patient_id references users.id, not patients.id
+  const patientId = req.user.id;
 
   if (req.method === "GET" && parts[2] === "draft") {
     const order = await findDraft(patientId, req.query.pharmacy_id);
