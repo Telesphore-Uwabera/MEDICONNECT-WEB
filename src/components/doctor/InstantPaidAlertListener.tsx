@@ -214,7 +214,7 @@ export function InstantPaidAlertListener() {
   if (!activeAlert) return null;
 
   return (
-    <div className="fixed left-1/2 top-4 z-[95] w-[min(640px,calc(100vw-24px))] -translate-x-1/2 rounded-[8px] border border-primary/30 bg-card/95 shadow-2xl backdrop-blur-sm">
+    <div className="fixed left-1/2 top-[76px] z-[95] w-[min(640px,calc(100vw-24px))] -translate-x-1/2 rounded-[8px] border border-primary/30 bg-card/95 shadow-2xl backdrop-blur-sm">
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-primary/15 text-primary">
           <BellRing className="h-4 w-4 animate-pulse" />

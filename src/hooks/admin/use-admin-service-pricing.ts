@@ -8,6 +8,9 @@ export interface ApiPricingItem {
   value: number;
   currency: string;
   updated_at: string;
+  name?: string;
+  description?: string;
+  is_paid?: boolean;
 }
 
 export interface GetServicePricingResponse {
@@ -34,7 +37,28 @@ const BASE = "/admin/service-pricing";
 export function useGetServicePricing() {
   return useQuery<GetServicePricingResponse>({
     queryKey: ["service-pricing"],
-    queryFn: () => apiFetch(BASE),
+    queryFn: async () => {
+      const res = await apiFetch<Record<string, unknown>>(BASE);
+      // The API returns a paginated list of service_pricing rows
+      // ({ data: [{ service_key, price, ... }] }); older builds returned
+      // { pricing: [{ key, value, ... }] }. Support both.
+      const rows = Array.isArray(res?.pricing)
+        ? (res.pricing as Record<string, unknown>[])
+        : Array.isArray(res?.data)
+          ? (res.data as Record<string, unknown>[])
+          : [];
+      return {
+        pricing: rows.map((row) => ({
+          key: String(row.service_key ?? row.key ?? ""),
+          value: Number(row.price ?? row.value ?? 0),
+          currency: String(row.currency ?? "RWF"),
+          updated_at: String(row.updated_at ?? ""),
+          name: row.name == null ? undefined : String(row.name),
+          description: row.description == null ? undefined : String(row.description),
+          is_paid: row.is_paid == null ? undefined : Boolean(row.is_paid),
+        })),
+      };
+    },
   });
 }
 

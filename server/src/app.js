@@ -692,22 +692,55 @@ export function appRoutes(router) {
 
   router.put("/admin/service-pricing/bulk", requireAuth, adminPricingRole, async (req, res, next) => {
     try {
-      const prices = Array.isArray(req.body?.prices) ? req.body.prices : [];
-      if (!prices.length) return res.status(422).json({ message: "No prices were supplied." });
+      if (!(await tableExists("service_pricing"))) return res.status(422).json({ message: "Service pricing is not available." });
+      const raw = req.body?.prices;
+      const entries = Array.isArray(raw)
+        ? raw.map((item) => [Number(item?.id), item?.service_key ?? item?.key, item])
+        : Object.entries(raw ?? {}).map(([key, value]) => [0, key, { price: value, value }]);
+      if (!entries.length) return res.status(422).json({ message: "No prices were supplied." });
       let saved = 0;
-      for (const item of prices) {
-        const id = Number(item?.id);
-        if (!id || !(await tableExists("service_pricing"))) continue;
+      for (const [id, serviceKey, item] of entries) {
+        let row = id
+          ? await one("SELECT id FROM service_pricing WHERE id = ? LIMIT 1", [id]).catch(() => null)
+          : await one("SELECT id FROM service_pricing WHERE service_key = ? LIMIT 1", [String(serviceKey)]).catch(() => null);
+        if (!row && serviceKey) {
+          row = await one("SELECT id FROM service_pricing WHERE service_key = ? LIMIT 1", [String(serviceKey)]).catch(() => null);
+        }
+        if (!row) continue;
         const patch = {};
-        for (const key of ["price", "name", "name_en", "description", "is_paid", "currency", "is_active"]) {
+        if (item.price !== undefined || item.value !== undefined) {
+          patch.price = Number(item.price ?? item.value);
+        }
+        for (const key of ["name", "name_en", "description", "is_paid", "currency", "is_active"]) {
           if (item[key] !== undefined && await hasColumn("service_pricing", key)) patch[key] = item[key];
         }
         if (Object.keys(patch).length) {
-          await update("service_pricing", id, patch);
+          await update("service_pricing", row.id, patch);
           saved += 1;
         }
       }
       res.json({ message: `${saved} price${saved === 1 ? "" : "s"} updated.`, updated: saved });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/service-pricing/:key", requireAuth, adminPricingRole, async (req, res, next) => {
+    try {
+      const key = String(req.params.key || "");
+      if (!(await tableExists("service_pricing")) || !key) return res.status(404).json({ message: "Price key not found." });
+      const row = await one("SELECT * FROM service_pricing WHERE service_key = ? LIMIT 1", [key]).catch(() => null);
+      if (!row) return res.status(404).json({ message: "Price key not found." });
+      const patch = {};
+      if (req.body?.value !== undefined || req.body?.price !== undefined) {
+        patch.price = Number(req.body.price ?? req.body.value);
+      }
+      for (const field of ["name", "description", "is_paid", "is_active", "currency"]) {
+        if (req.body?.[field] !== undefined && await hasColumn("service_pricing", field)) patch[field] = req.body[field];
+      }
+      if (Object.keys(patch).length) await update("service_pricing", row.id, patch);
+      const fresh = await one("SELECT * FROM service_pricing WHERE id = ?", [row.id]).catch(() => row);
+      res.json({ message: "Price updated.", pricing: { key: fresh.service_key, value: Number(fresh.price ?? 0), currency: fresh.currency || "RWF", updated_at: fresh.updated_at } });
     } catch (error) {
       next(error);
     }
