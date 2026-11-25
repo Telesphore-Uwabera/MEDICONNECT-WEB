@@ -24,6 +24,29 @@ import { publicPagePath } from "./public-url.js";
 import { presentWithoutCallSecrets } from "./public-profile.js";
 import { nameVisitRows } from "./visit-rows.js";
 
+async function ensureEnumValue(table, column, value) {
+  const { tableExists, hasColumn, one, pool } = await import("./db.js");
+  if (!(await tableExists(table)) || !(await hasColumn(table, column))) return false;
+  const meta = await one(
+    `SELECT COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, COLUMN_DEFAULT AS column_default
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column],
+  ).catch(() => null);
+  if (!meta) return false;
+  const type = String(meta.column_type || "");
+  if (!/^enum\(/i.test(type)) return true;
+  if (type.toLowerCase().includes(`'${String(value).toLowerCase()}'`)) return true;
+  const widened = type.replace(/\)\s*$/, `,'${value}')`);
+  let sql = `ALTER TABLE \`${table}\` MODIFY \`${column}\` ${widened}`;
+  sql += String(meta.is_nullable).toUpperCase() === "NO" ? " NOT NULL" : " NULL";
+  if (meta.column_default != null && String(meta.column_default).toUpperCase() !== "NULL") {
+    sql += ` DEFAULT '${String(meta.column_default).replace(/'/g, "''")}'`;
+  }
+  await pool.query(sql);
+  return true;
+}
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
 const STATUS_ACTIONS = {
@@ -231,6 +254,8 @@ async function handlePharmacyOrders(req, res, parts) {
     if (!quantity) return res.status(422).json({ message: "Quantity must be a whole number of at least 1." });
     let order = await findDraft(patientId, pharmacyId);
     if (!order) {
+      await ensureEnumValue("pharmacy_orders", "source", "patient").catch(() => null);
+      await ensureEnumValue("pharmacy_orders", "status", "draft").catch(() => null);
       const id = await insert("pharmacy_orders", {
         pharmacy_id: pharmacyId,
         patient_id: patientId,
