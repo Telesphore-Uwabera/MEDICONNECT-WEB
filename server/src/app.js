@@ -529,6 +529,18 @@ const PATIENT_PROFILE_WRITE_OK = [
 ];
 
 export function appRoutes(router) {
+  router.post("/notifications/read-all", requireAuth, async (req, res, next) => {
+    try {
+      await pool.query(
+        "UPDATE notifications SET read_at = NOW() WHERE notifiable_id = ? AND read_at IS NULL",
+        [req.user?.id || 0],
+      ).catch(() => {});
+      res.json({ message: "Notifications marked as read." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // A patient who created an account cannot book, join, or change anything else
   // until the profile form is complete. Guests in a call are not account holders.
   router.use(async (req, res, next) => {
@@ -5152,18 +5164,6 @@ export function appRoutes(router) {
       if (err) console.error("[deploy] FAILED:", err.message, stderr?.slice(0, 300));
       else console.log("[deploy] published", published || "(no sha)", stdout?.slice(-200));
     });
-  });
-
-  router.post("/notifications/read-all", requireAuth, async (req, res, next) => {
-    try {
-      await pool.query(
-        "UPDATE notifications SET read_at = NOW() WHERE notifiable_id = ? AND read_at IS NULL",
-        [req.user?.id || 0],
-      ).catch(() => {});
-      res.json({ message: "Notifications marked as read." });
-    } catch (error) {
-      next(error);
-    }
   });
 
   registerActions(router, RESOURCES);
