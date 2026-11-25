@@ -42,7 +42,6 @@ interface FilterState {
   q: string;
   type: ConsultationType;
   language: string;
-  city: string;
   gender: "all" | "male" | "female";
   available_today: boolean;
   instant: boolean;
@@ -56,7 +55,6 @@ const INITIAL_FILTERS: FilterState = {
   q: "",
   type: "all",
   language: "",
-  city: "",
   gender: "all",
   available_today: false,
   instant: false,
@@ -202,7 +200,6 @@ function buildApiParams(
   }
 
   if (filters.language) params.language = filters.language;
-  if (filters.city.trim()) params.city = filters.city.trim();
   if (filters.gender !== "all")
     params.gender = filters.gender as "male" | "female";
   if (filters.available_today) params.available_today = true;
@@ -241,7 +238,6 @@ function readInitialFilters(searchParams: URLSearchParams): FilterState {
     q: searchParams.get("q") ?? stored ?? "",
     type,
     language: searchParams.get("language") ?? INITIAL_FILTERS.language,
-    city: searchParams.get("city") ?? INITIAL_FILTERS.city,
     gender: pickParam(searchParams.get("gender"), ["all", "male", "female"], INITIAL_FILTERS.gender),
     available_today: parseBoolParam(searchParams.get("available_today")),
     instant: parseBoolParam(searchParams.get("instant")) || type === "instant",
@@ -706,7 +702,6 @@ const PatientDoctors = () => {
     if (debouncedQ.trim().length >= 2) params.set("q", debouncedQ.trim());
     if (filters.type !== INITIAL_FILTERS.type) params.set("type", filters.type);
     if (filters.language) params.set("language", filters.language);
-    if (filters.city.trim()) params.set("city", filters.city.trim());
     if (filters.gender !== INITIAL_FILTERS.gender) params.set("gender", filters.gender);
     if (filters.available_today) params.set("available_today", "true");
     if (filters.instant) params.set("instant", "true");
@@ -987,14 +982,6 @@ const PatientDoctors = () => {
                 value: filters.language,
                 options: LANGUAGE_OPTIONS,
                 onChange: (v) => set("language", v),
-              },
-              {
-                type: "search",
-                key: "city",
-                label: t("pages.patient.city_label"),
-                placeholder: t("pages.patient.city_placeholder"),
-                value: filters.city,
-                onChange: (v) => set("city", v),
               },
               {
                 type: "select",

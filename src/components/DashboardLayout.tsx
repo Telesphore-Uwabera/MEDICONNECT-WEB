@@ -743,7 +743,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
         </button>
 
-        <div className="border-b border-border bg-card lg:hidden">
+        <div className="border-b border-border bg-card lg:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <div className="page-shell flex items-center gap-3 py-2.5">
           <button
             className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"

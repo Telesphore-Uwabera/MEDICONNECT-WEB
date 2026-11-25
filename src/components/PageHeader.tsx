@@ -237,7 +237,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
 
   return (
     <>
-      <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-40 shadow-sm shadow-black/5">
+      <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-40 shadow-sm shadow-black/5" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="page-shell flex items-center justify-between gap-2 py-2.5 sm:gap-4">
 
           {/* ── Left: Title / greeting ─────────────────────────────── */}
