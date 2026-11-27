@@ -683,10 +683,12 @@ export async function attachPayerAccount(payment) {
     plain = issued.plain;
     const rawLang = row.preferred_language || row.language || "";
     try {
+      const countryCode = String(row.country_code || "").trim() || null;
       const id = await insert("users", {
         name,
         email,
         phone: phone || null,
+        country_code: countryCode,
         password: issued.password,
         status: "active",
         active_role: "patient",
