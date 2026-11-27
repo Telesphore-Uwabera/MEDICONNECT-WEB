@@ -84,10 +84,13 @@ export function sessionToRejoinTarget(
 /** Last-resort fallback: the call we persisted locally this browser session. */
 export function rejoinFromPersistedCall(): RejoinTarget | null {
   try {
-    const raw = sessionStorage.getItem("active_call_session");
-    if (!raw) return null;
-    const p = JSON.parse(raw);
-    if (p?.roomName && p?.token) return { roomName: p.roomName, token: p.token };
+    // Check active call first, then paused call
+    for (const key of ["active_call_session", "paused_call_session"]) {
+      const raw = sessionStorage.getItem(key);
+      if (!raw) continue;
+      const p = JSON.parse(raw);
+      if (p?.roomName && p?.token) return { roomName: p.roomName, token: p.token };
+    }
   } catch {
     /* ignore */
   }

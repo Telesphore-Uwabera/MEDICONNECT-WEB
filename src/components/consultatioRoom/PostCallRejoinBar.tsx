@@ -1,6 +1,7 @@
 import { Phone, Video, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCallContext } from "@/context/CallContext";
+import { rejoinFromPersistedCall } from "@/lib/rejoin";
 
 /** Shown after hang-up while the visit is not completed, so either side can rejoin. */
 export function PostCallRejoinBar() {
@@ -14,7 +15,8 @@ export function PostCallRejoinBar() {
     clearPausedCall,
   } = useCallContext();
 
-  if (!pausedCall || activeCall || pendingCompletion) return null;
+  const effectivePaused = pausedCall ?? rejoinFromPersistedCall();
+  if (!effectivePaused || activeCall || pendingCompletion) return null;
 
   return (
     <div className="fixed bottom-4 left-1/2 z-[10000] w-[min(28rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-[8px] border border-emerald-500/30 bg-[#111] px-3.5 py-2.5 text-white shadow-2xl">
@@ -37,7 +39,9 @@ export function PostCallRejoinBar() {
           type="button"
           onClick={() => {
             clearAppointmentCompletion();
-            startCall(pausedCall.roomName, pausedCall.token);
+            const target = pausedCall ?? rejoinFromPersistedCall();
+            if (!target) return;
+            startCall(target.roomName, target.token);
           }}
           className="flex h-8 shrink-0 items-center gap-1.5 rounded-[6px] bg-emerald-600 px-3 text-[12px] font-semibold text-white hover:bg-emerald-500"
         >

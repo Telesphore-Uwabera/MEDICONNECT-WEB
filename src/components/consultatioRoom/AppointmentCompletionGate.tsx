@@ -13,6 +13,7 @@ import { Loader2, Video } from "lucide-react";
 import { toast } from "sonner";
 import { t } from "i18next";
 import { useCallContext } from "@/context/CallContext";
+import { rejoinFromPersistedCall } from "@/lib/rejoin";
 import {
   useGetAppointment,
   useCompleteAppointment,
@@ -37,10 +38,12 @@ export function AppointmentCompletionGate() {
       appointmentId={pendingCompletion.appointmentId}
       onDone={clearAppointmentCompletion}
       onRejoin={
-        pausedCall
+        (pausedCall ?? rejoinFromPersistedCall())
           ? () => {
               clearAppointmentCompletion();
-              startCall(pausedCall.roomName, pausedCall.token);
+              const target = pausedCall ?? rejoinFromPersistedCall();
+              if (!target) return;
+              startCall(target.roomName, target.token);
             }
           : undefined
       }

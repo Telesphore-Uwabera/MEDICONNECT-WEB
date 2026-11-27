@@ -8,6 +8,7 @@ export function GlobalCallOverlay() {
 
   return (
     <ConsultationRoom
+      key={`${activeCall.roomName}-${JSON.stringify(activeCall.token).slice(0, 20)}`}
       roomName={activeCall.roomName}
       token={activeCall.token}
     />
